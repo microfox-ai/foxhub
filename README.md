@@ -1,4 +1,12 @@
-# Turborepo starter
+# Microfox HUB - all apps & all minions
+
+## Web apps
+
+ALL primsma cmd line functions are better called inside apps/web folder & not outside.
+
+## Minions
+
+### HelloFox
 
 This Turborepo starter is maintained by the Turborepo core team.
 

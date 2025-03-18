@@ -1,0 +1,186 @@
+{
+  "info": {
+    "title": "My API Documentation",
+    "version": "1.0.1",
+    "description": "Documentation for endpoints with methods, headers, body schema, query parameters, and responses."
+  },
+  "endpoints": [
+    {
+      "path": "/",
+      "method": "GET",
+      "description": "Fetch a random anime quote",
+      "requestHeaders": {},
+      "requestQuery": {},
+      "responses": {
+        "200": {
+          "description": "Successful response with a random quote",
+          "schema": {
+            "content": {
+              "type": "string"
+            },
+            "anime": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number",
+                  "isRequired": true,
+                  "description": "The ID of the anime",
+                  "example": 1
+                },
+                "name": {
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The name of the anime",
+                  "example": "Naruto"
+                },
+                "altName": {
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The alternative name of the anime",
+                  "example": "Naruto: Shippuden"
+                }
+              }
+            },
+            "character": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number",
+                  "isRequired": true,
+                  "description": "The ID of the character",
+                  "example": 1
+                },
+                "name": {
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The name of the character",
+                  "example": "Naruto"
+                },
+                "altName": {
+                  "type": "string",
+                  "isRequired": true,
+                  "description": "The alternative name of the character",
+                  "example": "Naruto: Shippuden"
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Error response",
+          "schema": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/users/:id",
+      "method": "GET",
+      "description": "Fetch a user by ID",
+      "requestHeaders": {},
+      "requestQuery": {},
+      "responses": {
+        "200": {
+          "description": "Successful response with user data",
+          "schema": {
+            "id": {
+              "type": "string",
+              "isRequired": true,
+              "description": "The ID of the user",
+              "example": "1"
+            },
+            "name": {
+              "type": "string",
+              "isRequired": true,
+              "description": "The name of the user",
+              "example": "John Doe"
+            },
+            "email": {
+              "type": "string",
+              "isRequired": true,
+              "description": "The email of the user",
+              "example": "john@example.com"
+            }
+          }
+        },
+        "404": {
+          "description": "User not found",
+          "schema": {
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/users",
+      "method": "POST",
+      "description": "Create a new user",
+      "requestHeaders": {
+        "Content-Type": {
+          "type": "string",
+          "description": "MIME type of the body",
+          "example": "application/json"
+        }
+      },
+      "requestBody": {
+        "description": "User data for creation",
+        "schema": {
+          "name": {
+            "type": "string",
+            "isRequired": true,
+            "description": "The name of the user",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "isRequired": true,
+            "description": "The email of the user",
+            "example": "john@example.com"
+          }
+        }
+      },
+      "requestQuery": {},
+      "responses": {
+        "201": {
+          "description": "User successfully created",
+          "schema": {
+            "id": {
+              "type": "string",
+              "isRequired": true,
+              "description": "The ID of the user",
+              "example": "1"
+            },
+            "name": {
+              "type": "string",
+              "isRequired": true,
+              "description": "The name of the user",
+              "example": "John Doe"
+            },
+            "email": {
+              "type": "string",
+              "isRequired": true,
+              "description": "The email of the user",
+              "example": "john@example.com"
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid input data",
+          "schema": {
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

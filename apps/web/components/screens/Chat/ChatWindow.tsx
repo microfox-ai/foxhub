@@ -15,7 +15,7 @@ import ChatInputBox from './ChatInputBox'
 import { SlashModal } from './SlashModal'
 import TabMessages from './TabMessages'
 import UpdateHistoryTab from './UpdateHistoryTab'
-
+import { useMicrofox } from '../hooks/useMicrofox'
 export type AttachedMedia = {
   file: File
   preview: string
@@ -37,31 +37,39 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { mediaPayload, resetMedia } = useFileUpload()
-  const {
-    input,
-    mutate,
-    append,
-    messages,
-    isValidating,
-    isLoading,
-    messageStatus,
-    handleInputChange,
-    ...rest
-  } = useMicrofoxChat({
+  // const {
+  //   input,
+  //   mutate,
+  //   append,
+  //   messages,
+  //   isValidating,
+  //   isLoading,
+  //   messageStatus,
+  //   handleInputChange,
+  //   ...rest
+  // } = useMicrofoxChat({
+  //   clientRequest,
+  //   resetInputState: () => {
+  //     resetMedia()
+  //   },
+  // })
+
+  // Reload client data when specific operations are completed
+  const reloadClientData = async () => {
+    // try {
+    //   await mutate()
+    // } catch (error) {
+    //   console.error('Error reloading client data:', error)
+    // }
+  }
+
+  const { messages, reload: mutate, status, handleSubmit, isLoading, input, setInput, handleInputChange, append } = useMicrofox({
     clientRequest,
     resetInputState: () => {
       resetMedia()
     },
-  })
 
-  // Reload client data when specific operations are completed
-  const reloadClientData = async () => {
-    try {
-      await mutate()
-    } catch (error) {
-      console.error('Error reloading client data:', error)
-    }
-  }
+  })
 
   useEffect(() => {
     scrollToBottom()
@@ -72,12 +80,7 @@ export default function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const sendMessage = useCallback(async () => {
-    await append(undefined, {
-      //githubUrl: ((clientRequest as any)?.botProject as BotProject).githubRepoUrl,
-      media: mediaPayload,
-    })
-  }, [append, mediaPayload])
+  const sendMessage = handleSubmit
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-y-auto">
@@ -85,7 +88,7 @@ export default function ChatWindow({
         clientRequest={clientRequest}
         mutate={mutate}
         isLoading={isLoading}
-        isValidating={isValidating}
+        isValidating={isLoading}
       />
       {/* Chat Tabs */}
       <Tabs
@@ -110,22 +113,22 @@ export default function ChatWindow({
         >
           <TabMessages
             messages={messages}
-            isLoading={isLoading}
+            isLoading={false}
             messagesEndRef={messagesEndRef}
           />
         </TabsContent>
 
-        <TabsContent
+        {/* <TabsContent
           value="history"
           className="flex-1 space-y-4 overflow-y-auto"
         >
           <UpdateHistoryTab messages={messages} isLoading={isLoading} />
-        </TabsContent>
+        </TabsContent> */}
 
         {activeTab === 'chat' && (
           <ChatInputBox
             input={input}
-            messageStatus={messageStatus}
+            messageStatus={status}
             userId={userId}
             sendMessage={sendMessage}
             handleInputChange={handleInputChange}
@@ -137,7 +140,7 @@ export default function ChatWindow({
       <SlashModal
         clientRequest={clientRequest}
         onSuccess={reloadClientData}
-        onClose={() => {}}
+        onClose={() => { }}
       />
 
       {/* Global Add ClientSecret Modal */}

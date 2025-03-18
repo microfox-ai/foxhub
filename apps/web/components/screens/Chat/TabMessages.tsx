@@ -1,4 +1,4 @@
-import { Message } from 'ai'
+import { Message, UIMessage } from 'ai'
 import { FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 import { Skeleton } from '@mui/material'
@@ -6,9 +6,9 @@ import { getMessageClass } from './helpers/ui'
 import { ChatUIMessageWithTypes } from '../hooks/convertors'
 
 interface TabMessagesProps {
-  messages: ChatUIMessageWithTypes[]
+  messages: UIMessage[]
   isLoading: boolean
-  messagesEndRef: React.RefObject<HTMLDivElement>
+  messagesEndRef: React.RefObject<HTMLDivElement | null>
 }
 
 export default function TabMessages({
@@ -33,13 +33,14 @@ export default function TabMessages({
         <Skeleton variant="rectangular" width="100%" height={200} />
       ) : messages?.length > 0 ? (
         messages.map((update, index) => {
-          const additionalData = update?.metadata as any
+          const additionalData = (update?.annotations as any)?.find((a: any) => a.type === 'messageData')
+
           return (
             <div key={update.id}>
               {renderDateSeparator(
                 new Date(update.createdAt!).toISOString()!,
                 index > 0
-                  ? new Date(messages[index - 1].createdAt!).toISOString()!
+                  ? new Date(messages?.[index - 1]?.createdAt!).toISOString()!
                   : ''
               )}
               {update.role === 'system' ? (

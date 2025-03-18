@@ -1,6 +1,14 @@
 import { models } from "@/server/models";
 import { StreamingFucntionProps } from "@/server/router";
-import { generateObject, streamObject, streamText, Tool, tool } from "ai";
+import {
+  generateObject,
+  streamObject,
+  streamText,
+  Tool,
+  tool,
+  ToolCallUnion,
+  ToolResultUnion,
+} from "ai";
 import { z } from "zod";
 
 export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
@@ -38,14 +46,12 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
           toolName: "aboutMicrofox",
           content: `Deep thinkin about what to tell the user.`,
         });
-        response.mergeIntoDataStream(props.dataStream);
-        // return response.mergeIntoDataStream(props.dataStream, {
-        //   experimental_sendFinish: true,
-        // });
+        response.mergeIntoDataStream(props.dataStream, {
+          experimental_sendFinish: true,
+        });
         return response.text;
       },
     }),
-
     goalClarifier: tool({
       description: "Further clarifies the goal of the user",
       parameters: z.object({
@@ -81,23 +87,12 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
     }),
   };
 
-  type FunctionKeys = keyof typeof _functions;
-
-  const filter = (query: FunctionKeys[]) => {
-    let _functionMapped: any = null;
-    Object.keys(_functions)
-      .filter((key) => query?.includes(key as FunctionKeys))
-      .forEach((key) => {
-        if (!_functionMapped) {
-          _functionMapped = {};
-        }
-        _functionMapped[key as FunctionKeys] = _functions[key as FunctionKeys];
-      });
-    return _functionMapped;
-  };
-
   return {
-    functions: _functions,
-    filter,
+    ..._functions,
   };
 };
+
+export type HelloFoxToolCall = ToolCallUnion<ReturnType<typeof hellofoxTools>>;
+export type HelloFoxToolResult = ToolResultUnion<
+  ReturnType<typeof hellofoxTools>
+>;

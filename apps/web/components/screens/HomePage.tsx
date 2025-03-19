@@ -1,14 +1,15 @@
-'use client'
+"use client";
 
-import { useUser } from '@/utils/hooks/useUser'
-import NewProjectCreation from './global/NewProjectCreation'
-import { useRouter } from 'next/navigation'
-import useSWR from 'swr'
-import { useEffect } from 'react'
+import { useUser } from "@/utils/hooks/useUser";
+import NewProjectCreation from "./global/NewProjectCreation";
+import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import { useEffect } from "react";
+import { useAuth } from "../auth/AuthProvider";
 
 export const CustomBotsHomePage = () => {
-  const { user } = useUser()
-  const router = useRouter()
+  const { user } = useUser();
+  const router = useRouter();
 
   const {
     data: projects,
@@ -17,23 +18,23 @@ export const CustomBotsHomePage = () => {
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
     async (url) => await fetch(url).then((res) => res.json())
-  )
+  );
 
   useEffect(() => {
     if (projects && projects.length > 0) {
-      const lastProject = projects[0]
+      const lastProject = projects[0];
       if (lastProject && lastProject.clientRequests.length > 0) {
         router.push(
           `/project/${lastProject.id}/request/${lastProject.clientRequests[0].id}`
-        )
+        );
       } else if (lastProject) {
-        router.push(`/project/${projects[0].id}`)
+        router.push(`/project/${projects[0].id}`);
       }
     }
-  }, [projects])
+  }, [projects]);
 
   if (!user || isLoading) {
-    return null
+    return null;
   }
 
   return (
@@ -43,9 +44,9 @@ export const CustomBotsHomePage = () => {
       <NewProjectCreation
         userId={user?.id}
         onProjectCreated={(newProject) => {
-          router.push(`/project/${newProject.id}`)
+          router.push(`/project/${newProject.id}`);
         }}
       />
     </div>
-  )
-}
+  );
+};

@@ -1,13 +1,16 @@
-import { useChat } from "@ai-sdk/react";
+import { useChat, UseChatOptions } from "@ai-sdk/react";
 import { useEffect, useState } from "react";
-import { ChatUIMessageWithTypes } from "./convertors";
-import { UseMicrofoxChatOptions } from "./useMicrofoxChat";
+import { ChatUIMessageWithTypes, mapChatUIMessageToVercelUIMessage, mapVercelUIMessageToChatUIMessage } from "./convertors";
 import { useFileUpload } from "../providers/FileUploadProvider";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import useSWR from "swr";
+import { ClientRequest } from "@prisma/client";
 
 
-export type ContextType = 'chat' | 'server';
-export type ServerStatusType = 'pending' | 'success' | 'error' | 'idle';
-export type MicrofoxMessageStatus = "error" | "submitted" | "streaming" | "ready" | ServerStatusType;
+export interface UseMicrofoxChatOptions extends UseChatOptions {
+    clientRequest?: ClientRequest;
+    resetInputState?: () => void
+}
 
 
 export const useMicrofox = ({
@@ -16,21 +19,35 @@ export const useMicrofox = ({
     ...props
 }: UseMicrofoxChatOptions) => {
 
-    const [context, setContext] = useState<ContextType>('chat');
     const [minionType, setMinionType] = useState<ChatUIMessageWithTypes['minionType'] | null>("hellofox");
     //const [messages, setMessages] = useState<ChatUIMessageWithTypes[]>([]);
     const { mediaPayload } = useFileUpload()
 
+    const {
+        data: serverMessages,
+        mutate,
+        isValidating,
+        isLoading,
+    } = useSWR<ChatUIMessageWithTypes[]>(
+        `/api/client-requests/chat/update?requestId=${clientRequest?.id}`,
+        async (url: string) => {
+            const res = await PortalSdk.getData(url, {});
+            return res.chatUIMessages;
+        },
+    );
+
     const chatOptions = useChat({
         api: '/api/chat',
-        initialMessages: [],
+        initialMessages: (serverMessages?.map(mapChatUIMessageToVercelUIMessage)),
         initialInput: '',
         experimental_prepareRequestBody: (options) => {
-            console.log("prepareRequestBody", options, mediaPayload, minionType);
+            //console.log("prepareRequestBody", options, mediaPayload, minionType);
             return {
                 ...options,
                 minionType,
-                media: mediaPayload
+                media: mediaPayload,
+                originClientRequestId: clientRequest?.id,
+                userId: clientRequest?.userId,
             }
         },
         onResponse: (response) => {
@@ -41,14 +58,20 @@ export const useMicrofox = ({
         },
     })
     useEffect(() => {
-        console.log("chatOptions", chatOptions.messages);
-    }, [chatOptions.messages]);
+        console.log("chatOptions Messages", chatOptions.messages);
+    }, [chatOptions.messages])
+
+    useEffect(() => {
+        console.log("chatOptions Data", chatOptions.data)
+    }, [chatOptions.data])
 
     return {
-        context,
-        setContext,
         minionType,
         setMinionType,
         ...chatOptions,
+        mutate,
+        isLoading,
+        isValidating,
+        serverMessages
     }
 }

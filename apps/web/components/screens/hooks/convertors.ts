@@ -1,11 +1,17 @@
 import { ChatUIMessage } from "@prisma/client";
 import { JSONValue, UIMessage } from "ai";
-import { extraMetadata } from "./useMicrofoxChat";
+import { metadata } from "@/app/layout";
+import { MediaPayload } from "../providers/FileUploadProvider";
+
+export interface MessageMetadata {
+  githubUrl?: string;
+  media: MediaPayload[];
+}
 
 export interface ChatUIMessageWithTypes
-  extends Omit<ChatUIMessage, "role" | "context" | "minionType"> {
-  role: UIMessage["role"] | "gitComment" | "sysUpdate";
+  extends Omit<ChatUIMessage, "context" | "minionType" | "metadata"> {
   context: "chat" | "server";
+  systemType?: "git" | "server";
   minionType?:
     | "hellofox"
     | "convert"
@@ -15,34 +21,50 @@ export interface ChatUIMessageWithTypes
     | "review"
     | "package"
     | null;
+  metadata?: MessageMetadata;
 }
+
+export type AnnotationType = "core" | "metadata" | "systemType" | "minion";
 
 export const mapChatUIMessageToVercelUIMessage = (
   apiResponse: ChatUIMessageWithTypes
 ): UIMessage => {
   const { id, role, content, createdAt, ...rest } = apiResponse;
 
-  // If role is not a standard UIMessage role type, default to 'assistant'
-  const uiMessageRole = ["user", "assistant", "system", "function"].includes(
-    role
-  )
-    ? (role as UIMessage["role"])
-    : "assistant";
-
   return {
     id,
-    role: uiMessageRole,
+    role: role as UIMessage["role"],
     content,
     createdAt,
     parts: rest.parts as any,
-    annotations: [rest.metadata as any],
+    annotations: [
+      {
+        type: "core",
+        originClientRequestId: rest.originClientRequestId,
+        userId: rest.userId,
+        //updatedAt: rest.updatedAt?.toISOString(),
+      },
+      {
+        type: "metadata",
+        metadata: rest.metadata as any,
+      },
+      {
+        type: "systemType",
+        systemType: rest.systemType as JSONValue,
+      },
+      {
+        type: "minion",
+        minionId: rest.minionId as JSONValue,
+        minionType: rest.minionType as JSONValue,
+      },
+    ],
   };
 };
 
 export const mapVercelUIMessageToChatUIMessage = (
   vercelUIMessage: UIMessage,
   options: {
-    extraData?: extraMetadata;
+    extraData?: MessageMetadata;
     minionType?: ChatUIMessageWithTypes["minionType"];
     userId: string;
     originClientRequestId: string;

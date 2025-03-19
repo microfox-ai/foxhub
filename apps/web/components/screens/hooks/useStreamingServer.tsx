@@ -1,5 +1,3 @@
-import { ClientRequest } from "@prisma/client";
-import { ServerStatusType } from "./useMicrofoxChat";
 import { useChat } from "@ai-sdk/react";
 
 export interface StreamingServerOptions {

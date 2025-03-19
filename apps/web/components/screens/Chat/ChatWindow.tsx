@@ -2,20 +2,16 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ClientRequest } from '@prisma/client'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useMicrofoxChat } from '../hooks/useMicrofoxChat'
-import { useClientSecrets } from '../providers/ClientSecretProvider'
+import { useEffect, useRef, useState } from 'react'
+import { useMicrofox } from '../hooks/useMicrofox'
 import {
-  FileUploadProvider,
-  useFileUpload,
+  useFileUpload
 } from '../providers/FileUploadProvider'
 import { AddClientSecretModal } from './AddClientSecretModal'
 import ChatHeader from './ChatHeader'
 import ChatInputBox from './ChatInputBox'
 import { SlashModal } from './SlashModal'
 import TabMessages from './TabMessages'
-import UpdateHistoryTab from './UpdateHistoryTab'
-import { useMicrofox } from '../hooks/useMicrofox'
 export type AttachedMedia = {
   file: File
   preview: string
@@ -37,31 +33,6 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { mediaPayload, resetMedia } = useFileUpload()
-  // const {
-  //   input,
-  //   mutate,
-  //   append,
-  //   messages,
-  //   isValidating,
-  //   isLoading,
-  //   messageStatus,
-  //   handleInputChange,
-  //   ...rest
-  // } = useMicrofoxChat({
-  //   clientRequest,
-  //   resetInputState: () => {
-  //     resetMedia()
-  //   },
-  // })
-
-  // Reload client data when specific operations are completed
-  const reloadClientData = async () => {
-    // try {
-    //   await mutate()
-    // } catch (error) {
-    //   console.error('Error reloading client data:', error)
-    // }
-  }
 
   const { messages, reload: mutate, status, handleSubmit, isLoading, input, setInput, handleInputChange, append } = useMicrofox({
     clientRequest,
@@ -70,6 +41,15 @@ export default function ChatWindow({
     },
 
   })
+
+  // Reload client data when specific operations are completed
+  const reloadClientData = async () => {
+    try {
+      await mutate()
+    } catch (error) {
+      console.error('Error reloading client data:', error)
+    }
+  }
 
   useEffect(() => {
     scrollToBottom()

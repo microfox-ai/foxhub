@@ -42,7 +42,7 @@ model FoxTemplate {
 model ChatUIMessage {
   id        String   @id @default(uuid())
   context   String // 'chat' | 'server'
-  role      String   // 'user' | 'assistant' | 'system' | 'function' | 'git' | 'sysUpdate'
+  role      String   // 'user' | 'assistant' | 'system'
   content   String
   parts       Json[]  // 'text' | 'toolCall' | 'source' 
   attachments Json[]
@@ -51,6 +51,7 @@ model ChatUIMessage {
   minionId     String? 
   minionType   String? // 'hello' | 'convert' | 'build' | 'package'
   userId       String 
+  systemType   String? //  'git' | 'server'
 
 
   createdAt DateTime @default(now())

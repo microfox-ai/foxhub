@@ -14,11 +14,15 @@ const microfoxRouter = new ServerStreamingRouter<
   defaultCallbackResultBody
 >();
 
+// TODO: remove this & bifract this into multiple small steps in both server & frontend
 microfoxRouter.addPath("createOrReOpenPullRequest", createOrReOpenPullRequest);
 microfoxRouter.addPath("hellofox", hellofoxRouter);
 
 microfoxRouter.setRouting((requestBody: any) => {
   //console.log("requestBody", requestBody);
+  // if (requestBody.somethin === "nothing") {
+  //   return ["nothing"];
+  // }
   if (requestBody.minionType === "hellofox") {
     return ["hellofox"];
   }

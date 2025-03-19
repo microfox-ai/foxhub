@@ -12,7 +12,7 @@ const Header: React.FC = () => {
   const { user } = useUser()
   const router = useRouter()
 
-  console.log(user?.avatar)
+  //console.log(user?.avatar)
 
   //console.log(user);
   return (

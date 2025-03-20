@@ -50,7 +50,7 @@ export const updateSession = async (request: NextRequest) => {
     }
 
     // If there's no user or an error, redirect to login
-    if (!user || userError) {
+    if ((!user || userError) && !request.nextUrl.pathname.startsWith("/api")) {
       const redirectUrl = new URL("/login", request.url);
       return NextResponse.redirect(redirectUrl);
     }

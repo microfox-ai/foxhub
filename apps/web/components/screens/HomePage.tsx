@@ -16,7 +16,7 @@ export const CustomBotsHomePage = () => {
     isLoading,
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json())
+    async (url) => await fetch(url).then((res) => res.json()),
   );
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export const CustomBotsHomePage = () => {
       const lastProject = projects[0];
       if (lastProject && lastProject.clientRequests.length > 0) {
         router.push(
-          `/project/${lastProject.id}/request/${lastProject.clientRequests[0].id}`
+          `/project/${lastProject.id}/request/${lastProject.clientRequests[0].id}`,
         );
       } else if (lastProject) {
         router.push(`/project/${projects[0].id}`);

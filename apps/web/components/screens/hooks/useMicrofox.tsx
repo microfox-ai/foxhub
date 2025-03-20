@@ -13,6 +13,7 @@ export interface UseMicrofoxChatOptions extends UseChatOptions {
 }
 
 
+// A Single Message is a compilation of annotation, reasoning, inner-loops of thoughts, toolcalls, & the final response message.
 export const useMicrofox = ({
     clientRequest,
     resetInputState,
@@ -38,7 +39,7 @@ export const useMicrofox = ({
 
     const chatOptions = useChat({
         api: '/api/chat',
-        initialMessages: (serverMessages?.map(mapChatUIMessageToVercelUIMessage)),
+        initialMessages: [],//(serverMessages?.map(mapChatUIMessageToVercelUIMessage)),
         initialInput: '',
         experimental_prepareRequestBody: (options) => {
             //console.log("prepareRequestBody", options, mediaPayload, minionType);

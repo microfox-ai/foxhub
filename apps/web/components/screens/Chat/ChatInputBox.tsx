@@ -2,12 +2,12 @@ import { ButtonSCN } from '@/components/elements/Button'
 import { FilePlus, FileText, RefreshCw, Send } from 'lucide-react'
 import { useRef } from 'react'
 import { useFileUpload } from '../providers/FileUploadProvider'
-import { MicrofoxMessageStatus } from '../hooks/useMicrofoxChat'
 import { useClientSecrets } from '../providers/ClientSecretProvider'
+import { ChatUIMessageWithTypes } from '../hooks/convertors'
 
 interface ChatInputBoxProps {
   input: string
-  messageStatus: MicrofoxMessageStatus
+  messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error"
   userId: string
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   sendMessage: () => void

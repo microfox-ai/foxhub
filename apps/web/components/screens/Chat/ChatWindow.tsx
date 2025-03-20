@@ -34,7 +34,8 @@ export default function ChatWindow({
 
   const { mediaPayload, resetMedia } = useFileUpload()
 
-  const { messages, reload: mutate, status, handleSubmit, isLoading, input, setInput, handleInputChange, append } = useMicrofox({
+  const { messages, setMessages, reload: mutate, status, handleSubmit, isLoading, input, setInput, handleInputChange, append,
+  } = useMicrofox({
     clientRequest,
     resetInputState: () => {
       resetMedia()
@@ -58,6 +59,15 @@ export default function ChatWindow({
   // Scroll to the bottom of the chat window
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleRefresh = (messageIndex: number) => {
+    console.log("refreshing", messageIndex)
+    setMessages((messages) => {
+      const newMessages = messages.slice(0, messageIndex)
+      return newMessages
+    })
+    handleSubmit()
   }
 
   const sendMessage = handleSubmit
@@ -95,6 +105,8 @@ export default function ChatWindow({
             messages={messages}
             isLoading={false}
             messagesEndRef={messagesEndRef}
+            onRefresh={handleRefresh}
+            isStreaming={status === 'streaming'}
           />
         </TabsContent>
 

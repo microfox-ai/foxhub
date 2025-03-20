@@ -38,14 +38,15 @@ export type BotTemplate = {
     placeholder: string
   }>
 }
+//TODO: Temporarily disabled as there are no templates yet.
 const useBotTemplateInit = () => {
   const { user } = useUser()
   const [showAddBotModal, setShowAddBotModal] = useState(false)
   // Fetch client bot templates for the current client.
   const { data: templates } = useSWR<BotTemplate[]>(
-    user?.id
-      ? `/api/client-secrets/template?userId=${user.id}`
-      : null, //Prevents fetch when user is not available
+    // user?.id
+    //   ? `/api/client-secrets/template?userId=${user.id}`
+    null, //Prevents fetch when user is not available
     (url: string) => fetch(url).then((res) => res.json())
   )
 

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   try {
     const configs = await prisma.configData.findUnique({
-      where: { configId: "customBotsConfigKeys" },
+      where: { configId: "shard-template-configs" },
     });
 
     if (!configs) {

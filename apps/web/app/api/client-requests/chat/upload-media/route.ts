@@ -1,17 +1,17 @@
-import { s3FileUploadSdk } from '@/utils/services/s3FileUploadSdk';
-import { NextRequest, NextResponse } from 'next/server';
+import { s3FileUploadSdk } from "@/utils/services/s3FileUploadSdk";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const files = formData.getAll('file') as File[];
-    const userId = formData.get('userId')?.toString();
+    const files = formData.getAll("file") as File[];
+    const userId = formData.get("userId")?.toString();
     const folderName =
-      formData.get('folderName')?.toString() || 'customBots/clientMessages';
+      formData.get("folderName")?.toString() || "customBots/clientMessages";
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'Client ID is required' },
+        { error: "Client ID is required" },
         { status: 400 },
       );
     }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
           });
 
           if (!s3Response || s3Response.$metadata.httpStatusCode !== 200) {
-            throw new Error('Failed to upload file');
+            throw new Error("Failed to upload file");
           }
 
           const fileUrl = s3FileUploadSdk.getPublicFileUrl({
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
           return {
             mediaName: file.name,
             mediaType: file.type,
-            mediaFormat: file.name.split('.').pop() || 'file',
+            mediaFormat: file.name.split(".").pop() || "file",
             mediaUrl: fileUrl,
           };
         }),

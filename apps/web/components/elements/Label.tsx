@@ -1,8 +1,8 @@
-import React from 'react'
+import React from "react";
 
 interface LabelProps {
-  htmlFor: string
-  label: string
+  htmlFor: string;
+  label: string;
 }
 
 const Label: React.FC<LabelProps> = ({ htmlFor, label }) => {
@@ -13,7 +13,7 @@ const Label: React.FC<LabelProps> = ({ htmlFor, label }) => {
     >
       {label}
     </label>
-  )
-}
+  );
+};
 
-export default Label
+export default Label;

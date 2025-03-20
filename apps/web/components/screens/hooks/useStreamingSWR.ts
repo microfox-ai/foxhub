@@ -1,18 +1,18 @@
-import { useId, useState } from 'react';
-import useSWR from 'swr';
-import useSWRMutation from 'swr/mutation';
+import { useId, useState } from "react";
+import useSWR from "swr";
+import useSWRMutation from "swr/mutation";
 
 export async function* getCompletion(prompt: string, signal?: AbortSignal) {
-  const url = new URL('/completion', 'http://localhost:4000');
-  url.searchParams.append('prompt', prompt);
+  const url = new URL("/completion", "http://localhost:4000");
+  url.searchParams.append("prompt", prompt);
 
   const res = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     signal,
   });
 
   const reader = res.body?.getReader();
-  if (!reader) throw new Error('No reader');
+  if (!reader) throw new Error("No reader");
   const decoder = new TextDecoder();
 
   let i = 0;
@@ -34,12 +34,12 @@ export const errorMessage = (err: unknown, fallback?: string) => {
   if (err instanceof Error) {
     return err.message;
   }
-  return fallback || 'Unknown error';
+  return fallback || "Unknown error";
 };
 
 export default function useStreamingSWR() {
   const id = useId();
-  const { data, mutate } = useSWR<string>(['completion', id], null);
+  const { data, mutate } = useSWR<string>(["completion", id], null);
   const [abortController, setAbortController] =
     useState<AbortController | null>();
 
@@ -48,8 +48,8 @@ export default function useStreamingSWR() {
     unknown,
     [string, string],
     string
-  >(['completion', id], async (_, { arg: prompt }) => {
-    void mutate('', false);
+  >(["completion", id], async (_, { arg: prompt }) => {
+    void mutate("", false);
     if (abortController) {
       abortController.abort();
     }

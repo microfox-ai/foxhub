@@ -14,6 +14,14 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model ConfigData {
+  id         String   @id @default(uuid())
+  configId   String   @unique
+  configType String   @default("")
+  configApp  String?  @default("portal")
+  configData Json?
+  timestamp  DateTime @updatedAt
+}
 
 // -------------------------------------Custom Bots-------------------------------------------
 

@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   createContext,
@@ -6,88 +6,88 @@ import {
   useEffect,
   useState,
   useCallback,
-} from 'react'
-import { type User } from '@supabase/supabase-js'
-import { createClient } from '@/utils/supabase/browser-client'
-import { useRouter } from 'next/navigation'
-import { signInWithGoogle, signOut } from '@/actions/auth-actions'
+} from "react";
+import { type User } from "@supabase/supabase-js";
+import { createClient } from "@/utils/supabase/browser-client";
+import { useRouter } from "next/navigation";
+import { signInWithGoogle, signOut } from "@/actions/auth-actions";
 
 interface DbUser {
-  id: string
-  email: string
-  name: string
-  avatar?: string | null
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 type AuthContextType = {
-  user: User | null
-  dbUser: DbUser | null
-  isLoading: boolean
-  error: string | null
-  handleSigninWithGoogle: () => Promise<void>
-  handleLogout: () => Promise<void>
-}
+  user: User | null;
+  dbUser: DbUser | null;
+  isLoading: boolean;
+  error: string | null;
+  handleSigninWithGoogle: () => Promise<void>;
+  handleLogout: () => Promise<void>;
+};
 
-const AuthContext = createContext<AuthContextType | null>(null)
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [dbUser, setDbUser] = useState<DbUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-  const supabase = createClient()
+  const [user, setUser] = useState<User | null>(null);
+  const [dbUser, setDbUser] = useState<DbUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createClient();
 
   const handleSigninWithGoogle = useCallback(async () => {
     try {
-      const result = await signInWithGoogle()
+      const result = await signInWithGoogle();
 
       if (result.url) {
-        router.push(result.url)
+        router.push(result.url);
       } else {
-        console.error('Login failed:', result.error)
+        console.error("Login failed:", result.error);
       }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error("Login error:", error);
     }
-  }, [router])
+  }, [router]);
 
   const handleLogout = useCallback(async () => {
     try {
-      const result = await signOut()
+      const result = await signOut();
 
       if (result.success) {
-        router.refresh()
-        localStorage.removeItem('app_user')
+        router.refresh();
+        localStorage.removeItem("app_user");
       } else {
-        console.error('Logout failed:', result.error)
+        console.error("Logout failed:", result.error);
       }
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error("Logout error:", error);
     }
-  }, [router])
+  }, [router]);
 
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null)
-      setIsLoading(false)
-    })
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
 
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setIsLoading(false)
-    })
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
 
     return () => {
-      subscription.unsubscribe()
-    }
+      subscription.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   const value = {
     user,
@@ -96,15 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     handleSigninWithGoogle,
     handleLogout,
-  }
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
+  return context;
 }

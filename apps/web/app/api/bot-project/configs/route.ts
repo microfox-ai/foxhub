@@ -1,15 +1,15 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
-import { JsonObject } from '@prisma/client/runtime/library';
+import { NextResponse } from "next/server";
+import { prisma } from "@/prisma/prisma";
+import { JsonObject } from "@prisma/client/runtime/library";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Missing project ID' },
+        { error: "Missing project ID" },
         { status: 400 },
       );
     }
@@ -24,11 +24,11 @@ export async function GET(req: Request) {
     });
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
     return NextResponse.json({
-      message: 'Project configuration fetched successfully',
+      message: "Project configuration fetched successfully",
       previewConfigs: project?.previewConfigs,
       stagingConfigs: project?.stagingConfigs,
       prodConfigs: project?.prodConfigs,
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 interface PutRequestBody {
   id: string;
   configs: JsonObject;
-  type: 'preview' | 'staging' | 'prod';
+  type: "preview" | "staging" | "prod";
 }
 
 export async function PUT(req: Request) {
@@ -56,21 +56,21 @@ export async function PUT(req: Request) {
       },
     });
 
-    if (!['preview', 'staging', 'prod'].includes(type)) {
+    if (!["preview", "staging", "prod"].includes(type)) {
       return NextResponse.json(
-        { error: 'Invalid environment type' },
+        { error: "Invalid environment type" },
         { status: 400 },
       );
     }
 
     if (!existingProject) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
     const updatedConfiguration = {
-      ...((type === 'prod'
+      ...((type === "prod"
         ? existingProject?.prodConfigs
-        : type === 'preview'
+        : type === "preview"
           ? existingProject?.previewConfigs
           : existingProject?.stagingConfigs) as JsonObject),
       ...configs,
@@ -79,16 +79,16 @@ export async function PUT(req: Request) {
     const updatedProject = await prisma.botProject.update({
       where: { id },
       data: {
-        ...(type === 'prod'
+        ...(type === "prod"
           ? { prodConfigs: updatedConfiguration }
-          : type === 'preview'
+          : type === "preview"
             ? { previewConfigs: updatedConfiguration }
             : { stagingConfigs: updatedConfiguration }),
       },
     });
-    
+
     return NextResponse.json({
-      message: 'Configuration updated successfully',
+      message: "Configuration updated successfully",
       updatedProject,
     });
   } catch (error: any) {
@@ -99,7 +99,7 @@ export async function PUT(req: Request) {
 interface DeleteRequestBody {
   id: string;
   keysToDelete: string[];
-  type: 'preview' | 'staging' | 'prod';
+  type: "preview" | "staging" | "prod";
 }
 
 export async function DELETE(req: Request) {
@@ -108,14 +108,14 @@ export async function DELETE(req: Request) {
 
     if (!keysToDelete.length) {
       return NextResponse.json(
-        { error: 'Missing keys to delete' },
+        { error: "Missing keys to delete" },
         { status: 400 },
       );
     }
 
-    if (!['preview', 'staging', 'prod'].includes(type)) {
+    if (!["preview", "staging", "prod"].includes(type)) {
       return NextResponse.json(
-        { error: 'Invalid environment type' },
+        { error: "Invalid environment type" },
         { status: 400 },
       );
     }
@@ -130,13 +130,13 @@ export async function DELETE(req: Request) {
     });
 
     if (!existingProject) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
     const updatedConfiguration = {
-      ...((type === 'prod'
+      ...((type === "prod"
         ? existingProject?.prodConfigs
-        : type === 'preview'
+        : type === "preview"
           ? existingProject?.previewConfigs
           : existingProject?.stagingConfigs) as JsonObject),
     };
@@ -146,15 +146,15 @@ export async function DELETE(req: Request) {
     const updatedProject = await prisma.botProject.update({
       where: { id },
       data: {
-        ...(type === 'prod'
+        ...(type === "prod"
           ? { prodConfigs: updatedConfiguration }
-          : type === 'preview'
+          : type === "preview"
             ? { previewConfigs: updatedConfiguration }
             : { stagingConfigs: updatedConfiguration }),
       },
     });
     return NextResponse.json({
-      message: 'Configuration deleted successfully',
+      message: "Configuration deleted successfully",
       updatedProject,
     });
   } catch (error: any) {

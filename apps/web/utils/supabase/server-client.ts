@@ -23,11 +23,11 @@ export const createClient = async () => {
             // user sessions.
             console.debug(
               "Cookie set error in Server Component (expected):",
-              error
+              error,
             );
           }
         },
       },
-    }
+    },
   );
 };

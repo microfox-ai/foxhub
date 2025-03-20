@@ -1,6 +1,6 @@
-import { prisma } from '@/prisma/prisma';
-import { FUNCTIONTYPE, SECRETMODE } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from "@/prisma/prisma";
+import { FUNCTIONTYPE, SECRETMODE } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 
 // Create ClientRequestFunction
 export async function POST(req: NextRequest) {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     if (!originClientRequestId || !name || !baseUrl || !type || !mode) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: "Missing required fields" },
         { status: 400 },
       );
     }
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     if (!clientRequest) {
       return NextResponse.json(
-        { error: 'ClientRequest not found' },
+        { error: "ClientRequest not found" },
         { status: 404 },
       );
     }
@@ -69,9 +69,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(clientFunction, { status: 201 });
   } catch (error) {
-    console.error('Error creating ClientRequestFunction:', error);
+    console.error("Error creating ClientRequestFunction:", error);
     return NextResponse.json(
-      { error: 'Error creating ClientRequestFunction' },
+      { error: "Error creating ClientRequestFunction" },
       { status: 500 },
     );
   }
@@ -81,18 +81,18 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const mode = searchParams.get('mode');
-    const name = searchParams.get('name');
-    const userId = searchParams.get('userId');
-    const botProjectId = searchParams.get('botProjectId');
-    const clientRequestId = searchParams.get('clientRequestId');
+    const id = searchParams.get("id");
+    const mode = searchParams.get("mode");
+    const name = searchParams.get("name");
+    const userId = searchParams.get("userId");
+    const botProjectId = searchParams.get("botProjectId");
+    const clientRequestId = searchParams.get("clientRequestId");
 
     if (!id && !userId && !botProjectId && !clientRequestId && !name) {
       return NextResponse.json(
         {
           error:
-            'Missing id, name, userId, botProjectId, or clientRequestId parameter',
+            "Missing id, name, userId, botProjectId, or clientRequestId parameter",
         },
         { status: 400 },
       );
@@ -113,9 +113,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ clientFunctions }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching ClientRequestFunction:', error);
+    console.error("Error fetching ClientRequestFunction:", error);
     return NextResponse.json(
-      { error: 'Error fetching ClientRequestFunction' },
+      { error: "Error fetching ClientRequestFunction" },
       { status: 500 },
     );
   }
@@ -130,7 +130,7 @@ export async function PUT(req: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Missing function ID' },
+        { error: "Missing function ID" },
         { status: 400 },
       );
     }
@@ -141,7 +141,7 @@ export async function PUT(req: NextRequest) {
 
     if (!clientFunction) {
       return NextResponse.json(
-        { error: 'Function not found' },
+        { error: "Function not found" },
         { status: 404 },
       );
     }
@@ -179,9 +179,9 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(updatedFunction, { status: 200 });
   } catch (error) {
-    console.error('Error updating ClientRequestFunction:', error);
+    console.error("Error updating ClientRequestFunction:", error);
     return NextResponse.json(
-      { error: 'Error updating ClientRequestFunction' },
+      { error: "Error updating ClientRequestFunction" },
       { status: 500 },
     );
   }
@@ -191,11 +191,11 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Missing function ID' },
+        { error: "Missing function ID" },
         { status: 400 },
       );
     }
@@ -206,7 +206,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!clientFunction) {
       return NextResponse.json(
-        { error: 'Function not found' },
+        { error: "Function not found" },
         { status: 404 },
       );
     }
@@ -233,13 +233,13 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { message: 'Function deleted successfully' },
+      { message: "Function deleted successfully" },
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error deleting ClientRequestFunction:', error);
+    console.error("Error deleting ClientRequestFunction:", error);
     return NextResponse.json(
-      { error: 'Error deleting ClientRequestFunction' },
+      { error: "Error deleting ClientRequestFunction" },
       { status: 500 },
     );
   }

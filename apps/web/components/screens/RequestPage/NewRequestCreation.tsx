@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { ButtonSCN } from '@/components/elements/Button'
-import { Send, Loader2 } from 'lucide-react'
-import { PortalSdk } from '@/utils/services/PortalSdk'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { BotProject, ClientRequest } from '@prisma/client'
+import { useState } from "react";
+import { ButtonSCN } from "@/components/elements/Button";
+import { Send, Loader2 } from "lucide-react";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { BotProject, ClientRequest } from "@prisma/client";
 
 interface BotProjectWithRequests extends BotProject {
-  clientRequests: ClientRequest[]
+  clientRequests: ClientRequest[];
 }
 
 export default function NewRequestCreation({
@@ -17,40 +17,40 @@ export default function NewRequestCreation({
   project,
   onRequestCreated,
 }: {
-  userId: string
-  project: BotProjectWithRequests
-  onRequestCreated: (newRequest: ClientRequest) => void
+  userId: string;
+  project: BotProjectWithRequests;
+  onRequestCreated: (newRequest: ClientRequest) => void;
 }) {
-  const [description, setDescription] = useState('')
-  const [sending, setSending] = useState(false)
-  const router = useRouter()
+  const [description, setDescription] = useState("");
+  const [sending, setSending] = useState(false);
+  const router = useRouter();
 
   const handleCreateRequest = async () => {
     if (!description.trim()) {
-      toast.error('Please explain your request in detail.')
-      return
+      toast.error("Please explain your request in detail.");
+      return;
     }
-    setSending(true)
+    setSending(true);
     try {
       const newRequest = await PortalSdk.postData(
-        '/api/client-requests/create',
+        "/api/client-requests/create",
         {
           userId,
           requestDescription: description.trim(),
           botProjectId: project?.id,
-        }
-      )
-      toast.success('Request created successfully!')
-      setDescription('')
-      onRequestCreated(newRequest?.clientRequest)
-      router.replace(`?request=${newRequest?.clientRequest?.id}&view=request`)
+        },
+      );
+      toast.success("Request created successfully!");
+      setDescription("");
+      onRequestCreated(newRequest?.clientRequest);
+      router.replace(`?request=${newRequest?.clientRequest?.id}&view=request`);
     } catch (error) {
-      toast.error('Failed to create request.')
-      console.error('Error creating request:', error)
+      toast.error("Failed to create request.");
+      console.error("Error creating request:", error);
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   return (
     <div className="flex h-full flex-col items-center justify-center p-8 text-center">
@@ -65,15 +65,15 @@ export default function NewRequestCreation({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              handleCreateRequest()
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleCreateRequest();
             }
           }}
           disabled={sending}
         />
         <ButtonSCN
-          style={{ width: '100%', marginTop: '1rem' }}
+          style={{ width: "100%", marginTop: "1rem" }}
           onClick={handleCreateRequest}
           disabled={sending || !description.trim()}
         >
@@ -86,5 +86,5 @@ export default function NewRequestCreation({
         </ButtonSCN>
       </div>
     </div>
-  )
+  );
 }

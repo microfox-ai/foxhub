@@ -1,16 +1,16 @@
-'use client'
+"use client";
 
-import { APP_ROUTES } from '@/utils/constants/appInfo'
-import { useUser } from '@/utils/hooks/useUser'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import React from 'react'
-import { ProjectDropdown } from './ProjectDropdown'
+import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useUser } from "@/utils/hooks/useUser";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React from "react";
+import { ProjectDropdown } from "./ProjectDropdown";
 
 const Header: React.FC = () => {
-  const { user } = useUser()
-  const router = useRouter()
+  const { user } = useUser();
+  const router = useRouter();
 
   //console.log(user?.avatar)
 
@@ -20,7 +20,7 @@ const Header: React.FC = () => {
       <div className="flex cursor-pointer items-center gap-2 text-2xl">
         <div
           onClick={() => {
-            router.push('/')
+            router.push("/");
           }}
           className="flex cursor-pointer items-center gap-2 text-2xl"
         >
@@ -41,7 +41,7 @@ const Header: React.FC = () => {
                         <span className='material-symbols-outlined inherit'>lightbulb</span>
                         The Idea</Link> */}
           <Link
-            href={'/whitepaper'}
+            href={"/whitepaper"}
             className="flex cursor-pointer items-center gap-1 text-sm font-medium text-gray-500 hover:text-black"
           >
             <span className="material-symbols-outlined inherit">task</span>
@@ -67,7 +67,7 @@ const Header: React.FC = () => {
       </div>
       {/* Add your header content here */}
     </header>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;

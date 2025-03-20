@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react";
 
 const CanvaEmbed = () => {
   return (
@@ -11,7 +11,7 @@ const CanvaEmbed = () => {
         allowFullScreen
       ></iframe>
     </div>
-  )
-}
+  );
+};
 
-export default CanvaEmbed
+export default CanvaEmbed;

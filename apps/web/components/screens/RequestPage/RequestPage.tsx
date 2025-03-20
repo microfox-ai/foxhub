@@ -1,36 +1,36 @@
-'use client'
-import { Button } from '@/components/ui/button'
-import { CommandEmpty } from '@/components/ui/command'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { prettySinceTime } from '@/utils/helpers/prettyprint'
-import { useUser } from '@/utils/hooks/useUser'
-import { Skeleton } from '@mui/material'
-import { BotProject, ClientRequest, REQUESTSTATUS } from '@prisma/client'
-import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import useSWR from 'swr'
-import { ClientSecretProvider } from '../providers/ClientSecretProvider'
-import Sidebar from '../global/Sidebar'
-import { toast } from 'sonner'
-import ChatWindow from '../Chat/ChatWindow'
-import PreviewWindow from '../PreviewWindow/PreviewWindow'
-import NewRequestCreation from './NewRequestCreation'
-import { FileUploadProvider } from '../providers/FileUploadProvider'
+"use client";
+import { Button } from "@/components/ui/button";
+import { CommandEmpty } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { prettySinceTime } from "@/utils/helpers/prettyprint";
+import { useUser } from "@/utils/hooks/useUser";
+import { Skeleton } from "@mui/material";
+import { BotProject, ClientRequest, REQUESTSTATUS } from "@prisma/client";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import { ClientSecretProvider } from "../providers/ClientSecretProvider";
+import Sidebar from "../global/Sidebar";
+import { toast } from "sonner";
+import ChatWindow from "../Chat/ChatWindow";
+import PreviewWindow from "../PreviewWindow/PreviewWindow";
+import NewRequestCreation from "./NewRequestCreation";
+import { FileUploadProvider } from "../providers/FileUploadProvider";
 
 export const RequestPage = () => {
-  const [selectedProject, setSelectedProject] = useState<any | null>(null)
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null)
-  const { user } = useUser()
-  const router = useRouter()
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const { user } = useUser();
+  const router = useRouter();
 
-  const [tab, setTab] = useState('requests')
+  const [tab, setTab] = useState("requests");
   const params = useParams<{
-    project_id?: string
-    request_id?: string
-  }>()
-  const projectParamId = params?.project_id
-  const requestParamId = params?.request_id
+    project_id?: string;
+    request_id?: string;
+  }>();
+  const projectParamId = params?.project_id;
+  const requestParamId = params?.request_id;
 
   const {
     data: projects,
@@ -38,21 +38,21 @@ export const RequestPage = () => {
     isLoading,
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json())
-  )
+    async (url) => await fetch(url).then((res) => res.json()),
+  );
 
   useEffect(() => {
     if (projectParamId) {
-      const project = projects?.find((p: any) => p.id === projectParamId)
-      setSelectedProject(project)
+      const project = projects?.find((p: any) => p.id === projectParamId);
+      setSelectedProject(project);
       const request = project?.clientRequests.find(
-        (r: any) => r.id === requestParamId
-      )
-      setSelectedRequest(request)
+        (r: any) => r.id === requestParamId,
+      );
+      setSelectedRequest(request);
     }
-  }, [projectParamId, requestParamId, projects])
+  }, [projectParamId, requestParamId, projects]);
 
-  const [openNewRequestDialog, setOpenNewRequestDialog] = useState(false)
+  const [openNewRequestDialog, setOpenNewRequestDialog] = useState(false);
 
   if (!user || !selectedProject || !selectedRequest || isLoading) {
     return (
@@ -63,7 +63,7 @@ export const RequestPage = () => {
           height={20}
         />
       </div>
-    )
+    );
   }
 
   return (
@@ -74,23 +74,23 @@ export const RequestPage = () => {
             <Sidebar
               selectedProject={selectedProject}
               onSelectRequest={(request) => {
-                setSelectedRequest(request)
+                setSelectedRequest(request);
                 router.push(
-                  `/project/${selectedProject?.id}/request/${request?.id}`
-                )
+                  `/project/${selectedProject?.id}/request/${request?.id}`,
+                );
               }}
               onNewRequest={(project) => {
                 const openRequests = project?.clientRequests?.filter(
                   (request) =>
                     request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                    request?.requestStatus !== REQUESTSTATUS.CLOSED
-                )
+                    request?.requestStatus !== REQUESTSTATUS.CLOSED,
+                );
                 if (openRequests?.length < 3) {
-                  setOpenNewRequestDialog(true)
+                  setOpenNewRequestDialog(true);
                 } else {
                   toast.warning(
-                    'At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.'
-                  )
+                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
+                  );
                 }
               }}
               onOpenConfig={(project: any) => {
@@ -117,13 +117,13 @@ export const RequestPage = () => {
               project={selectedProject}
               onRequestCreated={(newRequest) => {
                 router.push(
-                  `/project/${selectedProject.id}/request/${newRequest.id}`
-                )
+                  `/project/${selectedProject.id}/request/${newRequest.id}`,
+                );
               }}
             />
           </DialogContent>
         </Dialog>
       </FileUploadProvider>
     </ClientSecretProvider>
-  )
-}
+  );
+};

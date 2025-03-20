@@ -1,17 +1,21 @@
-import { Message, UIMessage } from 'ai'
-import { FileText } from 'lucide-react'
-import dayjs from 'dayjs'
-import { Skeleton } from '@mui/material'
-import { getMessageClass } from './helpers/ui'
-import { AnnotationType, ChatUIMessageWithTypes, MessageMetadata } from '../hooks/convertors'
-import { MessageWrapper } from './message/MessageWrapper'
+import { Message, UIMessage } from "ai";
+import { FileText } from "lucide-react";
+import dayjs from "dayjs";
+import { Skeleton } from "@mui/material";
+import { getMessageClass } from "./helpers/ui";
+import {
+  AnnotationType,
+  ChatUIMessageWithTypes,
+  MessageMetadata,
+} from "../hooks/convertors";
+import { MessageWrapper } from "./message/MessageWrapper";
 
 interface TabMessagesProps {
-  messages: UIMessage[]
-  isLoading: boolean
-  messagesEndRef: React.RefObject<HTMLDivElement | null>
-  onRefresh: (messageIndex: number) => void
-  isStreaming: boolean
+  messages: UIMessage[];
+  isLoading: boolean;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  onRefresh: (messageIndex: number) => void;
+  isStreaming: boolean;
 }
 
 export default function TabMessages({
@@ -21,19 +25,16 @@ export default function TabMessages({
   onRefresh,
   isStreaming,
 }: TabMessagesProps) {
-
   const renderDateSeparator = (currentDate: string, prevDate?: string) => {
-    if (!prevDate || !dayjs(currentDate).isSame(prevDate, 'day')) {
+    if (!prevDate || !dayjs(currentDate).isSame(prevDate, "day")) {
       return (
         <div className="my-2 text-center text-xs font-semibold text-gray-500">
-          {dayjs(currentDate).format('DD MMM YYYY')}
+          {dayjs(currentDate).format("DD MMM YYYY")}
         </div>
-      )
+      );
     }
-    return null
-  }
-
-
+    return null;
+  };
 
   return (
     <>
@@ -48,17 +49,19 @@ export default function TabMessages({
               index={index}
               length={messages.length}
               onRefresh={() => {
-                onRefresh(index)
+                onRefresh(index);
               }}
               isStreaming={isStreaming}
-              renderDateSeperator={(currDate) => renderDateSeparator(
-                currDate,
-                index > 0
-                  ? new Date(messages?.[index - 1]?.createdAt!).toISOString()!
-                  : ''
-              )}
+              renderDateSeperator={(currDate) =>
+                renderDateSeparator(
+                  currDate,
+                  index > 0
+                    ? new Date(messages?.[index - 1]?.createdAt!).toISOString()!
+                    : "",
+                )
+              }
             />
-          )
+          );
         })
       ) : (
         <div className="text-center text-gray-500">
@@ -67,5 +70,5 @@ export default function TabMessages({
       )}
       <div ref={messagesEndRef} />
     </>
-  )
+  );
 }

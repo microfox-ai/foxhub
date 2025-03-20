@@ -1,12 +1,12 @@
-import { ButtonSCN } from '@/components/elements/Button'
-import { ClientRequest } from '@prisma/client'
-import { RefreshCw } from 'lucide-react'
+import { ButtonSCN } from "@/components/elements/Button";
+import { ClientRequest } from "@prisma/client";
+import { RefreshCw } from "lucide-react";
 
 interface IChatHeaderProps {
-  clientRequest: ClientRequest
-  mutate: () => void
-  isLoading: boolean
-  isValidating: boolean
+  clientRequest: ClientRequest;
+  mutate: () => void;
+  isLoading: boolean;
+  isValidating: boolean;
 }
 const ChatHeader = ({
   clientRequest,
@@ -29,12 +29,12 @@ const ChatHeader = ({
         disabled={isLoading}
       >
         <RefreshCw
-          className={`my-auto h-4 w-4 ${isValidating ? 'animate-spin' : ''}`}
+          className={`my-auto h-4 w-4 ${isValidating ? "animate-spin" : ""}`}
         />
         {/* {isValidating ? 'Refreshing...' : 'Refresh'} */}
       </ButtonSCN>
     </div>
-  )
+  );
 
   {
     /* Button to open Add ClientSecret modal manually (if not using slash) */
@@ -46,6 +46,6 @@ const ChatHeader = ({
     </ButtonSCN>
   </div> */
   }
-}
+};
 
-export default ChatHeader
+export default ChatHeader;

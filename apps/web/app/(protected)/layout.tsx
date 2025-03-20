@@ -1,6 +1,6 @@
-import CustomBotsHeader from '@/components/screens/global/Header'
-import { Toaster } from 'sonner'
-import { BotTemplateProvider } from '@/components/screens/providers/BotTemplateProvider'
+import CustomBotsHeader from "@/components/screens/global/Header";
+import { Toaster } from "sonner";
+import { BotTemplateProvider } from "@/components/screens/providers/BotTemplateProvider";
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <BotTemplateProvider>
@@ -11,7 +11,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex-1">{children}</div>
       </main>
     </BotTemplateProvider>
-  )
-}
+  );
+};
 
-export default Layout
+export default Layout;

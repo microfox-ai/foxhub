@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
 const CanvaEmbed = () => {
-    return (
-        <div className='h-full bg-black -mt-11'>
-            {/* <iframe
+  return (
+    <div className="h-full bg-black -mt-11">
+      {/* <iframe
                 title="Canva Design"
                 src="https://www.canva.com/design/..."
                 width="100%"
@@ -11,8 +11,8 @@ const CanvaEmbed = () => {
                 frameBorder="0"
                 allowFullScreen
             ></iframe> */}
-        </div>
-    );
+    </div>
+  );
 };
 
 export default CanvaEmbed;

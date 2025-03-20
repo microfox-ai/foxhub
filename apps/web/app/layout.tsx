@@ -1,19 +1,19 @@
-import { Metadata } from 'next'
+import { Metadata } from "next";
 
-import { AuthProvider } from '@/components/auth/AuthProvider'
-import './globals.css'
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Custom Bots',
+  title: "Custom Bots",
   description: `Enter the new age 
       of Ai-first, custom made, 
       branded bots`,
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -37,5 +37,5 @@ export default function RootLayout({
         </AuthProvider>
       </body>
     </html>
-  )
+  );
 }

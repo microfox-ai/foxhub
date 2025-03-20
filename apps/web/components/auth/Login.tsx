@@ -1,14 +1,14 @@
-'use client'
+"use client";
 
-import { useAuth } from './AuthProvider'
+import { useAuth } from "./AuthProvider";
 
 const Login = () => {
-  const { handleSigninWithGoogle } = useAuth()
+  const { handleSigninWithGoogle } = useAuth();
   return (
     <div>
       <button onClick={handleSigninWithGoogle}>Signin</button>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

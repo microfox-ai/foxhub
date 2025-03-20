@@ -1,107 +1,99 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ButtonSCN } from '@/components/elements/Button'
-import { PortalSdk } from '@/utils/services/PortalSdk'
-import { toast } from 'sonner'
-import Input from '@/components/elements/Input'
+} from "@/components/ui/dialog";
+import { ButtonSCN } from "@/components/elements/Button";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { toast } from "sonner";
+import Input from "@/components/elements/Input";
 
-type Configs = Record<string, any>
+type Configs = Record<string, any>;
 
 export default function ProjectConfigModal({
   isOpen,
   onClose,
   projectId,
 }: {
-  isOpen: boolean
-  onClose: () => void
-  projectId: string
+  isOpen: boolean;
+  onClose: () => void;
+  projectId: string;
 }) {
-  const [configs, setConfigs] = useState<Configs>({})
-  const [loading, setLoading] = useState(false)
-  const [editingKey, setEditingKey] = useState('')
-  const [editingValue, setEditingValue] = useState('')
+  const [configs, setConfigs] = useState<Configs>({});
+  const [loading, setLoading] = useState(false);
+  const [editingKey, setEditingKey] = useState("");
+  const [editingValue, setEditingValue] = useState("");
 
   const fetchConfigs = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch(
-        `/api/bot-project/configs?id=${projectId}`
-      )
-      const data = await res.json()
+      const res = await fetch(`/api/bot-project/configs?id=${projectId}`);
+      const data = await res.json();
       if (data.error) {
-        toast.error(data.error)
+        toast.error(data.error);
       } else {
-        setConfigs(data?.prodConfigs || {})
+        setConfigs(data?.prodConfigs || {});
       }
     } catch (error: any) {
-      toast.error('Failed to fetch configurations.')
-      console.error(error)
+      toast.error("Failed to fetch configurations.");
+      console.error(error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (isOpen) {
-      fetchConfigs()
+      fetchConfigs();
     }
-  }, [isOpen, projectId])
+  }, [isOpen, projectId]);
 
   const handleUpdateConfig = async () => {
-    if (!editingKey) return
-    const newConfig = { [editingKey]: editingValue }
+    if (!editingKey) return;
+    const newConfig = { [editingKey]: editingValue };
     try {
-      const data = await PortalSdk.putData(
-        '/api/bot-project/configs',
-        {
-          id: projectId,
-          configs: newConfig,
-          type: 'prod',
-        }
-      )
+      const data = await PortalSdk.putData("/api/bot-project/configs", {
+        id: projectId,
+        configs: newConfig,
+        type: "prod",
+      });
       if (data.error) {
-        toast.error(data.error)
+        toast.error(data.error);
       } else {
-        toast.success('Configuration updated!')
-        setConfigs(data?.updatedProject?.prodConfigs || {})
-        setEditingKey('')
-        setEditingValue('')
+        toast.success("Configuration updated!");
+        setConfigs(data?.updatedProject?.prodConfigs || {});
+        setEditingKey("");
+        setEditingValue("");
       }
     } catch (error: any) {
-      toast.error('Failed to update configuration.')
-      console.error(error)
+      toast.error("Failed to update configuration.");
+      console.error(error);
     }
-  }
+  };
 
   const handleDeleteConfig = async (key: string) => {
     try {
-      const data = await PortalSdk.deleteData(
-        '/api/bot-project/configs',
-        {
-          id: projectId,
-          keysToDelete: [key],
-          type: 'prod',
-        }
-      )
+      const data = await PortalSdk.deleteData("/api/bot-project/configs", {
+        id: projectId,
+        keysToDelete: [key],
+        type: "prod",
+      });
       if (data.error) {
-        toast.error(data.error)
+        toast.error(data.error);
       } else {
-        toast.success('Configuration deleted!')
-        setConfigs(data?.updatedProject?.prodConfigs || {})
+        toast.success("Configuration deleted!");
+        setConfigs(data?.updatedProject?.prodConfigs || {});
       }
     } catch (error: any) {
-      toast.error('Failed to delete configuration.')
-      console.error(error)
+      toast.error("Failed to delete configuration.");
+      console.error(error);
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -166,5 +158,5 @@ export default function ProjectConfigModal({
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

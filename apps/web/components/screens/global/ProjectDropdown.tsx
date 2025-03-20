@@ -1,23 +1,23 @@
-'use client'
-import { Button } from '@/components/ui/button'
+"use client";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
-} from '@/components/ui/command'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+} from "@/components/ui/command";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { useUser } from '@/utils/hooks/useUser'
-import { Skeleton } from '@mui/material'
-import { BotProject } from '@prisma/client'
-import { CommandInput } from 'cmdk'
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { useUser } from "@/utils/hooks/useUser";
+import { Skeleton } from "@mui/material";
+import { BotProject } from "@prisma/client";
+import { CommandInput } from "cmdk";
 import {
   ChevronRight,
   ChevronsUpDown,
@@ -25,44 +25,44 @@ import {
   CircleDotIcon,
   CirclePlusIcon,
   DotIcon,
-} from 'lucide-react'
-import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import useSWR from 'swr'
-import NewProjectCreation from './NewProjectCreation'
+} from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import NewProjectCreation from "./NewProjectCreation";
 
 export const ProjectDropdown = () => {
-  const [selectedProject, setSelectedProject] = useState<any>(null)
-  const { user } = useUser()
-  const router = useRouter()
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const { user } = useUser();
+  const router = useRouter();
 
   const params = useParams<{
-    project_id?: string
-  }>()
-  const projectParamId = params?.project_id
+    project_id?: string;
+  }>();
+  const projectParamId = params?.project_id;
 
-  const [open, setOpen] = useState(false)
-  const [value, setValue] = useState('')
-  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [search, setSearch] = useState("");
   const {
     data: projects,
     error,
     isLoading,
   } = useSWR<BotProject[], any, string>(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json())
-  )
+    async (url) => await fetch(url).then((res) => res.json()),
+  );
 
   useEffect(() => {
     if (projectParamId) {
-      const project = projects?.find((p: any) => p.id === projectParamId)
-      setSelectedProject(project)
-      setValue(projectParamId)
+      const project = projects?.find((p: any) => p.id === projectParamId);
+      setSelectedProject(project);
+      setValue(projectParamId);
     } else {
-      setSelectedProject(null)
-      setValue('')
+      setSelectedProject(null);
+      setValue("");
     }
-  }, [projectParamId, projects])
+  }, [projectParamId, projects]);
 
   if (isLoading || !projects || !user) {
     return (
@@ -71,7 +71,7 @@ export const ProjectDropdown = () => {
         className="w-[200px] rounded-full"
         height={40}
       />
-    )
+    );
   }
   return (
     <Dialog>
@@ -86,7 +86,7 @@ export const ProjectDropdown = () => {
             >
               {value
                 ? projects.find((_project) => _project.id === value)?.name
-                : 'Select project...'}
+                : "Select project..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -108,23 +108,23 @@ export const ProjectDropdown = () => {
                       key={project.id}
                       value={project.id}
                       onSelect={(currentValue) => {
-                        setValue(currentValue === value ? '' : currentValue)
-                        setOpen(false)
+                        setValue(currentValue === value ? "" : currentValue);
+                        setOpen(false);
                         if (selectedProject?.id !== currentValue) {
                           setSelectedProject(
                             projects.find(
-                              (_project) => _project.id === currentValue
-                            )
-                          )
-                          router.push(`/project/${currentValue}`)
+                              (_project) => _project.id === currentValue,
+                            ),
+                          );
+                          router.push(`/project/${currentValue}`);
                         }
                       }}
-                      className={`${value === project.id ? 'font-bold' : ''}`}
+                      className={`${value === project.id ? "font-bold" : ""}`}
                     >
                       <ChevronRight
                         className={cn(
-                          'h-4 w-4',
-                          value === project.id ? 'opacity-100' : 'opacity-0'
+                          "h-4 w-4",
+                          value === project.id ? "opacity-100" : "opacity-0",
                         )}
                       />
                       {project.name}
@@ -134,7 +134,7 @@ export const ProjectDropdown = () => {
                 <DialogTrigger className="w-full flex">
                   <Button
                     onClick={() => setOpen(false)}
-                    variant={'ghost'}
+                    variant={"ghost"}
                     className="flex opacity-[0.5] flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
                   >
                     <CirclePlusIcon className="h-4 w-4" />
@@ -150,11 +150,11 @@ export const ProjectDropdown = () => {
         <NewProjectCreation
           userId={user?.id}
           onProjectCreated={(newProject) => {
-            setSelectedProject(newProject)
-            router.push(`/project/${newProject.id}`)
+            setSelectedProject(newProject);
+            router.push(`/project/${newProject.id}`);
           }}
         />
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};

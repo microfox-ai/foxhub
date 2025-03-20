@@ -11,7 +11,6 @@
 // export type ServerStatusType = 'pending' | 'success' | 'error' | 'idle';
 // export type MicrofoxMessageStatus = "error" | "submitted" | "streaming" | "ready" | ServerStatusType;
 
-
 // // any extra metadata you want to add to the message
 // export interface extraMetadata {
 //   githubUrl?: string;
@@ -116,8 +115,6 @@
 //     }
 //   }, [messages, status]);
 
-
-
 //   const append = useCallback(async (message?: ChatUIMessageWithTypes, extraData?: extraMetadata) => {
 //     try {
 //       let messagePayload = message ? { ...message } : {} as ChatUIMessageWithTypes;
@@ -172,8 +169,6 @@
 //       console.error('Error appending message:', error);
 //     }
 //   }, [clientRequest?.id, context, appendToVercel, input]);
-
-
 
 //   // NOTE: context defines the current hooks message status.
 //   const messageStatus = useMemo(

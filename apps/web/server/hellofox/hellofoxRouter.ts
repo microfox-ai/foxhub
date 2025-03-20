@@ -5,7 +5,7 @@ import {
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
 import { getMicrofoxCharacter } from "./default";
-import { hellofoxTools } from "@repo/hellofox/tools";
+import { hellofoxTools } from "./tools";
 import { models } from "@repo/ai-utils/models";
 
 // 1. HELLO
@@ -84,7 +84,7 @@ export const hellofoxRouter: ServerStreamingFunction<
       console.log(
         "error",
         error,
-        (error.error as any)?.requestBodyValues?.contents,
+        (error.error as any)?.requestBodyValues?.contents
       );
     },
   });

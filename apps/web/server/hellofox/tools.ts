@@ -26,6 +26,7 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
         query: z.string().describe("The query from the user"),
       }),
       execute: async ({ query }, options) => {
+        // RAG SETUP IN FUTURE
         return {
           text: `Microfox is an AI-assistant that can help you accesss & automate any API-possible internet task.`,
         };
@@ -63,7 +64,7 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
         missingCapabilities: z
           .string()
           .describe(
-            "The capabilities of Microfox that are missing to build the user's task",
+            "The capabilities of Microfox that are missing to build the user's task"
           ),
       }),
       execute: async ({ initialGoal, missingCapabilities }, options) => {
@@ -76,7 +77,7 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
         const response = guideUserToDoableGoal(
           initialGoal,
           missingCapabilities,
-          options.messages,
+          options.messages
         );
         response.mergeIntoDataStream(props.dataStream, {
           experimental_sendFinish: false,
@@ -104,19 +105,19 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
         capabilities: z
           .array(z.string())
           .describe(
-            "The capabilities of Microfox that are relevant to the user's task",
+            "The capabilities of Microfox that are relevant to the user's task"
           )
           .default([]),
         missingCapabilities: z
           .array(z.string())
           .describe(
-            "The capabilities of Microfox that are missing to build the user's task",
+            "The capabilities of Microfox that are missing to build the user's task"
           )
           .default([]),
       }),
       execute: async (
         { task, capabilities, missingCapabilities },
-        { messages },
+        { messages }
       ) => {
         props.dataStream.writeMessageAnnotation({
           type: "thinking",

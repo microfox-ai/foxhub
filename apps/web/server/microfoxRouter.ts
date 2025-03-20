@@ -3,7 +3,7 @@ import {
   defaultCallbackResultBody,
 } from "@repo/ai-utils/router";
 import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
-import { hellofoxRouter } from "@repo/hellofox/hellofoxRouter";
+import { hellofoxRouter } from "./hellofox/hellofoxRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;

@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "./AuthProvider";
 import { DiscordIcon, GitHubIcon } from "../ui/icons";
-import { useAuth } from "./AuthProvider";
 
 export function LoginForm({
   className,

@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ProjectDropdown } from "./ProjectDropdown";
 
 
 const Header: React.FC = () => {

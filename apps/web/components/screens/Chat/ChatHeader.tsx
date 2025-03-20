@@ -1,6 +1,7 @@
 import { ButtonSCN } from "@/components/elements/Button";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ClientRequest } from "@prisma/client";
-import { RefreshCw } from "lucide-react";
+import { Menu, RefreshCw } from "lucide-react";
 
 interface IChatHeaderProps {
   clientRequest: ClientRequest;
@@ -14,13 +15,23 @@ const ChatHeader = ({
   isLoading,
   isValidating,
 }: IChatHeaderProps) => {
+  const { state } = useSidebar();
   return (
-    <div className="flex items-center justify-between gap-2 p-4">
-      <div className="w-fit">
-        <h2 className="line-clamp-1 flex flex-wrap items-center justify-start gap-2 text-sm font-semibold">
-          {clientRequest.title}
-        </h2>
-        <p className="text-xs text-gray-500">Request ID: {clientRequest.id}</p>
+    <div className="flex items-center justify-between gap-2 p-4 pt-0">
+      <div className="flex gap-2">
+        {state === "collapsed" && (
+          <SidebarTrigger>
+            <Menu style={{ height: "1rem", width: "1rem" }} />
+          </SidebarTrigger>
+        )}
+        <div className="w-fit">
+          <h2 className="line-clamp-1 flex flex-wrap items-center justify-start gap-2 text-sm font-semibold">
+            {clientRequest.title}
+          </h2>
+          <p className="text-xs text-gray-500">
+            Request ID: {clientRequest.id}
+          </p>
+        </div>
       </div>
       <ButtonSCN
         variant="outline"

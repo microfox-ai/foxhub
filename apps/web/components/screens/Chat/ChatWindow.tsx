@@ -10,6 +10,8 @@ import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
 import { SlashModal } from "./SlashModal";
 import TabMessages from "./TabMessages";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 export type AttachedMedia = {
   file: File;
   preview: string;
@@ -89,53 +91,55 @@ export default function ChatWindow({
         isLoading={isLoading}
         isValidating={isLoading}
       />
-      {/* Chat Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="relative flex h-full max-h-[75vh] flex-1 flex-col overflow-y-auto"
-      >
-        <div className="w-full px-4">
-          <TabsList className="text-md flex w-full justify-evenly gap-4">
-            <TabsTrigger className="w-full" value="chat">
-              Chat
-            </TabsTrigger>
-            <TabsTrigger className="w-full" value="history">
-              History
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent
-          value="chat"
-          className="h-full max-h-[75vh] flex-1 space-y-4 overflow-y-auto p-4 pb-[100px]"
+      <div className="w-2/3 mx-auto h-full">
+        {/* Chat Tabs */}
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="relative flex h-full max-h-[75vh] flex-1 flex-col overflow-y-auto"
         >
-          <TabMessages
-            messages={messages}
-            isLoading={false}
-            messagesEndRef={messagesEndRef}
-            onRefresh={handleRefresh}
-            isStreaming={status === "streaming"}
-          />
-        </TabsContent>
+          <div className="w-full px-4">
+            <TabsList className="text-md flex w-full justify-evenly gap-4">
+              <TabsTrigger className="w-full" value="chat">
+                Chat
+              </TabsTrigger>
+              <TabsTrigger className="w-full" value="history">
+                History
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        {/* <TabsContent
+          <TabsContent
+            value="chat"
+            className="h-full max-h-[75vh] flex-1 space-y-4 overflow-y-auto p-4 "
+          >
+            <TabMessages
+              messages={messages}
+              isLoading={false}
+              messagesEndRef={messagesEndRef}
+              onRefresh={handleRefresh}
+              isStreaming={status === "streaming"}
+            />
+          </TabsContent>
+
+          {/* <TabsContent
           value="history"
           className="flex-1 space-y-4 overflow-y-auto"
         >
           <UpdateHistoryTab messages={messages} isLoading={isLoading} />
         </TabsContent> */}
 
-        {activeTab === "chat" && (
-          <ChatInputBox
-            input={input}
-            messageStatus={status}
-            userId={userId}
-            sendMessage={sendMessage}
-            handleInputChange={handleInputChange}
-          />
-        )}
-      </Tabs>
+          {activeTab === "chat" && (
+            <ChatInputBox
+              input={input}
+              messageStatus={status}
+              userId={userId}
+              sendMessage={sendMessage}
+              handleInputChange={handleInputChange}
+            />
+          )}
+        </Tabs>
+      </div>
 
       {/* Slash Modal: Opened when input starts with '/' */}
       <SlashModal

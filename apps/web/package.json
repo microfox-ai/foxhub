@@ -13,7 +13,6 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@repo/ai-utils": "*",
     "@ai-sdk/google": "^1.1.25",
     "@ai-sdk/openai": "^1.2.5",
     "@ai-sdk/react": "^1.1.23",
@@ -22,6 +21,7 @@
     "@codemirror/lang-html": "^6.4.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@google/generative-ai": "^0.24.0",
     "@hookform/resolvers": "^4.1.3",
     "@mui/material": "^6.4.7",
     "@prisma/client": "^6.5.0",
@@ -35,6 +35,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.3",
     "@radix-ui/react-tooltip": "^1.1.8",
+    "@repo/ai-utils": "*",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
     "@tiptap/extension-image": "^2.11.5",
@@ -59,6 +60,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "react-markdown": "^10.1.0",
+    "react-resizable-panels": "^2.1.7",
     "remark-gfm": "^4.0.1",
     "showdown": "^2.1.0",
     "sonner": "^2.0.1",

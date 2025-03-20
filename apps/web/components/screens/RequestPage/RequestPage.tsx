@@ -17,6 +17,7 @@ import ChatWindow from "../Chat/ChatWindow";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import NewRequestCreation from "./NewRequestCreation";
 import { FileUploadProvider } from "../providers/FileUploadProvider";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -38,7 +39,7 @@ export const RequestPage = () => {
     isLoading,
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json()),
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export const RequestPage = () => {
       const project = projects?.find((p: any) => p.id === projectParamId);
       setSelectedProject(project);
       const request = project?.clientRequests.find(
-        (r: any) => r.id === requestParamId,
+        (r: any) => r.id === requestParamId
       );
       setSelectedRequest(request);
     }
@@ -69,27 +70,28 @@ export const RequestPage = () => {
   return (
     <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
       <FileUploadProvider>
-        <div className="relative grid h-[90vh] w-full grid-cols-6">
-          <div className="col-span-1">
+        <div className="relative  w-full ">
+          <SidebarProvider className="!bg-white">
+            {/* <div className="col-span-1"> */}
             <Sidebar
               selectedProject={selectedProject}
               onSelectRequest={(request) => {
                 setSelectedRequest(request);
                 router.push(
-                  `/project/${selectedProject?.id}/request/${request?.id}`,
+                  `/project/${selectedProject?.id}/request/${request?.id}`
                 );
               }}
               onNewRequest={(project) => {
                 const openRequests = project?.clientRequests?.filter(
                   (request) =>
                     request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                    request?.requestStatus !== REQUESTSTATUS.CLOSED,
+                    request?.requestStatus !== REQUESTSTATUS.CLOSED
                 );
                 if (openRequests?.length < 3) {
                   setOpenNewRequestDialog(true);
                 } else {
                   toast.warning(
-                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
+                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
                   );
                 }
               }}
@@ -99,13 +101,16 @@ export const RequestPage = () => {
                 // setIsConfigModalOpen(true);
               }}
             />
-          </div>
-          <div className="col-span-3 h-full p-4">
-            <ChatWindow userId={user.id} clientRequest={selectedRequest} />
-          </div>
-          <div className="col-span-2">
-            <PreviewWindow />
-          </div>
+            <SidebarInset className="flex flex-row !mt-16 pt-4 !shadow-none">
+              {/* </div> */}
+              {/* <div className="col-span-3 h-full p-4"> */}
+              <ChatWindow userId={user.id} clientRequest={selectedRequest} />
+              {/* </div> */}
+              {/* <div className="col-span-2"> */}
+              {/* <PreviewWindow /> */}
+              {/* </div> */}
+            </SidebarInset>
+          </SidebarProvider>
         </div>
         <Dialog
           onOpenChange={setOpenNewRequestDialog}
@@ -117,7 +122,7 @@ export const RequestPage = () => {
               project={selectedProject}
               onRequestCreated={(newRequest) => {
                 router.push(
-                  `/project/${selectedProject.id}/request/${newRequest.id}`,
+                  `/project/${selectedProject.id}/request/${newRequest.id}`
                 );
               }}
             />

@@ -1,14 +1,14 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+import { NextResponse } from "next/server";
+import { prisma } from "@/prisma/prisma";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
+  const userId = searchParams.get("userId");
 
   if (!userId) {
     return NextResponse.json(
-      { error: 'Client ID is required' },
-      { status: 400 },
+      { error: "Client ID is required" },
+      { status: 400 }
     );
   }
 
@@ -18,10 +18,10 @@ export async function GET(request: Request) {
       include: { clientRequests: true },
     });
 
-    const filteredBotProjects = botProjects.map((project) => {
+    const filteredBotProjects = botProjects.map((project: any) => {
       const { prodConfigs, previewConfigs, stagingConfigs, metadata, ...rest } =
         project;
-      const filteredClientRequests = rest.clientRequests.map((request) => {
+      const filteredClientRequests = rest.clientRequests.map((request: any) => {
         const { metadata, ...rest } = request;
         return rest;
       });
@@ -30,10 +30,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json(filteredBotProjects);
   } catch (error) {
-    console.error('Error fetching organizations:', error);
+    console.error("Error fetching organizations:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch organizations' },
-      { status: 500 },
+      { error: "Failed to fetch organizations" },
+      { status: 500 }
     );
   }
 }

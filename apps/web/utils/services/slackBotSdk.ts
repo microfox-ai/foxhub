@@ -175,7 +175,7 @@ export class SlackBotSdk {
         throw new Error(`HTTP error ${response.status}`);
       }
       const members = resp_data.members.filter(
-        (m: any) => m.is_bot == false && !m.deleted
+        (m: any) => m.is_bot == false && !m.deleted,
       );
       // console.log("Slack received users list", members);
       return members;
@@ -208,7 +208,7 @@ export class SlackBotSdk {
   // post a message using webhook - deprecated.
   sendSlackMessageViaWebhook = async (
     message: SlackMessageType,
-    channel: channelType
+    channel: channelType,
   ) => {
     try {
       if (channel) {
@@ -378,7 +378,7 @@ export class SlackBotSdk {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: data,
-        }
+        },
       );
 
       if (!response.ok) {

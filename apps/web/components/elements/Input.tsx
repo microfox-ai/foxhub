@@ -1,18 +1,18 @@
-import React from 'react'
-import { UseFormRegister, FieldValues } from 'react-hook-form'
-import Label from './Label'
+import React from "react";
+import { UseFormRegister, FieldValues } from "react-hook-form";
+import Label from "./Label";
 
 interface InputProps {
-  id: string
-  label: string
-  register?: UseFormRegister<FieldValues>
-  requiredMessage?: string
-  errors?: any
-  value?: string
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  required?: boolean
-  disabled?: boolean
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  id: string;
+  label: string;
+  register?: UseFormRegister<FieldValues>;
+  requiredMessage?: string;
+  errors?: any;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  required?: boolean;
+  disabled?: boolean;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -44,7 +44,7 @@ const Input: React.FC<InputProps> = ({
         <p className="mt-1 text-xs text-red-500">{errors[id].message}</p>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Input
+export default Input;

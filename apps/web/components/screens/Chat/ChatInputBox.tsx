@@ -1,16 +1,16 @@
-import { ButtonSCN } from '@/components/elements/Button'
-import { FilePlus, FileText, RefreshCw, Send } from 'lucide-react'
-import { useRef } from 'react'
-import { useFileUpload } from '../providers/FileUploadProvider'
-import { MicrofoxMessageStatus } from '../hooks/useMicrofoxChat'
-import { useClientSecrets } from '../providers/ClientSecretProvider'
+import { ButtonSCN } from "@/components/elements/Button";
+import { FilePlus, FileText, RefreshCw, Send } from "lucide-react";
+import { useRef } from "react";
+import { useFileUpload } from "../providers/FileUploadProvider";
+import { useClientSecrets } from "../providers/ClientSecretProvider";
+import { ChatUIMessageWithTypes } from "../hooks/convertors";
 
 interface ChatInputBoxProps {
-  input: string
-  messageStatus: MicrofoxMessageStatus
-  userId: string
-  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
-  sendMessage: () => void
+  input: string;
+  messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
+  userId: string;
+  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  sendMessage: () => void;
 }
 
 export default function ChatInputBox({
@@ -20,34 +20,34 @@ export default function ChatInputBox({
   handleInputChange,
   sendMessage,
 }: ChatInputBoxProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
-    useFileUpload()
-  const { setShowSlashModal } = useClientSecrets()
+    useFileUpload();
+  const { setShowSlashModal } = useClientSecrets();
 
   const handleFileInputChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     if (e.target.files) {
       await handleFileChange(
         e.target.files,
         userId,
-        'customBots/clientMessages'
-      )
-      e.target.value = ''
+        "customBots/clientMessages",
+      );
+      e.target.value = "";
     }
-  }
+  };
 
   const handleCustomInputChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLTextAreaElement>,
   ) => {
-    handleInputChange(e)
-    if (e.target.value?.startsWith('/')) {
-      setShowSlashModal(true)
+    handleInputChange(e);
+    if (e.target.value?.startsWith("/")) {
+      setShowSlashModal(true);
     } else {
-      setShowSlashModal(false)
+      setShowSlashModal(false);
     }
-  }
+  };
 
   return (
     <div className="absolute bottom-0 right-0 w-full bg-white px-4 py-1">
@@ -55,7 +55,7 @@ export default function ChatInputBox({
         <div className="mb-2 flex flex-wrap gap-2">
           {attachedMedia.map((media, index) => (
             <div key={index} className="relative">
-              {media.file.type.startsWith('image/') ? (
+              {media.file.type.startsWith("image/") ? (
                 <img
                   src={media.preview}
                   alt={media.file.name}
@@ -83,15 +83,15 @@ export default function ChatInputBox({
           value={input}
           onChange={handleCustomInputChange}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              sendMessage()
+            if (e.key === "Enter" && !e.shiftKey) {
+              sendMessage();
             }
           }}
           disabled={
-            messageStatus === 'pending' ||
-            messageStatus === 'streaming' ||
-            mediaUploadStatus === 'UPLOADING' ||
-            mediaUploadStatus === 'ERROR'
+            messageStatus === "pending" ||
+            messageStatus === "streaming" ||
+            mediaUploadStatus === "UPLOADING" ||
+            mediaUploadStatus === "ERROR"
           }
         />
         <div className="flex flex-col-reverse gap-1">
@@ -99,17 +99,17 @@ export default function ChatInputBox({
             onClick={sendMessage}
             disabled={
               (!input.trim() && attachedMedia.length === 0) ||
-              messageStatus === 'pending' ||
-              messageStatus === 'streaming' ||
-              mediaUploadStatus === 'UPLOADING' ||
-              mediaUploadStatus === 'ERROR'
+              messageStatus === "pending" ||
+              messageStatus === "streaming" ||
+              mediaUploadStatus === "UPLOADING" ||
+              mediaUploadStatus === "ERROR"
             }
             className="py-1"
           >
             {!(
-              messageStatus === 'streaming' ||
-              messageStatus === 'pending' ||
-              mediaUploadStatus === 'UPLOADING'
+              messageStatus === "streaming" ||
+              messageStatus === "pending" ||
+              mediaUploadStatus === "UPLOADING"
             ) ? (
               <Send className="my-auto h-4 w-4" />
             ) : (
@@ -133,5 +133,5 @@ export default function ChatInputBox({
         />
       </div>
     </div>
-  )
+  );
 }

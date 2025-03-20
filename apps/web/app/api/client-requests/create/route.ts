@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     console.error("No GitHub token provided");
     return NextResponse.json(
       { error: "GitHub token missing" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   if (!requestDescription || !userId || !botProjectId) {
     return NextResponse.json(
       { error: "Missing required fields" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -48,19 +48,19 @@ export async function POST(request: Request) {
     if (!botProject) {
       return NextResponse.json(
         { error: "Bot project not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // 🔹 Use GenAI to generate a meaningful title for the request
     const generatedTitle = await GenAiSdk.generateShortTitle(
-      `client's request: "${requestDescription}"`
+      `client's request: "${requestDescription}"`,
     );
 
     if (!generatedTitle) {
       return NextResponse.json(
         { error: "Failed to generate title" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
     console.error("Error creating client request:", error);
     return NextResponse.json(
       { error: "Failed to create client request" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

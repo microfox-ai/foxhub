@@ -47,7 +47,7 @@ export class GithubSdk {
   private async githubApiRequest<T>(
     endpoint: string,
     method: string = "GET",
-    body: any = null
+    body: any = null,
   ): Promise<T> {
     const headers = {
       Authorization: `Bearer ${this.token}`,
@@ -107,13 +107,13 @@ export class GithubSdk {
 
   public async getAllPullRequests() {
     return await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/pulls`
+      `/repos/${this.owner}/${this.repo}/pulls`,
     );
   }
 
   public async getPrDetails(prNumber: number): Promise<any> {
     return await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/pulls/${prNumber}`
+      `/repos/${this.owner}/${this.repo}/pulls/${prNumber}`,
     );
   }
 
@@ -124,7 +124,7 @@ export class GithubSdk {
   private async getBranchSha(branch: string): Promise<string> {
     const endpoint = `/repos/${this.owner}/${this.repo}/git/refs/heads/${branch}`;
     const refData = await this.githubApiRequest<{ object: { sha: string } }>(
-      endpoint
+      endpoint,
     );
     return refData.object.sha;
   }
@@ -143,13 +143,13 @@ export class GithubSdk {
 
   public async getBranches() {
     return await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/branches`
+      `/repos/${this.owner}/${this.repo}/branches`,
     );
   }
 
   public async getLatestCommit(branch: string) {
     return await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/commits/${branch}`
+      `/repos/${this.owner}/${this.repo}/commits/${branch}`,
     );
   }
 
@@ -159,7 +159,7 @@ export class GithubSdk {
 
   public async getFileContent(path: string, branch: string = "main") {
     return await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/contents/${path}?ref=${branch}`
+      `/repos/${this.owner}/${this.repo}/contents/${path}?ref=${branch}`,
     );
   }
 
@@ -195,7 +195,7 @@ export class GithubSdk {
   public async updateReadme(
     content: string,
     commitMessage: string,
-    branch: string = "main"
+    branch: string = "main",
   ) {
     return await this.updateFile({
       path: "README.md",
@@ -212,7 +212,7 @@ export class GithubSdk {
   public async triggerWorkflow(
     workflowFileName: string,
     inputs: { [key: string]: string },
-    inputRef?: string
+    inputRef?: string,
   ) {
     let ref = inputRef || "main";
 
@@ -229,7 +229,7 @@ export class GithubSdk {
 
   public async getWorkflowRuns() {
     return await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/actions/runs`
+      `/repos/${this.owner}/${this.repo}/actions/runs`,
     );
   }
 
@@ -240,20 +240,20 @@ export class GithubSdk {
   public async getPrEvents(
     prNumber: number,
     per_page: number = 30,
-    page: number = 1
+    page: number = 1,
   ) {
     // Fetch events that include merged/closed events with timestamps
     let events: any = await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/events?per_page=${per_page}&page=${page}`
+      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/events?per_page=${per_page}&page=${page}`,
     );
 
     events = events.filter((event: any) =>
-      ["merged", "closed"].includes(event.event)
+      ["merged", "closed"].includes(event.event),
     );
 
     // Fetch timeline events (which include other activity)
     let timeline: any = await this.githubApiRequest(
-      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/timeline?per_page=${per_page}&page=${page}`
+      `/repos/${this.owner}/${this.repo}/issues/${prNumber}/timeline?per_page=${per_page}&page=${page}`,
     );
 
     timeline = timeline.map((event: any) => {
@@ -269,7 +269,7 @@ export class GithubSdk {
     // Sort combined events by their creation date (oldest first)
     combined.sort(
       (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     );
 
     return combined;

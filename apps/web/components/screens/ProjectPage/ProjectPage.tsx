@@ -1,28 +1,28 @@
-'use client'
-import { Button } from '@/components/ui/button'
-import { CommandEmpty } from '@/components/ui/command'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { prettySinceTime } from '@/utils/helpers/prettyprint'
-import { useUser } from '@/utils/hooks/useUser'
-import { Skeleton } from '@mui/material'
-import { BotProject, ClientRequest } from '@prisma/client'
-import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import useSWR from 'swr'
-import { CirclePlusIcon } from 'lucide-react'
-import NewRequestCreation from '../RequestPage/NewRequestCreation'
+"use client";
+import { Button } from "@/components/ui/button";
+import { CommandEmpty } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { prettySinceTime } from "@/utils/helpers/prettyprint";
+import { useUser } from "@/utils/hooks/useUser";
+import { Skeleton } from "@mui/material";
+import { BotProject, ClientRequest } from "@prisma/client";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import { CirclePlusIcon } from "lucide-react";
+import NewRequestCreation from "../RequestPage/NewRequestCreation";
 
 export const ProjectPage = () => {
-  const [selectedProject, setSelectedProject] = useState<any | null>(null)
-  const { user } = useUser()
-  const router = useRouter()
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const { user } = useUser();
+  const router = useRouter();
 
-  const [tab, setTab] = useState('requests')
+  const [tab, setTab] = useState("requests");
   const params = useParams<{
-    project_id?: string
-  }>()
-  const projectParamId = params?.project_id
+    project_id?: string;
+  }>();
+  const projectParamId = params?.project_id;
 
   const {
     data: projects,
@@ -30,15 +30,15 @@ export const ProjectPage = () => {
     isLoading,
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json())
-  )
+    async (url) => await fetch(url).then((res) => res.json()),
+  );
 
   useEffect(() => {
     if (projectParamId) {
-      const project = projects?.find((p: any) => p.id === projectParamId)
-      setSelectedProject(project)
+      const project = projects?.find((p: any) => p.id === projectParamId);
+      setSelectedProject(project);
     }
-  }, [projectParamId, projects])
+  }, [projectParamId, projects]);
 
   if (isLoading || !projects || !user) {
     return (
@@ -49,7 +49,7 @@ export const ProjectPage = () => {
           height={20}
         />
       </div>
-    )
+    );
   }
 
   return (
@@ -84,8 +84,8 @@ export const ProjectPage = () => {
                   project={selectedProject}
                   onRequestCreated={(newRequest) => {
                     router.push(
-                      `/project/${selectedProject.id}/request/${newRequest.id}`
-                    )
+                      `/project/${selectedProject.id}/request/${newRequest.id}`,
+                    );
                   }}
                 />
               </DialogContent>
@@ -99,8 +99,8 @@ export const ProjectPage = () => {
                     key={request.id}
                     onClick={() => {
                       router.push(
-                        `/project/${selectedProject.id}/request/${request.id}`
-                      )
+                        `/project/${selectedProject.id}/request/${request.id}`,
+                      );
                     }}
                     className="flex hover:shadow-md items-center cursor-pointer hover:bg-white rounded-xl p-4"
                   >
@@ -113,7 +113,7 @@ export const ProjectPage = () => {
                       </p>
                     </div>
                   </div>
-                )
+                ),
               )}
               {selectedProject?.clientRequests?.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full">
@@ -133,5 +133,5 @@ export const ProjectPage = () => {
         </Tabs>
       </div>
     </div>
-  )
-}
+  );
+};

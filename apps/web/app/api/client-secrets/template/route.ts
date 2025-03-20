@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     console.log(error);
     return NextResponse.json(
       { error: "Error fetching templates" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: "Error creating template" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -57,7 +57,7 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: "Error updating template" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -72,12 +72,12 @@ export async function DELETE(req: NextRequest) {
     await prisma.clientSecretTemplate.delete({ where: { id } });
     return NextResponse.json(
       { message: "Deleted successfully" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     return NextResponse.json(
       { error: "Error deleting template" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -3,7 +3,7 @@ import {
   defaultCallbackResultBody,
   defaultRequestBody,
   ServerStreamingFunction,
-} from "../router";
+} from "@repo/ai-utils/router";
 import { DataStreamWriter } from "ai";
 import { IMediaPayloadType } from "../types";
 import { prisma } from "@/prisma/prisma";
@@ -91,7 +91,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
   const lastRequestPrNumber =
     requestUpdates.length > 0
       ? requestUpdates.reduce((acc, curr) =>
-          acc.prNumber > curr.prNumber ? acc : curr
+          acc.prNumber > curr.prNumber ? acc : curr,
         ).prNumber
       : null;
 
@@ -103,7 +103,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
           .map((m) =>
             m.mediaType.startsWith("image")
               ? `![${m.mediaName}](${m.mediaUrl})`
-              : `[${m.mediaName}](${m.mediaUrl})`
+              : `[${m.mediaName}](${m.mediaUrl})`,
           )
           .join("\n")
       : "";
@@ -284,7 +284,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
     const commentBody = `<Not for Client> Msg from Client: ${content}${mediaMarkdown}`;
     await appRepoSdk.createCommentOnPr(
       lastRequestPrNumber || clientRequest.prNumber,
-      commentBody
+      commentBody,
     );
     // await updateClientRequest(clientRequest);
 

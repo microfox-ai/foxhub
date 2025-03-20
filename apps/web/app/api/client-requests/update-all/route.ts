@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
-import { REQUESTSTATUS } from '@prisma/client';
-import { updateClientRequest } from '@/utils/services/customBots/clientRequests/updateClientRequest';
+import { NextResponse } from "next/server";
+import { prisma } from "@/prisma/prisma";
+import { REQUESTSTATUS } from "@prisma/client";
+import { updateClientRequest } from "@/utils/services/customBots/clientRequests/updateClientRequest";
 
 export async function POST() {
   try {
     const clientRequests = await prisma.clientRequest.findMany({
       where: {
-        requestStatus: { notIn: [REQUESTSTATUS.CLOSED, REQUESTSTATUS.COMPLETED] },
+        requestStatus: {
+          notIn: [REQUESTSTATUS.CLOSED, REQUESTSTATUS.COMPLETED],
+        },
       },
       include: { requestUpdates: true },
     });
@@ -20,12 +22,12 @@ export async function POST() {
     );
 
     return NextResponse.json(
-      { message: 'All Requests updated' },
+      { message: "All Requests updated" },
       { status: 200 },
     );
   } catch (error) {
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: "Internal Server Error" },
       { status: 500 },
     );
   }

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     if (!originClientRequestId || !userId || content === undefined) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     if (!clientRequest) {
       return NextResponse.json(
         { error: "Client request not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       console.error("No GitHub token provided");
       return NextResponse.json(
         { error: "GitHub token missing" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       console.error("No repo name found in PR URL");
       return NextResponse.json(
         { error: "Repo name not found" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     const lastRequestPrNumber =
       requestUpdates.length > 0
         ? requestUpdates.reduce((acc, curr) =>
-            acc.prNumber > curr.prNumber ? acc : curr
+            acc.prNumber > curr.prNumber ? acc : curr,
           ).prNumber
         : null;
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
             .map((m) =>
               m.mediaType.startsWith("image")
                 ? `![${m.mediaName}](${m.mediaUrl})`
-                : `[${m.mediaName}](${m.mediaUrl})`
+                : `[${m.mediaName}](${m.mediaUrl})`,
             )
             .join("\n")
         : "";
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       if (!prResult) {
         return NextResponse.json(
           { error: "Failed to reopen PR" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -246,7 +246,7 @@ export async function POST(req: NextRequest) {
       const commentBody = `<Not for Client> Msg from Client: ${content}${mediaMarkdown}`;
       await appRepoSdk.createCommentOnPr(
         lastRequestPrNumber || clientRequest.prNumber,
-        commentBody
+        commentBody,
       );
       // await updateClientRequest(clientRequest);
 
@@ -274,13 +274,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { chatUIMessages: updatedRequestMessages },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Error saving chat message:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

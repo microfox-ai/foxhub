@@ -5,7 +5,6 @@ import NewProjectCreation from "./global/NewProjectCreation";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { useEffect } from "react";
-import { useAuth } from "../auth/AuthProvider";
 
 export const CustomBotsHomePage = () => {
   const { user } = useUser();

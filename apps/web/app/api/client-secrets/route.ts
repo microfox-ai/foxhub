@@ -58,6 +58,14 @@ export async function POST(req: NextRequest) {
 
       const repoName = clientRequest?.prUrl?.split("/")[4];
 
+      if (!repoName) {
+        console.error("No repo name found");
+        return NextResponse.json(
+          { error: "Repo name missing" },
+          { status: 500 }
+        );
+      }
+
       const appRepoSdk = new GithubSdk({
         owner: TEMPLATE_REPO_OWNER,
         repo: repoName,
@@ -290,6 +298,14 @@ export async function PUT(req: NextRequest) {
 
         const repoName = clientRequest?.prUrl?.split("/")[4];
 
+        if (!repoName) {
+          console.error("No repo name found");
+          return NextResponse.json(
+            { error: "Repo name missing" },
+            { status: 500 }
+          );
+        }
+
         const appRepoSdk = new GithubSdk({
           owner: TEMPLATE_REPO_OWNER,
           repo: repoName,
@@ -424,6 +440,13 @@ export async function DELETE(req: NextRequest) {
         if (TMD_GITHUB_TOKEN && clientRequest.prUrl) {
           const repoName = clientRequest?.prUrl?.split("/")[4];
 
+          if (!repoName) {
+            console.error("No repo name found");
+            return NextResponse.json(
+              { error: "Repo name missing" },
+              { status: 500 }
+            );
+          }
           const appRepoSdk = new GithubSdk({
             owner: TEMPLATE_REPO_OWNER,
             repo: repoName,

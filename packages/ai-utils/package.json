@@ -1,0 +1,28 @@
+{
+  "name": "@repo/ai-utils",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --max-warnings 0",
+    "generate:component": "turbo gen react-component",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@turbo/gen": "^2.4.4",
+    "@types/node": "^22.13.9",
+    "@types/react": "19.0.10",
+    "eslint": "^9.22.0",
+    "typescript": "5.8.2"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.1.25",
+    "@ai-sdk/openai": "^1.2.5"
+  }
+}

@@ -1,20 +1,20 @@
-'use client'
+"use client";
 
 import {
   BotTemplate,
   useBotTemplateContext,
-} from '@/components/screens/providers/BotTemplateProvider'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { PortalSdk } from '@/utils/services/PortalSdk'
-import { getTemplateIcon } from './helpers/ui'
+} from "@/components/screens/providers/BotTemplateProvider";
+import { useState } from "react";
+import { toast } from "sonner";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { getTemplateIcon } from "./helpers/ui";
 interface AddClientSecretModalProps {
   clientRequest: {
-    id: string
-    botProjectId: string
-  }
-  userId: string
-  onSuccess: () => Promise<void>
+    id: string;
+    botProjectId: string;
+  };
+  userId: string;
+  onSuccess: () => Promise<void>;
 }
 
 export function AddClientSecretModal({
@@ -23,122 +23,122 @@ export function AddClientSecretModal({
   onSuccess,
 }: AddClientSecretModalProps) {
   const { templates, showAddBotModal, setShowAddBotModal } =
-    useBotTemplateContext()
+    useBotTemplateContext();
   // States moved from ChatWindow
   const [selectedTemplate, setSelectedTemplate] = useState<BotTemplate | null>(
-    null
-  )
-  const [newClientSecretName, setNewClientSecretName] = useState('')
+    null,
+  );
+  const [newClientSecretName, setNewClientSecretName] = useState("");
   const [botVariables, setBotVariables] = useState<
     Array<{
-      mode: Array<'DEV' | 'PROD' | 'STAGING'>
-      key: string
-      value: string
-      isOptional: boolean
+      mode: Array<"DEV" | "PROD" | "STAGING">;
+      key: string;
+      value: string;
+      isOptional: boolean;
     }>
-  >([])
+  >([]);
   const [customVariables, setCustomVariables] = useState<
     Array<{
-      mode: Array<'DEV' | 'PROD' | 'STAGING'>
-      key: string
-      value: string
-      isOptional: boolean
+      mode: Array<"DEV" | "PROD" | "STAGING">;
+      key: string;
+      value: string;
+      isOptional: boolean;
     }>
-  >([])
+  >([]);
 
   // Handlers moved from ChatWindow
   const handleSelectTemplate = (template: BotTemplate) => {
-    setSelectedTemplate(template)
+    setSelectedTemplate(template);
     const initialVariables = template.requiredKeys.map((req) => ({
       mode: req.mode,
       key: req.key,
-      value: '',
+      value: "",
       isOptional: req.isOptional,
-    }))
-    setBotVariables(initialVariables)
-  }
+    }));
+    setBotVariables(initialVariables);
+  };
 
   const handleVariableChange = (
     index: number,
-    field: 'value' | 'mode' | 'isOptional',
-    newValue: any
+    field: "value" | "mode" | "isOptional",
+    newValue: any,
   ) => {
     setBotVariables((prev) =>
-      prev.map((v, i) => (i === index ? { ...v, [field]: newValue } : v))
-    )
-  }
+      prev.map((v, i) => (i === index ? { ...v, [field]: newValue } : v)),
+    );
+  };
 
   const handleAddCustomVariable = () => {
     setCustomVariables((prev) => [
       ...prev,
       {
-        mode: ['DEV', 'PROD', 'STAGING'],
-        key: '',
-        value: '',
+        mode: ["DEV", "PROD", "STAGING"],
+        key: "",
+        value: "",
         isOptional: false,
       },
-    ])
-  }
+    ]);
+  };
 
   const handleCustomVariableChange = (
     index: number,
-    field: 'key' | 'value' | 'mode' | 'isOptional',
-    newValue: any
+    field: "key" | "value" | "mode" | "isOptional",
+    newValue: any,
   ) => {
     setCustomVariables((prev) =>
-      prev.map((v, i) => (i === index ? { ...v, [field]: newValue } : v))
-    )
-  }
+      prev.map((v, i) => (i === index ? { ...v, [field]: newValue } : v)),
+    );
+  };
 
   const handleRemoveCustomVariable = (index: number) => {
-    setCustomVariables((prev) => prev.filter((_, i) => i !== index))
-  }
+    setCustomVariables((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSaveClientSecret = async () => {
     if (!selectedTemplate) {
-      toast.error('Please select a template.')
-      return
+      toast.error("Please select a template.");
+      return;
     }
 
     // Merge template-defined variables with custom ones
-    const allVariables = [...botVariables, ...customVariables]
+    const allVariables = [...botVariables, ...customVariables];
 
     // Ensure unique keys
-    const keysSet = new Set()
+    const keysSet = new Set();
     for (const varObj of allVariables) {
       if (!varObj.key.trim()) {
-        toast.error(`Please provide a key name for all variables.`)
-        return
+        toast.error(`Please provide a key name for all variables.`);
+        return;
       }
       if (keysSet.has(varObj.key)) {
-        toast.error(`Duplicate key found: ${varObj.key}`)
-        return
+        toast.error(`Duplicate key found: ${varObj.key}`);
+        return;
       }
-      keysSet.add(varObj.key)
+      keysSet.add(varObj.key);
     }
 
     try {
-      await PortalSdk.postData('/api/client-secrets', {
+      await PortalSdk.postData("/api/client-secrets", {
         botProjectId: clientRequest.botProjectId,
         userId,
         type: selectedTemplate.type,
         variables: allVariables,
         name: newClientSecretName || selectedTemplate.name,
         clientRequestId: clientRequest.id,
-      })
-      toast.success('New Bot keys added successfully!')
-      setShowAddBotModal(false)
-      setSelectedTemplate(null)
-      setBotVariables([])
-      setCustomVariables([])
-      await onSuccess()
+      });
+      toast.success("New Bot keys added successfully!");
+      setShowAddBotModal(false);
+      setSelectedTemplate(null);
+      setBotVariables([]);
+      setCustomVariables([]);
+      await onSuccess();
     } catch (error) {
-      toast.error('Error creating client bot.')
-      console.error(error)
+      toast.error("Error creating client bot.");
+      console.error(error);
     }
-  }
+  };
 
-  if (!showAddBotModal) return null
+  if (!showAddBotModal) return null;
 
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50">
@@ -182,7 +182,7 @@ export function AddClientSecretModal({
               type="text"
               className="mt-1 w-full rounded border p-2"
               placeholder={selectedTemplate.name}
-              value={newClientSecretName || selectedTemplate.name || ''}
+              value={newClientSecretName || selectedTemplate.name || ""}
               onChange={(e) => setNewClientSecretName(e.target.value)}
             />
             <h5 className="my-2 font-semibold">Fill in variables</h5>
@@ -190,15 +190,15 @@ export function AddClientSecretModal({
               <div key={req.key} className="mb-4">
                 <label className="block font-medium">{req.key}</label>
                 <small className="block text-xs text-gray-500">
-                  Example: {req.placeholder} (Modes: {req.mode.join(', ')})
+                  Example: {req.placeholder} (Modes: {req.mode.join(", ")})
                 </small>
                 <input
                   type="text"
                   className="mt-1 w-full rounded border p-2"
                   placeholder={req.placeholder}
-                  value={botVariables[index]?.value || ''}
+                  value={botVariables[index]?.value || ""}
                   onChange={(e) =>
-                    handleVariableChange(index, 'value', e.target.value)
+                    handleVariableChange(index, "value", e.target.value)
                   }
                 />
                 <div className="mt-1">
@@ -209,8 +209,8 @@ export function AddClientSecretModal({
                       onChange={(e) =>
                         handleVariableChange(
                           index,
-                          'isOptional',
-                          e.target.checked
+                          "isOptional",
+                          e.target.checked,
                         )
                       }
                     />
@@ -229,7 +229,7 @@ export function AddClientSecretModal({
                     placeholder="Key"
                     value={customVar.key}
                     onChange={(e) =>
-                      handleCustomVariableChange(index, 'key', e.target.value)
+                      handleCustomVariableChange(index, "key", e.target.value)
                     }
                   />
                   <input
@@ -238,7 +238,7 @@ export function AddClientSecretModal({
                     placeholder="Value"
                     value={customVar.value}
                     onChange={(e) =>
-                      handleCustomVariableChange(index, 'value', e.target.value)
+                      handleCustomVariableChange(index, "value", e.target.value)
                     }
                   />
                   <button
@@ -260,8 +260,8 @@ export function AddClientSecretModal({
               <button
                 className="rounded bg-gray-200 px-4 py-2"
                 onClick={() => {
-                  setSelectedTemplate(null)
-                  setBotVariables([])
+                  setSelectedTemplate(null);
+                  setBotVariables([]);
                 }}
               >
                 Back
@@ -277,5 +277,5 @@ export function AddClientSecretModal({
         )}
       </div>
     </div>
-  )
+  );
 }

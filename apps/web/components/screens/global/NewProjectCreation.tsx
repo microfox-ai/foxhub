@@ -1,50 +1,47 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { ButtonSCN } from '@/components/elements/Button'
-import { Send, Loader2 } from 'lucide-react'
-import { PortalSdk } from '@/utils/services/PortalSdk'
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useState } from "react";
+import { ButtonSCN } from "@/components/elements/Button";
+import { Send, Loader2 } from "lucide-react";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function NewProjectCreation({
   userId,
   onProjectCreated,
 }: {
-  userId: string
-  onProjectCreated: (newProject: any) => void
+  userId: string;
+  onProjectCreated: (newProject: any) => void;
 }) {
-  const [projectTitle, setProjectTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [sending, setSending] = useState(false)
-  const router = useRouter()
+  const [projectTitle, setProjectTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [sending, setSending] = useState(false);
+  const router = useRouter();
 
   const handleCreateProject = async () => {
     if (!projectTitle.trim() || !description.trim()) {
-      toast.error('Please provide both a title and a detailed description.')
-      return
+      toast.error("Please provide both a title and a detailed description.");
+      return;
     }
-    setSending(true)
+    setSending(true);
     try {
-      const newProject = await PortalSdk.postData(
-        '/api/bot-project/create',
-        {
-          userId,
-          projectName: projectTitle.trim(),
-          projectDescription: description.trim(),
-        }
-      )
-      toast.success('Project created successfully!')
-      setProjectTitle('')
-      setDescription('')
-      onProjectCreated(newProject)
+      const newProject = await PortalSdk.postData("/api/bot-project/create", {
+        userId,
+        projectName: projectTitle.trim(),
+        projectDescription: description.trim(),
+      });
+      toast.success("Project created successfully!");
+      setProjectTitle("");
+      setDescription("");
+      onProjectCreated(newProject);
     } catch (error) {
-      toast.error('Failed to create project.')
-      console.error('Error creating project:', error)
+      toast.error("Failed to create project.");
+      console.error("Error creating project:", error);
     } finally {
-      setSending(false)
+      setSending(false);
     }
-  }
+  };
 
   return (
     <div className="flex h-full flex-col items-center justify-center p-8 text-center">
@@ -67,9 +64,9 @@ export default function NewProjectCreation({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              handleCreateProject()
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleCreateProject();
             }
           }}
           disabled={sending}
@@ -88,5 +85,5 @@ export default function NewProjectCreation({
         </ButtonSCN>
       </div>
     </div>
-  )
+  );
 }

@@ -1,14 +1,14 @@
-import { PortalSdk } from '@/utils/services/PortalSdk'
-import { RefreshCw } from 'lucide-react'
-import { toast } from 'sonner'
-import { getTemplateIcon } from './helpers/ui'
-import { ClientRequest } from '@prisma/client'
-import { useClientSecrets } from '../providers/ClientSecretProvider'
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { getTemplateIcon } from "./helpers/ui";
+import { ClientRequest } from "@prisma/client";
+import { useClientSecrets } from "../providers/ClientSecretProvider";
 
 interface SlashModalProps {
-  clientRequest: ClientRequest
-  onClose: () => void
-  onSuccess: () => Promise<void>
+  clientRequest: ClientRequest;
+  onClose: () => void;
+  onSuccess: () => Promise<void>;
 }
 
 export function SlashModal({
@@ -24,44 +24,44 @@ export function SlashModal({
     refreshClientSecrets,
     isLoading: clientSecretsLoading,
     setShowSlashModal,
-  } = useClientSecrets()
+  } = useClientSecrets();
 
   const handleSelectClientSecret = async (botId: string) => {
     try {
-      await PortalSdk.putData('/api/client-secrets', {
+      await PortalSdk.putData("/api/client-secrets", {
         id: botId,
         clientRequestId: clientRequest.id,
-      })
-      toast.success('Bot added to this request successfully!')
-      setShowSlashModal(false)
-      onClose()
-      await refreshClientSecrets()
-      await onSuccess()
+      });
+      toast.success("Bot added to this request successfully!");
+      setShowSlashModal(false);
+      onClose();
+      await refreshClientSecrets();
+      await onSuccess();
     } catch (error) {
-      toast.error('Failed to add bot to request.')
-      console.error('Error:', error)
+      toast.error("Failed to add bot to request.");
+      console.error("Error:", error);
     }
-  }
+  };
 
   // Handle removing a client bot from the request (not deleting the bot itself)
   const handleRemoveClientSecret = async (botId: string) => {
     try {
       await PortalSdk.deleteData(
         `/api/client-secrets?id=${botId}&clientRequestId=${clientRequest.id}&removeOnly=true`,
-        {}
-      )
-      toast.success('Bot removed from this request successfully!')
-      setShowSlashModal(false)
-      onClose()
-      await refreshClientSecrets()
-      await onSuccess()
+        {},
+      );
+      toast.success("Bot removed from this request successfully!");
+      setShowSlashModal(false);
+      onClose();
+      await refreshClientSecrets();
+      await onSuccess();
     } catch (error) {
-      toast.error('Failed to remove bot from request.')
-      console.error('Error removing bot from request:', error)
+      toast.error("Failed to remove bot from request.");
+      console.error("Error removing bot from request:", error);
     }
-  }
+  };
 
-  if (!showSlashModal) return null
+  if (!showSlashModal) return null;
 
   return (
     <div className="absolute bottom-20 left-4 z-20 w-11/12 max-w-md rounded-lg bg-white p-4 shadow-lg">
@@ -86,8 +86,8 @@ export function SlashModal({
                   </div>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemoveClientSecret(bot.id)
+                      e.stopPropagation();
+                      handleRemoveClientSecret(bot.id);
                     }}
                     className="text-red-500 hover:text-red-700"
                   >
@@ -110,7 +110,7 @@ export function SlashModal({
             <h2 className="text-sm">Add your Bots to this request</h2>
             {clientSecrets
               .filter(
-                (bot) => !bot.clientRequestIds.includes(clientRequest?.id)
+                (bot) => !bot.clientRequestIds.includes(clientRequest?.id),
               )
               .map((bot) => (
                 <div
@@ -133,5 +133,5 @@ export function SlashModal({
         </button>
       </div>
     </div>
-  )
+  );
 }

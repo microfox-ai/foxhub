@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!projectName || !userId) {
     return NextResponse.json(
       { error: "Missing required fields" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     if (!repoResult) {
       return NextResponse.json(
         { error: "Failed to create bot project" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
     console.error("Error creating bot project:", error);
     return NextResponse.json(
       { error: "Failed to create bot project" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

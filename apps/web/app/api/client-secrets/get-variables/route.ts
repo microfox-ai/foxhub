@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/prisma/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/prisma/prisma";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const clientRequestId = searchParams.get('clientRequestId');
-    const mode = searchParams.get('mode');
+    const clientRequestId = searchParams.get("clientRequestId");
+    const mode = searchParams.get("mode");
 
     if (!clientRequestId || !mode) {
       return NextResponse.json(
-        { error: 'Missing clientRequestId or mode parameter' },
+        { error: "Missing clientRequestId or mode parameter" },
         { status: 400 },
       );
     }
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     if (!clientRequest) {
       return NextResponse.json(
-        { error: 'Client request not found' },
+        { error: "Client request not found" },
         { status: 404 },
       );
     }
@@ -54,9 +54,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ variables }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching variables:', error);
+    console.error("Error fetching variables:", error);
     return NextResponse.json(
-      { error: 'Error fetching variables' },
+      { error: "Error fetching variables" },
       { status: 500 },
     );
   }

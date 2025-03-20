@@ -1,47 +1,47 @@
-'use client'
+"use client";
 
-import { ButtonSCN } from '@/components/elements/Button'
-import { useUser } from '@/utils/hooks/useUser'
-import { Skeleton } from '@mui/material'
-import { REQUESTSTATUS } from '@prisma/client'
-import { PanelRight, PanelRightClose, PlusCircle } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
-import useSWR from 'swr'
-import ChatWindow from '../Chat/ChatWindow'
-import NewRequestCreation from '../RequestPage/NewRequestCreation'
-import NewProjectCreation from '../global/NewProjectCreation'
-import ProjectConfigModal from '../global/ProjectConfigModal'
-import Sidebar from '../global/Sidebar'
-import { ClientSecretProvider } from '../providers/ClientSecretProvider'
+import { ButtonSCN } from "@/components/elements/Button";
+import { useUser } from "@/utils/hooks/useUser";
+import { Skeleton } from "@mui/material";
+import { REQUESTSTATUS } from "@prisma/client";
+import { PanelRight, PanelRightClose, PlusCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import useSWR from "swr";
+import ChatWindow from "../Chat/ChatWindow";
+import NewRequestCreation from "../RequestPage/NewRequestCreation";
+import NewProjectCreation from "../global/NewProjectCreation";
+import ProjectConfigModal from "../global/ProjectConfigModal";
+import Sidebar from "../global/Sidebar";
+import { ClientSecretProvider } from "../providers/ClientSecretProvider";
 
 /** DEPRECATED - copied all functionality except config modal */
 export default function Dashboard() {
-  const { user } = useUser()
-  const router = useRouter()
-  const searchParams: any = useSearchParams()
-  const requestParam = searchParams.get('request')
-  const projectParam = searchParams.get('project')
-  const viewParam = searchParams.get('view') // expected values: "request", "newRequest", "newProject", "project"
-  const showPreviewParam = searchParams.get('showPreview') === 'true'
+  const { user } = useUser();
+  const router = useRouter();
+  const searchParams: any = useSearchParams();
+  const requestParam = searchParams.get("request");
+  const projectParam = searchParams.get("project");
+  const viewParam = searchParams.get("view"); // expected values: "request", "newRequest", "newProject", "project"
+  const showPreviewParam = searchParams.get("showPreview") === "true";
 
-  const [selectedRequest, setSelectedRequest] = useState<any>(null)
-  const [selectedProject, setSelectedProject] = useState<any>(null)
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false)
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   // Helper function to update search params using URLSearchParams API.
   const updateSearchParams = (params: Record<string, string | null>) => {
-    const currentParams = new URLSearchParams(searchParams.toString())
+    const currentParams = new URLSearchParams(searchParams.toString());
     Object.entries(params).forEach(([key, value]) => {
       if (value === null) {
-        currentParams.delete(key)
+        currentParams.delete(key);
       } else {
-        currentParams.set(key, value)
+        currentParams.set(key, value);
       }
-    })
-    router.replace(`?${currentParams.toString()}`)
-  }
+    });
+    router.replace(`?${currentParams.toString()}`);
+  };
 
   // SWR to fetch the latest updated request if none is specified.
   const { data: latestRequest } = useSWR(
@@ -49,38 +49,35 @@ export default function Dashboard() {
       ? `/api/client-requests/latest-request?userId=${user.id}`
       : null,
     async (url) => {
-      const res = await fetch(url, {})
-      if (!res.ok) throw new Error('Failed to fetch latest request')
-      return res.json()
-    }
-  )
+      const res = await fetch(url, {});
+      if (!res.ok) throw new Error("Failed to fetch latest request");
+      return res.json();
+    },
+  );
 
   useEffect(() => {
-    if (requestParam && requestParam !== 'new') {
-      ; (async () => {
+    if (requestParam && requestParam !== "new") {
+      (async () => {
         try {
-          const res = await fetch(
-            `/api/client-requests/${requestParam}`,
-            {}
-          )
-          const data = await res.json()
-          setSelectedRequest(data)
+          const res = await fetch(`/api/client-requests/${requestParam}`, {});
+          const data = await res.json();
+          setSelectedRequest(data);
         } catch (err) {
-          toast.error('Failed to load selected request.')
-          console.error(err)
+          toast.error("Failed to load selected request.");
+          console.error(err);
         }
-      })()
-    } else if (requestParam === 'new') {
-      setSelectedRequest(null)
+      })();
+    } else if (requestParam === "new") {
+      setSelectedRequest(null);
     } else if (!requestParam && latestRequest) {
-      setSelectedRequest(latestRequest)
+      setSelectedRequest(latestRequest);
       updateSearchParams({
         request: latestRequest.id,
-        view: 'request',
+        view: "request",
         project: latestRequest.botProjectId,
-      })
+      });
     }
-  }, [requestParam, latestRequest])
+  }, [requestParam, latestRequest]);
 
   const {
     data: projects,
@@ -88,19 +85,19 @@ export default function Dashboard() {
     isLoading,
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json())
-  )
+    async (url) => await fetch(url).then((res) => res.json()),
+  );
 
   useEffect(() => {
     if (projectParam) {
-      const project = projects?.find((p: any) => p.id === projectParam)
-      setSelectedProject(project)
+      const project = projects?.find((p: any) => p.id === projectParam);
+      setSelectedProject(project);
     }
-  }, [projectParam, projects])
+  }, [projectParam, projects]);
 
   if (error) {
-    toast.error('Failed to load projects.')
-    console.error(error)
+    toast.error("Failed to load projects.");
+    console.error(error);
   }
 
   if (!user) {
@@ -108,7 +105,7 @@ export default function Dashboard() {
       <div className="flex h-screen items-center justify-center">
         <p>Loading user data...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -127,7 +124,7 @@ export default function Dashboard() {
         )}
         {/* Sidebar with increased width */}
         <div
-          className={`flex ${showPreviewParam ? 'w-[15vw]' : 'w-80'} flex-col border-r border-border`}
+          className={`flex ${showPreviewParam ? "w-[15vw]" : "w-80"} flex-col border-r border-border`}
         >
           <div className="flex items-center justify-between border-b p-4">
             <h2 className="text-lg font-semibold">Bot Projects</h2>
@@ -137,14 +134,14 @@ export default function Dashboard() {
                 size="icon"
                 onClick={() =>
                   updateSearchParams({
-                    project: 'new',
-                    view: 'newProject',
-                    request: 'null',
+                    project: "new",
+                    view: "newProject",
+                    request: "null",
                   })
                 }
                 title="New Project"
               >
-                <PlusCircle style={{ height: '1.25rem', width: '1.25rem' }} />
+                <PlusCircle style={{ height: "1.25rem", width: "1.25rem" }} />
               </ButtonSCN>
             </div>
           </div>
@@ -158,36 +155,36 @@ export default function Dashboard() {
             <Sidebar
               selectedProject={selectedProject}
               onSelectRequest={(request) => {
-                setSelectedRequest(request)
+                setSelectedRequest(request);
                 updateSearchParams({
                   request: request.id,
-                  view: 'request',
+                  view: "request",
                   project: request.botProjectId,
-                })
+                });
               }}
               onNewRequest={(project) => {
-                setSelectedProject(project)
+                setSelectedProject(project);
                 const openRequests = project?.clientRequests?.filter(
                   (request) =>
                     request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                    request?.requestStatus !== REQUESTSTATUS.CLOSED
-                )
+                    request?.requestStatus !== REQUESTSTATUS.CLOSED,
+                );
                 if (openRequests?.length < 3) {
                   updateSearchParams({
-                    request: 'new',
-                    view: 'newRequest',
+                    request: "new",
+                    view: "newRequest",
                     project: project?.id,
-                  })
+                  });
                 } else {
                   toast.warning(
-                    'At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.'
-                  )
+                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
+                  );
                 }
               }}
               onOpenConfig={(project) => {
-                setSelectedProject(project)
-                updateSearchParams({ project: project?.id, view: 'project' })
-                setIsConfigModalOpen(true)
+                setSelectedProject(project);
+                updateSearchParams({ project: project?.id, view: "project" });
+                setIsConfigModalOpen(true);
               }}
             />
           )}
@@ -195,25 +192,25 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="flex flex-1 flex-col">
-          {viewParam === 'newRequest' ? (
+          {viewParam === "newRequest" ? (
             <NewRequestCreation
               userId={user.id}
               project={selectedProject}
               onRequestCreated={(newRequest) => {
-                setSelectedRequest(newRequest)
-                updateSearchParams({ request: newRequest.id, view: 'request' })
+                setSelectedRequest(newRequest);
+                updateSearchParams({ request: newRequest.id, view: "request" });
               }}
             />
-          ) : viewParam === 'newProject' ? (
+          ) : viewParam === "newProject" ? (
             <NewProjectCreation
               userId={user.id}
               onProjectCreated={(newProject) => {
-                setSelectedProject(newProject)
+                setSelectedProject(newProject);
                 updateSearchParams({
                   project: newProject?.id,
-                  view: 'newRequest',
-                  request: 'new',
-                })
+                  view: "newRequest",
+                  request: "new",
+                });
               }}
             />
           ) : selectedRequest ? (
@@ -222,8 +219,8 @@ export default function Dashboard() {
             <div className="flex h-full items-center justify-center text-muted-foreground">
               <p>
                 {latestRequest
-                  ? 'Loading latest request...'
-                  : 'No requests available. Create a new request or project.'}
+                  ? "Loading latest request..."
+                  : "No requests available. Create a new request or project."}
               </p>
             </div>
           )}
@@ -237,9 +234,9 @@ export default function Dashboard() {
         <ProjectConfigModal
           isOpen={isConfigModalOpen}
           onClose={() => setIsConfigModalOpen(false)}
-          projectId={selectedProject?.id || ''}
+          projectId={selectedProject?.id || ""}
         />
       </div>
     </ClientSecretProvider>
-  )
+  );
 }

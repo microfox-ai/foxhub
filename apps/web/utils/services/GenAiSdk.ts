@@ -7,7 +7,7 @@ export const GenAiSdk = {
   generateWorklogSummary: async (
     heading: string,
     name: string | null | undefined,
-    data: any
+    data: any,
   ) => {
     const prompt = `
       Keep the title exactly this: ${heading}.

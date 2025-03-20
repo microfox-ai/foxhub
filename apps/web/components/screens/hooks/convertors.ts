@@ -9,7 +9,10 @@ export interface MessageMetadata {
 }
 
 export interface ChatUIMessageWithTypes
-  extends Omit<ChatUIMessage, "context" | "minionType" | "metadata"> {
+  extends Omit<
+    ChatUIMessage,
+    "context" | "minionType" | "metadata" | "systemType"
+  > {
   context: "chat" | "server";
   systemType?: "git" | "server";
   minionType?:

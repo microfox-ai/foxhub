@@ -35,6 +35,7 @@ export default function ChatWindow({
   const { mediaPayload, resetMedia } = useFileUpload()
 
   const { messages, setMessages, reload: mutate, status, handleSubmit, isLoading, input, setInput, handleInputChange, append,
+    data,
   } = useMicrofox({
     clientRequest,
     resetInputState: () => {
@@ -63,11 +64,13 @@ export default function ChatWindow({
 
   const handleRefresh = (messageIndex: number) => {
     console.log("refreshing", messageIndex)
+    const message = messages[messageIndex]
     setMessages((messages) => {
       const newMessages = messages.slice(0, messageIndex)
       return newMessages
     })
-    handleSubmit()
+    if (message)
+      append(message)
   }
 
   const sendMessage = handleSubmit

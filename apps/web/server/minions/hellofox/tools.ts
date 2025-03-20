@@ -156,6 +156,33 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
         };
       },
     }),
+    endConversation: tool({
+      description: "confirms the user's task & ends the conversation.",
+      parameters: z.object({
+        taskTitle: z.string().describe("A short title for the user's task"),
+        taskintent: z.string().describe("The intent of the user's task"),
+        desctiption: z.string().describe("A complete description of the task"),
+      }),
+      execute: async ({ taskTitle, desctiption }, { messages, toolCallId }) => {
+        props.dataStream.writeMessageAnnotation({
+          type: "building",
+          toolName: "endConversation",
+          toolCallId: toolCallId,
+          content: `Creating setups required for the automation`,
+        });
+        // TODO: VISHWAJEET - create the pull request over here
+        // TODO: In future, selectively shift the minion based on the task. because some tasks dont need convertfox, & may
+        props.dataStream.writeData({
+          taskTitle: taskTitle,
+          taskDescription: desctiption,
+          toolCallId: toolCallId,
+          shiftMinionTo: "convetfox",
+        });
+        return {
+          text: `Thank you for confirming your task. I have created the setups required for the automation. Are you ready to proceed ?`,
+        };
+      },
+    }),
     // SEND STRUCK LOGS TO THE USER
     sendStruckLogs: tool({
       description: "Sends the stuck logs to the user",

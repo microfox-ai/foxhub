@@ -65,18 +65,25 @@ export const MessageWrapper = ({ message, index, renderDateSeperator, onRefresh,
                 </div>
             ) : (
                 <div
-                    className={`flex items-start gap-3 ${(message.role as any) === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`group flex items-start gap-3 ${(message.role as any) === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
+                    {message.role == "user" && index <= length - 2 &&
+                        <RefreshCcw className='h-4 w-4 text-neutral-500 cursor-pointer self-center opacity-0 group-hover:opacity-100 hover:text-neutral-700' onClick={onRefresh} />
+                    }
                     <div
-                        className={`relative flex flex-col max-w-xs rounded-lg p-3 pb-0 sm:max-w-md ${getMessageClass(message.role as any)}`}
+                        className={`relative flex flex-col max-w-xs rounded-lg p-3 sm:max-w-md ${getMessageClass(message.role as any)}`}
                     >
-                        {message.role == "user" &&
-                            <RefreshCcw className='h-4 w-4 text-neutral-500 absolute -top-6 right-0 cursor-pointer hover:text-neutral-700' onClick={onRefresh} />
+                        {message.role != "user" &&
+                            <span
+                                className={` mb-3 text-[10px] font-light ${(message.role as any) === 'user' ? 'text-gray-500 ml-auto' : 'text-gray-500 mr-auto'}`}
+                            >
+                                {dayjs(message.createdAt).format('h:mm A')}
+                            </span>
                         }
-                        {message.content && message.parts.length === 1 && (
+                        {message.content && displayParts.length === 1 && (
                             <Markdown>{message.content}</Markdown>
                         )}
-                        {message.parts.length > 1 && (
+                        {displayParts.length > 1 && (
                             <div className="w-[400px] p-0 bg-transparent">
                                 <div className='flex gap-1 mb-3 bg-transparent'>
                                     <ChevronLeft className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab > 0 ? 'opacity-100' : 'opacity-50'
@@ -116,11 +123,6 @@ export const MessageWrapper = ({ message, index, renderDateSeperator, onRefresh,
                                 )}
                             </div>
                         )}
-                        <span
-                            className={` mb-3 text-[10px] font-light ${(message.role as any) === 'user' ? 'text-white ml-auto' : 'text-gray-500 mr-auto'}`}
-                        >
-                            {dayjs(message.createdAt).format('h:mm A')}
-                        </span>
                     </div>
                 </div>
             )}

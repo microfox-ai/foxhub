@@ -38,9 +38,9 @@ export const getTemplateIcon = (type?: string) => {
 export const getMessageClass = (role: Message['role']) => {
     switch (role) {
         case 'user':
-            return 'bg-blue-600 text-white font-semibold';
-        case 'assistant':
             return 'bg-neutral-100 text-black';
+        case 'assistant':
+            return 'bg-transparent text-black';
         case 'system':
             return 'bg-gray-300 text-gray-700 text-center italic';
         default:

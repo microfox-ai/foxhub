@@ -1,10 +1,10 @@
-import { models } from "@repo/ai-utils/models";
+import { models } from "../models";
 import { streamText } from "ai";
 
 export const guideUserToDoableGoal = (
   initialGoal: string,
   missingCapabilities: string,
-  messages: any[],
+  messages: any[]
 ) => {
   return streamText({
     model: models.googleGeminiFlash,
@@ -17,5 +17,8 @@ export const guideUserToDoableGoal = (
         Think what to clarify with the user to get a basic & clear understanding of the goal.
         Return the question that you think is most likely to help in clarifying the user's goal.
         `,
+    onError: (error) => {
+      console.log("guideUserToDoableGoal error", error);
+    },
   });
 };

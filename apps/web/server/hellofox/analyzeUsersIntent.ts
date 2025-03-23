@@ -1,4 +1,4 @@
-import { models } from "@repo/ai-utils/models";
+import { models } from "../models";
 import { streamText } from "ai";
 
 export const analyzeUsersIntent = (userIntent: string, messages: any[]) => {
@@ -18,5 +18,8 @@ export const analyzeUsersIntent = (userIntent: string, messages: any[]) => {
         Observation will be the result of running those actions.
         At the end of the loop you output an Answer
     `,
+    onError: (error) => {
+      console.log("analyzeUsersIntent error", error);
+    },
   });
 };

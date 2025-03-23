@@ -6,7 +6,7 @@ import {
 } from "@repo/ai-utils/router";
 import { getMicrofoxCharacter } from "./default";
 import { hellofoxTools } from "./tools";
-import { models } from "@repo/ai-utils/models";
+import { models } from "../models";
 
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
@@ -14,14 +14,15 @@ import { models } from "@repo/ai-utils/models";
 // 4. ENV_KEYS ->
 // 5. Test ->
 // 6. DEPLOY ->
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY!,
-});
+// const google = createGoogleGenerativeAI({
+//   apiKey: process.env.GEMINI_API_KEY!,
+// });
 
 // HELLO FOX <--> NextFox => CONVERTFox
 
 // if the users task is too simple like one-step, then guide the user to expand his goal, as you can do more than just that. = requires Sequential Thinking to better suggest Ideas
 // TODO: VISHWAJEET - guideUserToDoableGoal should be converted into guideUserToGoal with sequential thinking on inside it.
+// TODO: SUBHAKAR - give examples of what can be done with microfox.
 
 // hellofox listens to what the user asks,
 // analyses the user's intent
@@ -34,7 +35,7 @@ export const hellofoxRouter: ServerStreamingFunction<
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
-  console.log("hellofoxENdpoint", requestBody);
+  console.log("hellofoxENdpoint", models.googleGeminiFlash);
   const result1 = streamText({
     model: models.googleGeminiFlash,
     system: `
@@ -56,12 +57,14 @@ export const hellofoxRouter: ServerStreamingFunction<
         if there is not enough information about the user's requirement, call tool - analyseUserIntent.
         if user's goal or intent is completely clear, call tool - isTaskBuildable.
         if user's goal or intent is not clear, call tool - guideUserToDoableGoal.
-        if user's goal is vague or not specific to certain platforms & tools, call tool - analyseUserIntent.
+        if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
+        if user's goal is vague - call tool - analyseUserIntent.
         if task is buildable, & user confirms the task, finish the conversation by call tool - confirmTask
         ----
         Don't think about how to do it or what the user means, that is not your job, call tools as needed.
-        Don't directly respond with tool responses, instead, use them to think & respond.
-        If an existing tool match is not discovered, call tool - sendStruckLogs`,
+        Don't directly respond with tool responses, instead, use tools to think & respond.
+        If an existing tool match is not discovered, call tool - sendStruckLogs
+        ALWAYS call tools, unless its casual conversation, or you are sure you can do the task without them.`,
     messages: requestBody.messages,
     toolCallStreaming: true,
     maxSteps: 3,

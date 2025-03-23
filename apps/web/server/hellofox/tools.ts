@@ -130,26 +130,6 @@ export const hellofoxTools = (props: StreamingFucntionProps<any, any>) => {
             reason: `Microfox is not capable of building the task.`,
           };
         }
-        // const _isTaskBuildable = await generateObject({
-        //   model: models.googleGeminiFlash,
-        //   system: `
-        //   - You are an expert in what we are capable of doing, & can analyze the missing capabilities of Microfox.
-        //   - You can also analyze the user's task & guide the user to a doable goal.
-        //   `,
-        //   schema: z.object({
-        //     isBuildable: z
-        //       .boolean()
-        //       .describe("Whether the task is buildable, eveen if partially"),
-        //     reason: z
-        //       .string()
-        //       .describe("The reason for the task being buildable or not"),
-        //     response: z.string().describe("The response back to the user"),
-        //   }),
-        //   prompt: `The user's task is: ${task}. our missing capabilities are: ${missingCapabilities}.`,
-        // });
-        // props.dataStream.writeData({
-        //   isTaskBuildable: _isTaskBuildable.object,
-        // });
         return {
           isBuildable: true,
           reason: `Microfox is capable of building the task.`,

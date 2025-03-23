@@ -46,7 +46,7 @@ export async function createNewBotProject({
     console.log("repoResult", repoResult);
 
     // Wait for 2 seconds to ensure the repo is created
-    // await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Create new branch from main
     const newBranch = PROJECT_BRANCH_NAME;

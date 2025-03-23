@@ -73,7 +73,7 @@ export async function createNewBotProject({
         repo: repoResult.data.name,
         path: readmeFilePath,
         message: `Add README for ${projectName}`,
-        content: `DESCRIPTION: ${projectDescription}`,
+        content: Buffer.from(`DESCRIPTION: ${projectDescription}`).toString('base64'),
         branch: newBranch,
     });
     if (!readmeFileContent) {
@@ -132,7 +132,7 @@ export async function createNewBotProject({
         repo: repoResult.data.name,
         path: PROJECT_JSON_FILE_DIR,
         message: `Add initial configs to the project`,
-        content: JSON.stringify(botProjectData, null, 2),
+        content: Buffer.from(JSON.stringify(botProjectData, null, 2)).toString('base64'),
         branch: newBranch,
     });
     if (!botProjectFile) {

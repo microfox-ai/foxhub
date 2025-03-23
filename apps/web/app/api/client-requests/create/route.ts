@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/customBots";
+import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { GenAiSdk } from "@/utils/services/GenAiSdk";
 import { GithubSdk } from "@/utils/services/githubSdk";
 import { SlackBotSdk, SlackChannels } from "@/utils/services/slackBotSdk";

@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/customBots";
+import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
 import { SlackBotSdk, SlackChannels } from "@/utils/services/slackBotSdk";
 import { REQUESTSTATUS } from "@prisma/client";
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
 
       await appRepoSdk.createBranch({
         branchName: newBranch,
-        baseBranch: clientRequest.prTargetBranch,
+        baseBranch: clientRequest.prTargetBranch || "",
       });
 
       const prBody = `Reopen PR for Client Request #${
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
           lastRequestPrNumber || clientRequest.prNumber
         }: ${clientRequest.title}`,
         head: newBranch,
-        base: clientRequest.prTargetBranch,
+        base: clientRequest.prTargetBranch || "",
         body: prBody,
       });
 
@@ -164,11 +164,11 @@ export async function POST(req: NextRequest) {
           prNumber: prResult.number,
           prUrl: prResult.html_url,
           prBranch: newBranch,
-          prTargetBranch: clientRequest.prTargetBranch,
+          prTargetBranch: clientRequest.prTargetBranch || "",
           metadata: prResult,
           createdAt: initTime,
           updatedAt: initTime,
-        },
+        },  
       });
 
       const updatedClientRequest = await prisma.clientRequest.update({
@@ -245,7 +245,7 @@ export async function POST(req: NextRequest) {
       // Normal case: add a comment to the PR with media preview.
       const commentBody = `<Not for Client> Msg from Client: ${content}${mediaMarkdown}`;
       await appRepoSdk.createCommentOnPr(
-        lastRequestPrNumber || clientRequest.prNumber,
+        lastRequestPrNumber || clientRequest.prNumber || 0,
         commentBody,
       );
       // await updateClientRequest(clientRequest);

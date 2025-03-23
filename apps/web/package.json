@@ -13,7 +13,6 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@repo/ai-utils": "*",
     "@ai-sdk/google": "^1.1.25",
     "@ai-sdk/openai": "^1.2.5",
     "@ai-sdk/react": "^1.1.23",
@@ -35,6 +34,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.3",
     "@radix-ui/react-tooltip": "^1.1.8",
+    "@repo/ai-utils": "*",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
     "@tiptap/extension-image": "^2.11.5",
@@ -54,6 +54,7 @@
     "next-client-cookies": "^2.0.1",
     "next-themes": "^0.4.6",
     "novel": "^1.0.2",
+    "octokit": "^4.1.2",
     "prisma": "^6.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

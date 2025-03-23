@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -35,66 +35,86 @@ model User {
 }
 
 model FoxTemplate {
-  id        String   @id @default(uuid())
-  name      String
-  foxType   String // 'hello' | 'convert' | 'build' | 'package'
+  id              String          @id @default(uuid())
+  name            String
+  foxType         String // 'hello' | 'convert' | 'build' | 'package'
   foxDescription  String
   focCapabilities String[]
-  messageCount  Int @default(0)
-  tokenCount    Int @default(0)
-  updatedAt DateTime  @updatedAt
-  createdAt DateTime  @default(now())
-  messages   ChatUIMessage[]
+  messageCount    Int             @default(0)
+  tokenCount      Int             @default(0)
+  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime        @default(now())
+  messages        ChatUIMessage[]
 }
 
 model ChatUIMessage {
-  id        String   @id @default(uuid())
-  context   String // 'chat' | 'server'
-  role      String   // 'user' | 'assistant' | 'system'
-  content   String
-  parts       Json[]  // 'text' | 'toolCall' | 'source' 
+  id          String  @id @default(uuid())
+  context     String // 'chat' | 'server'
+  role        String // 'user' | 'assistant' | 'system'
+  content     String
+  parts       Json[] // 'text' | 'toolCall' | 'source' 
   attachments Json[]
   annotations Json[]
-  metadata              Json?
-  minionId     String? 
-  minionType   String? // 'hello' | 'convert' | 'build' | 'package'
-  userId       String 
-  systemType   String? //  'git' | 'server'
-
+  metadata    Json?
+  minionId    String?
+  minionType  String? // 'hello' | 'convert' | 'build' | 'package'
+  userId      String
+  systemType  String? //  'git' | 'server'
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  originClientRequestId String   
-  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
+  originClientRequestId String
+  originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 
-  minion       FoxTemplate?  @relation(fields: [minionId], references: [id])
+  minion FoxTemplate? @relation(fields: [minionId], references: [id])
 }
 
 model BotProject {
   id               String          @id @default(uuid())
-  userId         String
+  userId           String
   name             String
-  githubRepoName   String
+  githubRepoName   String          @unique
   githubRepoUrl    String
   githubRepoBranch String?         @default("main")
   prUrl            String?
   prNumber         Int?
   description      String?
   projectDir       String
-  clientSecrets       ClientSecret[]
+  clientSecrets    ClientSecret[]
   clientRequests   ClientRequest[]
-  previewConfigs   Json?
-  prodConfigs      Json?
-  stagingConfigs   Json?
   metadata         Json?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 }
 
+model ClientRequest {
+  id                       String                  @id @default(uuid())
+  botProjectId             String
+  userId                   String
+  mentionedClientSecretIds String[]
+  title                    String                  @default("Untitled")
+  description              String?
+  prUrl                    String?
+  prNumber                 Int?
+  prBranch                 String?
+  prTargetBranch           String?
+  requestDir               String?
+  requestStatus            REQUESTSTATUS           @default(UN_ASSIGNED)
+  requestUpdates           RequestUpdate[]
+  chatUIMessages           ChatUIMessage[]
+  deployedFunctions        ClientRequestFunction[]
+  metadata                 Json?
+  lastUpdatedAt            DateTime?               @default(now())
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  botProject BotProject @relation(fields: [botProjectId], references: [id])
+}
+
 model ClientSecretTemplate {
   id           String  @id @default(uuid())
-  userId     String? // Nullable: Only set if it's a custom template
+  userId       String? // Nullable: Only set if it's a custom template
   name         String // Template name
   type         String // Bot types supported by this template
   requiredKeys Json[] // Keys required for this bot template (mode: SECRETMODE[], isOptional: Boolean, key: String, placeholder: String?)
@@ -105,9 +125,9 @@ model ClientSecretTemplate {
 
 model ClientSecret {
   id               String   @id @default(uuid())
-  botProjectId     String   
-  clientRequestIds String[] 
-  userId         String
+  botProjectId     String
+  clientRequestIds String[]
+  userId           String
   name             String
   type             String // Bot types supported by this template, e.g. "X", "SLACK", "WHATSAPP", "TELEGRAM", "DISCORD", "GITHUB", "EMAIL", "INSTAGRAM", "YOUTUBE", "WEB_APP"
   variables        Json[] // Stores environment variables required for the bot (mode: SECRETMODE[], isOptional: Boolean, key: String, value?: String)
@@ -120,9 +140,9 @@ model ClientSecret {
 
 model ClientRequestFunction {
   id                    String       @id @default(uuid())
-  userId              String
-  botProjectId          String       
-  originClientRequestId String       
+  userId                String
+  botProjectId          String
+  originClientRequestId String
   name                  String       @unique // Function name (e.g., "Create Post", "Read Posts")
   baseUrl               String // Base URL for the deployed function
   mode                  SECRETMODE // Mode of the function (e.g., "PROD", "STAGING")
@@ -135,30 +155,6 @@ model ClientRequestFunction {
   updatedAt DateTime @updatedAt
 
   originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
-}
-
-model ClientRequest {
-  id                    String                  @id @default(uuid())
-  botProjectId          String                  
-  userId              String
-  mentionedClientSecretIds String[]
-  title                 String
-  description           String
-  prUrl                 String
-  prNumber              Int
-  prBranch              String
-  prTargetBranch        String
-  requestDir            String
-  requestStatus         REQUESTSTATUS           @default(UN_ASSIGNED)
-  requestUpdates        RequestUpdate[]
-  chatUIMessages       ChatUIMessage[]
-  deployedFunctions     ClientRequestFunction[]
-  metadata              Json?
-  lastUpdatedAt         DateTime?               @default(now())
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-
-  botProject BotProject @relation(fields: [botProjectId], references: [id])
 }
 
 enum SECRETMODE {
@@ -184,9 +180,9 @@ enum FUNCTIONTYPE {
 
 model RequestUpdate {
   id                    String   @id @default(uuid())
-  originClientRequestId String   
-  botProjectId          String   
-  userId              String // Identifier for who created this bot
+  originClientRequestId String
+  botProjectId          String
+  userId                String // Identifier for who created this bot
   prUrl                 String
   prNumber              Int
   prBranch              String

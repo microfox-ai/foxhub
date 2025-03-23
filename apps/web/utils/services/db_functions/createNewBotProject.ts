@@ -34,17 +34,18 @@ export async function createNewBotProject({
         },
         template_repo: TEMPLATE_REPO,
         template_owner: TEMPLATE_REPO_OWNER,
-        private: false,
-        name: `Space-${projectName.toLowerCase().replace(/ /g, "-")}-${Date.now()}`,
+        private: true,
+        name: `space-${projectName.toLowerCase().replace(/ /g, "-")}-${Date.now()}`,
         description: projectDescription,
-        include_all_branches: true,
+        include_all_branches: false,
     });
     if (!repoResult) {
         throw new Error("Failed to create bot project");
     }
     console.log("repoResult", repoResult);
 
-    // await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Wait for 2 seconds to ensure the repo is created
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Create new branch from main
     const newBranch = PROJECT_BRANCH_NAME;

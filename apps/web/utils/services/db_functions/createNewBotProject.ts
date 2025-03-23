@@ -34,9 +34,10 @@ export async function createNewBotProject({
         },
         template_repo: TEMPLATE_REPO,
         template_owner: TEMPLATE_REPO_OWNER,
-        private: true,
+        owner: TEMPLATE_REPO_OWNER,
         name: `space-${projectName.toLowerCase().replace(/ /g, "-")}-${Date.now()}`,
         description: projectDescription,
+        private: true,
         include_all_branches: false,
     });
     if (!repoResult) {
@@ -45,12 +46,12 @@ export async function createNewBotProject({
     console.log("repoResult", repoResult);
 
     // Wait for 2 seconds to ensure the repo is created
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Create new branch from main
     const newBranch = PROJECT_BRANCH_NAME;
     const newBranchResult = await githubSdk.rest.git.createRef({
-        owner: TEMPLATE_REPO_OWNER,
+        owner: repoResult.data.owner.login,
         repo: repoResult.data.name,
         ref: `refs/heads/${newBranch}`,
         sha: repoResult.data.default_branch,

@@ -50,11 +50,16 @@ export async function createNewBotProject({
 
     // Create new branch from main
     const newBranch = PROJECT_BRANCH_NAME;
+    const defaultBranchSha = await githubSdk.rest.git.getRef({
+        owner: repoResult.data.owner.login,
+        repo: repoResult.data.name,
+        ref: `heads/${repoResult.data.default_branch || "main"}`,
+    });
     const newBranchResult = await githubSdk.rest.git.createRef({
         owner: repoResult.data.owner.login,
         repo: repoResult.data.name,
         ref: `refs/heads/${newBranch}`,
-        sha: repoResult.data.default_branch,
+        sha: defaultBranchSha.data.object.sha,
     });
     if (!newBranchResult) {
         throw new Error("Failed to create new branch");

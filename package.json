@@ -8,7 +8,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "prisma:generate": "prisma generate --schema=./apps/web/prisma/schema.prisma",
-    "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma"
+    "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma",
+    "postinstall": "npm run prisma:generate"
   },
   "devDependencies": {
     "prettier": "^3.5.3",

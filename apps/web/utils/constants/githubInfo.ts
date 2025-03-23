@@ -9,7 +9,3 @@ export const PROJECT_INFO_DIR = "ProjectInfo";
 export const PROJECT_JSON_FILE_DIR = `${PROJECT_INFO_DIR}/project.json`;
 
 export const GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
-
-if (!GITHUB_TOKEN) {
-    throw new Error("GITHUB_TOKEN is not set");
-}

@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/customBots";
+import { TEMPLATE_REPO_OWNER, GITHUB_TOKEN } from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
 import { REQUESTSTATUS } from "@prisma/client";
 import { SlackChannels, SlackBotSdk } from "@/utils/services/slackBotSdk";
@@ -41,8 +41,7 @@ export const createOrReOpenPullRequest = async ({ dataStream, requestBody, respo
         throw new Error("Client request not found");
     }
     /** get github token */
-    const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
-    if (!TMD_GITHUB_TOKEN) {
+    if (!GITHUB_TOKEN) {
         throw new Error("GitHub token missing");
     }
     /** get repo name */
@@ -54,7 +53,7 @@ export const createOrReOpenPullRequest = async ({ dataStream, requestBody, respo
     const appRepoSdk = new GithubSdk({
         owner: TEMPLATE_REPO_OWNER,
         repo: repoName,
-        token: TMD_GITHUB_TOKEN,
+        token: GITHUB_TOKEN,
     });
     const requestUpdates = clientRequest.requestUpdates;
     // Find the update with the largest prNumber.
@@ -79,7 +78,7 @@ export const createOrReOpenPullRequest = async ({ dataStream, requestBody, respo
         });
         await appRepoSdk.createBranch({
             branchName: newBranch,
-            baseBranch: clientRequest.prTargetBranch,
+            baseBranch: clientRequest.prTargetBranch || "",
         });
         const prBody = `Reopen PR for Client Request #${lastRequestPrNumber || clientRequest.prNumber}: ${content}${mediaMarkdown}`;
         dataStream.writeData({
@@ -101,7 +100,7 @@ export const createOrReOpenPullRequest = async ({ dataStream, requestBody, respo
         const prResult = await appRepoSdk.createPullRequest({
             title: `Reopen PR for Client Request #${lastRequestPrNumber || clientRequest.prNumber}: ${clientRequest.title}`,
             head: newBranch,
-            base: clientRequest.prTargetBranch,
+            base: clientRequest.prTargetBranch || "",
             body: prBody,
         });
         if (!prResult) {
@@ -120,7 +119,7 @@ export const createOrReOpenPullRequest = async ({ dataStream, requestBody, respo
                 prNumber: prResult.number,
                 prUrl: prResult.html_url,
                 prBranch: newBranch,
-                prTargetBranch: clientRequest.prTargetBranch,
+                prTargetBranch: clientRequest.prTargetBranch || "",
                 metadata: prResult,
                 createdAt: initTime,
                 updatedAt: initTime,

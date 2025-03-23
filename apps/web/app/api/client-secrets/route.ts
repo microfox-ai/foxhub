@@ -1,7 +1,7 @@
 // api/client-secrets/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/customBots";
+import { TEMPLATE_REPO_OWNER, GITHUB_TOKEN } from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
 
 // Create ClientSecret
@@ -46,9 +46,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
-
-      if (!TMD_GITHUB_TOKEN) {
+      if (!GITHUB_TOKEN) {
         console.error("No GitHub token provided");
         return NextResponse.json(
           { error: "GitHub token missing" },
@@ -69,7 +67,7 @@ export async function POST(req: NextRequest) {
       const appRepoSdk = new GithubSdk({
         owner: TEMPLATE_REPO_OWNER,
         repo: repoName,
-        token: TMD_GITHUB_TOKEN,
+        token: GITHUB_TOKEN,
       });
 
       const requestUpdates = clientRequest.requestUpdates;
@@ -110,7 +108,7 @@ export async function POST(req: NextRequest) {
 ${modeMapString}`;
 
       await appRepoSdk.createCommentOnPr(
-        lastRequestPrNumber || clientRequest.prNumber,
+        lastRequestPrNumber || clientRequest.prNumber || 0,
         commentBody
       );
 
@@ -332,7 +330,7 @@ export async function PUT(req: NextRequest) {
 ${modeMapString}`;
 
         await appRepoSdk.createCommentOnPr(
-          lastRequestPrNumber || clientRequest.prNumber,
+          lastRequestPrNumber || clientRequest.prNumber || 0,
           commentBody
         );
 
@@ -491,7 +489,7 @@ export async function DELETE(req: NextRequest) {
 ${modeMapString}`;
 
           await appRepoSdk.createCommentOnPr(
-            lastRequestPrNumber || clientRequest.prNumber,
+            lastRequestPrNumber || clientRequest.prNumber || 0,
             commentBody
           );
         }

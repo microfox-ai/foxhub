@@ -20,3 +20,7 @@ export const APP_BASE_URL = IN_DEV
 export const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";
 export const SERVER_SECRET_API_KEY = process.env
   .NEXT_PUBLIC_SERVER_SECRET_API_KEY as string;
+
+export const APP_BASE_FOR_SHARD = IN_DEV
+  ? "staging.microfox.app"
+  : "microfox.app";

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
+import { createNewBotProject } from "@/utils/services/db_functions/createNewBotProject";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -7,7 +8,7 @@ export async function GET(request: Request) {
 
   if (!userId) {
     return NextResponse.json(
-      { error: "Client ID is required" },
+      { error: "User ID is required" },
       { status: 400 }
     );
   }
@@ -18,17 +19,16 @@ export async function GET(request: Request) {
       include: { clientRequests: true },
     });
 
-    const filteredBotProjects = botProjects.map((project: any) => {
-      const { prodConfigs, previewConfigs, stagingConfigs, metadata, ...rest } =
-        project;
-      const filteredClientRequests = rest.clientRequests.map((request: any) => {
-        const { metadata, ...rest } = request;
-        return rest;
+    if (!botProjects || botProjects.length === 0) {
+      const newBotProject = await createNewBotProject({
+        userId,
+        projectName: "Personal Space",
+        projectDescription: "This is a personal space for the user",
       });
-      return { ...rest, clientRequests: filteredClientRequests };
-    });
+      botProjects = [newBotProject];
+    }
 
-    return NextResponse.json(filteredBotProjects);
+    return NextResponse.json(botProjects);
   } catch (error) {
     console.error("Error fetching organizations:", error);
     return NextResponse.error();

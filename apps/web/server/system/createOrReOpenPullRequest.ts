@@ -8,7 +8,7 @@ import { DataStreamWriter } from "ai";
 import { IMediaPayloadType } from "../types";
 import { prisma } from "@/prisma/prisma";
 import { NextResponse } from "next/server";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/customBots";
+import { TEMPLATE_REPO_OWNER, GITHUB_TOKEN } from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
 import { REQUESTSTATUS } from "@prisma/client";
 import { InputJsonValue } from "@prisma/client/runtime/library";
@@ -64,10 +64,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
     throw new Error("Client request not found");
   }
 
-  /** get github token */
-  const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
-
-  if (!TMD_GITHUB_TOKEN) {
+  if (!GITHUB_TOKEN) {
     throw new Error("GitHub token missing");
   }
 
@@ -82,7 +79,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
   const appRepoSdk = new GithubSdk({
     owner: TEMPLATE_REPO_OWNER,
     repo: repoName,
-    token: TMD_GITHUB_TOKEN,
+    token: GITHUB_TOKEN,
   });
 
   const requestUpdates = clientRequest.requestUpdates;
@@ -118,7 +115,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
     });
     await appRepoSdk.createBranch({
       branchName: newBranch,
-      baseBranch: clientRequest.prTargetBranch,
+      baseBranch: clientRequest.prTargetBranch || "",
     });
 
     const prBody = `Reopen PR for Client Request #${
@@ -149,7 +146,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
         lastRequestPrNumber || clientRequest.prNumber
       }: ${clientRequest.title}`,
       head: newBranch,
-      base: clientRequest.prTargetBranch,
+      base: clientRequest.prTargetBranch || "",
       body: prBody,
     });
 
@@ -171,7 +168,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
         prNumber: prResult.number,
         prUrl: prResult.html_url,
         prBranch: newBranch,
-        prTargetBranch: clientRequest.prTargetBranch,
+        prTargetBranch: clientRequest.prTargetBranch || "",
         metadata: prResult,
         createdAt: initTime,
         updatedAt: initTime,
@@ -283,7 +280,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
     // Normal case: add a comment to the PR with media preview.
     const commentBody = `<Not for Client> Msg from Client: ${content}${mediaMarkdown}`;
     await appRepoSdk.createCommentOnPr(
-      lastRequestPrNumber || clientRequest.prNumber,
+      lastRequestPrNumber || clientRequest.prNumber || 0,
       commentBody,
     );
     // await updateClientRequest(clientRequest);

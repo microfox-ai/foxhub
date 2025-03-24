@@ -77,14 +77,27 @@ model BotProject {
   clientSecrets    ClientSecret[]
 }
 
-model ClientSecretTemplate {
-  id           String   @id @default(uuid())
-  userId       String?
-  name         String
-  type         String
-  requiredKeys Json[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model ClientRequest {
+  id                       String                  @id @default(uuid())
+  botProjectId             String
+  userId                   String
+  mentionedClientSecretIds String[]
+  title                    String                  @default("Untitled")
+  description              String?
+  prUrl                    String?
+  prNumber                 Int?
+  prBranch                 String?
+  prTargetBranch           String?
+  requestDir               String?
+  requestStatus            REQUESTSTATUS           @default(UN_ASSIGNED)
+  metadata                 Json?
+  lastUpdatedAt            DateTime?               @default(now())
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  chatUIMessages           ChatUIMessage[]
+  botProject               BotProject              @relation(fields: [botProjectId], references: [id])
+  deployedFunctions        ClientRequestFunction[]
+  requestUpdates           RequestUpdate[]
 }
 
 model ClientSecret {
@@ -117,28 +130,6 @@ model ClientRequestFunction {
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
-model ClientRequest {
-  id                       String                  @id @default(uuid())
-  botProjectId             String
-  userId                   String
-  mentionedClientSecretIds String[]
-  title                    String                  @default("Untitled")
-  description              String?
-  prUrl                    String?
-  prNumber                 Int?
-  prBranch                 String?
-  prTargetBranch           String?
-  requestDir               String?
-  requestStatus            REQUESTSTATUS           @default(UN_ASSIGNED)
-  metadata                 Json?
-  lastUpdatedAt            DateTime?               @default(now())
-  createdAt                DateTime                @default(now())
-  updatedAt                DateTime                @updatedAt
-  chatUIMessages           ChatUIMessage[]
-  botProject               BotProject              @relation(fields: [botProjectId], references: [id])
-  deployedFunctions        ClientRequestFunction[]
-  requestUpdates           RequestUpdate[]
-}
 
 model RequestUpdate {
   id                    String        @id @default(uuid())

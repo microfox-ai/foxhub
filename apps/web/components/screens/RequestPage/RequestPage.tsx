@@ -11,7 +11,7 @@ import ChatWindow from "../Chat/ChatWindow";
 import Sidebar from "../global/Sidebar";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ClientSecretProvider } from "../providers/ClientSecretProvider";
-import NewRequestCreation from "./NewRequestCreation";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -47,7 +47,23 @@ export const RequestPage = () => {
     }
   }, [projectParamId, requestParamId, projects]);
 
-  const [openNewRequestDialog, setOpenNewRequestDialog] = useState(false);
+  const createNewEmptyRequest = async () => {
+    if (!user || !selectedProject) {
+      toast.error("User or project not found");
+      return;
+    }
+    const newRequest = await PortalSdk.postData(
+      `/api/client-requests/create-empty`,
+      {
+        userId: user.id,
+        botProjectId: selectedProject.id,
+      },
+    );
+    setSelectedRequest(newRequest);
+    router.push(
+      `/project/${selectedProject.id}/request/${newRequest.id}`,
+    );
+  };
 
   if (!user || !selectedProject || !selectedRequest || isLoading) {
     return (
@@ -80,7 +96,7 @@ export const RequestPage = () => {
                   request?.requestStatus !== REQUESTSTATUS.CLOSED,
               );
               if (openRequests?.length < 3) {
-                setOpenNewRequestDialog(true);
+                createNewEmptyRequest();
               } else {
                 toast.warning(
                   "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
@@ -101,22 +117,6 @@ export const RequestPage = () => {
           <PreviewWindow />
         </div>
       </div>
-      <Dialog
-        onOpenChange={setOpenNewRequestDialog}
-        open={openNewRequestDialog}
-      >
-        <DialogContent>
-          <NewRequestCreation
-            userId={user.id}
-            project={selectedProject}
-            onRequestCreated={(newRequest) => {
-              router.push(
-                `/project/${selectedProject.id}/request/${newRequest.id}`,
-              );
-            }}
-          />
-        </DialogContent>
-      </Dialog>
     </ClientSecretProvider>
   );
 };

@@ -12,10 +12,12 @@ import Sidebar from "../global/Sidebar";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ClientSecretProvider } from "../providers/ClientSecretProvider";
 import NewRequestCreation from "./NewRequestCreation";
+import Integrations from "../global/Integrations";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [isIntegrationsEnabled, setIsIntegrationsEnabled] = useState(false);
   const { user } = useUser();
   const router = useRouter();
 
@@ -33,7 +35,7 @@ export const RequestPage = () => {
     isLoading,
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json()),
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export const RequestPage = () => {
       const project = projects?.find((p: any) => p.id === projectParamId);
       setSelectedProject(project);
       const request = project?.clientRequests.find(
-        (r: any) => r.id === requestParamId,
+        (r: any) => r.id === requestParamId
       );
       setSelectedRequest(request);
     }
@@ -70,20 +72,21 @@ export const RequestPage = () => {
             onSelectRequest={(request) => {
               setSelectedRequest(request);
               router.push(
-                `/project/${selectedProject?.id}/request/${request?.id}`,
+                `/project/${selectedProject?.id}/request/${request?.id}`
               );
             }}
             onNewRequest={(project) => {
               const openRequests = project?.clientRequests?.filter(
                 (request) =>
                   request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                  request?.requestStatus !== REQUESTSTATUS.CLOSED,
+                  request?.requestStatus !== REQUESTSTATUS.CLOSED
               );
               if (openRequests?.length < 3) {
-                setOpenNewRequestDialog(true);
+                // setOpenNewRequestDialog(true);
+                setIsIntegrationsEnabled(true);
               } else {
                 toast.warning(
-                  "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
+                  "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
                 );
               }
             }}
@@ -94,12 +97,20 @@ export const RequestPage = () => {
             }}
           />
         </div>
-        <div className="col-span-3 h-full p-4">
-          <ChatWindow userId={user.id} clientRequest={selectedRequest} />
-        </div>
-        <div className="col-span-2">
-          <PreviewWindow />
-        </div>
+        {!isIntegrationsEnabled ? (
+          <>
+            <div className="col-span-3 h-full p-4">
+              <ChatWindow userId={user.id} clientRequest={selectedRequest} />
+            </div>
+            <div className="col-span-2">
+              <PreviewWindow />
+            </div>
+          </>
+        ) : (
+          <div className="col-span-5 h-full p-4">
+            <Integrations setNewRequestDialogOpen={setOpenNewRequestDialog} />
+          </div>
+        )}
       </div>
       <Dialog
         onOpenChange={setOpenNewRequestDialog}
@@ -111,7 +122,7 @@ export const RequestPage = () => {
             project={selectedProject}
             onRequestCreated={(newRequest) => {
               router.push(
-                `/project/${selectedProject.id}/request/${newRequest.id}`,
+                `/project/${selectedProject.id}/request/${newRequest.id}`
               );
             }}
           />

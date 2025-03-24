@@ -4,6 +4,7 @@ import {
 } from "@repo/ai-utils/router";
 import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
+import { convertfoxRouter } from "./convertfox/convertFoxRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -20,6 +21,7 @@ const microfoxRouter = new ServerStreamingRouter<
 // TODO: remove this & bifract this into multiple small steps in both server & frontend
 microfoxRouter.addPath("createOrReOpenPullRequest", createOrReOpenPullRequest);
 microfoxRouter.addPath("hellofox", hellofoxRouter);
+microfoxRouter.addPath("convertfox", convertfoxRouter);
 
 microfoxRouter.setRouting((requestBody: any) => {
   //console.log("requestBody", requestBody);
@@ -28,6 +30,9 @@ microfoxRouter.setRouting((requestBody: any) => {
   // }
   if (requestBody.minionType === "hellofox") {
     return ["hellofox"];
+  }
+  if (requestBody.minionType === "convertfox") {
+    return ["convertfox"];
   }
   return [];
 });

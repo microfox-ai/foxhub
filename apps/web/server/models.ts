@@ -9,7 +9,14 @@ const anthrophobic = createAnthropic({
   apiKey: process.env.CLAUDE_API_KEY!,
 });
 
-export const models: any = {
+export const models: Record<
+  | "default"
+  | "googleGeminiFlash"
+  | "googleGeminiPro"
+  | "claude35Sonnet"
+  | "claudeHaiku",
+  any
+> = {
   default: anthrophobic("claude-3-haiku-20240307", {}),
   googleGeminiFlash: google("gemini-1.5-flash", {
     structuredOutputs: true,

@@ -60,6 +60,10 @@ export const hellofoxRouter: ServerStreamingFunction<
     toolInvocations: [],
   }));
   console.log("requestBody after", requestBody.messages);
+  dataStream.writeMessageAnnotation({
+    type: "minion",
+    value: "hellofox",
+  });
   const result1 = streamText({
     model: models.claude35Sonnet,
     system: `
@@ -107,6 +111,7 @@ export const hellofoxRouter: ServerStreamingFunction<
     },
     onFinish: (result) => {
       console.log("result", result.usage);
+      // svae minion as an annotation in every message into db.
     },
     onError: (error) => {
       console.log(

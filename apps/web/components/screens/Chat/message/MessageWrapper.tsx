@@ -38,7 +38,7 @@ const MessagePart = ({ part, messageId }: { part: MessagePartType, messageId: st
 
 const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messageId: string }) => {
 
-  const { setMinionType, setMessages, status } = useMicrofox();
+  const { setMinionType, setMessages, status, append, handleSubmit, setInput } = useMicrofox();
 
   if (status === "streaming") {
     return null;
@@ -68,6 +68,8 @@ const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messag
                 onClick={() => {
                   if (button.action === "shiftMinion") {
                     setMinionType(button.value);
+                    setInput("");
+                    handleSubmit();
                   }
                   if (button.action === "removeThisPart") {
                     removeThisPart();
@@ -145,7 +147,7 @@ export const MessageWrapper = ({
                 {dayjs(message.createdAt).format("h:mm A")}
               </span>
             )}
-            {message.content && displayParts.length === 1 && (
+            {message.content && message.content.length > 0 && displayParts.length === 1 && (
               <Markdown>{message.content}</Markdown>
             )}
             {displayParts.length > 1 && (

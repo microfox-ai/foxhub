@@ -26,7 +26,7 @@ export const convertfoxRouter: ServerStreamingFunction<
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
-  console.log("hellofoxENdpoint", models.googleGeminiFlash);
+  console.log("convertFoxRouter");
   // clean up al messages before starting the conversation
   // console.log("requestBody before", requestBody.messages);
   // VERYY IMPORtANt : SAVES A TON LOT OF TOKENS bypassing the thinking & all other steps

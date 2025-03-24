@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useChat, UseChatHelpers, UseChatOptions } from "@ai-sdk/react";
 import { ChatUIMessageWithTypes } from "../hooks/convertors";
 import { useFileUpload } from "./FileUploadProvider";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import useSWR from "swr";
 import { ClientRequest } from "@prisma/client";
+import useLocalState from '../hooks/useLocalState';
 
 interface MicrofoxContextType extends UseChatHelpers {
     minionType: ChatUIMessageWithTypes["minionType"] | null;
@@ -35,7 +36,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     resetInputState,
     chatOptions: userChatOptions,
 }) => {
-    const [minionType, setMinionType] = useState<ChatUIMessageWithTypes["minionType"] | null>("hellofox");
+    const [minionType, setMinionType] = useLocalState<ChatUIMessageWithTypes["minionType"] | null>("minionType", "hellofox");
     const { mediaPayload } = useFileUpload();
 
     const {
@@ -72,6 +73,14 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
             console.log(error);
         },
     });
+
+    useEffect(() => {
+        console.log("messages", chatOptions.messages);
+    }, [chatOptions.messages]);
+
+    useEffect(() => {
+        console.log("minionType", chatOptions.data);
+    }, [chatOptions.data]);
 
     const value = {
         minionType,

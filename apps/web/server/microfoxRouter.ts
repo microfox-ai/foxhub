@@ -23,8 +23,9 @@ microfoxRouter.addPath("createOrReOpenPullRequest", createOrReOpenPullRequest);
 microfoxRouter.addPath("hellofox", hellofoxRouter);
 microfoxRouter.addPath("convertfox", convertfoxRouter);
 
+// CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
-  //console.log("requestBody", requestBody);
+  console.log("requestBody", requestBody);
   // if (requestBody.somethin === "nothing") {
   //   return ["nothing"];
   // }

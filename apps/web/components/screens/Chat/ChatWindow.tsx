@@ -3,14 +3,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientRequest } from "@prisma/client";
 import { useEffect, useRef, useState } from "react";
-import { useMicrofox } from "../hooks/useMicrofox";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { AddClientSecretModal } from "./AddClientSecretModal";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
 import { SlashModal } from "./SlashModal";
 import TabMessages from "./TabMessages";
-import { MicrofoxProvider } from "../providers/MicrofoxProvider";
+import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
 export type AttachedMedia = {
   file: File;
   preview: string;
@@ -45,12 +44,7 @@ function ChatWindow({
     handleInputChange,
     append,
     data,
-  } = useMicrofox({
-    clientRequest,
-    resetInputState: () => {
-      resetMedia();
-    },
-  });
+  } = useMicrofox();
 
   // Reload client data when specific operations are completed
   const reloadClientData = async () => {

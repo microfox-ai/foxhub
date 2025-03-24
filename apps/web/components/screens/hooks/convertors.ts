@@ -17,12 +17,12 @@ export interface ChatUIMessageWithTypes
   systemType?: "git" | "server";
   minionType?:
     | "hellofox"
-    | "convert"
-    | "build"
-    | "test"
-    | "deploy"
-    | "review"
-    | "package"
+    | "convertfox"
+    | "buildfox"
+    | "testfox"
+    | "deployfox"
+    | "reviewfox"
+    | "packagefox"
     | null;
   metadata?: MessageMetadata;
 }

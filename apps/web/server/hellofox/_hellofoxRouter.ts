@@ -49,7 +49,7 @@ export const hellofoxRouter: ServerStreamingFunction<
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
-  console.log("hellofoxENdpoint", models.googleGeminiFlash);
+  console.log("hellofoxRouter");
   // clean up al messages before starting the conversation
   // console.log("requestBody before", requestBody.messages);
   // VERYY IMPORtANt : SAVES A TON LOT OF TOKENS bypassing the thinking & all other steps
@@ -78,18 +78,16 @@ export const hellofoxRouter: ServerStreamingFunction<
         - you make it easy for the user to answer your questions (simplify questions by merging them).
         ----
         if user asks/want to know more/does not know about you, call tool - aboutMicrofox.
-        if user has specified a goal or a task that he wants done for the first time - call tool - analyseUserIntent.
+        if user has specified a goal or a task that he wants done (only for the first time) - call tool - analyseUserIntent.
         if there is not enough information about the user's requirement, call tool - analyseUserIntent.
         if you are not sure if we can build the user's task, call tool - getMissingCapabilities.
         if user's goal or intent is completely clear, call tool - isTaskBuildable.
         if user's goal or intent is not clear, call tool - guideUserToDoableGoal.
         if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
         if user's goal is vague - call tool - analyseUserIntent.
-        Do not ask for any user details needed to build the task, that is not your job, call tool - isTaskBuildable.
-        if the task is buildable, just reply back with a summary on how microfox will build it, and only ask for confirmation, no more questions or asking details
-        if task is buildable, & user confirms the task, finish the conversation by call tool - confirmTask
+        if task is buildable, just reply back with a summary on how microfox will build it, and only ask for confirmation.
         ---
-        Don't think about how to do it or what the user means, that is not your job, call tools as needed.
+        Don't think about how to do it, that is not your job, call tools as needed.
         Don't directly respond with tool responses, instead, use tools to think & respond.
         If an existing tool match is not discovered, call tool - sendStruckLogs
         ALWAYS call tools, unless its casual conversation, or you are sure you can do the task.`,

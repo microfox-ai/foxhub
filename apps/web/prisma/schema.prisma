@@ -1,15 +1,9 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -23,8 +17,6 @@ model ConfigData {
   timestamp  DateTime @updatedAt
 }
 
-// -------------------------------------Custom Bots-------------------------------------------
-
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -35,130 +27,132 @@ model User {
 }
 
 model FoxTemplate {
-  id        String   @id @default(uuid())
-  name      String
-  foxType   String // 'hello' | 'convert' | 'build' | 'package'
+  id              String          @id @default(uuid())
+  name            String
+  foxType         String
   foxDescription  String
   focCapabilities String[]
-  messageCount  Int @default(0)
-  tokenCount    Int @default(0)
-  updatedAt DateTime  @updatedAt
-  createdAt DateTime  @default(now())
-  messages   ChatUIMessage[]
+  messageCount    Int             @default(0)
+  tokenCount      Int             @default(0)
+  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime        @default(now())
+  messages        ChatUIMessage[]
 }
 
 model ChatUIMessage {
-  id        String   @id @default(uuid())
-  context   String // 'chat' | 'server'
-  role      String   // 'user' | 'assistant' | 'system'
-  content   String
-  parts       Json[]  // 'text' | 'toolCall' | 'source' 
-  attachments Json[]
-  annotations Json[]
+  id                    String        @id @default(uuid())
+  context               String
+  role                  String
+  content               String
+  parts                 Json[]
+  attachments           Json[]
+  annotations           Json[]
   metadata              Json?
-  minionId     String? 
-  minionType   String? // 'hello' | 'convert' | 'build' | 'package'
-  userId       String 
-  systemType   String? //  'git' | 'server'
-
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  originClientRequestId String   
-  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
-
-  minion       FoxTemplate?  @relation(fields: [minionId], references: [id])
+  minionId              String?
+  minionType            String?
+  userId                String
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  originClientRequestId String
+  systemType            String?
+  minion                FoxTemplate?  @relation(fields: [minionId], references: [id])
+  originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
 model BotProject {
   id               String          @id @default(uuid())
-  userId         String
+  userId           String
   name             String
-  githubRepoName   String
+  githubRepoName   String          @unique
   githubRepoUrl    String
   githubRepoBranch String?         @default("main")
   prUrl            String?
   prNumber         Int?
   description      String?
   projectDir       String
-  clientSecrets       ClientSecret[]
-  clientRequests   ClientRequest[]
-  previewConfigs   Json?
-  prodConfigs      Json?
-  stagingConfigs   Json?
   metadata         Json?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+  clientRequests   ClientRequest[]
+  clientSecrets    ClientSecret[]
 }
 
 model ClientSecretTemplate {
-  id           String  @id @default(uuid())
-  userId     String? // Nullable: Only set if it's a custom template
-  name         String // Template name
-  type         String // Bot types supported by this template
-  requiredKeys Json[] // Keys required for this bot template (mode: SECRETMODE[], isOptional: Boolean, key: String, placeholder: String?)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  userId       String?
+  name         String
+  type         String
+  requiredKeys Json[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ClientSecret {
-  id               String   @id @default(uuid())
-  botProjectId     String   
-  clientRequestIds String[] 
-  userId         String
+  id               String     @id @default(uuid())
+  botProjectId     String
+  clientRequestIds String[]
+  userId           String
   name             String
-  type             String // Bot types supported by this template, e.g. "X", "SLACK", "WHATSAPP", "TELEGRAM", "DISCORD", "GITHUB", "EMAIL", "INSTAGRAM", "YOUTUBE", "WEB_APP"
-  variables        Json[] // Stores environment variables required for the bot (mode: SECRETMODE[], isOptional: Boolean, key: String, value?: String)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  botProject BotProject @relation(fields: [botProjectId], references: [id])
+  type             String
+  variables        Json[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  botProject       BotProject @relation(fields: [botProjectId], references: [id])
 }
 
 model ClientRequestFunction {
-  id                    String       @id @default(uuid())
-  userId              String
-  botProjectId          String       
-  originClientRequestId String       
-  name                  String       @unique // Function name (e.g., "Create Post", "Read Posts")
-  baseUrl               String // Base URL for the deployed function
-  mode                  SECRETMODE // Mode of the function (e.g., "PROD", "STAGING")
-  type                  FUNCTIONTYPE // Function type (e.g., "webhook", "api", "scheduled")
-  endpoints             Json[] // Multiple endpoints mapped to this function (will have method, headers, bodySchema, responseSchema)
-  schedules             Json[] // Schedule for the function
-  metadata              Json? // Metadata about the function
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
+  id                    String        @id @default(uuid())
+  userId                String
+  botProjectId          String
+  originClientRequestId String
+  name                  String        @unique
+  baseUrl               String
+  mode                  SECRETMODE
+  type                  FUNCTIONTYPE
+  endpoints             Json[]
+  schedules             Json[]
+  metadata              Json?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
 model ClientRequest {
-  id                    String                  @id @default(uuid())
-  botProjectId          String                  
-  userId              String
+  id                       String                  @id @default(uuid())
+  botProjectId             String
+  userId                   String
   mentionedClientSecretIds String[]
-  title                 String
-  description           String
+  title                    String                  @default("Untitled")
+  description              String?
+  prUrl                    String?
+  prNumber                 Int?
+  prBranch                 String?
+  prTargetBranch           String?
+  requestDir               String?
+  requestStatus            REQUESTSTATUS           @default(UN_ASSIGNED)
+  metadata                 Json?
+  lastUpdatedAt            DateTime?               @default(now())
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  chatUIMessages           ChatUIMessage[]
+  botProject               BotProject              @relation(fields: [botProjectId], references: [id])
+  deployedFunctions        ClientRequestFunction[]
+  requestUpdates           RequestUpdate[]
+}
+
+model RequestUpdate {
+  id                    String        @id @default(uuid())
+  originClientRequestId String
+  botProjectId          String
+  userId                String
   prUrl                 String
   prNumber              Int
   prBranch              String
   prTargetBranch        String
-  requestDir            String
-  requestStatus         REQUESTSTATUS           @default(UN_ASSIGNED)
-  requestUpdates        RequestUpdate[]
-  chatUIMessages       ChatUIMessage[]
-  deployedFunctions     ClientRequestFunction[]
   metadata              Json?
-  lastUpdatedAt         DateTime?               @default(now())
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-
-  botProject BotProject @relation(fields: [botProjectId], references: [id])
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
 enum SECRETMODE {
@@ -180,20 +174,4 @@ enum FUNCTIONTYPE {
   WEBHOOK
   API
   SCHEDULED
-}
-
-model RequestUpdate {
-  id                    String   @id @default(uuid())
-  originClientRequestId String   
-  botProjectId          String   
-  userId              String // Identifier for who created this bot
-  prUrl                 String
-  prNumber              Int
-  prBranch              String
-  prTargetBranch        String
-  metadata              Json?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  originClientRequest ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    let botProjects = await prisma.botProject.findMany({
+    let botProjects = await prisma.botProject?.findMany({
       where: { userId },
       include: { clientRequests: true },
     });
@@ -31,9 +31,6 @@ export async function GET(request: Request) {
     return NextResponse.json(filteredBotProjects);
   } catch (error) {
     console.error("Error fetching organizations:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch organizations" },
-      { status: 500 }
-    );
+    return NextResponse.error();
   }
 }

@@ -1,22 +1,17 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { CommandEmpty } from "@/components/ui/command";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { prettySinceTime } from "@/utils/helpers/prettyprint";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useUser } from "@/utils/hooks/useUser";
 import { Skeleton } from "@mui/material";
-import { BotProject, ClientRequest, REQUESTSTATUS } from "@prisma/client";
+import { REQUESTSTATUS } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
-import { ClientSecretProvider } from "../providers/ClientSecretProvider";
-import Sidebar from "../global/Sidebar";
 import { toast } from "sonner";
+import useSWR from "swr";
 import ChatWindow from "../Chat/ChatWindow";
+import Sidebar from "../global/Sidebar";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
+import { ClientSecretProvider } from "../providers/ClientSecretProvider";
 import NewRequestCreation from "./NewRequestCreation";
-import { FileUploadProvider } from "../providers/FileUploadProvider";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -68,62 +63,60 @@ export const RequestPage = () => {
 
   return (
     <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
-      <FileUploadProvider>
-        <div className="relative grid h-[90vh] w-full grid-cols-6">
-          <div className="col-span-1">
-            <Sidebar
-              selectedProject={selectedProject}
-              onSelectRequest={(request) => {
-                setSelectedRequest(request);
-                router.push(
-                  `/project/${selectedProject?.id}/request/${request?.id}`,
+      <div className="relative grid h-[90vh] w-full grid-cols-6">
+        <div className="col-span-1">
+          <Sidebar
+            selectedProject={selectedProject}
+            onSelectRequest={(request) => {
+              setSelectedRequest(request);
+              router.push(
+                `/project/${selectedProject?.id}/request/${request?.id}`,
+              );
+            }}
+            onNewRequest={(project) => {
+              const openRequests = project?.clientRequests?.filter(
+                (request) =>
+                  request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
+                  request?.requestStatus !== REQUESTSTATUS.CLOSED,
+              );
+              if (openRequests?.length < 3) {
+                setOpenNewRequestDialog(true);
+              } else {
+                toast.warning(
+                  "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
                 );
-              }}
-              onNewRequest={(project) => {
-                const openRequests = project?.clientRequests?.filter(
-                  (request) =>
-                    request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                    request?.requestStatus !== REQUESTSTATUS.CLOSED,
-                );
-                if (openRequests?.length < 3) {
-                  setOpenNewRequestDialog(true);
-                } else {
-                  toast.warning(
-                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
-                  );
-                }
-              }}
-              onOpenConfig={(project: any) => {
-                //setSelectedProject(project);
-                // updateSearchParams({ project: project?.id, view: 'project' });
-                // setIsConfigModalOpen(true);
-              }}
-            />
-          </div>
-          <div className="col-span-3 h-full p-4">
-            <ChatWindow userId={user.id} clientRequest={selectedRequest} />
-          </div>
-          <div className="col-span-2">
-            <PreviewWindow />
-          </div>
+              }
+            }}
+            onOpenConfig={(project: any) => {
+              //setSelectedProject(project);
+              // updateSearchParams({ project: project?.id, view: 'project' });
+              // setIsConfigModalOpen(true);
+            }}
+          />
         </div>
-        <Dialog
-          onOpenChange={setOpenNewRequestDialog}
-          open={openNewRequestDialog}
-        >
-          <DialogContent>
-            <NewRequestCreation
-              userId={user.id}
-              project={selectedProject}
-              onRequestCreated={(newRequest) => {
-                router.push(
-                  `/project/${selectedProject.id}/request/${newRequest.id}`,
-                );
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      </FileUploadProvider>
+        <div className="col-span-3 h-full p-4">
+          <ChatWindow userId={user.id} clientRequest={selectedRequest} />
+        </div>
+        <div className="col-span-2">
+          <PreviewWindow />
+        </div>
+      </div>
+      <Dialog
+        onOpenChange={setOpenNewRequestDialog}
+        open={openNewRequestDialog}
+      >
+        <DialogContent>
+          <NewRequestCreation
+            userId={user.id}
+            project={selectedProject}
+            onRequestCreated={(newRequest) => {
+              router.push(
+                `/project/${selectedProject.id}/request/${newRequest.id}`,
+              );
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </ClientSecretProvider>
   );
 };

@@ -53,6 +53,7 @@ export const ProjectDropdown = () => {
     async (url) => await fetch(url).then((res) => res.json()),
   );
 
+  //console.log("projects", projects);
   useEffect(() => {
     if (projectParamId) {
       const project = projects?.find((p: any) => p.id === projectParamId);
@@ -85,7 +86,7 @@ export const ProjectDropdown = () => {
               className="w-[200px] justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
             >
               {value
-                ? projects.find((_project) => _project.id === value)?.name
+                ? projects?.find((_project) => _project.id === value)?.name
                 : "Select project..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -103,7 +104,7 @@ export const ProjectDropdown = () => {
               <CommandList>
                 <CommandEmpty>No projects found.</CommandEmpty>
                 <CommandGroup>
-                  {projects.map((project) => (
+                  {projects?.map((project) => (
                     <CommandItem
                       key={project.id}
                       value={project.id}

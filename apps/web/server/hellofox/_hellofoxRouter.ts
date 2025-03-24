@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { generateObject, streamText } from "ai";
 import {
   defaultCallbackResultBody,
   ServerStreamingFunction,
@@ -7,14 +7,18 @@ import {
 import { getMicrofoxCharacter } from "./default";
 import { hellofoxTools } from "./tools";
 import { models } from "../models";
-import { aboutMicrofox } from "./aboutMicrofox";
+import { aboutMicrofox, aboutMicrofoxInfo } from "./aboutMicrofox";
 import { analyseUserIntent } from "./analyzeUsersIntent";
 import { getMissingCapabilties } from "./getMissingCapabilties";
-import { getMicrofoxCapabilitiesTool } from "./getMicrofoxCapabilities";
+import {
+  getMicrofoxCapabilities,
+  getMicrofoxCapabilitiesTool,
+} from "./getMicrofoxCapabilities";
 import { isTaskBuildable } from "./isTaskBuildable";
 import { guideUserToDoableGoal } from "./guideUserToDoableGoal";
 import { sendStruckLogsTool } from "./sendStruckLogs";
 import { findLastElementWith } from "@/utils/helpers/array";
+import { z } from "zod";
 
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
@@ -41,6 +45,7 @@ import { findLastElementWith } from "@/utils/helpers/array";
 // If it is too simple, it guides the user to expand his goal.
 
 // THE HELLO ROUTER SETUP IS BAD - THE ANSWER HAS TO GO THROUGH DIRECTLY FROM THE INSIDE OF THE TOOLS (No need to come back & convert & again reprint the same information)
+//
 
 // TODO: SUBHAKAR - hellofox is asking too much if the user is lax.
 
@@ -59,72 +64,176 @@ export const hellofoxRouter: ServerStreamingFunction<
     annotations: [],
     toolInvocations: [],
   }));
-  console.log("requestBody after", requestBody.messages);
+  //console.log("requestBody after", requestBody.messages);
   dataStream.writeMessageAnnotation({
     type: "minion",
     value: "hellofox",
   });
-  const result1 = streamText({
-    model: models.claude35Sonnet,
-    system: `
-        ${getMicrofoxCharacter()}
-        - your primary intent/job is to fine-grain the users goal & help him finalise on what he wishes to build.
-        - your primary goal is not to understand how to build it, but what to build.
-        - you keep your answers/questions short & concise, unless it is needed.
-        - You are a great listener, & you are able to understand the user's intent & call tools that can fetch information or help you think.
-        - If it is casual conversation, you do not call below tools, & just respond back to the user.
-        - you do not aks users any information, you just confirm if the user is okay with providing said information later when building what he needs.
-        - you communicate complex technical jargon in a way that is easy to understand.
-        - you make it easy for the user to answer your questions (simplify questions by merging them).
-        ----
-        if user asks/want to know more/does not know about you, call tool - aboutMicrofox.
-        if user has specified a goal or a task that he wants done (only for the first time) - call tool - analyseUserIntent.
-        if there is not enough information about the user's requirement, call tool - analyseUserIntent.
-        if you are not sure if we can build the user's task, call tool - getMissingCapabilities.
-        if user's goal or intent is completely clear, call tool - isTaskBuildable.
-        if user's goal or intent is not clear, call tool - guideUserToDoableGoal.
-        if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
-        if user's goal is vague - call tool - analyseUserIntent.
-        if task is buildable, just reply back with a summary on how microfox will build it, and only ask for confirmation.
-        ---
-        Don't think about how to do it, that is not your job, call tools as needed.
-        Don't directly respond with tool responses, instead, use tools to think & respond.
-        If an existing tool match is not discovered, call tool - sendStruckLogs
-        ALWAYS call tools, unless its casual conversation, or you are sure you can do the task.`,
-    messages: requestBody.messages,
-    toolCallStreaming: true,
-    maxSteps: 3,
-    toolChoice: "auto", // force the model to call a tool
-    tools: {
-      aboutMicrofox: aboutMicrofox(props),
-      analyseUserIntent: analyseUserIntent(props),
-      getMissingCapabilties: getMissingCapabilties(props),
-      //getMicrofoxCapabilities: getMicrofoxCapabilitiesTool(props),
-      isTaskBuildable: isTaskBuildable(props),
-      guideUserToDoableGoal: guideUserToDoableGoal(props),
-      sendStruckLogs: sendStruckLogsTool(props),
-    },
-    onStepFinish: (step) => {
-      console.log("step", step.usage);
-    },
-    onFinish: (result) => {
-      console.log("result", result.usage);
-      // svae minion as an annotation in every message into db.
-    },
-    onError: (error) => {
-      console.log(
-        "error",
-        error,
-        (error.error as any)?.requestBodyValues?.contents
-      );
-    },
+  let lastFewMessages =
+    requestBody.messages.length > 3
+      ? requestBody.messages.slice(-3)
+      : requestBody.messages;
+
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    text: "Thinking...",
   });
+  const { object: classification } = await generateObject({
+    model: models.googleGeminiFlash,
+    schema: z.object({
+      reasoning: z.string(),
+      type: z.enum(["casual", "task-related"]),
+      complexity: z.enum(["simple", "complex"]),
+      queryType: z.enum(["query", "modification", "answer", "confirmation"]),
+    }),
+    messages: lastFewMessages,
+    system: `Classify the current users Query.
+    
+    Determine:
+    1. Query type (casual, task-related)
+    2. Complexity (simple, complex)
+    3. Brief reasoning for classification
+    4. Query type (query, modification, answer, confirmation)`,
+  });
+
+  console.log("classification", classification);
+
+  let result = null;
+  if (classification.type === "task-related") {
+    lastFewMessages =
+      requestBody.messages.length > 5
+        ? requestBody.messages.slice(-5)
+        : requestBody.messages;
+    // do some shit
+    result = streamText({
+      model: models.claude35Sonnet,
+      system: `
+      - You are called Microfox, 
+      - your primary intent/job is to fine-grain the users goal & help him finalise on what he wishes to build.
+      - you keep your answers/questions short & concise, unless it is needed.
+      - you are a great listener, & you are able to understand the user's intent 
+      - you call tools that can fetch information or help you think.
+      - you communicate complex technical jargon in a easy to understand manner.
+      - ALWAYS speak in the first person (as if you aremicrofox).
+      ____
+      First, analyse the user's intent - call tool - analyseUserIntent.
+      If user's task final goal is completely clear, call tool - isTaskBuildable.
+      if user's task final goal is completely impossible, call tool - guideUserToDoableGoal.
+      ____
+      If the task is buildable, just reply back with a summary on how microfox will build it, and ask for confirmation (information can be collected later).
+      `,
+      messages: lastFewMessages,
+      toolCallStreaming: true,
+      maxSteps: 3,
+      toolChoice: "auto", // force the model to call a tool
+      tools: {
+        analyseUserIntent: analyseUserIntent(props),
+        isTaskBuildable: isTaskBuildable(props),
+        guideUserToDoableGoal: guideUserToDoableGoal(props),
+      },
+      onStepFinish: (step) => {
+        console.log("step", step.usage);
+      },
+      onFinish: (result) => {
+        console.log("result", result.usage);
+        // svae minion as an annotation in every message into db.
+      },
+      onError: (error) => {
+        console.log(
+          "error",
+          error,
+          (error.error as any)?.requestBodyValues?.contents
+        );
+      },
+    });
+    //if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
+  } else {
+    result = streamText({
+      model: models.googleGeminiFlash,
+      system: `
+        ${getMicrofoxCharacter()}
+        - always speak in the first person (as microfox).
+        ___
+        Info About Microfox:
+        ${
+          classification.complexity === "complex"
+            ? getMicrofoxCapabilities()
+            : aboutMicrofoxInfo()
+        }
+        ___
+        Respond to the user's query in a short & concise manner.
+        End the conversation asking on how you can be of help to the user.
+        Never tell about your technicalities, unless asked.
+        `,
+      messages: lastFewMessages,
+    });
+  }
+
+  // const result1 = streamText({
+  //   model: models.claude35Sonnet,
+  //   system: `
+  //       ${getMicrofoxCharacter()}
+  //       - your primary intent/job is to fine-grain the users goal & help him finalise on what he wishes to build.
+  //       - your primary goal is not to understand how to build it, but what to build.
+  //       - you keep your answers/questions short & concise, unless it is needed.
+  //       - You are a great listener, & you are able to understand the user's intent & call tools that can fetch information or help you think.
+  //       - If it is casual conversation, you do not call below tools, & just respond back to the user.
+  //       - you do not aks users any information, you just confirm if the user is okay with providing said information later when building what he needs.
+  //       - you communicate complex technical jargon in a way that is easy to understand.
+  //       - you make it easy for the user to answer your questions (simplify questions by merging them).
+  //       ----
+  //       if user asks/want to know more/does not know about you, call tool - aboutMicrofox.
+  //       if user has specified a goal or a task that he wants done (only for the first time) - call tool - analyseUserIntent.
+  //       if there is not enough information about the user's requirement, call tool - analyseUserIntent.
+  //       if you are not sure if we can build the user's task, call tool - getMissingCapabilities.
+  //       if user's goal or intent is completely clear, call tool - isTaskBuildable.
+  //       if user's goal or intent is not clear, call tool - guideUserToDoableGoal.
+  //       if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
+  //       if user's goal is vague - call tool - analyseUserIntent.
+  //       if task is buildable, just reply back with a summary on how microfox will build it, and only ask for confirmation.
+  //       ---
+  //       Don't think about how to do it, that is not your job, call tools as needed.
+  //       Don't directly respond with tool responses, instead, use tools to think & respond.
+  //       If an existing tool match is not discovered, call tool - sendStruckLogs
+  //       ALWAYS call tools, unless its casual conversation, or you are sure you can do the task.`,
+  //   messages: requestBody.messages,
+  //   toolCallStreaming: true,
+  //   maxSteps: 3,
+  //   toolChoice: "auto", // force the model to call a tool
+  //   tools: {
+  //     aboutMicrofox: aboutMicrofox(props),
+  //     analyseUserIntent: analyseUserIntent(props),
+  //     getMissingCapabilties: getMissingCapabilties(props),
+  //     //getMicrofoxCapabilities: getMicrofoxCapabilitiesTool(props),
+  //     sendStruckLogs: sendStruckLogsTool(props),
+  //   },
+  // onStepFinish: (step) => {
+  //   console.log("step", step.usage);
+  // },
+  // onFinish: (result) => {
+  //   console.log("result", result.usage);
+  //   // svae minion as an annotation in every message into db.
+  // },
+  // onError: (error) => {
+  //   console.log(
+  //     "error",
+  //     error,
+  //     (error.error as any)?.requestBodyValues?.contents
+  //   );
+  // },
+  // });
 
   //console.log("result1", result1.toolCalls);
 
-  result1.mergeIntoDataStream(dataStream, {
-    experimental_sendStart: false,
-  });
+  // result1.mergeIntoDataStream(dataStream, {
+  //   experimental_sendStart: false,
+  // });
+
+  if (result != null) {
+    result.mergeIntoDataStream(dataStream, {
+      experimental_sendStart: false,
+    });
+  }
 
   return {
     responseBody: { ...responseBody },

@@ -31,27 +31,35 @@ export const convertfoxRouter: ServerStreamingFunction<
   // console.log("requestBody before", requestBody.messages);
   // VERYY IMPORtANt : SAVES A TON LOT OF TOKENS bypassing the thinking & all other steps
   // filter out every othe message except the ones from convertfox
-  let convertMessages: any[] = [];
+  // let convertMessages: any[] = [];
+  console.log("requestBody.messages", requestBody.messages);
   let lastHelloMessage = findLastElementWith(requestBody.messages, (m: any) => {
-    if (m.annotations.length > 0) {
+    if (m.annotations?.length > 0) {
       if (
-        m.annotations[0].type === "minion" &&
-        m.annotations[0].value === "hellofox"
+        m.annotations[0]?.type === "minion" &&
+        m.annotations[0]?.value === "hellofox"
       ) {
         return true;
       }
     }
     return false;
   });
-  let taskFinalisedSummary = lastHelloMessage.parts.find(
+  console.log("lastHelloMessage", lastHelloMessage);
+  let taskFinalisedSummary = findLastElementWith(
+    lastHelloMessage.parts,
     (p: any) => p.type === "text"
-  ).text;
+  );
+  console.log("taskFinalisedSummary", taskFinalisedSummary);
 
+  // router => if(no task info, then create task info, if change in task info, then update task info
+  // no integrations, )
   // 1. Create Task Info
   let taskInfo = await createTaskInfo(props, taskFinalisedSummary);
+  console.log("taskInfo", taskInfo);
 
   // 2. Task Integrations
   let taskIntegrations = await createTaskIntegrations(props, taskInfo);
+  console.log("taskIntegrations", taskIntegrations);
 
   // 3. Task Required Info
   let taskRequiredInfo = await createTaskRequiredInfo(
@@ -59,7 +67,7 @@ export const convertfoxRouter: ServerStreamingFunction<
     taskInfo,
     taskIntegrations
   );
-
+  console.log("taskRequiredInfo", taskRequiredInfo);
   // 4. Task Structure
   let taskStructure = await createTaskStructure(
     props,
@@ -67,7 +75,7 @@ export const convertfoxRouter: ServerStreamingFunction<
     taskIntegrations,
     taskRequiredInfo
   );
-
+  console.log("taskStructure", taskStructure);
   //   convertMessages.map((m: any) => ({
   //     ...m,
   //     parts: [findLastElementWith(m.parts, (p: any) => p.type === "text")],

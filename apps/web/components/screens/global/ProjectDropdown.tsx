@@ -50,7 +50,7 @@ export const ProjectDropdown = () => {
     isLoading,
   } = useSWR<BotProject[], any, string>(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json()),
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   //console.log("projects", projects);
@@ -114,8 +114,8 @@ export const ProjectDropdown = () => {
                         if (selectedProject?.id !== currentValue) {
                           setSelectedProject(
                             projects.find(
-                              (_project) => _project.id === currentValue,
-                            ),
+                              (_project) => _project.id === currentValue
+                            )
                           );
                           router.push(`/project/${currentValue}`);
                         }
@@ -125,7 +125,7 @@ export const ProjectDropdown = () => {
                       <ChevronRight
                         className={cn(
                           "h-4 w-4",
-                          value === project.id ? "opacity-100" : "opacity-0",
+                          value === project.id ? "opacity-100" : "opacity-0"
                         )}
                       />
                       {project.name}

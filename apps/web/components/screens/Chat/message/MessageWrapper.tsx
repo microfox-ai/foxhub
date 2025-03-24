@@ -148,12 +148,12 @@ export const MessageWrapper = ({
                 {dayjs(message.createdAt).format("h:mm A")}
               </span>
             )}
-            {IN_DEV && message.annotations?.map((annotation: any) => {
+            {IN_DEV && message.annotations?.map((annotation: any, idx: number) => {
               if (!annotation) return null;
               if (annotation.type === "metadata") {
-                return <div>{annotation.metadata}</div>;
+                return <div key={annotation.type + idx}>{annotation.metadata}</div>;
               }
-              return <div>{annotation.content ?? annotation.text}</div>;
+              return <div key={annotation.type + idx}>{annotation.content ?? annotation.text}</div>;
             })}
             {message.content && message.content.length > 0 && displayParts.length === 1 && (
               <Markdown>{message.content}</Markdown>

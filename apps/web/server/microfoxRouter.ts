@@ -40,6 +40,7 @@ const createMessageRouter: ServerStreamingFunction<
         originClientRequestId: requestBody.clientRequestId,
         userId: requestBody.userId,
         minionType: minionType,
+        context: "on-start",
       },
     });
   }

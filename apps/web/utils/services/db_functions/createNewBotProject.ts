@@ -13,6 +13,17 @@ export async function createNewBotProject({
     projectName: string;
     projectDescription: string;
 }) {
+    if (!userId) {
+        console.error("No user ID provided");
+        throw new Error("No user ID provided");
+    }
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+    if (!user) {
+        console.error("User not found");
+        throw new Error("User not found");
+    }
     if (!GITHUB_TOKEN) {
         console.error("No Github token provided");
         throw new Error("No Github token provided");

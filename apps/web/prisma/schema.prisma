@@ -41,20 +41,18 @@ model FoxTemplate {
 
 model ChatUIMessage {
   id                    String        @id @default(uuid())
-  context               String
+  context               String?
   role                  String
   content               String
   parts                 Json[]
   attachments           Json[]
   annotations           Json[]
-  metadata              Json?
   minionId              String?
   minionType            String?
-  userId                String
+  userId                String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   originClientRequestId String
-  systemType            String?
   minion                FoxTemplate?  @relation(fields: [minionId], references: [id])
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
@@ -98,6 +96,15 @@ model ClientRequest {
   botProject               BotProject              @relation(fields: [botProjectId], references: [id])
   deployedFunctions        ClientRequestFunction[]
   requestUpdates           RequestUpdate[]
+  taskInstanceMeta         Json?
+}
+
+model TaskInstanceMeta {
+  id              String @id @default(uuid())
+  taskInstance    Json?
+  minionType          String
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt       
 }
 
 model ClientSecret {

@@ -1,10 +1,12 @@
 import {
   ServerStreamingRouter,
   defaultCallbackResultBody,
+  ServerStreamingFunction,
 } from "@repo/ai-utils/router";
 import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
 import { convertfoxRouter } from "./convertfox/convertFoxRouter";
+import { createMessage } from "@/utils/services/db_functions/messages";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -18,8 +20,36 @@ const microfoxRouter = new ServerStreamingRouter<
   defaultCallbackResultBody
 >();
 
+const createMessageRouter: ServerStreamingFunction<
+  any,
+  defaultCallbackResultBody
+> = async (props) => {
+  const { dataStream, requestBody, responseBody } = props;
+  console.log("createMessage", requestBody);
+  const lastMessage =
+    requestBody.messages.length > 0
+      ? requestBody.messages[requestBody.messages.length - 1]
+      : null;
+  let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
+  if (lastMessage) {
+    await createMessage({
+      clientRequestId: requestBody.clientRequestId,
+      message: {
+        ...lastMessage,
+        id: requestBody.clientRequestId + "-" + lastMessage.id,
+        originClientRequestId: requestBody.clientRequestId,
+        userId: requestBody.userId,
+        minionType: minionType,
+      },
+    });
+  }
+  return {
+    responseBody: props.responseBody,
+    appendRequestBody: props.requestBody,
+  };
+};
 // TODO: remove this & bifract this into multiple small steps in both server & frontend
-microfoxRouter.addPath("createOrReOpenPullRequest", createOrReOpenPullRequest);
+microfoxRouter.addPath("createMessage", createMessageRouter);
 microfoxRouter.addPath("hellofox", hellofoxRouter);
 microfoxRouter.addPath("convertfox", convertfoxRouter);
 
@@ -29,11 +59,12 @@ microfoxRouter.setRouting((requestBody: any) => {
   // if (requestBody.somethin === "nothing") {
   //   return ["nothing"];
   // }
+
   let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
   if (minionType === "hellofox") {
-    return ["hellofox"];
+    return ["createMessage", "hellofox"];
   } else if (minionType === "convertfox") {
-    return ["convertfox"];
+    return ["createMessage", "convertfox"];
   }
   return [];
 });

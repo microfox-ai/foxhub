@@ -37,7 +37,6 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     chatOptions: userChatOptions,
 }) => {
     const [minionType, setMinionType] = useLocalState<ChatUIMessageWithTypes["minionType"] | null>("minionType", "hellofox");
-    const { mediaPayload } = useFileUpload();
 
     const {
         data: serverMessages,
@@ -45,26 +44,53 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         isValidating,
         isLoading,
     } = useSWR<ChatUIMessageWithTypes[]>(
-        `/api/client-requests/chat/update?requestId=${clientRequest?.id}`,
+        `/api/chat/message?originClientRequestId=${clientRequest?.id}`,
         async (url: string) => {
             const res = await PortalSdk.getData(url, {});
             return res.chatUIMessages;
         },
     );
 
-    const chatOptions = useChat({
+    useEffect(() => {
+        if (clientRequest) {
+            console.log("clientRequest", clientRequest);
+            setMinionType(
+                (clientRequest.taskInstanceMeta as any)?.minionType ?? "hellofox"
+            );
+        }
+    }, [clientRequest]);
+
+    const { handleSubmit: handleChatSubmit, ...chatOptions } = useChat({
         api: "/api/chat",
-        initialMessages: [],
+        initialMessages: serverMessages as any[] || [],
         initialInput: "",
         ...userChatOptions,
+        id: clientRequest?.id,
         experimental_prepareRequestBody: (options) => {
             return {
+                // todo: only send the last message, & server fetch the rest.
                 ...options,
                 minionType: localStorage.getItem("minionType") || "hellofox",
-                media: mediaPayload,
-                originClientRequestId: clientRequest?.id,
+                clientRequestId: clientRequest?.id,
                 userId: clientRequest?.userId,
             };
+        },
+        onFinish: (response) => {
+            const { experimental_attachments, id, ...rest } = response;
+            let minionType = localStorage.getItem("minionType")?.replaceAll('"', "") || "hellofox";
+            //add this message to the db
+            if (rest.parts?.length === 0 && rest.content === "" && rest.annotations?.length === 0) {
+                return;
+            }
+            PortalSdk.postData("/api/chat/message", {
+                context: "on-finish",
+                id: clientRequest?.id + "-" + id,
+                attachments: experimental_attachments,
+                minionType,
+                userId: clientRequest?.userId,
+                ...rest,
+                originClientRequestId: clientRequest?.id,
+            });
         },
         onResponse: (response) => {
             console.log(response);
@@ -83,6 +109,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     }, [chatOptions.data]);
 
     const value = {
+        handleSubmit: handleChatSubmit,
         minionType,
         setMinionType,
         ...chatOptions,

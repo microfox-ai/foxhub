@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { ChatUIMessage } from "@prisma/client";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { Button } from "@/components/ui/button";
+import { IN_DEV } from "@/utils/constants/appInfo";
 
 interface MessageWrapperProps {
   message: UIMessage;
@@ -147,6 +148,13 @@ export const MessageWrapper = ({
                 {dayjs(message.createdAt).format("h:mm A")}
               </span>
             )}
+            {IN_DEV && message.annotations?.map((annotation: any) => {
+              if (!annotation) return null;
+              if (annotation.type === "metadata") {
+                return <div>{annotation.metadata}</div>;
+              }
+              return <div>{annotation.content ?? annotation.text}</div>;
+            })}
             {message.content && message.content.length > 0 && displayParts.length === 1 && (
               <Markdown>{message.content}</Markdown>
             )}

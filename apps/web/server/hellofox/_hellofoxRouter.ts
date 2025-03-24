@@ -18,7 +18,11 @@ import { isTaskBuildable } from "./isTaskBuildable";
 import { guideUserToDoableGoal } from "./guideUserToDoableGoal";
 import { sendStruckLogsTool } from "./sendStruckLogs";
 import { findLastElementWith } from "@/utils/helpers/array";
-import { z } from "zod";
+import { object, z } from "zod";
+import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
+import { createMessage } from "@/utils/services/db_functions/messages";
+import { prisma } from "@/prisma/prisma";
+import { getFox } from "@/utils/services/db_functions/foxes";
 
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
@@ -55,8 +59,8 @@ export const hellofoxRouter: ServerStreamingFunction<
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
   console.log("hellofoxRouter");
+
   // clean up al messages before starting the conversation
-  // console.log("requestBody before", requestBody.messages);
   // VERYY IMPORtANt : SAVES A TON LOT OF TOKENS bypassing the thinking & all other steps
   requestBody.messages = requestBody.messages.map((m: any) => ({
     ...m,
@@ -73,7 +77,6 @@ export const hellofoxRouter: ServerStreamingFunction<
     requestBody.messages.length > 3
       ? requestBody.messages.slice(-3)
       : requestBody.messages;
-
   dataStream.writeMessageAnnotation({
     type: "loading",
     text: "Thinking...",
@@ -84,7 +87,7 @@ export const hellofoxRouter: ServerStreamingFunction<
       reasoning: z.string(),
       type: z.enum(["casual", "task-related"]),
       complexity: z.enum(["simple", "complex"]),
-      queryType: z.enum(["query", "modification", "answer", "confirmation"]),
+      //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
     }),
     messages: lastFewMessages,
     system: `Classify the current users Query.
@@ -92,11 +95,15 @@ export const hellofoxRouter: ServerStreamingFunction<
     Determine:
     1. Query type (casual, task-related)
     2. Complexity (simple, complex)
-    3. Brief reasoning for classification
-    4. Query type (query, modification, answer, confirmation)`,
-  });
+    3. Brief reasoning for classification`,
+  }); // 4. Query type (query, modification, answer, confirmation)
 
-  console.log("classification", classification);
+  //console.log("classification", classification);
+  dataStream.writeMessageAnnotation({
+    type: "metadata",
+    object: classification,
+    objectType: "classification",
+  });
 
   let result = null;
   if (classification.type === "task-related") {
@@ -134,9 +141,17 @@ export const hellofoxRouter: ServerStreamingFunction<
       onStepFinish: (step) => {
         console.log("step", step.usage);
       },
-      onFinish: (result) => {
+      onFinish: async (result) => {
         console.log("result", result.usage);
         // svae minion as an annotation in every message into db.
+        await updateClientRequest({
+          clientRequestId: requestBody.clientRequestId,
+          taskInstanceMeta: {
+            minionType: "hellofox",
+          },
+        });
+        const lastMesage =
+          result.response.messages[result.response.messages.length - 1];
       },
       onError: (error) => {
         console.log(

@@ -48,8 +48,8 @@ export const ProjectDropdown = () => {
     data: projects,
     error,
     isLoading,
-  } = useSWR<BotProject[], any, string>(
-    `/api/bot-project?userId=${user?.id}`,
+  } = useSWR<BotProject[], any, string | null>(
+    user?.id ? `/api/bot-project?userId=${user?.id}` : null,
     async (url) => await fetch(url).then((res) => res.json())
   );
 
@@ -133,14 +133,16 @@ export const ProjectDropdown = () => {
                   ))}
                 </CommandGroup>
                 <DialogTrigger className="w-full flex">
-                  <Button
-                    onClick={() => setOpen(false)}
-                    variant={"ghost"}
-                    className="flex opacity-[0.5] flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
-                  >
-                    <CirclePlusIcon className="h-4 w-4" />
-                    New Project
-                  </Button>
+                  <div >
+                    <Button
+                      onClick={() => setOpen(false)}
+                      variant={"ghost"}
+                      className="flex opacity-[0.5] flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
+                    >
+                      <CirclePlusIcon className="h-4 w-4" />
+                      New Project
+                    </Button>
+                  </div>
                 </DialogTrigger>
               </CommandList>
             </Command>

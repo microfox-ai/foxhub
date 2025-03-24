@@ -21,7 +21,7 @@ export const taskIntegrations = z.object({
         .array(z.string())
         .describe(
           "The specific utilities of this platform that is needed to achieve the task"
-        ),
+        ), // CAN BE HALLUCINATING.
     })
   ),
 });
@@ -63,7 +63,7 @@ export const taskStructure = z.object({
   ),
 });
 export type TaskStructure = z.infer<typeof taskStructure>;
-// step3.
+// step3
 export const taskInstance = z.object({
   taskInfo: taskInfo,
   taskIntegrations: taskIntegrations,

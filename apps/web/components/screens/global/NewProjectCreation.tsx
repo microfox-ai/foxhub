@@ -24,6 +24,10 @@ export default function NewProjectCreation({
       toast.error("Please provide both a title and a detailed description.");
       return;
     }
+    if (!userId) {
+      toast.error("Please login to create a project.");
+      return;
+    }
     setSending(true);
     try {
       const newProject = await PortalSdk.postData("/api/bot-project/create", {

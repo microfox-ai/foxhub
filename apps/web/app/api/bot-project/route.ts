@@ -7,10 +7,7 @@ export async function GET(request: Request) {
   const userId = searchParams.get("userId");
 
   if (!userId) {
-    return NextResponse.json(
-      { error: "User ID is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
   }
 
   try {

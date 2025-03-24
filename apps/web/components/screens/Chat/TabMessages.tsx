@@ -1,13 +1,6 @@
-import { Message, UIMessage } from "ai";
-import { FileText } from "lucide-react";
-import dayjs from "dayjs";
 import { Skeleton } from "@mui/material";
-import { getMessageClass } from "./helpers/ui";
-import {
-  AnnotationType,
-  ChatUIMessageWithTypes,
-  MessageMetadata,
-} from "../hooks/convertors";
+import { UIMessage } from "ai";
+import dayjs from "dayjs";
 import { MessageWrapper } from "./message/MessageWrapper";
 
 interface TabMessagesProps {

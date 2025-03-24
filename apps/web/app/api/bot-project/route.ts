@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
   if (!userId) {
     return NextResponse.json(
-      { error: "Client ID is required" },
+      { error: "User ID is required" },
       { status: 400 }
     );
   }
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       include: { clientRequests: true },
     });
 
-    if (userId && (!botProjects || botProjects.length === 0)) {
+    if (!botProjects || botProjects.length === 0) {
       const newBotProject = await createNewBotProject({
         userId,
         projectName: "Personal Space",

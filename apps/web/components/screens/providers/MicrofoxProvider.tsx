@@ -60,7 +60,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         experimental_prepareRequestBody: (options) => {
             return {
                 ...options,
-                minionType,
+                minionType: localStorage.getItem("minionType") || "hellofox",
                 media: mediaPayload,
                 originClientRequestId: clientRequest?.id,
                 userId: clientRequest?.userId,

@@ -25,14 +25,14 @@ microfoxRouter.addPath("convertfox", convertfoxRouter);
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
-  console.log("requestBody", requestBody);
+  console.log("routing to", requestBody.minionType);
   // if (requestBody.somethin === "nothing") {
   //   return ["nothing"];
   // }
-  if (requestBody.minionType === "hellofox") {
+  let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
+  if (minionType === "hellofox") {
     return ["hellofox"];
-  }
-  if (requestBody.minionType === "convertfox") {
+  } else if (minionType === "convertfox") {
     return ["convertfox"];
   }
   return [];

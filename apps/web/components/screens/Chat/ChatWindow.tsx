@@ -10,17 +10,18 @@ import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
 import { SlashModal } from "./SlashModal";
 import TabMessages from "./TabMessages";
+import { MicrofoxProvider } from "../providers/MicrofoxProvider";
 export type AttachedMedia = {
   file: File;
   preview: string;
 };
 
-export default function ChatWindow({
+function ChatWindow({
   userId,
   clientRequest,
 }: {
   userId: string;
-  clientRequest: ClientRequest;
+  clientRequest?: ClientRequest;
 }) {
   // Chat state
   const [activeTab, setActiveTab] = useState("chat");
@@ -82,7 +83,7 @@ export default function ChatWindow({
   const sendMessage = handleSubmit;
 
   return (
-    <div className="relative flex h-full w-full flex-col overflow-y-auto">
+    <div className="relative flex h-full w-full flex-col">
       <ChatHeader
         clientRequest={clientRequest}
         mutate={mutate}
@@ -93,7 +94,7 @@ export default function ChatWindow({
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="relative flex h-full max-h-[75vh] flex-1 flex-col overflow-y-auto"
+        className="relative flex h-fit flex-1 flex-col overflow-y-auto"
       >
         <div className="w-full px-4">
           <TabsList className="text-md flex w-full justify-evenly gap-4">
@@ -138,18 +139,36 @@ export default function ChatWindow({
       </Tabs>
 
       {/* Slash Modal: Opened when input starts with '/' */}
-      <SlashModal
-        clientRequest={clientRequest}
-        onSuccess={reloadClientData}
-        onClose={() => {}}
-      />
+      {clientRequest && (
+        <SlashModal
+          clientRequest={clientRequest}
+          onSuccess={reloadClientData}
+          onClose={() => { }}
+        />
+      )}
 
       {/* Global Add ClientSecret Modal */}
-      <AddClientSecretModal
-        clientRequest={clientRequest}
-        userId={userId}
-        onSuccess={reloadClientData}
-      />
+      {clientRequest && (
+        <AddClientSecretModal
+          clientRequest={clientRequest}
+          userId={userId}
+          onSuccess={reloadClientData}
+        />
+      )}
     </div>
+  );
+}
+
+export default function ChatWindowWithProvider({
+  userId,
+  clientRequest,
+}: {
+  userId: string;
+  clientRequest?: ClientRequest;
+}) {
+  return (
+    <MicrofoxProvider clientRequest={clientRequest}>
+      <ChatWindow userId={userId} clientRequest={clientRequest} />
+    </MicrofoxProvider>
   );
 }

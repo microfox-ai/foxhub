@@ -7,6 +7,8 @@ import { Markdown } from "./markdown";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { ChatUIMessage } from "@prisma/client";
+import { useMicrofox } from "../../providers/MicrofoxProvider";
+import { Button } from "@/components/ui/button";
 
 interface MessageWrapperProps {
   message: UIMessage;
@@ -19,7 +21,8 @@ interface MessageWrapperProps {
 
 type MessagePartType = UIMessage["parts"][number];
 
-const MessagePart = ({ part }: { part: MessagePartType }) => {
+const MessagePart = ({ part, messageId }: { part: MessagePartType, messageId: string }) => {
+
   if (part.type === "text") {
     return <Markdown>{part.text}</Markdown>;
   }
@@ -28,14 +31,58 @@ const MessagePart = ({ part }: { part: MessagePartType }) => {
     return <Markdown>{part.reasoning}</Markdown>;
   }
 
-  if (part.type === "tool-invocation") {
-    return <Markdown>{part.toolInvocation.toolName}</Markdown>;
-  }
-
   if (part.type === "source") {
     return <Markdown>{part.source.url}</Markdown>;
   }
 };
+
+const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messageId: string }) => {
+
+  const { setMinionType, setMessages, status } = useMicrofox();
+
+  if (status === "streaming") {
+    return null;
+  }
+
+  const removeThisPart = () => {
+    setMessages((messages) => messages.map((m) => {
+      if (m.id === messageId) {
+        return {
+          ...m,
+          parts: m.parts?.filter((p: any) => JSON.stringify(p) !== JSON.stringify(part)),
+        };
+      }
+      return m;
+    }));
+  }
+
+  if (part.type === "tool-invocation" && part.toolInvocation.state === "result") {
+    return (
+      <div className="flex flex-col gap-2 my-4">
+        {part.toolInvocation.result.buttons && (
+          <div className="flex flex-wrap gap-2">
+            {part.toolInvocation.result.buttons.map((button: any) => (
+              <Button
+                variant={"default"}
+                key={button.text} className={`text-sm text-black px-2 py-2 rounded-xl cursor-pointer ${button.className}`}
+                onClick={() => {
+                  if (button.action === "shiftMinion") {
+                    setMinionType(button.value);
+                  }
+                  if (button.action === "removeThisPart") {
+                    removeThisPart();
+                  }
+                }}
+              >
+                {button.text}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+}
 
 // RENDER CONTENT BY PARTS AND NOT BY CONTENT, BECAUSE CONTENT MIGHT BE A MERGE OF MULTIPLE PARTS.
 export const MessageWrapper = ({
@@ -55,7 +102,14 @@ export const MessageWrapper = ({
   const minion = annotations?.find((a) => (a as any).type === "minion");
 
   const displayParts = message.parts?.filter(
-    (part) => part.type !== "tool-invocation",
+    (part) =>
+      part.type !== "tool-invocation",
+  );
+  const toolInvocations = message.parts?.filter(
+    (part) =>
+      part.type === "tool-invocation" &&
+      part.toolInvocation.state === "result" &&
+      part.toolInvocation.result.text != null,
   );
   const [activeTab, setActiveTab] = useState<number>(0);
   useEffect(() => {
@@ -75,7 +129,7 @@ export const MessageWrapper = ({
         <div
           className={`group flex items-start gap-3 ${(message.role as any) === "user" ? "justify-end" : "justify-start"}`}
         >
-          {message.role == "user" && index <= length - 2 && (
+          {message.role == "user" && index <= length - 1 && (
             <RefreshCcw
               className="h-4 w-4 text-neutral-500 cursor-pointer self-center opacity-0 group-hover:opacity-100 hover:text-neutral-700"
               onClick={onRefresh}
@@ -98,9 +152,8 @@ export const MessageWrapper = ({
               <div className="w-[400px] p-0 bg-transparent">
                 <div className="flex gap-1 mb-3 bg-transparent">
                   <ChevronLeft
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
-                      activeTab > 0 ? "opacity-100" : "opacity-50"
-                    }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab > 0 ? "opacity-100" : "opacity-50"
+                      }`}
                     onClick={() => setActiveTab(activeTab - 1)}
                   />
                   <div
@@ -109,17 +162,19 @@ export const MessageWrapper = ({
                     Step {activeTab + 1}
                   </div>
                   <ChevronRight
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
-                      activeTab < displayParts?.length - 1
-                        ? "opacity-100"
-                        : "opacity-50"
-                    }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab < displayParts?.length - 1
+                      ? "opacity-100"
+                      : "opacity-50"
+                      }`}
                     onClick={() => setActiveTab(activeTab + 1)}
                   />
                 </div>
                 {displayParts?.[activeTab] && (
-                  <MessagePart part={displayParts?.[activeTab]} />
+                  <MessagePart part={displayParts?.[activeTab]} messageId={message.id} />
                 )}
+                {toolInvocations?.map((toolInvocation, idx) => (
+                  <ToolInvocationPart key={idx + toolInvocation.type} part={toolInvocation} messageId={message.id} />
+                ))}
               </div>
             )}
             {/* {message.parts && message.parts.map((part: any) => {

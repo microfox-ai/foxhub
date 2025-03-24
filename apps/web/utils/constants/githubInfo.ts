@@ -6,6 +6,6 @@ export const TEMPLATE_REPO = "Shard-Template";
 
 export const PROJECT_BRANCH_NAME = "project/master";
 export const PROJECT_INFO_DIR = "ProjectInfo";
-export const PROJECT_JSON_FILE_DIR = `${PROJECT_INFO_DIR}/project.json`;
+export const PROJECT_JSON_FILE_DIR = `${PROJECT_INFO_DIR}/botProject.json`;
 
 export const GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;

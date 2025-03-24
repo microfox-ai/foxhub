@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import ChatWindow from "../Chat/ChatWindow";
-import NewRequestCreation from "../RequestPage/NewRequestCreation";
+import NewRequestCreation from "./NewRequestCreation";
 import NewProjectCreation from "../global/NewProjectCreation";
 import ProjectConfigModal from "../global/ProjectConfigModal";
 import Sidebar from "../global/Sidebar";

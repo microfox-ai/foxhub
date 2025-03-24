@@ -34,13 +34,13 @@ const ClientSecretContext = createContext<ClientSecretContextType | undefined>(
 
 export const ClientSecretProvider: React.FC<{
   userId: string;
-  botProjectId: string;
+  botProjectId?: string;
   // clientRequestId?: string;
   children: React.ReactNode;
 }> = ({ userId, botProjectId, children }) => {
   const searchParams = new URLSearchParams();
   // searchParams.append('userId', userId);
-  searchParams.append("botProjectId", botProjectId);
+  searchParams.append("botProjectId", botProjectId || "");
   // searchParams.append('clientRequestId', clientRequestId);
 
   const { data, error, mutate, isLoading } = useSWR(

@@ -1,3 +1,8 @@
+import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { tool } from "ai";
+import { z } from "zod";
+
+// needs improvements into finer thought process
 export const getMicrofoxCapabilities = () => {
   return `WHAT WE ARE CAPABLE OF:
           Firsly, we are capable of building any automation task, & deploy it in serverless for users.
@@ -8,4 +13,24 @@ export const getMicrofoxCapabilities = () => {
           ____
           WHAT WE ARE NOT CAPABLE OF:
           1. Building web apps/ mobile apps - anyhting frontend`;
+};
+
+export const getMicrofoxCapabilitiesTool = (
+  props: StreamingFucntionProps<any, any>
+) => {
+  return tool({
+    description: "Fetches & Sends infrormation about Microfox's capabilities",
+    parameters: z.object({
+      task: z.string().describe("The user's goal or task"),
+    }),
+    execute: async ({ task }, options) => {
+      props.dataStream.writeMessageAnnotation({
+        type: "thinking",
+        toolName: "getMicrofoxCapabilities",
+        toolCallId: options.toolCallId,
+        content: `Thinking about the capabilities of Microfox to build the user's task`,
+      });
+      return getMicrofoxCapabilities();
+    },
+  });
 };

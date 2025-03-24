@@ -11,7 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { CirclePlusIcon } from "lucide-react";
-import NewRequestCreation from "../RequestPage/NewRequestCreation";
+import { createEmptyClientRequest } from "@/utils/services/db_functions/createEmptyClientRequest";
 
 export const ProjectPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -30,7 +30,7 @@ export const ProjectPage = () => {
     isLoading,
   } = useSWR(
     `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json()),
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   useEffect(() => {
@@ -71,25 +71,13 @@ export const ProjectPage = () => {
               <TabsTrigger value="requests">Requests</TabsTrigger>
               <TabsTrigger value="bots">Bots</TabsTrigger>
             </TabsList>
-            <Dialog>
-              <DialogTrigger className="flex ml-4">
-                <Button className="flex items-center gap-2 text-sm p-2">
-                  <CirclePlusIcon size={24} />
-                  New Request
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <NewRequestCreation
-                  userId={user.id}
-                  project={selectedProject}
-                  onRequestCreated={(newRequest) => {
-                    router.push(
-                      `/project/${selectedProject.id}/request/${newRequest.id}`,
-                    );
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
+            <Button
+              onClick={() => createEmptyClientRequest}
+              className="flex items-center gap-2 text-sm p-2"
+            >
+              <CirclePlusIcon size={24} />
+              New Request
+            </Button>
           </div>
           <TabsContent value="requests">
             <div className="flex flex-col p-2 gap-2 bg-neutral-50  rounded-xl min-h-[70vh] shadow-md">
@@ -99,7 +87,7 @@ export const ProjectPage = () => {
                     key={request.id}
                     onClick={() => {
                       router.push(
-                        `/project/${selectedProject.id}/request/${request.id}`,
+                        `/project/${selectedProject.id}/request/${request.id}`
                       );
                     }}
                     className="flex hover:shadow-md items-center cursor-pointer hover:bg-white rounded-xl p-4"
@@ -113,7 +101,7 @@ export const ProjectPage = () => {
                       </p>
                     </div>
                   </div>
-                ),
+                )
               )}
               {selectedProject?.clientRequests?.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full">

@@ -3,6 +3,7 @@ import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import { GITHUB_TOKEN, PROJECT_BRANCH_NAME, PROJECT_INFO_DIR, PROJECT_JSON_FILE_DIR, TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { TEMPLATE_REPO } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
+import { createEmptyClientRequest } from "./createEmptyClientRequest";
 
 export async function createNewBotProject({
     userId,
@@ -152,13 +153,10 @@ export async function createNewBotProject({
     console.log("botProjectFile", botProjectFile);
 
     // Create empty ClientRequest
-    const clientRequest = await prisma.clientRequest.create({
-        data: {
-            botProjectId: botProject.id,
-            userId,
-            title: "Untitled",
-        },
-    }) || {};
+    const clientRequest = await createEmptyClientRequest({
+        userId,
+        botProjectId: botProject.id,
+    });
 
     return { ...botProject, clientRequests: [clientRequest] };
 }

@@ -1,16 +1,17 @@
 import { generateObject } from "ai";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { models } from "../models";
-import { TaskInfo, taskIntegrations } from "./types";
+import { TaskInfo, taskIntegrations, TaskInstanceMetaType } from "./types";
 import { object } from "zod";
+import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 
 export const createTaskIntegrations = async (
   props: StreamingFucntionProps<any, any>,
-  taskFinalisedSummary: TaskInfo
+  taskInstanceMeta: TaskInstanceMetaType
 ) => {
   const { dataStream, requestBody, responseBody } = props;
 
-  const taskInfo = taskFinalisedSummary;
+  const taskInfo = taskInstanceMeta.taskInfo;
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
@@ -21,7 +22,7 @@ export const createTaskIntegrations = async (
     model: models.googleGeminiFlash,
     system: `
         You analyse the task information & find the platforms we need to integrate with.
-        You return all the platforms we need to integrate with (along with specific needs for each platform).
+        You return all the third party platforms we need to integrate with (along with specific needs for each platform).
         ___
          ---
         You run in a loop of Thought, Action, PAUSE, Observation.
@@ -40,6 +41,13 @@ Summary: ${taskInfo.summary}
     `,
   });
 
+  await updateTaskInstanceMeta({
+    clientRequestId: requestBody.clientRequestId,
+    taskInstanceMeta: {
+      ...taskInstanceMeta,
+      taskInfo: taskInfo,
+    },
+  });
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "taskIntegrations",

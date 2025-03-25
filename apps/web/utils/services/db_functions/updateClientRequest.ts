@@ -17,3 +17,20 @@ export async function updateClientRequest({
 
   return clientRequest;
 }
+
+export async function updateTaskInstanceMeta({
+  clientRequestId,
+  taskInstanceMeta,
+  otherData,
+}: any) {
+  const updatedClientRequest = await prisma.clientRequest.update({
+    where: {
+      id: clientRequestId,
+    },
+    data: {
+      taskInstanceMeta,
+      ...(otherData && { ...otherData }),
+    },
+  });
+  return updateClientRequest;
+}

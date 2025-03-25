@@ -5,7 +5,7 @@ import {
 } from "@repo/ai-utils/router";
 import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
-import { convertfoxRouter } from "./convertfox/convertFoxRouter";
+import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { createMessage } from "@/utils/services/db_functions/messages";
 
 export interface MicrofoxRequestBody {
@@ -20,18 +20,19 @@ const microfoxRouter = new ServerStreamingRouter<
   defaultCallbackResultBody
 >();
 
+// TODO: Shift to the frontend.
 const createMessageRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
-  console.log("createMessage", requestBody);
   const lastMessage =
     requestBody.messages.length > 0
       ? requestBody.messages[requestBody.messages.length - 1]
       : null;
   let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
   if (lastMessage) {
+    console.log("createMessage", lastMessage);
     await createMessage({
       clientRequestId: requestBody.clientRequestId,
       message: {
@@ -63,9 +64,9 @@ microfoxRouter.setRouting((requestBody: any) => {
 
   let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
   if (minionType === "hellofox") {
-    return ["createMessage", "hellofox"];
+    return ["hellofox"];
   } else if (minionType === "convertfox") {
-    return ["createMessage", "convertfox"];
+    return ["convertfox"];
   }
   return [];
 });

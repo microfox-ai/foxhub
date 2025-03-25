@@ -53,6 +53,8 @@ model ChatUIMessage {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   originClientRequestId String
+  revisionId           String?
+  toolInvocations       Json[]
   minion                FoxTemplate?  @relation(fields: [minionId], references: [id])
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }

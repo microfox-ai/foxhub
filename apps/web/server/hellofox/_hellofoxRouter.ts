@@ -143,15 +143,16 @@ export const hellofoxRouter: ServerStreamingFunction<
       },
       onFinish: async (result) => {
         console.log("result", result.usage);
+        // TODO: SUBHAKAR - saving anyhting over here is not a good idea, as it breaks things on the client side. (error Part coming)
         // svae minion as an annotation in every message into db.
-        await updateClientRequest({
-          clientRequestId: requestBody.clientRequestId,
-          taskInstanceMeta: {
-            minionType: "hellofox",
-          },
-        });
-        const lastMesage =
-          result.response.messages[result.response.messages.length - 1];
+        // await updateClientRequest({
+        //   clientRequestId: requestBody.clientRequestId,
+        //   taskInstanceMeta: {
+        //     minionType: "hellofox",
+        //   },
+        // });
+        // const lastMesage =
+        //   result.response.messages[result.response.messages.length - 1];
       },
       onError: (error) => {
         console.log(

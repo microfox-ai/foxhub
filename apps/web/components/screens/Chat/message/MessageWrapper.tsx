@@ -11,11 +11,12 @@ import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { Button } from "@/components/ui/button";
 import { IN_DEV } from "@/utils/constants/appInfo";
 
+// TODO: error boundary for ui annotations 
+//import { ErrorBoundary } from "react-error-boundary";
 interface MessageWrapperProps {
   message: UIMessage;
   index: number;
   renderDateSeperator: (currentDate: string) => React.ReactNode;
-  onRefresh: () => void;
   length: number;
   isStreaming: boolean;
 }
@@ -70,9 +71,31 @@ const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messag
                   if (button.action === "shiftMinion") {
                     setMinionType(button.value);
                     setInput("");
-                    handleSubmit();
+                    append({
+                      id: crypto.randomUUID(),
+                      content: button.value,
+                      role: "user",
+                      parts: [{
+                        type: "text",
+                        text: button.value,
+                      }]
+                    });
+                    removeThisPart();
                   }
                   if (button.action === "removeThisPart") {
+                    removeThisPart();
+                  }
+                  if (button.action === "appendMessage") {
+                    setInput("")
+                    append({
+                      id: crypto.randomUUID(),
+                      content: button.value,
+                      role: "user",
+                      parts: [{
+                        type: "text",
+                        text: button.value,
+                      }]
+                    })
                     removeThisPart();
                   }
                 }}
@@ -87,15 +110,53 @@ const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messag
   }
 }
 
+const AnootationUIList = ({ uiAnnotations }: { uiAnnotations: any[] }) => {
+  const renderTaskInfo = (uiAnnotation: any) => {
+    const object = uiAnnotation.object;
+    return (
+      <div className="flex flex-col gap-2 p-2 bg-gray-100 rounded-lg">
+        <h3 className="text-lg">{uiAnnotation.objectType}</h3>
+        {Object.keys(object).map((key: any) => {
+          return (
+            <div key={key} className="flex flex-col gap-1">
+              <span className="font-bold text-xs tracking-wide text-gray-500">{key}</span>
+              <span className="text-sm">{object[key]}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const renderTaskIntegrations = (uiAnnotation: any) => {
+    const object = uiAnnotation.object;
+    return (
+      <div className="flex flex-col gap-2 p-2 bg-gray-100 rounded-lg">
+        <h3 className="text-lg">{uiAnnotation.objectType}</h3>
+      </div>
+    );
+  }
+
+  return uiAnnotations.map((uiAnnotation: any) => {
+    if (uiAnnotation.objectType === "taskInfo") {
+      return renderTaskInfo(uiAnnotation);
+    }
+    if (uiAnnotation.objectType === "taskIntegrations") {
+      return renderTaskIntegrations(uiAnnotation);
+    }
+  });
+}
+
 // RENDER CONTENT BY PARTS AND NOT BY CONTENT, BECAUSE CONTENT MIGHT BE A MERGE OF MULTIPLE PARTS.
 export const MessageWrapper = ({
   message,
   index,
   renderDateSeperator,
-  onRefresh,
   length,
   isStreaming,
 }: MessageWrapperProps) => {
+
+  const { handleRefresh } = useMicrofox();
   const annotations = message.annotations;
   const core = annotations?.find((a) => (a as any).type === "core");
   const metadata = (
@@ -120,6 +181,13 @@ export const MessageWrapper = ({
       setActiveTab(displayParts.length - 1);
     }
   }, [displayParts, isStreaming]);
+
+  const simpleAnnotations = message.annotations?.filter((a: any) => a.type !== "metadata" && a.type !== "ui");
+  const uiAnnotations = message.annotations?.filter((a: any) => a.type === "ui");
+
+  const onRefresh = async () => {
+    await handleRefresh(index);
+  }
 
   return (
     <div key={message.id}>
@@ -148,13 +216,15 @@ export const MessageWrapper = ({
                 {dayjs(message.createdAt).format("h:mm A")}
               </span>
             )}
-            {IN_DEV && message.annotations?.map((annotation: any, idx: number) => {
-              if (!annotation) return null;
-              if (annotation.type === "metadata") {
-                return <div key={annotation.type + idx}>{annotation.metadata}</div>;
-              }
-              return <div key={annotation.type + idx}>{annotation.content ?? annotation.text}</div>;
-            })}
+            <div className="flex flex-col  bg-red-500 self-start p-0 text-xs text-white">
+              {IN_DEV && message.annotations?.map((annotation: any, idx: number) => {
+                if (!annotation) return null;
+                if (annotation.type === "metadata") {
+                  return <div key={annotation.type + idx}>{annotation.metadata}</div>;
+                }
+                return <div key={annotation.type + idx}>{annotation.content ?? annotation.text}</div>;
+              })}
+            </div>
             {message.content && message.content.length > 0 && displayParts.length === 1 && (
               <Markdown>{message.content}</Markdown>
             )}
@@ -187,9 +257,9 @@ export const MessageWrapper = ({
                 ))}
               </div>
             )}
-            {/* {message.parts && message.parts.map((part: any) => {
-                            return <Markdown>{part.text}</Markdown>
-                        })} */}
+            {uiAnnotations && uiAnnotations.length > 0 && (
+              <AnootationUIList uiAnnotations={uiAnnotations as any[]} />
+            )}
             {metadata?.media && (
               <div className="mt-2 flex flex-wrap justify-evenly gap-2">
                 {metadata.media.map((m: any, idx: number) =>

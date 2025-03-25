@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useChat, UseChatHelpers, UseChatOptions } from "@ai-sdk/react";
 import { ChatUIMessageWithTypes } from "../hooks/convertors";
 import { useFileUpload } from "./FileUploadProvider";
@@ -6,12 +6,14 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import useSWR from "swr";
 import { ClientRequest } from "@prisma/client";
 import useLocalState from '../hooks/useLocalState';
+import { ChatRequestOptions, CreateMessage, Message, UIMessage } from 'ai';
 
 interface MicrofoxContextType extends UseChatHelpers {
     minionType: ChatUIMessageWithTypes["minionType"] | null;
     setMinionType: (type: ChatUIMessageWithTypes["minionType"] | null) => void;
     serverMessages?: ChatUIMessageWithTypes[];
     mutate: () => void;
+    handleRefresh: (messageIndex: number) => Promise<void>;
     isLoading: boolean;
     isValidating: boolean;
     addToolResult: ({ toolCallId, result, }: {
@@ -44,11 +46,12 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         isValidating,
         isLoading,
     } = useSWR<ChatUIMessageWithTypes[]>(
-        `/api/chat/message?originClientRequestId=${clientRequest?.id}`,
+        `/api/chat/message?requestId=${clientRequest?.id}`,
         async (url: string) => {
             const res = await PortalSdk.getData(url, {});
-            return res.chatUIMessages;
+            return res;
         },
+
     );
 
     useEffect(() => {
@@ -60,7 +63,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         }
     }, [clientRequest]);
 
-    const { handleSubmit: handleChatSubmit, ...chatOptions } = useChat({
+    const { handleSubmit: ununsedSubmit, ...chatOptions } = useChat({
         api: "/api/chat",
         initialMessages: serverMessages as any[] || [],
         initialInput: "",
@@ -76,27 +79,32 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
             };
         },
         onFinish: (response) => {
-            const { experimental_attachments, id, ...rest } = response;
-            let minionType = localStorage.getItem("minionType")?.replaceAll('"', "") || "hellofox";
-            //add this message to the db
-            if (rest.parts?.length === 0 && rest.content === "" && rest.annotations?.length === 0) {
-                return;
+            try {
+                const { experimental_attachments, id, reasoning, data, ...rest } = response;
+                let _minionType = localStorage.getItem("minionType")?.replaceAll('"', "") || "hellofox";
+                //add this message to the db
+                if (rest.parts?.length === 0 && rest.content === "" && rest.annotations?.length === 0) {
+                    return;
+                }
+                console.log("rest response", rest);
+                PortalSdk.postData("/api/chat/message", {
+                    context: "on-finish",
+                    id: clientRequest?.id + "-" + id,
+                    attachments: experimental_attachments,
+                    minionType: _minionType,
+                    userId: clientRequest?.userId,
+                    ...rest,
+                    originClientRequestId: clientRequest?.id,
+                });
+            } catch (error) {
+                console.log("error creating message on-finish", error);
             }
-            PortalSdk.postData("/api/chat/message", {
-                context: "on-finish",
-                id: clientRequest?.id + "-" + id,
-                attachments: experimental_attachments,
-                minionType,
-                userId: clientRequest?.userId,
-                ...rest,
-                originClientRequestId: clientRequest?.id,
-            });
         },
         onResponse: (response) => {
             console.log(response);
         },
         onError: (error) => {
-            console.log(error);
+            console.log("error", error);
         },
     });
 
@@ -105,18 +113,98 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     }, [chatOptions.messages]);
 
     useEffect(() => {
-        console.log("minionType", chatOptions.data);
+        console.log("data", chatOptions.data);
     }, [chatOptions.data]);
 
+    const createMessage = useCallback(async (message: UIMessage) => {
+        if (!clientRequest) {
+            return;
+        }
+        let _minionType = localStorage.getItem("minionType")?.replaceAll('"', "") || "hellofox";
+        if (!message.id) {
+            message.id = crypto.randomUUID();
+        }
+        console.log("message", message);
+        try {
+            await PortalSdk.postData("/api/chat/message", {
+                ...message,
+                id: clientRequest.id + "-" + message.id,
+                originClientRequestId: clientRequest.id,
+                userId: clientRequest?.userId,
+                minionType: _minionType,
+                context: "on-start",
+            });
+        } catch (error) {
+            console.log("error creating message", error);
+        }
+    }, [clientRequest]);
+
+    const deleteMessages = useCallback(async (messageIds: string[]) => {
+        if (!clientRequest) {
+            return;
+        }
+        let _ids = messageIds.map(_id =>
+            _id.startsWith(clientRequest.id) ? _id :
+                clientRequest.id + "-" + _id);
+        return await PortalSdk.deleteData(`/api/chat/message?ids=${_ids.join(",")}&originClientRequestId=${clientRequest.id}`, {});
+    }, [clientRequest]);
+
+    const handleSubmit = async (event?: {
+        preventDefault?: () => void;
+    }, chatRequestOptions?: ChatRequestOptions) => {
+        // first store the lastmessage to db
+        event?.preventDefault?.();
+        const newMessage: Message = {
+            id: crypto.randomUUID(),
+            content: chatOptions.input,
+            role: "user",
+            parts: [{
+                type: "text",
+                text: chatOptions.input,
+            }],
+        }
+        chatOptions.setInput("");
+        await appendMessage(newMessage, chatRequestOptions);
+    }
+
+    const appendMessage = async (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions) => {
+        await createMessage(message as any);
+        const id = await chatOptions.append(message, chatRequestOptions);
+        return id;
+    }
+
+    const handleRefresh = async (messageIndex: number) => {
+        console.log("refreshing", messageIndex);
+        if (messageIndex >= chatOptions.messages.length) {
+            return;
+        }
+        const message = { ...chatOptions.messages[messageIndex] };
+        chatOptions.setMessages((messages) => {
+            const newMessages = messages.slice(0, messageIndex);
+            return newMessages;
+        });
+        if (messageIndex + 1 < chatOptions.messages.length) {
+            const extraMessages = chatOptions.messages.slice(messageIndex + 1);
+            const response = await deleteMessages(extraMessages.map(m => m.id));
+            console.log("deleted messages", response);
+        }
+        // bypass the createMessage by using the original append method (as we did not delete the last message from the db)
+        // if doing edit, we should also delete the last message from the db
+        if (message) await chatOptions.append(message as Message);
+        // console.log("deleted messages", extraMessages.map(m => m.id));
+    }
+
     const value = {
-        handleSubmit: handleChatSubmit,
+        ...chatOptions,
+        handleSubmit,
         minionType,
         setMinionType,
-        ...chatOptions,
+        append: appendMessage,
         mutate,
         isLoading,
         isValidating,
         serverMessages,
+        handleRefresh,
     };
 
     return (

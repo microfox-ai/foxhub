@@ -1,12 +1,14 @@
 import { generateObject, streamObject, streamText, tool } from "ai";
 import { z } from "zod";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { taskInfo } from "./types";
+import { taskInfo, TaskInstanceMetaType } from "./types";
 import { models } from "../models";
+import { TaskInstanceMeta } from "@prisma/client";
+import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 
 export const createTaskInfo = async (
   props: StreamingFucntionProps<any, any>,
-  taskFinalisedSummary: string
+  taskInstanceMeta: TaskInstanceMetaType
 ) => {
   const { dataStream, requestBody, responseBody } = props;
 
@@ -19,24 +21,41 @@ export const createTaskInfo = async (
     system: `
         You are a task info creator.
         You create a task info for the following summary:
-        ---
-        You run in a loop of Thought, Action, PAUSE, Observation.
-        At the end of the loop you output an Answer
-        Use Thought to describe your thoughts about the question you have been asked.
-        Use Action to run one of the actions available to you - then return PAUSE.
-        Observation will be the result of running those actions.
-        At the end of the loop you output an Answer
     `,
     schema: taskInfo,
     prompt: `
-    ${taskFinalisedSummary}
+    summary: ${taskInstanceMeta.initialSummary}
     `,
+  });
+  await updateTaskInstanceMeta({
+    clientRequestId: requestBody.clientRequestId,
+    taskInstanceMeta: {
+      ...taskInstanceMeta,
+      taskInfo: taskInfo,
+    },
   });
   // save this info into db.
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "taskInfo",
     object: result.object,
+  });
+
+  dataStream.writeMessageAnnotation({
+    text: `I have summarised the task. Shall we proceed ?`,
+    buttons: [
+      //   {
+      //     action: "removeThisPart",
+      //     text: "Not Yet",
+      //     className: "bg-neutral-200 text-black hover:bg-neutral-300",
+      //   },
+      {
+        action: "appendMessage",
+        text: "Sure!",
+        className: "bg-green-500 text-white hover:bg-green-600",
+        value: "Sure! Let's proceed",
+      },
+    ],
   });
 
   return result.object;

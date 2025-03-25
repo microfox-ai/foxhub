@@ -10,6 +10,11 @@ import { createTaskInfo } from "./createTaskInfo";
 import { createTaskIntegrations } from "./createTaskIntegrations";
 import { createTaskRequiredInfo } from "./createTaskRequired";
 import { createTaskStructure } from "./createTaskStructure";
+import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
+import {
+  getClientRequest,
+  getTaskInstanceMeta,
+} from "@/utils/services/db_functions/getClientRequest";
 
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
@@ -32,7 +37,7 @@ export const convertfoxRouter: ServerStreamingFunction<
   // VERYY IMPORtANt : SAVES A TON LOT OF TOKENS bypassing the thinking & all other steps
   // filter out every othe message except the ones from convertfox
   // let convertMessages: any[] = [];
-  console.log("requestBody.messages", requestBody.messages);
+  //console.log("requestBody.messages", requestBody.messages);
   let lastHelloMessage = findLastElementWith(requestBody.messages, (m: any) => {
     if (m.annotations?.length > 0) {
       if (
@@ -51,46 +56,51 @@ export const convertfoxRouter: ServerStreamingFunction<
   );
   console.log("taskFinalisedSummary", taskFinalisedSummary);
 
+  const taskInstanceMeta = await getTaskInstanceMeta(
+    requestBody.clientRequestId
+  );
+  if (!taskInstanceMeta.initialSummary) {
+    taskInstanceMeta.initialSummary = taskFinalisedSummary;
+  }
   // router => if(no task info, then create task info, if change in task info, then update task info
   // no integrations, )
   // 1. Create Task Info
-  let taskInfo = await createTaskInfo(props, taskFinalisedSummary);
-  console.log("taskInfo", taskInfo);
+  let job;
+  if (!taskInstanceMeta?.taskInfo) job = "taskInfo";
+  else if (!taskInstanceMeta?.taskIntegrations) job = "taskIntegrations";
+  else if (!taskInstanceMeta?.taskStructure) job = "taskStructure";
+  else if (!taskInstanceMeta?.taskRequiredInfo) job = "taskRequiredInfo";
 
-  // 2. Task Integrations
-  let taskIntegrations = await createTaskIntegrations(props, taskInfo);
-  console.log("taskIntegrations", taskIntegrations);
-
-  // 3. Task Required Info
-  let taskRequiredInfo = await createTaskRequiredInfo(
-    props,
-    taskInfo,
-    taskIntegrations
-  );
-  console.log("taskRequiredInfo", taskRequiredInfo);
-  // 4. Task Structure
-  let taskStructure = await createTaskStructure(
-    props,
-    taskInfo,
-    taskIntegrations,
-    taskRequiredInfo
-  );
-  console.log("taskStructure", taskStructure);
-  //   convertMessages.map((m: any) => ({
-  //     ...m,
-  //     parts: [findLastElementWith(m.parts, (p: any) => p.type === "text")],
-  //     annotations: [],
-  //     toolInvocations: [],
-  //   }));
-  //   console.log("requestBody after", requestBody.messages);
-
+  switch (job) {
+    case "taskInfo":
+      let taskInfo = await createTaskInfo(props, taskInstanceMeta);
+      taskInstanceMeta.taskInfo = taskInfo;
+      break;
+    case "taskIntegrations":
+      let taskIntegrations = await createTaskIntegrations(
+        props,
+        taskInstanceMeta
+      );
+      taskInstanceMeta.taskIntegrations = taskIntegrations;
+      break;
+    case "taskStructure":
+      let taskStructure = await createTaskStructure(props, taskInstanceMeta);
+      taskInstanceMeta.taskStructure = taskStructure;
+      break;
+    // case "taskRequiredInfo":
+    //   let taskRequiredInfo = await createTaskRequiredInfo(
+    //     props,
+    //     taskInstanceMeta
+    //   );
+    //   taskInstanceMeta.taskRequiredInfo = taskRequiredInfo;
+    //   break;
+    default:
+      throw new Error("Invalid job");
+  }
   return {
     responseBody: {
       ...responseBody,
-      taskInfo,
-      taskIntegrations,
-      taskRequiredInfo,
-      taskStructure,
+      taskInstanceMeta: taskInstanceMeta,
     },
     appendRequestBody: { ...requestBody },
   };

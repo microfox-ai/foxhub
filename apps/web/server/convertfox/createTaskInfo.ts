@@ -1,4 +1,4 @@
-import { generateObject, streamObject, streamText, tool } from "ai";
+import { generateObject, Message, streamObject, streamText, tool } from "ai";
 import { z } from "zod";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { taskInfo, TaskInstanceMetaType } from "./types";
@@ -8,30 +8,44 @@ import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClie
 
 export const createTaskInfo = async (
   props: StreamingFucntionProps<any, any>,
-  taskInstanceMeta: TaskInstanceMetaType
+  taskInstanceMeta: TaskInstanceMetaType,
+  modification?: string
 ) => {
   const { dataStream, requestBody, responseBody } = props;
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    contents: "I am creating your task info",
+    contents: "Creating your automation task",
   });
+  //console.log("taskInstanceMeta", taskInstanceMeta);
   const result = await generateObject({
     model: models.googleGeminiFlash,
-    system: `
-        You are a task info creator.
-        You create a task info for the following summary:
+    system: modification
+      ? `You are a task experet.
+        You are given a task summary and a user query to modify the task.
+        You need to re-create a task info based on the prevvious Info and the user query.
+        `
+      : `
+        You are a task expert.
+        You create a task info based on the summary in prompt:
     `,
     schema: taskInfo,
-    prompt: `
-    summary: ${taskInstanceMeta.initialSummary}
-    `,
+    prompt: modification
+      ? `
+        summary: ${taskInstanceMeta.initialSummary}
+        previous task info: ${JSON.stringify(taskInstanceMeta.taskInfo)}
+        user query: ${modification}
+        `
+      : `
+        summary: ${taskInstanceMeta.initialSummary}
+        `,
   });
+  console.log("result", result);
   await updateTaskInstanceMeta({
     clientRequestId: requestBody.clientRequestId,
     taskInstanceMeta: {
       ...taskInstanceMeta,
-      taskInfo: taskInfo,
+      taskInfo: result.object,
     },
   });
   // save this info into db.
@@ -39,21 +53,21 @@ export const createTaskInfo = async (
     type: "ui",
     objectType: "taskInfo",
     object: result.object,
-  });
-
-  dataStream.writeMessageAnnotation({
-    text: `I have summarised the task. Shall we proceed ?`,
+    persona: "taskManager",
+    text: modification
+      ? `I have modified the task info. Shall we proceed ?`
+      : `I have created the task info. Shall we proceed ?`,
     buttons: [
-      //   {
-      //     action: "removeThisPart",
-      //     text: "Not Yet",
-      //     className: "bg-neutral-200 text-black hover:bg-neutral-300",
-      //   },
+      {
+        action: "highlightInput",
+        text: "Not Yet",
+        className: "bg-neutral-200 text-black hover:bg-neutral-300",
+      },
       {
         action: "appendMessage",
-        text: "Sure!",
+        text: "Yes, That's Correct!",
         className: "bg-green-500 text-white hover:bg-green-600",
-        value: "Sure! Let's proceed",
+        value: "Yes, That's Correct!",
       },
     ],
   });

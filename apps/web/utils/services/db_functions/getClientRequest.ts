@@ -10,12 +10,21 @@ export async function getClientRequest(clientRequestId: string) {
 }
 
 export async function getTaskInstanceMeta(clientRequestId: string) {
-  const clientRequest = await getClientRequest(clientRequestId);
-  if (!clientRequest) {
-    throw new Error("Client request not found");
+  try {
+    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+      where: {
+        originClientRequestId: clientRequestId,
+      },
+    });
+    if (!taskInstanceMeta) {
+      return {
+        originClientRequestId: clientRequestId,
+      } as unknown as TaskInstanceMetaType;
+    }
+    console.log("taskInstanceMeta", taskInstanceMeta);
+    return taskInstanceMeta as unknown as TaskInstanceMetaType;
+  } catch (error) {
+    console.error(error);
+    return null;
   }
-  return (
-    (clientRequest?.taskInstanceMeta as TaskInstanceMetaType) ??
-    ({} as TaskInstanceMetaType)
-  );
 }

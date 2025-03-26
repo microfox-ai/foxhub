@@ -15,6 +15,23 @@ export const taskIntegrations = z.object({
     z.object({
       name: z.string().describe("The name of the platform"),
       reason: z.string().describe("why this platform is needed for the task"),
+      package: z
+        .string()
+        .describe("The package name of the platform")
+        .optional(),
+    })
+  ),
+  alternativePlatforms: z.array(
+    z.object({
+      alternativeFor: z
+        .string()
+        .describe("The name of the platform to be replaced"),
+      name: z.string().describe("The name of the platform"),
+      reason: z.string().describe("why this platform is needed for the task"),
+      package: z
+        .string()
+        .describe("The package name of the platform")
+        .optional(),
     })
   ),
 });
@@ -49,7 +66,7 @@ export const taskStructure = z.object({
     .describe(
       "The schemas of the models that are needed for the task (Optional)"
     ),
-  functions: z.array(
+  lambdaFunctions: z.array(
     z.object({
       name: z.string().describe("The name of this lambda function"),
       interactionType: z
@@ -77,27 +94,45 @@ export const taskStructure = z.object({
       //   cronExpression: z.string().describe("The cron expression of the cron job"),
     })
   ),
-  userInteractions: z.array(
+  endpoints: z.array(
     z.object({
-      name: z.string().describe("The name of this user interaction"),
-      description: z.string().describe("What does this user interaction do"),
-      endResult: z
-        .string()
-        .describe("What is the end result of this user interaction"),
-      endpointCall: z
-        .array(z.string())
-        .describe("The endpoints to call of this user interaction"),
+      method: z
+        .enum(["GET", "POST", "PUT", "DELETE"])
+        .describe("The method of the end point"),
+      path: z.string().describe("The path of the end point"),
+      description: z.string().describe("What does this end point do"),
     })
+  ),
+  userInteractions: z.array(
+    z
+      .object({
+        name: z.string().describe("The name of this ui screen"),
+        description: z.string().describe("What does this screen do"),
+        endResult: z
+          .string()
+          .describe("What does the screen enable the user to do"),
+        endpointCall: z
+          .array(z.string())
+          .describe("The endpoints to call while in this screen"),
+      })
+      .describe("The user screens/components that are needed for the task")
   ),
 });
 export type TaskStructure = z.infer<typeof taskStructure>;
 // step3
 export const taskInstance = z.object({
-  initialSummary: z.string().describe("The initial summary of the task"),
-  taskInfo: taskInfo,
-  taskIntegrations: taskIntegrations,
-  taskRequiredInfo: taskRequiredInfo,
-  taskStructure: taskStructure,
+  initialSummary: z
+    .string()
+    .describe("The initial summary of the task")
+    .optional(),
+  originClientRequestId: z
+    .string()
+    .describe("The client request id of the task"),
+  minionType: z.string().optional(),
+  taskInfo: taskInfo.optional(),
+  taskIntegrations: taskIntegrations.optional(),
+  taskRequiredInfo: taskRequiredInfo.optional(),
+  taskStructure: taskStructure.optional(),
 });
 
 export type TaskInstanceMetaType = z.infer<typeof taskInstance>;

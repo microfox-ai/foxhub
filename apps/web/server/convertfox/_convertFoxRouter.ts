@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { generateObject, streamText } from "ai";
 import {
   defaultCallbackResultBody,
   ServerStreamingFunction,
@@ -15,6 +15,7 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
+import { z } from "zod";
 
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
@@ -38,65 +39,135 @@ export const convertfoxRouter: ServerStreamingFunction<
   // filter out every othe message except the ones from convertfox
   // let convertMessages: any[] = [];
   //console.log("requestBody.messages", requestBody.messages);
-  let lastHelloMessage = findLastElementWith(requestBody.messages, (m: any) => {
-    if (m.annotations?.length > 0) {
-      if (
+  const lastAssistantMessage = findLastElementWith(
+    requestBody.messages,
+    (m: any) => m.role === "assistant"
+  );
+  const lastAssistantJob = lastAssistantMessage.annotations.find(
+    (a: any) => a.persona === "taskManager"
+  )?.objectType;
+  const lastUserMessage = findLastElementWith(
+    requestBody.messages,
+    (m: any) => m.role === "user"
+  );
+
+  let taskInstanceMeta = await getTaskInstanceMeta(requestBody.clientRequestId);
+  if (!taskInstanceMeta) {
+    taskInstanceMeta = {
+      originClientRequestId: requestBody.clientRequestId,
+    };
+  }
+  // only update if the summary is not already set (otherwise take whatever is the last saved version of the summary)
+  if (!taskInstanceMeta?.initialSummary) {
+    let lastHelloMessage = findLastElementWith(
+      requestBody.messages,
+      (m: any) =>
+        m.annotations?.length > 0 &&
         m.annotations[0]?.type === "minion" &&
         m.annotations[0]?.value === "hellofox"
-      ) {
-        return true;
-      }
-    }
-    return false;
+    );
+    let taskFinalisedSummary = findLastElementWith(
+      lastHelloMessage.parts,
+      (p: any) => p.type === "text"
+    );
+    console.log("taskFinalisedSummary", taskFinalisedSummary);
+    taskInstanceMeta.initialSummary = taskFinalisedSummary.text;
+  }
+
+  dataStream.writeMessageAnnotation({
+    type: "minion",
+    value: "convertfox",
   });
-  console.log("lastHelloMessage", lastHelloMessage);
-  let taskFinalisedSummary = findLastElementWith(
-    lastHelloMessage.parts,
-    (p: any) => p.type === "text"
-  );
-  console.log("taskFinalisedSummary", taskFinalisedSummary);
 
-  const taskInstanceMeta = await getTaskInstanceMeta(
-    requestBody.clientRequestId
-  );
-  if (!taskInstanceMeta.initialSummary) {
-    taskInstanceMeta.initialSummary = taskFinalisedSummary;
-  }
-  // router => if(no task info, then create task info, if change in task info, then update task info
-  // no integrations, )
-  // 1. Create Task Info
-  let job;
-  if (!taskInstanceMeta?.taskInfo) job = "taskInfo";
-  else if (!taskInstanceMeta?.taskIntegrations) job = "taskIntegrations";
-  else if (!taskInstanceMeta?.taskStructure) job = "taskStructure";
-  else if (!taskInstanceMeta?.taskRequiredInfo) job = "taskRequiredInfo";
+  // classify the users query
+  const { object: classification } = await generateObject({
+    model: models.googleGeminiFlash,
+    schema: z.object({
+      reasoning: z.string(),
+      intent: z.enum(["confirmation", "modification", "question"]), // answer, query
+      //complexity: z.enum(["simple", "complex"]),
+      //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
+    }),
+    messages: [lastUserMessage],
+    system: `Classify the users message.
+    
+    Determine:
+    1. User intent (confirmation, modification, query)
+    2. Brief reasoning for classification`,
+  });
 
-  switch (job) {
-    case "taskInfo":
-      let taskInfo = await createTaskInfo(props, taskInstanceMeta);
-      taskInstanceMeta.taskInfo = taskInfo;
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    text: classification.intent + " observered. Processing...",
+  });
+
+  switch (classification.intent) {
+    case "question":
+      /// TODO: answer the users query - pass in last 3 messages
       break;
-    case "taskIntegrations":
-      let taskIntegrations = await createTaskIntegrations(
-        props,
-        taskInstanceMeta
-      );
-      taskInstanceMeta.taskIntegrations = taskIntegrations;
+    case "confirmation":
+      /// TODO: confirm the task info
+      switch (lastAssistantJob) {
+        case undefined:
+          console.log("Creating task info");
+          let taskInfo = await createTaskInfo(props, taskInstanceMeta);
+          taskInstanceMeta.taskInfo = taskInfo;
+          break;
+        case "taskInfo":
+          console.log("Creating task integrations");
+          let taskIntegrations = await createTaskIntegrations(
+            props,
+            taskInstanceMeta
+          );
+          taskInstanceMeta.taskIntegrations = taskIntegrations;
+          break;
+        case "taskIntegrations":
+          console.log("Creating task structure");
+          let taskStructure = await createTaskStructure(
+            props,
+            taskInstanceMeta
+          );
+          // taskInstanceMeta.taskStructure = taskStructure;
+          break;
+      }
       break;
-    case "taskStructure":
-      let taskStructure = await createTaskStructure(props, taskInstanceMeta);
-      taskInstanceMeta.taskStructure = taskStructure;
+    case "modification":
+      /// TODO: modify the task info
+      switch (lastAssistantJob) {
+        case "taskInfo":
+          console.log("Modifying task info");
+          let taskInfo = await createTaskInfo(
+            props,
+            taskInstanceMeta,
+            lastUserMessage.content
+          );
+          taskInstanceMeta.taskInfo = taskInfo;
+          break;
+        case "taskIntegrations":
+          console.log("Modifying task integrations");
+          let taskIntegrations = await createTaskIntegrations(
+            props,
+            taskInstanceMeta,
+            lastUserMessage.content
+          );
+          taskInstanceMeta.taskIntegrations = taskIntegrations;
+          break;
+        case "taskStructure":
+          console.log("Modifying task structure");
+          let taskStructure = await createTaskStructure(
+            props,
+            taskInstanceMeta,
+            lastUserMessage.content
+          );
+          taskInstanceMeta.taskStructure = taskStructure;
+          break;
+      }
       break;
-    // case "taskRequiredInfo":
-    //   let taskRequiredInfo = await createTaskRequiredInfo(
-    //     props,
-    //     taskInstanceMeta
-    //   );
-    //   taskInstanceMeta.taskRequiredInfo = taskRequiredInfo;
-    //   break;
-    default:
-      throw new Error("Invalid job");
+    case null:
+      console.log("No intent found");
+      break;
   }
+
   return {
     responseBody: {
       ...responseBody,

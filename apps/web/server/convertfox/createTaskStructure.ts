@@ -7,53 +7,107 @@ import {
   taskStructure,
   TaskStructure,
 } from "./types";
-import { generateObject } from "ai";
+import {
+  createDataStream,
+  generateObject,
+  Output,
+  streamObject,
+  streamText,
+} from "ai";
 import { models } from "../models";
+import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { taskPlanningPrompt } from "./prompt.taskPlanning";
+import { createStreamableValue } from "ai/rsc";
+import { createReadStream } from "fs";
 
 const generatePlatformsPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
+  if (!taskInstanceMeta.taskIntegrations) {
+    throw new Error("Task integrations not found");
+  }
   return `
-    ${taskInstanceMeta.taskIntegrations.platforms.map((p) => `${p.name} - ${p.reason}`).join("\n")}
+    ${taskInstanceMeta.taskIntegrations?.platforms?.map((p) => `name: ${p.name}; reason: ${p.reason}; package: ${p.package}`).join("\n")}
     `;
 };
 
 export const createTaskStructure = async (
   props: StreamingFucntionProps<any, any>,
-  taskInstanceMeta: TaskInstanceMetaType
+  taskInstanceMeta: TaskInstanceMetaType,
+  modification?: string
 ) => {
   const { dataStream, requestBody, responseBody } = props;
+
+  console.log("sdn", taskInstanceMeta);
+  if (!taskInstanceMeta.taskIntegrations || !taskInstanceMeta.taskInfo) {
+    throw new Error("Task integrations or task info not found");
+  }
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
     contents: "Thinking on how to structure the task    ",
   });
 
-  const result = await generateObject({
+  const result = streamObject({
     model: models.claude35Sonnet,
-    system: `
-        You are a task structure creator.
-        You create a task structure for the following task info:
-        ---
-        You run in a loop of Thought, Action, PAUSE, Observation.
-        At the end of the loop you output an Answer
-        Use Thought to describe your thoughts about the question you have been asked.
-        Use Action to run one of the actions available to you - then return PAUSE.
-        Observation will be the result of running those actions.
-        At the end of the loop you output an Answer
-        ___
-    `,
-    schema: taskStructure,
+    system: taskPlanningPrompt(),
     prompt: `
         Task Goal: ${taskInstanceMeta.taskInfo.goal}
         Task Summary: ${taskInstanceMeta.taskInfo.summary}
-        3rd Party Platforms: ${generatePlatformsPrompt(taskInstanceMeta)}
+        Platforms: ${generatePlatformsPrompt(taskInstanceMeta)}
+        ${modification ? `Modifications Requested: ${modification}` : ""}
         `,
+    schema: taskStructure,
   });
+  for await (const chunk of result.partialObjectStream) {
+    //console.log("chunk", chunk);
+    //const object = chunk.;
+    //dataStream.write(chunk as any);
+  }
+  const object = await result.object;
 
+  console.log("result", result);
+
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    contents: "Task Structure Generated   ",
+  });
+  //   result.mergeIntoDataStream(dataStream, {
+  //     experimental_sendFinish: false,
+  //   });
+  //result.toTextStreamResponse();
+  //result.textStream.pipeTo(dataStream);
+
+  //dataStream.merge(result.fullStream)
+
+  //const object = await result.object;
+  // console.log("object", object);
+  await updateTaskInstanceMeta({
+    clientRequestId: requestBody.clientRequestId,
+    taskInstanceMeta: {
+      ...taskInstanceMeta,
+      taskStructure: object,
+    },
+  });
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "taskStructure",
-    object: result.object,
+    object: object as any,
+    persona: "taskManager",
+    text: `Ready to Build ?`,
+    buttons: [
+      {
+        action: "highlightInput",
+        text: "Not Yet",
+        className: "bg-neutral-200 text-black hover:bg-neutral-300",
+      },
+      {
+        action: "shiftMinion",
+        actionText: "Start Building !",
+        text: "Start Building !",
+        className: "bg-green-500 text-white hover:bg-green-600",
+        value: "buildfox",
+      },
+    ],
   });
 
-  return result.object;
+  return object;
 };

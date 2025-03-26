@@ -10,6 +10,7 @@ import { ChatUIMessage } from "@prisma/client";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { Button } from "@/components/ui/button";
 import { IN_DEV } from "@/utils/constants/appInfo";
+import { AnnotationUIList } from "./AnnotationUIList";
 
 // TODO: error boundary for ui annotations 
 //import { ErrorBoundary } from "react-error-boundary";
@@ -56,6 +57,7 @@ const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messag
       }
       return m;
     }));
+    //TODO: updated the removed pasrt in the message db
   }
 
   if (part.type === "tool-invocation" && part.toolInvocation.state === "result") {
@@ -73,11 +75,11 @@ const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messag
                     setInput("");
                     append({
                       id: crypto.randomUUID(),
-                      content: button.value,
+                      content: button.text,
                       role: "user",
                       parts: [{
                         type: "text",
-                        text: button.value,
+                        text: button.actionText ?? button.text ?? "Changing gears..",
                       }]
                     });
                     removeThisPart();
@@ -108,43 +110,6 @@ const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messag
       </div>
     );
   }
-}
-
-const AnootationUIList = ({ uiAnnotations }: { uiAnnotations: any[] }) => {
-  const renderTaskInfo = (uiAnnotation: any) => {
-    const object = uiAnnotation.object;
-    return (
-      <div className="flex flex-col gap-2 p-2 bg-gray-100 rounded-lg">
-        <h3 className="text-lg">{uiAnnotation.objectType}</h3>
-        {Object.keys(object).map((key: any) => {
-          return (
-            <div key={key} className="flex flex-col gap-1">
-              <span className="font-bold text-xs tracking-wide text-gray-500">{key}</span>
-              <span className="text-sm">{object[key]}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  const renderTaskIntegrations = (uiAnnotation: any) => {
-    const object = uiAnnotation.object;
-    return (
-      <div className="flex flex-col gap-2 p-2 bg-gray-100 rounded-lg">
-        <h3 className="text-lg">{uiAnnotation.objectType}</h3>
-      </div>
-    );
-  }
-
-  return uiAnnotations.map((uiAnnotation: any) => {
-    if (uiAnnotation.objectType === "taskInfo") {
-      return renderTaskInfo(uiAnnotation);
-    }
-    if (uiAnnotation.objectType === "taskIntegrations") {
-      return renderTaskIntegrations(uiAnnotation);
-    }
-  });
 }
 
 // RENDER CONTENT BY PARTS AND NOT BY CONTENT, BECAUSE CONTENT MIGHT BE A MERGE OF MULTIPLE PARTS.
@@ -258,7 +223,7 @@ export const MessageWrapper = ({
               </div>
             )}
             {uiAnnotations && uiAnnotations.length > 0 && (
-              <AnootationUIList uiAnnotations={uiAnnotations as any[]} />
+              <AnnotationUIList uiAnnotations={uiAnnotations as any[]} />
             )}
             {metadata?.media && (
               <div className="mt-2 flex flex-wrap justify-evenly gap-2">

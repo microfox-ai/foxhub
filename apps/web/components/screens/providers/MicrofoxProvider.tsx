@@ -55,13 +55,14 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     );
 
     useEffect(() => {
-        if (clientRequest) {
-            console.log("clientRequest", clientRequest);
+        if (serverMessages && serverMessages.length > 0) {
+            console.log("serverMessages", serverMessages);
+            const lastMessage = serverMessages[serverMessages.length - 1];
             setMinionType(
-                (clientRequest.taskInstanceMeta as any)?.minionType ?? "hellofox"
+                (lastMessage?.minionType ?? "hellofox")
             );
         }
-    }, [clientRequest]);
+    }, [serverMessages]);
 
     const { handleSubmit: ununsedSubmit, ...chatOptions } = useChat({
         api: "/api/chat",
@@ -174,11 +175,17 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     }
 
     const handleRefresh = async (messageIndex: number) => {
-        console.log("refreshing", messageIndex);
+        //console.log("refreshing", messageIndex);
         if (messageIndex >= chatOptions.messages.length) {
             return;
         }
         const message = { ...chatOptions.messages[messageIndex] };
+        let _minionType = (message.annotations?.find((annotation: any) => annotation.type === "minion") as any)?.value;
+        if (!_minionType) _minionType = (message as any).minionType;
+        //console.log("message", message);
+        if (_minionType) {
+            setMinionType(_minionType);
+        }
         chatOptions.setMessages((messages) => {
             const newMessages = messages.slice(0, messageIndex);
             return newMessages;
@@ -188,6 +195,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
             const response = await deleteMessages(extraMessages.map(m => m.id));
             console.log("deleted messages", response);
         }
+        const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
         // bypass the createMessage by using the original append method (as we did not delete the last message from the db)
         // if doing edit, we should also delete the last message from the db
         if (message) await chatOptions.append(message as Message);

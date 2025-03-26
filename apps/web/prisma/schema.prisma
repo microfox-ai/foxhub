@@ -98,15 +98,21 @@ model ClientRequest {
   botProject               BotProject              @relation(fields: [botProjectId], references: [id])
   deployedFunctions        ClientRequestFunction[]
   requestUpdates           RequestUpdate[]
-  taskInstanceMeta         Json?
+  taskInstanceMeta         TaskInstanceMeta?
 }
 
 model TaskInstanceMeta {
   id              String @id @default(uuid())
-  taskInstance    Json?
-  minionType          String
+  originClientRequestId String @unique
+  taskInfo    Json?
+  initialSummary      String?
+  taskIntegrations    Json?
+  taskRequiredInfo    Json?
+  taskStructure       Json?  // this should be in seperate model in future
+  minionType          String?
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt       
+  originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])       
 }
 
 model ClientSecret {

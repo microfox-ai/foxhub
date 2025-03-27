@@ -4,8 +4,16 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { User } from "@prisma/client";
 import { useState, useEffect } from "react";
 
-export function useUser() {
-  const { user: authUser, isLoading: isAuthLoading } = useAuth();
+interface UseUserReturn {
+  user: User | null;
+  isLoading: boolean;
+  error: any;
+  handleSigninWithGoogle: () => Promise<void>;
+  handleLogout: () => Promise<void>;
+}
+
+export function useUser(): UseUserReturn {
+  const { user: authUser, isLoading: isAuthLoading, ...auth } = useAuth();
   const [dbUser, setDbUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,5 +52,5 @@ export function useUser() {
     }
   }, [authUser, isAuthLoading]);
 
-  return { user: dbUser, isLoading, error };
+  return { user: dbUser, isLoading, error, ...auth };
 }

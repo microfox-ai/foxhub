@@ -15,7 +15,9 @@ export const models: Record<
   | "googleGeminiPro"
   | "claude35Sonnet"
   | "claudeHaiku",
-  any
+  {
+    modelId: string;
+  } & any
 > = {
   default: anthrophobic("claude-3-haiku-20240307", {}),
   googleGeminiFlash: google("gemini-1.5-flash", {

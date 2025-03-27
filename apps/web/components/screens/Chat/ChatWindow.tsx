@@ -37,7 +37,6 @@ function ChatWindow({
     setMessages,
     reload: mutate,
     status,
-    handleSubmit,
     isLoading,
     input,
     setInput,
@@ -64,17 +63,6 @@ function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleRefresh = (messageIndex: number) => {
-    console.log("refreshing", messageIndex);
-    const message = messages[messageIndex];
-    setMessages((messages) => {
-      const newMessages = messages.slice(0, messageIndex);
-      return newMessages;
-    });
-    if (message) append(message);
-  };
-
-  const sendMessage = handleSubmit;
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -109,7 +97,6 @@ function ChatWindow({
             messages={messages}
             isLoading={false}
             messagesEndRef={messagesEndRef}
-            onRefresh={handleRefresh}
             isStreaming={status === "streaming"}
           />
         </TabsContent>
@@ -126,7 +113,6 @@ function ChatWindow({
             input={input}
             messageStatus={status}
             userId={userId}
-            sendMessage={sendMessage}
             handleInputChange={handleInputChange}
           />
         )}

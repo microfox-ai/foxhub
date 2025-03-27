@@ -2,10 +2,10 @@ import { z } from "zod";
 
 // step1. generate a clear cut pure task info
 export const taskInfo = z.object({
-  name: z.string(),
-  description: z.string(),
-  goal: z.string(),
-  summary: z.string(),
+  name: z.string().describe("The name of the task"),
+  description: z.string().describe("The description of the task"),
+  goal: z.string().describe("The end goal of this task"),
+  summary: z.string().describe("A complete detailed summary of the task"),
 });
 export type TaskInfo = z.infer<typeof taskInfo>;
 
@@ -14,14 +14,24 @@ export const taskIntegrations = z.object({
   platforms: z.array(
     z.object({
       name: z.string().describe("The name of the platform"),
-      intent: z
+      reason: z.string().describe("why this platform is needed for the task"),
+      package: z
         .string()
-        .describe("The intent on why this platform is needed for the task"),
-      specificNeeds: z
-        .array(z.string())
-        .describe(
-          "The specific utilities of this platform that is needed to achieve the task"
-        ), // CAN BE HALLUCINATING.
+        .describe("The package name of the platform")
+        .optional(),
+    })
+  ),
+  alternativePlatforms: z.array(
+    z.object({
+      alternativeFor: z
+        .string()
+        .describe("The name of the platform to be replaced"),
+      name: z.string().describe("The name of the platform"),
+      reason: z.string().describe("why this platform is needed for the task"),
+      package: z
+        .string()
+        .describe("The package name of the platform")
+        .optional(),
     })
   ),
 });
@@ -45,30 +55,110 @@ export const taskRequiredInfo = z.object({
 export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
 export const taskStructure = z.object({
-  steps: z.array(
+  dbSchemas: z
+    .array(
+      z.object({
+        modelName: z.string().describe("The name of the model"),
+        jsonSchema: z.any().describe("The schema of the model"),
+      })
+    )
+    .optional()
+    .describe(
+      "The schemas of the models that are needed for the task (Optional)"
+    ),
+  lambdaFunctions: z.array(
     z.object({
-      name: z.string().describe("The name of this step"),
+      name: z.string().describe("The name of this lambda function"),
       interactionType: z
-        .enum(["ui", "api"])
+        .array(z.enum(["ui", "api", "cron"]))
         .describe(
-          "The type of interaction this step includes - ui if a user interaction is needed, api if an api call can take care of it but needs to be triggered, cron - if a scheduled cron job can take care of it"
+          "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
         ),
-      description: z.string().describe("The description of the step"),
-      requiredInfo: z
-        .array(z.string())
-        .describe(
-          "The information that is needed for the step - whether user inputs or secrets or API keys"
-        ),
+      description: z.string().describe("What does this lambda function do"),
+      endResult: z
+        .string()
+        .describe("What is the end result of this lambda function"),
+      method: z
+        .enum(["GET", "POST", "PUT", "DELETE"])
+        .describe("The method of the end point"),
+      path: z.string().describe("The path of the end point"),
     })
+  ),
+  cronJobs: z.array(
+    z.object({
+      name: z.string().describe("The name of this cron job"),
+      description: z.string().describe("What does this cron job do"),
+      endResult: z.string().describe("What is the end result of this cron job"),
+      //   endPoint: z.object({
+      //     url: z.string().describe("The url of the end point"),
+      //     method: z.enum(["GET", "POST", "PUT", "DELETE"]).describe("The method of the end point"),
+      //     body: z.any().describe("The body of the end point"),
+      //     headers: z.any().describe("The headers of the end point"),
+      //   }),
+      //   cronExpression: z.string().describe("The cron expression of the cron job"),
+    })
+  ),
+  endpoints: z.array(
+    z.object({
+      method: z
+        .enum(["GET", "POST", "PUT", "DELETE"])
+        .describe("The method of the end point"),
+      path: z.string().describe("The path of the end point"),
+      description: z.string().describe("What does this end point do"),
+    })
+  ),
+  userInteractions: z.array(
+    z
+      .object({
+        name: z.string().describe("The name of this ui screen"),
+        description: z.string().describe("What does this screen do"),
+        endResult: z
+          .string()
+          .describe("What does the screen enable the user to do"),
+        endpointCall: z
+          .array(z.string())
+          .describe("The endpoints to call while in this screen"),
+      })
+      .describe("The user screens/components that are needed for the task")
   ),
 });
 export type TaskStructure = z.infer<typeof taskStructure>;
+
+export const fileReference = z.object({
+  id: z.string().optional(),
+  filePath: z.string(),
+  fileName: z.string(),
+  fileType: z.string(),
+  fileDescription: z.string().optional(),
+  meta: z.any().optional(),
+  contentSize: z.number().optional(),
+  timestamp: z.string().optional(),
+});
+export type FileReference = z.infer<typeof fileReference>;
+
+export const buildingStep = z.object({
+  files: z.array(fileReference),
+  startTime: z.string(),
+  endTime: z.string(),
+});
+export type BuildingStep = z.infer<typeof buildingStep>;
+
 // step3
 export const taskInstance = z.object({
-  taskInfo: taskInfo,
-  taskIntegrations: taskIntegrations,
-  taskRequiredInfo: taskRequiredInfo,
-  taskStructure: taskStructure,
+  initialSummary: z
+    .string()
+    .describe("The initial summary of the task")
+    .optional(),
+  originClientRequestId: z
+    .string()
+    .describe("The client request id of the task"),
+  minionType: z.string().optional(),
+  taskInfo: taskInfo.optional(),
+  taskIntegrations: taskIntegrations.optional(),
+  taskRequiredInfo: taskRequiredInfo.optional(),
+  taskStructure: taskStructure.optional(),
+  buildingStep: buildingStep.optional(),
 });
 
+export type TaskInstanceMetaType = z.infer<typeof taskInstance>;
 // the collected information must be stored NOT in the taskInstance record.

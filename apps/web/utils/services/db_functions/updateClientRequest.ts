@@ -17,3 +17,30 @@ export async function updateClientRequest({
 
   return clientRequest;
 }
+
+export async function updateTaskInstanceMeta({
+  clientRequestId,
+  taskInstanceMeta,
+  otherData,
+}: any) {
+  try {
+    const updatedClientRequest = await prisma.taskInstanceMeta.upsert({
+      where: {
+        originClientRequestId: clientRequestId,
+      },
+      update: {
+        ...taskInstanceMeta,
+        ...(otherData && { ...otherData }),
+      },
+      create: {
+        ...taskInstanceMeta,
+        ...(otherData && { ...otherData }),
+      },
+    });
+    console.log("updated TaskInstanceMeta");
+    return updatedClientRequest;
+  } catch (error) {
+    console.log("error updating client request", error);
+    return null;
+  }
+}

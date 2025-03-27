@@ -4,13 +4,12 @@ import { useRef } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { useClientSecrets } from "../providers/ClientSecretProvider";
 import { ChatUIMessageWithTypes } from "../hooks/convertors";
-
+import { useMicrofox } from "../providers/MicrofoxProvider";
 interface ChatInputBoxProps {
   input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
   userId: string;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  sendMessage: () => void;
 }
 
 export default function ChatInputBox({
@@ -18,12 +17,12 @@ export default function ChatInputBox({
   messageStatus,
   userId,
   handleInputChange,
-  sendMessage,
 }: ChatInputBoxProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
   const { setShowSlashModal } = useClientSecrets();
+  const { handleSubmit } = useMicrofox();
 
   const handleFileInputChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -84,7 +83,7 @@ export default function ChatInputBox({
           onChange={handleCustomInputChange}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
-              sendMessage();
+              handleSubmit(e);
             }
           }}
           disabled={
@@ -96,7 +95,7 @@ export default function ChatInputBox({
         />
         <div className="flex flex-col-reverse gap-1">
           <ButtonSCN
-            onClick={sendMessage}
+            onClick={() => handleSubmit()}
             disabled={
               (!input.trim() && attachedMedia.length === 0) ||
               messageStatus === "pending" ||

@@ -53,6 +53,8 @@ model ChatUIMessage {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   originClientRequestId String
+  revisionId           String?
+  toolInvocations       Json[]
   minion                FoxTemplate?  @relation(fields: [minionId], references: [id])
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
@@ -82,6 +84,7 @@ model ClientRequest {
   mentionedClientSecretIds String[]
   title                    String                  @default("Untitled")
   description              String?
+  repoName                 String?
   prUrl                    String?
   prNumber                 Int?
   prBranch                 String?
@@ -96,15 +99,34 @@ model ClientRequest {
   botProject               BotProject              @relation(fields: [botProjectId], references: [id])
   deployedFunctions        ClientRequestFunction[]
   requestUpdates           RequestUpdate[]
-  taskInstanceMeta         Json?
+  taskInstanceMeta         TaskInstanceMeta?
 }
 
 model TaskInstanceMeta {
   id              String @id @default(uuid())
-  taskInstance    Json?
-  minionType          String
+  originClientRequestId String @unique
+  taskInfo    Json?
+  initialSummary      String?
+  taskIntegrations    Json?
+  taskRequiredInfo    Json?
+  taskStructure       Json?  // this should be in seperate model in future
+  buildingStep        Json?
+  minionType          String?
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt       
+  originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])       
+}
+
+model UsageAnalytics {
+  id      String @id @unique @default(uuid())
+  matchId  String @unique // userId+requestId+projectId
+  promptTokens  Int @default(0)
+  totalTokens   Int @default(0)
+  completionTokens  Int @default(0)
+  model         String?
+  hour          String?
+  day           String?
+  month         String?
 }
 
 model ClientSecret {

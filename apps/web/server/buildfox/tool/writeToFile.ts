@@ -1,0 +1,222 @@
+import { ClientRequest } from "@prisma/client";
+import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { tool } from "ai";
+import dedent from "dedent";
+import fs from "fs/promises";
+import path from "path";
+import { z } from "zod";
+// GIT - 1000 requests per hour per repo
+
+export const INTERNAL_TEMPLATE_ROOT = `server/buildfox/templates`;
+
+export const getFilePath = async (
+  clientRequest: ClientRequest,
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+  }
+) => {
+  if (!clientRequest.repoName || !clientRequest.requestDir) {
+    throw new Error("Client request does not have a repo name or request dir");
+  }
+  const rootDir = path.join(clientRequest.repoName, clientRequest.requestDir); // space-personal-space-1742837067481/apps/linkedin-hiring-flow-1742970093645
+  const fullPath = path.join(rootDir, props.filePath); // src/db or prisma
+  let fileWritePath = fullPath; // path.join(fullPath, `${fileName}.${fileType}`);
+
+  if (fileWritePath.indexOf(".") === -1) {
+    if (props.fileName.endsWith(props.fileType)) {
+      fileWritePath = path.join(fileWritePath, props.fileName);
+    } else {
+      fileWritePath = path.join(
+        fileWritePath,
+        `${props.fileName}.${props.fileType}`
+      );
+    }
+  }
+
+  // Create directories recursively if they don't exist
+  const dirPath = path.dirname(fileWritePath);
+  //console.log("dirPath", dirPath);
+  await fs.mkdir(dirPath, { recursive: true });
+  // Write file content
+  return { fileWritePath, dirPath, rootDir };
+};
+export const writeToFileSystem = async (
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    content: string;
+    meta?: any;
+  },
+  clientRequest: ClientRequest
+) => {
+  if (
+    !clientRequest.prBranch ||
+    !clientRequest.repoName ||
+    !clientRequest.requestDir
+  ) {
+    throw new Error("Client request does not have a branch or repo name");
+  }
+  const { fileWritePath } = await getFilePath(clientRequest, props);
+  await fs.writeFile(fileWritePath, props.content, "utf-8");
+};
+
+export const writeToFileSystemAndUpdateSteps = async (
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    content: string;
+    meta?: any;
+  },
+  clientRequest: ClientRequest
+) => {
+  await writeToFileSystem(props, clientRequest);
+  await updateSteps(clientRequest, props);
+};
+
+export const readAllGenFilesList = async (clientRequest: ClientRequest) => {
+  const { rootDir } = await getFilePath(clientRequest, {
+    fileName: "steps.json",
+    filePath: "",
+    fileType: "json",
+  });
+  const fileContent = await fs.readFile(
+    path.join(rootDir, "steps.json"),
+    "utf-8"
+  );
+  return JSON.parse(fileContent ?? "{}");
+};
+const fileExists = async (path: string) =>
+  !!(await fs.stat(path).catch((e) => false));
+
+export const updateSteps = async (
+  clientRequest: ClientRequest,
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    content: string;
+    meta?: any;
+  }
+) => {
+  const { rootDir } = await getFilePath(clientRequest, props);
+  let steps = [];
+  let stepsFileExists = await fileExists(path.join(rootDir, "steps.json"));
+  if (stepsFileExists) {
+    try {
+      const fileContent = await fs.readFile(
+        path.join(rootDir, "steps.json"),
+        "utf-8"
+      );
+      //console.log("fileContent", fileContent);
+      steps = JSON.parse(fileContent ?? "[]");
+    } catch (error) {
+      console.log("error", error);
+    }
+  }
+  steps = steps.filter((step: any) => step.fileName !== props.fileName);
+  steps.push({
+    fileName: props.fileName,
+    filePath: props.filePath,
+    fileType: props.fileType,
+    timestamp: new Date().toISOString(),
+    contentSize: props.content?.length ?? 0,
+    meta: props.meta,
+  });
+  //console.log("steps", steps);
+  await fs.writeFile(
+    path.join(rootDir, "steps.json"),
+    JSON.stringify(steps, null, 2),
+    "utf-8"
+  );
+};
+
+/** Thinking tool */
+export const writeToFile = (
+  props: StreamingFucntionProps<any, any>,
+  clientRequest: ClientRequest
+) => {
+  return tool({
+    description: "Write code to a specific file in the project",
+    parameters: z.object({
+      fileName: z.string().describe("The name of the file to write to"),
+      filePath: z
+        .string()
+        .describe(
+          "The complete file path to write to - relative to the project root"
+        ),
+      fileType: z
+        .string()
+        .describe("The type of file to write to - ts, tsx, json, etc"),
+      content: z.string().describe("The content to write to the file"),
+      packagesUsed: z
+        .array(z.string())
+        .describe(
+          "The packages used in the file - @microfox/core, @microfox/aws-ses etc.."
+        ),
+    }),
+    execute: async (
+      { fileName, filePath, fileType, content, packagesUsed },
+      options
+    ) => {
+      try {
+        console.log(
+          "updatedFileContent",
+          //updatedFileContent,
+          fileName,
+          filePath,
+          fileType
+        );
+        await writeToFileSystemAndUpdateSteps(
+          {
+            fileName,
+            filePath,
+            fileType,
+            content,
+            meta: {
+              packagesUsed,
+              timestamp: new Date().toISOString(),
+            },
+          },
+          clientRequest
+        );
+
+        if (packagesUsed.length > 0) {
+          const packageJson = await fs.readFile(
+            path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "package.json"),
+            "utf8"
+          );
+          const packageJsonContent = JSON.parse(packageJson);
+          packagesUsed.forEach((pkg) => {
+            if (packageJsonContent.dependencies[pkg]) {
+              packageJsonContent.dependencies[pkg] = "*";
+            }
+          });
+          writeToFileSystemAndUpdateSteps(
+            {
+              fileName: "package.json",
+              filePath: "",
+              fileType: "json",
+              content: dedent`${JSON.stringify(packageJsonContent)}`,
+            },
+            clientRequest
+          );
+        }
+        // Construct full path from repo root
+      } catch (error) {
+        console.log("error", error);
+        throw new Error("Failed to add file");
+      }
+      return {
+        success: true,
+        message: `File ${fileName} updated successfully`,
+        //content: content,
+        filePath: filePath,
+        fileType: fileType,
+      };
+    },
+  });
+};

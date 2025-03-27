@@ -5,8 +5,9 @@ import {
 } from "@repo/ai-utils/router";
 import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
-import { convertfoxRouter } from "./convertfox/convertFoxRouter";
+import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { createMessage } from "@/utils/services/db_functions/messages";
+import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -20,18 +21,21 @@ const microfoxRouter = new ServerStreamingRouter<
   defaultCallbackResultBody
 >();
 
+// ratelimit should be per time per model ().
+
+// TODO: Shift to the frontend.
 const createMessageRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
-  console.log("createMessage", requestBody);
   const lastMessage =
     requestBody.messages.length > 0
       ? requestBody.messages[requestBody.messages.length - 1]
       : null;
   let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
   if (lastMessage) {
+    console.log("createMessage", lastMessage);
     await createMessage({
       clientRequestId: requestBody.clientRequestId,
       message: {
@@ -53,6 +57,7 @@ const createMessageRouter: ServerStreamingFunction<
 microfoxRouter.addPath("createMessage", createMessageRouter);
 microfoxRouter.addPath("hellofox", hellofoxRouter);
 microfoxRouter.addPath("convertfox", convertfoxRouter);
+microfoxRouter.addPath("buildfox", buildFoxRouter);
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
@@ -63,9 +68,11 @@ microfoxRouter.setRouting((requestBody: any) => {
 
   let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
   if (minionType === "hellofox") {
-    return ["createMessage", "hellofox"];
+    return ["hellofox"];
   } else if (minionType === "convertfox") {
-    return ["createMessage", "convertfox"];
+    return ["convertfox"];
+  } else if (minionType === "buildfox") {
+    return ["buildfox"];
   }
   return [];
 });

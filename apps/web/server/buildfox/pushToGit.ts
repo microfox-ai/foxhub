@@ -8,7 +8,10 @@
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { uploadToRepo } from "./uploadToGit";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import {
+  GITHUB_TOKEN,
+  TEMPLATE_REPO_OWNER,
+} from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 export const pushToGit = async (
   props: StreamingFucntionProps<any, any>,
@@ -30,12 +33,20 @@ export const pushToGit = async (
   });
 
   const octo = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
+    auth: GITHUB_TOKEN,
   });
+
+  console.log(
+    "uploading to repo",
+    clientRequest.repoName,
+    clientRequest.requestDir,
+    clientRequest.prBranch
+  );
 
   await uploadToRepo(
     octo,
-    clientRequest.requestDir,
+    `${clientRequest.repoName}/${clientRequest.requestDir}`,
+    `${clientRequest.repoName}/`,
     TEMPLATE_REPO_OWNER,
     clientRequest.repoName,
     clientRequest.prBranch

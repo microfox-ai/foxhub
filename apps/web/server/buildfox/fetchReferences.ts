@@ -8,10 +8,13 @@ import { prisma } from "@/prisma/prisma";
 import { TaskInstanceMetaType, TaskStructure } from "../convertfox/types";
 import path from "path";
 import { Octokit } from "octokit";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import {
+  GITHUB_TOKEN,
+  TEMPLATE_REPO_OWNER,
+} from "@/utils/constants/githubInfo";
 
 const githubSdk = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
+  auth: GITHUB_TOKEN,
 });
 
 /** Tool to fetch reference code and related files based on search query */

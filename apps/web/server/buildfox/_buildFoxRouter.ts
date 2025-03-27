@@ -59,42 +59,42 @@ export const buildFoxRouter: ServerStreamingFunction<
     });
   }
 
-  // dataStream.writeMessageAnnotation({
-  //   type: "thinking",
-  //   content: "Generating initial code",
-  // });
-  // taskInstanceMeta = await genInitialCode(
-  //   props,
-  //   taskInstanceMeta,
-  //   clientRequest
-  // );
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Generating initial code",
+  });
+  taskInstanceMeta = await genInitialCode(
+    props,
+    taskInstanceMeta,
+    clientRequest
+  );
 
-  // dataStream.writeMessageAnnotation({
-  //   type: "thinking",
-  //   content: "Writing db schema",
-  // });
-  // // write/modify schema files for prisma
-  // taskInstanceMeta = await genDbCode(props, taskInstanceMeta, clientRequest);
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Writing db schema",
+  });
+  // write/modify schema files for prisma
+  taskInstanceMeta = await genDbCode(props, taskInstanceMeta, clientRequest);
 
-  // dataStream.writeMessageAnnotation({
-  //   type: "thinking",
-  //   content: "Writing lambda functions",
-  // });
-  // // write/modify lambda functions
-  // taskInstanceMeta = await genLambdaCode(
-  //   props,
-  //   taskInstanceMeta,
-  //   clientRequest
-  // );
-  // //write/modify cron jobs
-  // taskInstanceMeta = await genCronJobs(props, taskInstanceMeta, clientRequest);
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Writing lambda functions",
+  });
+  // write/modify lambda functions
+  taskInstanceMeta = await genLambdaCode(
+    props,
+    taskInstanceMeta,
+    clientRequest
+  );
+  //write/modify cron jobs
+  taskInstanceMeta = await genCronJobs(props, taskInstanceMeta, clientRequest);
 
-  // dataStream.writeMessageAnnotation({
-  //   type: "thinking",
-  //   content: "Writing final code pieces",
-  // });
-  // // write/modify root files - index.ts, package.json, serverless.yml, etc.
-  // await genFinalCode(props, taskInstanceMeta, clientRequest);
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Writing final code pieces",
+  });
+  // write/modify root files - index.ts, package.json, serverless.yml, etc.
+  await genFinalCode(props, taskInstanceMeta, clientRequest);
 
   dataStream.writeMessageAnnotation({
     type: "thinking",

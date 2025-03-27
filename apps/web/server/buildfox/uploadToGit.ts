@@ -6,6 +6,7 @@ import { readFile } from "fs/promises";
 export const uploadToRepo = async (
   octo: Octokit,
   coursePath: string,
+  internalPath: string,
   org: string,
   repo: string,
   branch: string = `master`,
@@ -19,8 +20,10 @@ export const uploadToRepo = async (
       filesPaths.map(createBlobForFile(octo, org, repo))
     );
     const pathsForBlobs = filesPaths.map((fullPath) =>
-      path.relative(coursePath, fullPath)
+      //path.relative(coursePath, fullPath)
+      fullPath.replace(internalPath, "")
     );
+    //console.log("filesBlobs", filesBlobs.length, pathsForBlobs);
     const newTree = await createNewTree(
       octo,
       org,
@@ -29,6 +32,7 @@ export const uploadToRepo = async (
       pathsForBlobs,
       currentCommit.treeSha
     );
+    //console.log("newTree", newTree);
     const newCommit = await createNewCommit(
       octo,
       org,

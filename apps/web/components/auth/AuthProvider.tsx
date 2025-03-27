@@ -23,9 +23,7 @@ interface DbUser {
 
 type AuthContextType = {
   user: User | null;
-  dbUser: DbUser | null;
   isLoading: boolean;
-  error: string | null;
   handleSigninWithGoogle: () => Promise<void>;
   handleLogout: () => Promise<void>;
 };
@@ -34,9 +32,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -86,14 +82,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value = {
     user,
-    dbUser,
     isLoading,
-    error,
     handleSigninWithGoogle,
     handleLogout,
   };

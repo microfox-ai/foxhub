@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "./AuthProvider";
 import { DiscordIcon, GitHubIcon } from "../ui/icons";
+import { useUser } from "@/utils/hooks/useUser";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const { handleSigninWithGoogle } = useAuth();
+  const { handleSigninWithGoogle } = useUser();
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden py-0">
@@ -105,4 +105,3 @@ export function LoginForm({
     </div>
   );
 }
-

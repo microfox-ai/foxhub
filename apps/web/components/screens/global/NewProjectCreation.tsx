@@ -6,6 +6,7 @@ import { Send, Loader2 } from "lucide-react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { analytics } from "@/utils/services/analytics/client";
 
 export default function NewProjectCreation({
   userId,
@@ -34,6 +35,13 @@ export default function NewProjectCreation({
         userId,
         projectName: projectTitle.trim(),
         projectDescription: description.trim(),
+      });
+      // track project creation
+      analytics.track("Project Created", {
+        userId,
+        projectId: newProject.id,
+        projectName: newProject.name,
+        timestamp: new Date().toISOString(),
       });
       toast.success("Project created successfully!");
       setProjectTitle("");

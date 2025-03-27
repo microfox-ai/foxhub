@@ -7,6 +7,8 @@ import useSWR from "swr";
 import { ClientRequest } from "@prisma/client";
 import useLocalState from '../hooks/useLocalState';
 import { ChatRequestOptions, CreateMessage, Message, UIMessage } from 'ai';
+import { MySlackChannels, MICROFOX_LOGO, slackBotSdk, SLACK_BOT_OAUTH_TOKEN } from '@/utils/services/slackBotSdk';
+
 
 interface MicrofoxContextType extends UseChatHelpers {
     minionType: ChatUIMessageWithTypes["minionType"] | null;
@@ -106,6 +108,12 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         },
         onError: (error) => {
             console.log("error", error);
+            slackBotSdk.sendMessage({
+                text: `Reporting Error: ${error}`,
+                channel: MySlackChannels.microfox_updates,
+                username: "Microfox",
+                icon_url: MICROFOX_LOGO,
+            })
         },
     });
 
@@ -179,6 +187,13 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         if (messageIndex >= chatOptions.messages.length) {
             return;
         }
+        slackBotSdk.sendMessage({
+            text: `Refreshing message ${messageIndex}`,
+            channel: MySlackChannels.test_slackbot
+        }).catch((error: any) => {
+            console.log("error sending message", error);
+        });
+        return;
         const message = { ...chatOptions.messages[messageIndex] };
         let _minionType = (message.annotations?.find((annotation: any) => annotation.type === "minion") as any)?.value;
         if (!_minionType) _minionType = (message as any).minionType;

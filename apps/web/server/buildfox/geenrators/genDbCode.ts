@@ -2,10 +2,14 @@ import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
 import dedent from "dedent";
-import { TaskInstanceMetaType } from "../convertfox/types";
-import { models } from "../models";
-import { codingSystemPrompt } from "./prompt.coding";
-import { writeToFile, writeToFileSystemAndUpdateSteps } from "./writeToFile";
+import { TaskInstanceMetaType } from "../../convertfox/types";
+import { models } from "../../models";
+import { codingSystemPrompt } from "../prompt.coding";
+import {
+  writeToFile,
+  writeToFileSystemAndUpdateSteps,
+} from "../tool/writeToFile";
+import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 
 export const genDbCode = async (
   props: StreamingFucntionProps<any, any>,
@@ -73,6 +77,11 @@ export const genDbCode = async (
     // onError: (error) => {
     //   console.log("error", error);
     // },
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.claude35Sonnet.modelId,
+    usage: result.usage,
   });
 
   props.dataStream.writeMessageAnnotation({

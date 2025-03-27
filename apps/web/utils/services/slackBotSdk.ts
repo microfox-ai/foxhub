@@ -1,8 +1,9 @@
 import { createSlackSDK } from "@microfox/slack-web-tiny";
 import { IN_DEV } from "../constants/appInfo";
+import { MySlackBotSdk } from "./mySlackSdk";
 
 export const SLACK_BOT_OAUTH_TOKEN =
-  process.env.NEXT_PUBLIC_SLACK_OAUTH_TOKEN ||
+  process.env.NEXT_PUBLIC_SLACK_OAUTH_TOKEN ??
   "xoxb-1613705032464-7115299573767-URKFl8Zz5Q4yygFZ2YVr7J2O";
 
 /** HOW TO ADD slack channel webhook
@@ -42,5 +43,6 @@ export const MICROFOX_LOGO = `https://microfox.nyc3.cdn.digitaloceanspaces.com/l
 
 export const slackBotSdk = createSlackSDK({
   botToken: SLACK_BOT_OAUTH_TOKEN,
-  baseUrl: "https://slack.com/api",
 });
+
+//new MySlackBotSdk(SLACK_BOT_OAUTH_TOKEN);

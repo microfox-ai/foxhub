@@ -7,14 +7,14 @@ import {
   defaultCallbackResultBody,
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
-import { genDbCode } from "./genDbCode";
-import { genInitialCode } from "./genInitialCode";
-import { genLambdaCode } from "./genLambdaCode";
-import { genCronJobs } from "./genCronJobs";
-import { genFinalCode } from "./genFinalCode";
-import { pushToGit } from "./pushToGit";
-import { fetchGithubJson } from "./fetchPackageDocs";
-import { readAllGenFilesList } from "./writeToFile";
+import { genDbCode } from "./geenrators/genDbCode";
+import { genInitialCode } from "./geenrators/genInitialCode";
+import { genLambdaCode } from "./geenrators/genLambdaCode";
+import { genCronJobs } from "./geenrators/genCronJobs";
+import { genFinalCode } from "./geenrators/genFinalCode";
+import { pushToGit } from "./helper/pushToGit";
+import { fetchGithubJson } from "./tool/fetchPackageDocs";
+import { readAllGenFilesList } from "./tool/writeToFile";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import {
   MICROFOX_LOGO,
@@ -23,13 +23,17 @@ import {
 } from "@/utils/services/slackBotSdk";
 import dayjs from "dayjs";
 import { generateStatsReport } from "./helper/generateStatsReport";
-import { octokitSdk } from "./gitHelpers";
+import { octokitSdk } from "./helper/gitHelpers";
 import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { models } from "../models";
 import { generateObject, streamText } from "ai";
 import { z } from "zod";
 import { findLastElementWith } from "@/utils/helpers/array";
 import { getMicrofoxCharacter } from "../hellofox/default";
+import {
+  TokenUsageAnalyticsTracker,
+  TokenUsageModel,
+} from "../analytics/helper";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -48,7 +52,7 @@ export const buildFoxRouter: ServerStreamingFunction<
   );
 
   // classify the users query
-  const { object: classification } = await generateObject({
+  const { object: classification, usage } = await generateObject({
     model: models.googleGeminiFlash,
     schema: z.object({
       reasoning: z.string(),
@@ -63,6 +67,11 @@ export const buildFoxRouter: ServerStreamingFunction<
     Determine:
     1. User intent (confirmation, modification, question)
     2. Brief reasoning for classification`,
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...requestBody,
+    model: models.googleGeminiFlash.modelId,
+    usage,
   });
 
   const timeStart = dayjs();

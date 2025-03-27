@@ -16,7 +16,7 @@ import {
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
 import { z } from "zod";
-
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
 // 3. BUILD ->
@@ -80,7 +80,7 @@ export const convertfoxRouter: ServerStreamingFunction<
   });
 
   // classify the users query
-  const { object: classification } = await generateObject({
+  const { object: classification, usage } = await generateObject({
     model: models.googleGeminiFlash,
     schema: z.object({
       reasoning: z.string(),
@@ -94,6 +94,11 @@ export const convertfoxRouter: ServerStreamingFunction<
     Determine:
     1. User intent (confirmation, modification, query)
     2. Brief reasoning for classification`,
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.googleGeminiFlash.modelId,
+    usage: usage,
   });
 
   dataStream.writeMessageAnnotation({

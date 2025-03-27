@@ -37,7 +37,7 @@ export async function updateTaskInstanceMeta({
         ...(otherData && { ...otherData }),
       },
     });
-    console.log("updatedClientRequest", updatedClientRequest);
+    console.log("updated TaskInstanceMeta");
     return updatedClientRequest;
   } catch (error) {
     console.log("error updating client request", error);

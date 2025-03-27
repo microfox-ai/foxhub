@@ -1,13 +1,28 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
+import { createSESSdk } from '@microfox/aws-ses';
+import { createGoogleOAuthManager } from '@microfox/google-sdk';
 import prisma from '../db/prisma';
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { google } from 'googleapis';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const ses = new SESClient({ region: process.env.AWS_REGION });
-const sheets = google.sheets({ version: 'v4' });
+// Initialize AWS SES SDK
+const ses = createSESSdk({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  region: process.env.AWS_REGION!,
+});
+
+// Initialize Google OAuth Manager
+const googleAuth = createGoogleOAuthManager({
+  accessToken: process.env.GOOGLE_ACCESS_TOKEN!,
+  refreshToken: process.env.GOOGLE_REFRESH_TOKEN!,
+  clientId: process.env.GOOGLE_CLIENT_ID!,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+});
+
+// Initialize Google Sheets API
+const sheets = google.sheets({ version: 'v4', auth: googleAuth });
 
 interface LinkedInApplicant {
   name: string;
@@ -17,28 +32,28 @@ interface LinkedInApplicant {
 }
 
 /**
- * Fetches new applicants from LinkedIn API and stores them in the database
+ * Fetch applicants from LinkedIn API and store them in the database
  */
-export const fetchLinkedInApplicants: APIGatewayProxyHandler = async (event) => {
+export const fetchLinkedInApplicants = async (event: any) => {
   try {
-    // Fetch applicants from LinkedIn API
-    const applicants = await getApplicantsFromLinkedIn();
+    // Fetch applicants from LinkedIn API (mock implementation)
+    const applicants: LinkedInApplicant[] = await fetchApplicantsFromLinkedIn();
 
-    // Save applicants to database
-    const savedApplicants = await saveApplicantsToDatabase(applicants);
+    // Store applicants in the database
+    const storedApplicants = await storeApplicantsInDatabase(applicants);
 
-    // Update Excel sheet
-    await updateExcelSheet(savedApplicants);
+    // Update Google Sheets with applicant data
+    await updateGoogleSheet(applicants);
 
-    // Send email responses
-    await sendEmailResponses(savedApplicants);
+    // Send email notifications
+    await sendEmailNotifications(applicants);
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Applicants fetched and processed successfully', count: savedApplicants.length }),
+      body: JSON.stringify({ message: 'Applicants fetched and processed successfully', count: storedApplicants.length }),
     };
   } catch (error) {
-    console.error('Error in fetchLinkedInApplicants:', error);
+    console.error('Error fetching LinkedIn applicants:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
@@ -48,37 +63,44 @@ export const fetchLinkedInApplicants: APIGatewayProxyHandler = async (event) => 
   }
 };
 
-async function getApplicantsFromLinkedIn(): Promise<LinkedInApplicant[]> {
-  // TODO: Implement LinkedIn API integration
-  // This is a placeholder implementation
+/**
+ * Mock function to fetch applicants from LinkedIn API
+ */
+async function fetchApplicantsFromLinkedIn(): Promise<LinkedInApplicant[]> {
+  // TODO: Implement actual LinkedIn API integration
   return [
     { name: 'John Doe', profileUrl: 'https://linkedin.com/in/johndoe', email: 'john@example.com', jobTitle: 'Software Engineer' },
     { name: 'Jane Smith', profileUrl: 'https://linkedin.com/in/janesmith', email: 'jane@example.com', jobTitle: 'Product Manager' },
   ];
 }
 
-async function saveApplicantsToDatabase(applicants: LinkedInApplicant[]) {
-  return await prisma.applicant.createMany({
-    data: applicants.map(applicant => ({
-      name: applicant.name,
-      profileUrl: applicant.profileUrl,
-      email: applicant.email,
-      jobTitle: applicant.jobTitle,
-    })),
-    skipDuplicates: true,
-  });
+/**
+ * Store applicants in the database using Prisma
+ */
+async function storeApplicantsInDatabase(applicants: LinkedInApplicant[]): Promise<any[]> {
+  const storedApplicants = await Promise.all(
+    applicants.map(async (applicant) => {
+      return prisma.applicant.create({
+        data: {
+          name: applicant.name,
+          profileUrl: applicant.profileUrl,
+          email: applicant.email,
+          jobTitle: applicant.jobTitle,
+        },
+      });
+    })
+  );
+  return storedApplicants;
 }
 
-async function updateExcelSheet(applicants: LinkedInApplicant[]) {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
+/**
+ * Update Google Sheet with applicant data
+ */
+async function updateGoogleSheet(applicants: LinkedInApplicant[]): Promise<void> {
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  const range = 'Sheet1!A2:D'; // Assuming headers are in row 1
 
-  const spreadsheetId = process.env.EXCEL_SHEET_ID;
-  const range = 'Sheet1!A:D'; // Adjust based on your sheet structure
-
-  const values = applicants.map(applicant => [
+  const values = applicants.map((applicant) => [
     applicant.name,
     applicant.profileUrl,
     applicant.email,
@@ -86,7 +108,6 @@ async function updateExcelSheet(applicants: LinkedInApplicant[]) {
   ]);
 
   await sheets.spreadsheets.values.append({
-    auth,
     spreadsheetId,
     range,
     valueInputOption: 'USER_ENTERED',
@@ -96,31 +117,30 @@ async function updateExcelSheet(applicants: LinkedInApplicant[]) {
   });
 }
 
-async function sendEmailResponses(applicants: LinkedInApplicant[]) {
-  const emailTemplate = process.env.EMAIL_TEMPLATE || '';
+/**
+ * Send email notifications to applicants
+ */
+async function sendEmailNotifications(applicants: LinkedInApplicant[]): Promise<void> {
+  const emailTemplate = `
+    Dear {name},
+
+    Thank you for applying for the {jobTitle} position. We have received your application and will review it shortly.
+
+    Best regards,
+    Your Company
+  `;
 
   for (const applicant of applicants) {
     const personalizedEmail = emailTemplate
-      .replace('{{name}}', applicant.name)
-      .replace('{{jobTitle}}', applicant.jobTitle);
+      .replace('{name}', applicant.name)
+      .replace('{jobTitle}', applicant.jobTitle);
 
-    // TODO: Implement confirmation prompt before sending each email
-    // For now, we'll send emails without confirmation
-
-    const params = {
-      Destination: {
-        ToAddresses: [applicant.email],
-      },
-      Message: {
-        Body: {
-          Text: { Data: personalizedEmail },
-        },
-        Subject: { Data: 'Thank you for your application' },
-      },
-      Source: process.env.SENDER_EMAIL,
-    };
-
-    await ses.send(new SendEmailCommand(params));
+    await ses.sendEmail({
+      sender: process.env.SENDER_EMAIL!,
+      recipient: applicant.email,
+      subject: 'Application Received',
+      bodyText: personalizedEmail,
+    });
   }
 }
 
@@ -129,7 +149,7 @@ async function sendEmailResponses(applicants: LinkedInApplicant[]) {
  */
 export const fetchLinkedInApplicantsDocs = {
   title: 'Fetch LinkedIn Applicants',
-  description: 'Fetches new applicants from LinkedIn API, stores them in the database, updates Excel sheet, and sends email responses',
+  description: 'Fetches new applicants from LinkedIn API and stores them in the database',
   method: 'GET',
   path: '/api/fetch-applicants',
   responses: {

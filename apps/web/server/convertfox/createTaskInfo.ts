@@ -5,6 +5,7 @@ import { taskInfo, TaskInstanceMetaType } from "./types";
 import { models } from "../models";
 import { TaskInstanceMeta } from "@prisma/client";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 export const createTaskInfo = async (
   props: StreamingFucntionProps<any, any>,
@@ -47,6 +48,11 @@ export const createTaskInfo = async (
       ...taskInstanceMeta,
       taskInfo: result.object,
     },
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.googleGeminiFlash.modelId,
+    usage: result.usage,
   });
   // save this info into db.
   dataStream.writeMessageAnnotation({

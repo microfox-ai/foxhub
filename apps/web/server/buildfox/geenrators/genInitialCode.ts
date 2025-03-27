@@ -3,11 +3,11 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import dedent from "dedent";
 import { promises as fs } from "fs";
 import path from "path";
-import { TaskInstanceMetaType } from "../convertfox/types";
+import { TaskInstanceMetaType } from "../../convertfox/types";
 import {
   INTERNAL_TEMPLATE_ROOT,
   writeToFileSystemAndUpdateSteps,
-} from "./writeToFile";
+} from "../tool/writeToFile";
 
 export const genInitialCode = async (
   props: StreamingFucntionProps<any, any>,

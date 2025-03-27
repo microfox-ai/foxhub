@@ -106,11 +106,16 @@ export const updateSteps = async (
   let steps = [];
   let stepsFileExists = await fileExists(path.join(rootDir, "steps.json"));
   if (stepsFileExists) {
-    const fileContent = await fs.readFile(
-      path.join(rootDir, "steps.json"),
-      "utf-8"
-    );
-    steps = JSON.parse(fileContent);
+    try {
+      const fileContent = await fs.readFile(
+        path.join(rootDir, "steps.json"),
+        "utf-8"
+      );
+      //console.log("fileContent", fileContent);
+      steps = JSON.parse(fileContent ?? "[]");
+    } catch (error) {
+      console.log("error", error);
+    }
   }
   steps = steps.filter((step: any) => step.fileName !== props.fileName);
   steps.push({
@@ -174,7 +179,6 @@ export const writeToFile = (
             meta: {
               packagesUsed,
               timestamp: new Date().toISOString(),
-              tokenUsage: options,
             },
           },
           clientRequest

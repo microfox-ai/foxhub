@@ -1,12 +1,12 @@
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
-import { TaskInstanceMetaType } from "../convertfox/types";
-import { models } from "../models";
-import { codingFunctionPrompt, codingSystemPrompt } from "./prompt.coding";
-import { writeToFile } from "./writeToFile";
-import { fetchPackageDocs } from "./fetchPackageDocs";
-
+import { TaskInstanceMetaType } from "../../convertfox/types";
+import { models } from "../../models";
+import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
+import { writeToFile } from "../tool/writeToFile";
+import { fetchPackageDocs } from "../tool/fetchPackageDocs";
+import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 export const genLambdaCode = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
@@ -41,6 +41,11 @@ export const genLambdaCode = async (
       //   onError: (error) => {
       //     console.log("error", error);
       //   },
+    });
+    TokenUsageAnalyticsTracker.trackUsage({
+      ...props.requestBody,
+      model: models.claude35Sonnet.modelId,
+      usage: result.usage,
     });
     props.dataStream.writeMessageAnnotation({
       type: "thinking",

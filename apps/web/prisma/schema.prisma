@@ -117,6 +117,18 @@ model TaskInstanceMeta {
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])       
 }
 
+model UsageAnalytics {
+  id      String @id @unique @default(uuid())
+  matchId  String @unique // userId+requestId+projectId
+  promptTokens  Int @default(0)
+  totalTokens   Int @default(0)
+  completionTokens  Int @default(0)
+  model         String?
+  hour          String?
+  day           String?
+  month         String?
+}
+
 model ClientSecret {
   id               String     @id @default(uuid())
   botProjectId     String

@@ -1,5 +1,5 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "../convertfox/types";
+import { TaskInstanceMetaType } from "../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { generateText, streamText } from "ai";
 import {
@@ -7,13 +7,14 @@ import {
   readAllGenFilesList,
   writeToFile,
   writeToFileSystemAndUpdateSteps,
-} from "./writeToFile";
+} from "../tool/writeToFile";
 import { readFile } from "fs/promises";
 import path from "path";
-import { models } from "../models";
-import { codingSystemPrompt } from "./prompt.coding";
+import { models } from "../../models";
+import { codingSystemPrompt } from "../prompt.coding";
 import { promises as fs } from "fs";
 import dedent from "dedent";
+import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 
 export const genFinalCode = async (
   props: StreamingFucntionProps<any, any>,
@@ -47,6 +48,11 @@ export const genFinalCode = async (
     onStepFinish: (step) => {
       console.log("step", step.usage);
     },
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.claude35Sonnet.modelId,
+    usage: result.usage,
   });
   // modify the package.json file to support all the functions & cron jobs
 
@@ -100,6 +106,11 @@ export const genFinalCode = async (
     onStepFinish: (step) => {
       console.log("step", step.usage);
     },
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.claude35Sonnet.modelId,
+    usage: result2.usage,
   });
 
   return taskInstanceMeta;

@@ -2,7 +2,7 @@ import dedent from "dedent";
 import { TaskInstanceMetaType } from "../convertfox/types";
 import { TaskStructure } from "../convertfox/types";
 import path from "path";
-import { INTERNAL_TEMPLATE_ROOT } from "./writeToFile";
+import { INTERNAL_TEMPLATE_ROOT } from "./tool/writeToFile";
 import fs from "fs/promises";
 
 export const codingSystemPrompt = (

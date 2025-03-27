@@ -6,7 +6,7 @@ import {
 import { Octokit } from "octokit";
 import { GenAiSdk } from "../../utils/services/GenAiSdk";
 import { createSlackSDK } from "@microfox/slack-web-tiny";
-import { MySlackChannels } from "@/utils/services/slackBotSdk";
+import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
 import { SLACK_BOT_OAUTH_TOKEN } from "@/utils/services/slackBotSdk";
 import { DataStreamWriter } from "ai";
 
@@ -157,17 +157,10 @@ export async function createPullRequest({
   //console.log("clientRequestFileContent", clientRequestFile);
 
   // Send slack message
-  const slackBotSdk = createSlackSDK({
-    botToken: SLACK_BOT_OAUTH_TOKEN,
-    baseUrl: "https://slack.com/api",
-  });
   const slackMsg = `A new request has been created for the project: *${botProject.name}*\n\n*Title*: ${requestTitle}\n*Description*: ${description}\n*PR Link*: ${pr.data.html_url}`;
   await slackBotSdk.sendMessage({
     text: slackMsg,
-    channel:
-      process.env.NODE_ENV === "production"
-        ? MySlackChannels.p_3_custombots
-        : MySlackChannels.test_slackbot,
+    channel: MySlackChannels.microfox_updates,
   });
   console.log("slackMsg", slackMsg);
 

@@ -3,11 +3,12 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
 import fs from "fs/promises";
 import path from "path";
-import { TaskInstanceMetaType } from "../convertfox/types";
-import { models } from "../models";
-import { fetchPackageDocs } from "./fetchPackageDocs";
-import { codingFunctionPrompt, codingSystemPrompt } from "./prompt.coding";
-import { INTERNAL_TEMPLATE_ROOT, writeToFile } from "./writeToFile";
+import { TaskInstanceMetaType } from "../../convertfox/types";
+import { models } from "../../models";
+import { fetchPackageDocs } from "../tool/fetchPackageDocs";
+import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
+import { INTERNAL_TEMPLATE_ROOT, writeToFile } from "../tool/writeToFile";
+import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 
 export const genCronJobs = async (
   props: StreamingFucntionProps<any, any>,
@@ -46,6 +47,11 @@ export const genCronJobs = async (
       //   onError: (error) => {
       //     console.log("error", error);
       //   },
+    });
+    TokenUsageAnalyticsTracker.trackUsage({
+      ...props.requestBody,
+      model: models.claude35Sonnet.modelId,
+      usage: result.usage,
     });
 
     props.dataStream.writeMessageAnnotation({

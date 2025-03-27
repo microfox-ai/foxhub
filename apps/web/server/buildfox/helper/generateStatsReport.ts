@@ -3,6 +3,10 @@ import dayjs from "dayjs";
 export const generateStatsReport = (taskInstanceMeta: TaskInstanceMetaType) => {
   const { buildingStep, taskStructure } = taskInstanceMeta;
 
+  const packagesAll = buildingStep?.files.flatMap(
+    (file: any) => (file.meta?.packagesUsed as string[]) ?? []
+  );
+  const packagesUnique = [...new Set(packagesAll)];
   return `
           ## Stats
           Endpoints: ${taskStructure?.lambdaFunctions?.length}
@@ -11,7 +15,7 @@ export const generateStatsReport = (taskInstanceMeta: TaskInstanceMetaType) => {
           Total Time Taken for code generation: ${dayjs(
             buildingStep?.endTime
           ).diff(dayjs(buildingStep?.startTime), "minutes")} minutes
-          Packages used: ${buildingStep?.files.flatMap((file: any) => (file.meta?.packagesUsed as string[]) ?? []).join(", ")}
+          Packages used: ${packagesUnique.join(", ")}
           
           Total tokens used: <--have yet to add this-->
           Total cost: <--have yet to add this-->

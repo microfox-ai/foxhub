@@ -8,7 +8,7 @@ import {
   getInternalPackages,
   getOnlyPackageNames,
 } from "./getInternalPackages";
-
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 /** Thinking tool */
 // export const searchForAlternatives = (props: StreamingFucntionProps<any, any>) => {
 //     return tool({
@@ -170,6 +170,11 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
       }
     }
     return platform;
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.googleGeminiPro.modelId,
+    usage: packageResult.usage,
   });
 
   await updateTaskInstanceMeta({

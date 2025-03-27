@@ -13,7 +13,7 @@ import {
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
-import { TaskInstanceMetaType } from "../convertfox/types";
+import { TaskInstanceMetaType } from "../../convertfox/types";
 import dayjs from "dayjs";
 export const pushToGit = async (
   props: StreamingFucntionProps<any, any>,

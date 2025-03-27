@@ -19,6 +19,7 @@ import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClie
 import { taskPlanningPrompt } from "./prompt.taskPlanning";
 import { createStreamableValue } from "ai/rsc";
 import { createReadStream } from "fs";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 const generatePlatformsPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
   if (!taskInstanceMeta.taskIntegrations) {
@@ -56,6 +57,13 @@ export const createTaskStructure = async (
         ${modification ? `Modifications Requested: ${modification}` : ""}
         `,
     schema: taskStructure,
+    onFinish: (result) => {
+      TokenUsageAnalyticsTracker.trackUsage({
+        ...props.requestBody,
+        model: models.claude35Sonnet.modelId,
+        usage: result.usage,
+      });
+    },
   });
   for await (const chunk of result.partialObjectStream) {
     //console.log("chunk", chunk);

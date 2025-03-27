@@ -1,29 +1,19 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateObject, streamText } from "ai";
+import { findLastElementWith } from "@/utils/helpers/array";
 import {
   defaultCallbackResultBody,
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
-import { getMicrofoxCharacter } from "./default";
-import { hellofoxTools } from "./tools";
-import { models } from "../models";
-import { aboutMicrofox, aboutMicrofoxInfo } from "./aboutMicrofox";
-import { analyseUserIntent } from "./analyzeUsersIntent";
-import { getMissingCapabilties } from "./getMissingCapabilties";
-import {
-  getMicrofoxCapabilities,
-  getMicrofoxCapabilitiesTool,
-} from "./getMicrofoxCapabilities";
-import { isTaskBuildable } from "./isTaskBuildable";
-import { guideUserToDoableGoal } from "./guideUserToDoableGoal";
-import { sendStruckLogsTool } from "./sendStruckLogs";
-import { findLastElementWith } from "@/utils/helpers/array";
-import { object, z } from "zod";
-import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
-import { createMessage } from "@/utils/services/db_functions/messages";
-import { prisma } from "@/prisma/prisma";
-import { getFox } from "@/utils/services/db_functions/foxes";
+import { generateObject, streamText } from "ai";
+import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { models } from "../models";
+import { aboutMicrofoxInfo } from "./aboutMicrofox";
+import { analyseUserIntent } from "./analyzeUsersIntent";
+import { getMicrofoxCharacter } from "./default";
+import { getMicrofoxCapabilities } from "./getMicrofoxCapabilities";
+import { guideUserToDoableGoal } from "./guideUserToDoableGoal";
+import { isTaskBuildable } from "./isTaskBuildable";
+import { selfSummariseUserGoal } from "./summarizeUserGoal";
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
 // 3. BUILD ->
@@ -85,15 +75,15 @@ export const hellofoxRouter: ServerStreamingFunction<
     model: models.googleGeminiFlash,
     schema: z.object({
       reasoning: z.string(),
-      type: z.enum(["casual", "task-related"]),
+      type: z.enum(["casual", "task-related", "task-confirmation"]),
       complexity: z.enum(["simple", "complex"]),
       //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
     }),
     messages: lastFewMessages,
-    system: `Classify the current users Query.
+    system: `Classify the current users Query based on the conversation history.
     
     Determine:
-    1. Query type (casual, task-related)
+    1. Query type (casual, task-related, task-confirmation)
     2. Complexity (simple, complex)
     3. Brief reasoning for classification`,
   }); // 4. Query type (query, modification, answer, confirmation)
@@ -106,7 +96,61 @@ export const hellofoxRouter: ServerStreamingFunction<
   });
 
   let result = null;
-  if (classification.type === "task-related") {
+  if (classification.type === "task-confirmation") {
+    const response = streamText({
+      model: models.googleGeminiPro,
+      messages: lastFewMessages,
+      system: `
+      - You are called Microfox,
+      - you are a smart assistant that summarises the user's goals from the conversation history.
+      - you make assumptions if needed.
+      - you can think from the perspective of the user.
+      - and make assumptions that are best suited for the user.
+      - You output a summary of the user's goals in a suggestive manner.
+      - Your summary is very specific & small short format - easy to read, quick to digest, only covering the important stuff.
+      - You do not summarize How the task will be built, but only the specific details (like steps to build, platforms to integrate, etc...) 
+      that would be needed to build the task.
+      - You are capable of building the task, if the user agrees to it.
+      - ALWAYS speak in the first person (as if you are microfox).
+  `,
+      onFinish: (result) => {
+        console.log("summariseUserGoal model usage", result.usage);
+        TokenUsageAnalyticsTracker.trackUsage({
+          ...props.requestBody,
+          model: models.googleGeminiPro.modelId,
+          usage: result.usage,
+        });
+      },
+      onError: (error) => {
+        console.log("summariseUserGoal error", error);
+      },
+    });
+    response.mergeIntoDataStream(props.dataStream, {
+      experimental_sendFinish: true,
+    });
+
+    dataStream.writeMessageAnnotation({
+      type: "ui",
+      objectType: "buttons",
+      persona: "hellofox",
+      text: `Let's Go!`,
+      value: await response.text,
+      buttons: [
+        {
+          action: "removeThisPart",
+          text: "Not Yet",
+          className: "bg-neutral-200 text-black hover:bg-neutral-300",
+        },
+        {
+          action: "shiftMinion",
+          text: "Sure",
+          className: "bg-green-500 text-white hover:bg-green-600",
+          value: "convertfox",
+          actionText: "Sure!, let's proceed!",
+        },
+      ],
+    });
+  } else if (classification.type === "task-related") {
     lastFewMessages =
       requestBody.messages.length > 5
         ? requestBody.messages.slice(-5)
@@ -121,13 +165,23 @@ export const hellofoxRouter: ServerStreamingFunction<
       - you are a great listener, & you are able to understand the user's intent 
       - you call tools that can fetch information or help you think.
       - you communicate complex technical jargon in a easy to understand manner.
-      - ALWAYS speak in the first person (as if you aremicrofox).
-      ____
-      First, analyse the user's intent - call tool - analyseUserIntent.
-      If user's task final goal is completely clear, call tool - isTaskBuildable.
-      if user's task final goal is completely impossible, call tool - guideUserToDoableGoal.
-      ____
-      If the task is buildable, just reply back with a summary on how microfox will build it, and ask for confirmation (information can be collected later).
+      - ALWAYS speak in the first person (as if you are microfox).
+      ----
+      Tool usage:
+      - analyseUserIntent: Analyse the user's intent.
+      - isTaskBuildable: Check if the user's task is buildable & then confirm the task.
+      - guideUserToDoableGoal: Guide the user to a doable goal.
+      ----
+      A few things about your workflow:
+      - You first carefully analyse the users intent, requirements, and then plan what needs to be done.
+      - You then critisize your plan, and then refine it to this specific task.
+      - If the task is complex, you take the help of analyseUsersIntent tool to understand the user's intent better.
+      - If the users intent / task is clear, you must call the tool - isTaskBuildable - to confirm the task.
+      - If the task is impossible, you call the tool - guideUserToDoableGoal - to guide the user to a doable goal.
+  
+      Critically, you must never ask for any details from the user.
+      
+      DO NOT CALL ANY OTHER TOOL, if isTaskBuildable is called.
       `,
       messages: lastFewMessages,
       toolCallStreaming: true,
@@ -137,6 +191,7 @@ export const hellofoxRouter: ServerStreamingFunction<
         analyseUserIntent: analyseUserIntent(props),
         isTaskBuildable: isTaskBuildable(props),
         guideUserToDoableGoal: guideUserToDoableGoal(props),
+        //selfSummariseUserGoal: selfSummariseUserGoal(props),
       },
       onStepFinish: (step) => {
         console.log("step", step.usage);

@@ -51,6 +51,10 @@ const ActionButtons = (props: any) => {
                                     parts: [{
                                         type: "text",
                                         text: button.actionText ?? button.text ?? "Changing gears..",
+                                    }],
+                                    annotations: [{
+                                        type: "minion",
+                                        value: button.value,
                                     }]
                                 });
                             }
@@ -200,6 +204,9 @@ export const AnnotationUIList = ({ uiAnnotations }: { uiAnnotations: UIAnnotatio
         }
         if (uiAnnotation.objectType === "taskStructure") {
             return <TaskStructure uiAnnotation={uiAnnotation} idx={idx} />
+        }
+        if (uiAnnotation.objectType === "buttons") {
+            return <ActionButtons buttons={uiAnnotation.buttons} />
         }
     });
 } 

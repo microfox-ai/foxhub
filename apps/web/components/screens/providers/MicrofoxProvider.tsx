@@ -8,6 +8,8 @@ import { ClientRequest } from "@prisma/client";
 import useLocalState from '../hooks/useLocalState';
 import { ChatRequestOptions, CreateMessage, Message, UIMessage } from 'ai';
 import { MySlackChannels, MICROFOX_LOGO, slackBotSdk, SLACK_BOT_OAUTH_TOKEN } from '@/utils/services/slackBotSdk';
+import { createSlackSDK } from '@microfox/slack-web-tiny';
+import { findLastElementWith } from '@/utils/helpers/array';
 
 
 interface MicrofoxContextType extends UseChatHelpers {
@@ -40,7 +42,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     resetInputState,
     chatOptions: userChatOptions,
 }) => {
-    const [minionType, setMinionType] = useLocalState<ChatUIMessageWithTypes["minionType"] | null>("minionType", "hellofox");
+    const [minionType, setMinionType] = useLocalState<ChatUIMessageWithTypes["minionType"] | null>("minionType-" + clientRequest?.id, "hellofox");
 
     const {
         data: serverMessages,
@@ -73,10 +75,12 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         ...userChatOptions,
         id: clientRequest?.id,
         experimental_prepareRequestBody: (options) => {
+            let _minionType = localStorage.getItem("minionType-" + clientRequest?.id) ?? "hellofox";
+            console.log("lstMsg", _minionType);
             return {
                 // todo: only send the last message, & server fetch the rest.
                 ...options,
-                minionType: localStorage.getItem("minionType") || "hellofox",
+                minionType: _minionType,
                 clientRequestId: clientRequest?.id,
                 userId: clientRequest?.userId,
             };
@@ -84,12 +88,19 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         onFinish: (response) => {
             try {
                 const { experimental_attachments, id, reasoning, data, ...rest } = response;
-                let _minionType = localStorage.getItem("minionType")?.replaceAll('"', "") || "hellofox";
+                let _minionType = "hellofox";
+                const minionAnnotation = rest.annotations?.find((annotation: any) => annotation.type === "minion");
+                if (minionAnnotation) {
+                    _minionType = (minionAnnotation as any).value;
+                    if (_minionType) {
+                        setMinionType(_minionType as ChatUIMessageWithTypes["minionType"]);
+                    }
+                }
                 //add this message to the db
                 if (rest.parts?.length === 0 && rest.content === "" && rest.annotations?.length === 0) {
                     return;
                 }
-                console.log("rest response", rest);
+                //console.log("rest response", rest);
                 PortalSdk.postData("/api/chat/message", {
                     context: "on-finish",
                     id: clientRequest?.id + "-" + id,
@@ -129,11 +140,11 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         if (!clientRequest) {
             return;
         }
-        let _minionType = localStorage.getItem("minionType")?.replaceAll('"', "") || "hellofox";
+        let _minionType = localStorage.getItem("minionType-" + clientRequest?.id) ?? "hellofox";
         if (!message.id) {
             message.id = crypto.randomUUID();
         }
-        console.log("message", message);
+        //console.log("message", message);
         try {
             await PortalSdk.postData("/api/chat/message", {
                 ...message,
@@ -171,11 +182,16 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
                 type: "text",
                 text: chatOptions.input,
             }],
+            annotations: [{
+                type: "minion",
+                value: minionType ?? "hellofox",
+            }]
         }
         chatOptions.setInput("");
         await appendMessage(newMessage, chatRequestOptions);
     }
 
+    /** should prefill the minion annotation */
     const appendMessage = async (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions) => {
         await createMessage(message as any);
         const id = await chatOptions.append(message, chatRequestOptions);
@@ -187,20 +203,18 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         if (messageIndex >= chatOptions.messages.length) {
             return;
         }
-        slackBotSdk.sendMessage({
-            text: `Refreshing message ${messageIndex}`,
-            channel: MySlackChannels.test_slackbot
-        }).catch((error: any) => {
+        try {
+            await slackBotSdk.sendMessage({
+                text: `Refreshing message ${messageIndex}`,
+                channel: MySlackChannels.microfox_updates,
+                icon_url: MICROFOX_LOGO,
+                username: "Microfox",
+            })
+        } catch (error) {
             console.log("error sending message", error);
-        });
-        return;
-        const message = { ...chatOptions.messages[messageIndex] };
-        let _minionType = (message.annotations?.find((annotation: any) => annotation.type === "minion") as any)?.value;
-        if (!_minionType) _minionType = (message as any).minionType;
-        //console.log("message", message);
-        if (_minionType) {
-            setMinionType(_minionType);
         }
+        //return;
+        const message = { ...chatOptions.messages[messageIndex] };
         chatOptions.setMessages((messages) => {
             const newMessages = messages.slice(0, messageIndex);
             return newMessages;

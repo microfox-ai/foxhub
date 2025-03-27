@@ -11,7 +11,9 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
     description:
       "Analyse & understand the user's intent & create a plausible plan to achieve the goal.",
     parameters: z.object({
-      userIntent: z.string().describe("The user's intent"),
+      userIntent: z
+        .string()
+        .describe("The user's intent based on the previous messages"),
     }),
     execute: async ({ userIntent }, options) => {
       props.dataStream.writeMessageAnnotation({
@@ -21,16 +23,17 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
         content: `Analyse & understand the user's intent & confirm the user's goal`,
       });
       const response = streamText({
-        model: models.googleGeminiFlash,
-        //messages: options.messages,
-        prompt: `${userIntent}`,
+        model: models.googleGeminiPro,
+        messages: options.messages,
+        //prompt: `${userIntent}`,
         system: `
+        - You are an expert at automations, and a user has come to you with a task.
         - you deep-analyse the users intent & understand or estimate the users goal. 
         - your primary goal is not to understand how to build users goal, but what to build.
-        - you do not ask for specific details, you auto-assume the details, based on users intent, and just ask for confirmation.
+        - you do not ask for specific details, you auto-assume the details, based on users intent.
         - you respond back with simple questions if users goal is not clear yet.
-        - if the goal is clear, you just explain & summarize the users end-goal with steps to take & info to collect later. 
-        The user's intent is: ${userIntent}. Reference the previous messages to understand the user's intent better.
+        - if the goal is clear, you just explain & summarize the users end-goal with steps to take. 
+        The user's intent is: ${userIntent}.
         ---
         You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer

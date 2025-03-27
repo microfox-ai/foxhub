@@ -13,6 +13,7 @@ import useSWR from "swr";
 import { CirclePlusIcon } from "lucide-react";
 import { createEmptyClientRequest } from "@/utils/services/db_functions/createEmptyClientRequest";
 import { analytics } from "@/utils/services/analytics/client";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const ProjectPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);

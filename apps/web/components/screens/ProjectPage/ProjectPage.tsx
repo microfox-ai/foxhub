@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { CirclePlusIcon } from "lucide-react";
 import { createEmptyClientRequest } from "@/utils/services/db_functions/createEmptyClientRequest";
+import { analytics } from "@/utils/services/analytics/client";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const ProjectPage = () => {
@@ -74,16 +75,22 @@ export const ProjectPage = () => {
             </TabsList>
             <Button
               onClick={async () => {
-                const newRequest = await PortalSdk.postData(
-                  `/api/client-requests/create-empty`,
-                  {
-                    userId: user.id,
-                    botProjectId: selectedProject.id,
-                  },
-                );
-                router.push(
-                  `/project/${selectedProject.id}/request/${newRequest.id}`
-                );
+                const newRequest = await createEmptyClientRequest({
+                  userId: user.id,
+                  botProjectId: selectedProject.id,
+                });
+                // track client request creation
+                analytics.track("Client Request Created From Project Page", {
+                  userId: user.id,
+                  requestId: newRequest.id,
+                  botProjectId: selectedProject.id,
+                  title: newRequest.title,
+                  timestamp: new Date().toISOString(),
+                });
+                setSelectedProject((prev: any) => ({
+                  ...prev,
+                  clientRequests: [...prev.clientRequests, newRequest],
+                }));
               }}
               className="flex items-center gap-2 text-sm p-2"
             >

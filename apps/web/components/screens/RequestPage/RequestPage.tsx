@@ -12,6 +12,7 @@ import Sidebar from "../global/Sidebar";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ClientSecretProvider } from "../providers/ClientSecretProvider";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { analytics } from "@/utils/services/analytics/client";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -33,7 +34,7 @@ export const RequestPage = () => {
     isLoading,
   } = useSWR(
     user?.id ? `/api/bot-project?userId=${user?.id}` : null,
-    async (url) => await fetch(url).then((res) => res.json()),
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export const RequestPage = () => {
       const project = projects?.find((p: any) => p.id === projectParamId);
       setSelectedProject(project);
       const request = project?.clientRequests.find(
-        (r: any) => r.id === requestParamId,
+        (r: any) => r.id === requestParamId
       );
       setSelectedRequest(request);
     }
@@ -57,12 +58,20 @@ export const RequestPage = () => {
       {
         userId: user.id,
         botProjectId: selectedProject.id,
-      },
+      }
     );
+
+    // Track client request creation
+    analytics.track("Client Request Created From Request Page", {
+      userId: user.id,
+      requestId: newRequest.id,
+      botProjectId: selectedProject.id,
+      title: newRequest.title,
+      timestamp: new Date().toISOString(),
+    });
+
     setSelectedRequest(newRequest);
-    router.push(
-      `/project/${selectedProject.id}/request/${newRequest.id}`,
-    );
+    router.push(`/project/${selectedProject.id}/request/${newRequest.id}`);
   };
 
   if (!user || !selectedProject || !selectedRequest || isLoading) {
@@ -86,20 +95,20 @@ export const RequestPage = () => {
             onSelectRequest={(request) => {
               setSelectedRequest(request);
               router.push(
-                `/project/${selectedProject?.id}/request/${request?.id}`,
+                `/project/${selectedProject?.id}/request/${request?.id}`
               );
             }}
             onNewRequest={(project) => {
               const openRequests = project?.clientRequests?.filter(
                 (request) =>
                   request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                  request?.requestStatus !== REQUESTSTATUS.CLOSED,
+                  request?.requestStatus !== REQUESTSTATUS.CLOSED
               );
               if (openRequests?.length < 3) {
                 createNewEmptyRequest();
               } else {
                 toast.warning(
-                  "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
+                  "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
                 );
               }
             }}

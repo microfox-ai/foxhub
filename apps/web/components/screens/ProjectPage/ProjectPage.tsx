@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { CirclePlusIcon } from "lucide-react";
 import { createEmptyClientRequest } from "@/utils/services/db_functions/createEmptyClientRequest";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const ProjectPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -72,7 +73,18 @@ export const ProjectPage = () => {
               <TabsTrigger value="bots">Bots</TabsTrigger>
             </TabsList>
             <Button
-              onClick={() => createEmptyClientRequest}
+              onClick={async () => {
+                const newRequest = await PortalSdk.postData(
+                  `/api/client-requests/create-empty`,
+                  {
+                    userId: user.id,
+                    botProjectId: selectedProject.id,
+                  },
+                );
+                router.push(
+                  `/project/${selectedProject.id}/request/${newRequest.id}`
+                );
+              }}
               className="flex items-center gap-2 text-sm p-2"
             >
               <CirclePlusIcon size={24} />

@@ -1,6 +1,5 @@
 import { createSlackSDK } from "@microfox/slack-web-tiny";
 import { IN_DEV } from "../constants/appInfo";
-import { MySlackBotSdk } from "./mySlackSdk";
 
 export const SLACK_BOT_OAUTH_TOKEN =
   process.env.NEXT_PUBLIC_SLACK_OAUTH_TOKEN ??

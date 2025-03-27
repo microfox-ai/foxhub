@@ -87,6 +87,10 @@ export const ToolInvocationPart = ({ part, messageId }: ToolInvocationPartProps)
                                             parts: [{
                                                 type: "text",
                                                 text: button.value,
+                                            }],
+                                            annotations: [{
+                                                type: "minion",
+                                                value: button.value,
                                             }]
                                         });
                                         removeThisPart();

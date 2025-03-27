@@ -1,3 +1,6 @@
+import { createSlackSDK } from "@microfox/slack-web-tiny";
+import { IN_DEV } from "../constants/appInfo";
+
 export const SLACK_BOT_OAUTH_TOKEN =
   process.env.NEXT_PUBLIC_SLACK_OAUTH_TOKEN ||
   "xoxb-1613705032464-7115299573767-URKFl8Zz5Q4yygFZ2YVr7J2O";
@@ -25,11 +28,19 @@ export const MySlackChannels = {
   y_pay_reminders: "C074572BB2T",
   executive_channel: "C066K6FKU1X",
   management_channel: "C06944N1NQ7",
-  test_slackbot: "C0747DURBHT",
+  test_slackbot: "C08KC9E8J22",
   b_coreteam: "C065V7MN0AE",
-  p_3_custombots: "C08GNN16TV2",
+  p_3_custombots: "C08KN63Q04U",
+  microfox_updates: IN_DEV ? "C08KC9E8J22" : "C08KN63Q04U",
 };
 
 export const SlackUsers = {
   subhakar: "U01H8NTAZD3",
 };
+
+export const MICROFOX_LOGO = `https://microfox.nyc3.cdn.digitaloceanspaces.com/logo-mini.png`;
+
+export const slackBotSdk = createSlackSDK({
+  botToken: SLACK_BOT_OAUTH_TOKEN,
+  baseUrl: "https://slack.com/api",
+});

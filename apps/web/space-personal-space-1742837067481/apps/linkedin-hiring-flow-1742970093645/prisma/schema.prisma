@@ -23,12 +23,12 @@ model LinkedInApplicant {
 }
 
 model EmailTemplate {
-  id          Int      @id @default(autoincrement())
-  name        String
-  subject     String
-  body        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("email_templates")
 }

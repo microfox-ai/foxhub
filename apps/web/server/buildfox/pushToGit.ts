@@ -13,9 +13,12 @@ import {
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
+import { TaskInstanceMetaType } from "../convertfox/types";
+import dayjs from "dayjs";
 export const pushToGit = async (
   props: StreamingFucntionProps<any, any>,
-  clientRequest: ClientRequest
+  clientRequest: ClientRequest,
+  taskInstanceMeta: TaskInstanceMetaType
 ) => {
   const { dataStream } = props;
 
@@ -49,7 +52,11 @@ export const pushToGit = async (
     `${clientRequest.repoName}/`,
     TEMPLATE_REPO_OWNER,
     clientRequest.repoName,
-    clientRequest.prBranch
+    clientRequest.prBranch,
+    "feat: " +
+      taskInstanceMeta.taskInfo?.name +
+      " -  by Microfox on " +
+      dayjs().format(`YYYY-MM-DD HH:mm`)
   );
 
   // TODO: push to git file by file (if above doesn't work)

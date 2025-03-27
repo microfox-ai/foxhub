@@ -5,6 +5,7 @@ import { TaskInstanceMetaType } from "../convertfox/types";
 import { models } from "../models";
 import { codingFunctionPrompt, codingSystemPrompt } from "./prompt.coding";
 import { writeToFile } from "./writeToFile";
+import { fetchPackageDocs } from "./fetchPackageDocs";
 
 export const genLambdaCode = async (
   props: StreamingFucntionProps<any, any>,
@@ -25,10 +26,11 @@ export const genLambdaCode = async (
       system: codingSystemPrompt("backend"),
       prompt,
       toolChoice: "auto",
-      maxSteps: 1,
-      maxTokens: 4000,
+      maxSteps: 2,
+      maxTokens: 5000,
       tools: {
         write_to_file: writeToFile(props, clientRequest),
+        fetch_package_docs: fetchPackageDocs(props, clientRequest),
       },
       onStepFinish: (step) => {
         console.log("step", step.usage);
@@ -42,7 +44,7 @@ export const genLambdaCode = async (
     });
     props.dataStream.writeMessageAnnotation({
       type: "thinking",
-      value: "Finished - " + _function.name,
+      content: "Finished - " + _function.name,
     });
 
     console.log("result", result.usage);

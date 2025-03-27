@@ -1,39 +1,30 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
+import { createSESSdk } from '@microfox/aws-ses';
 import prisma from '../db/prisma';
-import { SESClient, SendEmailCommand } from '@microfox/aws-ses';
-import { google } from '@microfox/google-sdk';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Initialize SES client
-const sesClient = new SESClient({ region: process.env.AWS_REGION });
-
-// Initialize Google Sheets API
-const sheets = google.sheets({ version: 'v4', auth: process.env.GOOGLE_API_KEY });
+// Initialize AWS SES SDK
+const ses = createSESSdk({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  region: process.env.AWS_REGION || 'us-east-1',
+});
 
 interface Applicant {
   id: string;
   name: string;
   email: string;
-  profileUrl: string;
-  jobTitle: string;
   status: string;
   lastEmailSentDate: Date | null;
 }
 
 /**
- * Sends automated emails to applicants based on their status and last email sent date
+ * POST endpoint to send automated emails to applicants
  */
-export const sendAutomatedEmail: APIGatewayProxyHandler = async (event) => {
+export const sendAutomatedEmail = async (event: any) => {
   try {
-    if (!event.body) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Request body is missing' }),
-      };
-    }
-
+    // Parse the incoming request body
     const { applicantId } = JSON.parse(event.body);
 
     if (!applicantId) {
@@ -46,6 +37,13 @@ export const sendAutomatedEmail: APIGatewayProxyHandler = async (event) => {
     // Fetch applicant data from the database
     const applicant = await prisma.applicant.findUnique({
       where: { id: applicantId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        lastEmailSentDate: true,
+      },
     });
 
     if (!applicant) {
@@ -55,37 +53,38 @@ export const sendAutomatedEmail: APIGatewayProxyHandler = async (event) => {
       };
     }
 
-    // Determine if an email should be sent based on status and last email sent date
-    const shouldSendEmail = determineIfEmailShouldBeSent(applicant);
+    // Check if it's time to send an email (e.g., not sent in the last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    if (!shouldSendEmail) {
+    if (applicant.lastEmailSentDate && applicant.lastEmailSentDate > sevenDaysAgo) {
       return {
         statusCode: 200,
-        body: JSON.stringify({ message: 'No email needs to be sent at this time' }),
+        body: JSON.stringify({ message: 'Email not sent. Too soon since last email.' }),
       };
     }
 
     // Get email template based on applicant status
     const emailTemplate = await getEmailTemplate(applicant.status);
 
-    // Prepare email content
-    const emailContent = prepareEmailContent(emailTemplate, applicant);
+    // Send email
+    await ses.sendEmail({
+      sender: process.env.SENDER_EMAIL!,
+      recipient: applicant.email,
+      subject: emailTemplate.subject,
+      bodyHtml: emailTemplate.bodyHtml.replace('{{applicantName}}', applicant.name),
+      bodyText: emailTemplate.bodyText.replace('{{applicantName}}', applicant.name),
+    });
 
-    // Send email using AWS SES
-    await sendEmail(applicant.email, emailContent);
-
-    // Update applicant's last email sent date in the database
+    // Update last email sent date in the database
     await prisma.applicant.update({
       where: { id: applicant.id },
       data: { lastEmailSentDate: new Date() },
     });
 
-    // Update Excel sheet (Google Sheets in this case)
-    await updateGoogleSheet(applicant);
-
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Automated email sent successfully' }),
+      body: JSON.stringify({ message: 'Email sent successfully' }),
     };
   } catch (error) {
     console.error('Error sending automated email:', error);
@@ -98,61 +97,35 @@ export const sendAutomatedEmail: APIGatewayProxyHandler = async (event) => {
   }
 };
 
-function determineIfEmailShouldBeSent(applicant: Applicant): boolean {
-  const currentDate = new Date();
-  const lastEmailSentDate = applicant.lastEmailSentDate ? new Date(applicant.lastEmailSentDate) : null;
-
-  // Example logic: Send email if it's been more than 7 days since the last email or if no email has been sent yet
-  return !lastEmailSentDate || (currentDate.getTime() - lastEmailSentDate.getTime()) > 7 * 24 * 60 * 60 * 1000;
-}
-
-async function getEmailTemplate(status: string): Promise<string> {
-  // In a real-world scenario, you might fetch this from a database or file system
-  const templates: { [key: string]: string } = {
-    new: 'Thank you for applying! We will review your application soon.',
-    inReview: 'Your application is currently under review. We\'ll get back to you shortly.',
-    interview: 'Congratulations! We\'d like to schedule an interview with you.',
-    rejected: 'Thank you for your interest. Unfortunately, we have decided to pursue other candidates.',
-    hired: 'Congratulations! We\'re excited to offer you the position.',
-  };
-
-  return templates[status] || 'Thank you for your application.';
-}
-
-function prepareEmailContent(template: string, applicant: Applicant): string {
-  return template
-    .replace('{name}', applicant.name)
-    .replace('{jobTitle}', applicant.jobTitle);
-}
-
-async function sendEmail(to: string, content: string): Promise<void> {
-  const params = {
-    Destination: { ToAddresses: [to] },
-    Message: {
-      Body: { Text: { Data: content } },
-      Subject: { Data: 'Update on Your Job Application' },
+/**
+ * Get email template based on applicant status
+ */
+async function getEmailTemplate(status: string) {
+  // In a real-world scenario, you might fetch these templates from a database or CMS
+  const templates: Record<string, { subject: string; bodyHtml: string; bodyText: string }> = {
+    applied: {
+      subject: 'Thank you for your application',
+      bodyHtml: '<p>Dear {{applicantName}},</p><p>Thank you for applying to our position. We will review your application and get back to you soon.</p>',
+      bodyText: 'Dear {{applicantName}},\n\nThank you for applying to our position. We will review your application and get back to you soon.',
     },
-    Source: process.env.SENDER_EMAIL,
+    interviewing: {
+      subject: 'Interview Scheduled',
+      bodyHtml: '<p>Dear {{applicantName}},</p><p>We are pleased to inform you that your interview has been scheduled. Please check your calendar for details.</p>',
+      bodyText: 'Dear {{applicantName}},\n\nWe are pleased to inform you that your interview has been scheduled. Please check your calendar for details.',
+    },
+    offered: {
+      subject: 'Job Offer',
+      bodyHtml: '<p>Dear {{applicantName}},</p><p>Congratulations! We are excited to offer you the position. Please review the attached offer letter.</p>',
+      bodyText: 'Dear {{applicantName}},\n\nCongratulations! We are excited to offer you the position. Please review the attached offer letter.',
+    },
+    rejected: {
+      subject: 'Application Status Update',
+      bodyHtml: '<p>Dear {{applicantName}},</p><p>Thank you for your interest in our company. Unfortunately, we have decided to move forward with other candidates at this time.</p>',
+      bodyText: 'Dear {{applicantName}},\n\nThank you for your interest in our company. Unfortunately, we have decided to move forward with other candidates at this time.',
+    },
   };
 
-  const command = new SendEmailCommand(params);
-  await sesClient.send(command);
-}
-
-async function updateGoogleSheet(applicant: Applicant): Promise<void> {
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-  const range = 'Sheet1!A:F'; // Adjust based on your sheet structure
-
-  const values = [
-    [applicant.name, applicant.email, applicant.profileUrl, applicant.jobTitle, applicant.status, new Date().toISOString()],
-  ];
-
-  await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range,
-    valueInputOption: 'USER_ENTERED',
-    requestBody: { values },
-  });
+  return templates[status] || templates.applied;
 }
 
 /**
@@ -178,54 +151,38 @@ export const sendAutomatedEmailDocs = {
   },
   responses: {
     200: {
-      description: 'Email sent successfully or no email needed',
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-            },
-          },
+      description: 'Email sent successfully or not sent due to recent communication',
+      schema: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
         },
       },
     },
     400: {
       description: 'Bad request',
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-            },
-          },
+      schema: {
+        type: 'object',
+        properties: {
+          error: { type: 'string' },
         },
       },
     },
     404: {
       description: 'Applicant not found',
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-            },
-          },
+      schema: {
+        type: 'object',
+        properties: {
+          error: { type: 'string' },
         },
       },
     },
     500: {
       description: 'Server error',
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-            },
-          },
+      schema: {
+        type: 'object',
+        properties: {
+          error: { type: 'string' },
         },
       },
     },

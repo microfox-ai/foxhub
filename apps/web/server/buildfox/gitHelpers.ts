@@ -6,7 +6,7 @@ import {
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 
-const octokit = new Octokit({
+export const octokitSdk = new Octokit({
   auth: GITHUB_TOKEN,
 });
 
@@ -21,7 +21,7 @@ export const updateFileToGit = async (
     owner?: string;
   }
 ) => {
-  const response = await octokit.rest.repos.createOrUpdateFileContents({
+  const response = await octokitSdk.rest.repos.createOrUpdateFileContents({
     owner: options.owner ?? TEMPLATE_REPO_OWNER,
     repo: options.repoName,
     path: options.filePath,
@@ -42,7 +42,7 @@ export const getAppFolderContents = async (
     owner?: string;
   }
 ) => {
-  const response = await octokit.rest.repos.getContent({
+  const response = await octokitSdk.rest.repos.getContent({
     owner: options.owner ?? TEMPLATE_REPO_OWNER,
     repo: options.repoName,
     path: options.path,

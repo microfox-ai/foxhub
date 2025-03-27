@@ -6,6 +6,7 @@ import {
   INTERNAL_TEMPLATE_ROOT,
   readAllGenFilesList,
   writeToFile,
+  writeToFileSystemAndUpdateSteps,
 } from "./writeToFile";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -13,7 +14,6 @@ import { models } from "../models";
 import { codingSystemPrompt } from "./prompt.coding";
 import { promises as fs } from "fs";
 import dedent from "dedent";
-import { writeToFileSystem } from "./writeToFile";
 
 export const genFinalCode = async (
   props: StreamingFucntionProps<any, any>,
@@ -21,8 +21,8 @@ export const genFinalCode = async (
   clientRequest: ClientRequest
 ) => {
   const allGenFilesList = await readAllGenFilesList(clientRequest);
-  // modify the serverless.yml file to support all the functions & cron jobs
 
+  // modify the serverless.yml file to support all the functions & cron jobs
   const serverlessYml = await fs.readFile(
     path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "serverless.yml"),
     "utf8"
@@ -44,21 +44,10 @@ export const genFinalCode = async (
     toolChoice: "auto",
     maxSteps: 1,
     maxTokens: 3000,
-    // onError: (error) => {
-    //   console.log("error", error);
-    // },
-    // onFinish: () => {
-    //   //console.log("result", result.usage);
-    // },
     onStepFinish: (step) => {
       console.log("step", step.usage);
     },
   });
-  // result.mergeIntoDataStream(props.dataStream, {
-  //   experimental_sendStart: false,
-  //   experimental_sendFinish: false,
-  // });
-
   // modify the package.json file to support all the functions & cron jobs
 
   const packageJson = await fs.readFile(
@@ -71,7 +60,7 @@ export const genFinalCode = async (
       packageJsonContent.dependencies[platform.package] = "*";
     }
   });
-  writeToFileSystem(
+  writeToFileSystemAndUpdateSteps(
     {
       fileName: "package.json",
       filePath: "",
@@ -108,21 +97,10 @@ export const genFinalCode = async (
     toolChoice: "auto",
     maxSteps: 1,
     maxTokens: 3000,
-    // onFinish: () => {
-    //   //console.log("result2", result2.usage);
-    // },
     onStepFinish: (step) => {
       console.log("step", step.usage);
     },
-    // onError: (error) => {
-    //   console.log("error", error);
-    // },
   });
-
-  // result2.mergeIntoDataStream(props.dataStream, {
-  //   experimental_sendStart: false,
-  //   experimental_sendFinish: true,
-  // });
 
   return taskInstanceMeta;
 };

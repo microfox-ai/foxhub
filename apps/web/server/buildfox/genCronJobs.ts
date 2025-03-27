@@ -1,17 +1,13 @@
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "../convertfox/types";
-import { generateText, streamText } from "ai";
-import { models } from "../models";
-import { codingFunctionPrompt, codingSystemPrompt } from "./prompt.coding";
-import {
-  INTERNAL_TEMPLATE_ROOT,
-  writeToFile,
-  writeToFileSystem,
-} from "./writeToFile";
-import dedent from "dedent";
-import path from "path";
+import { generateText } from "ai";
 import fs from "fs/promises";
+import path from "path";
+import { TaskInstanceMetaType } from "../convertfox/types";
+import { models } from "../models";
+import { fetchPackageDocs } from "./fetchPackageDocs";
+import { codingFunctionPrompt, codingSystemPrompt } from "./prompt.coding";
+import { INTERNAL_TEMPLATE_ROOT, writeToFile } from "./writeToFile";
 
 export const genCronJobs = async (
   props: StreamingFucntionProps<any, any>,
@@ -35,10 +31,11 @@ export const genCronJobs = async (
       system: codingSystemPrompt("backend"),
       prompt,
       toolChoice: "auto",
-      maxSteps: 1,
-      maxTokens: 4000,
+      maxSteps: 2,
+      maxTokens: 5000,
       tools: {
         write_to_file: writeToFile(props, clientRequest),
+        fetch_package_docs: fetchPackageDocs(props, clientRequest),
       },
       onStepFinish: (step) => {
         console.log("step", step.usage);
@@ -53,7 +50,7 @@ export const genCronJobs = async (
 
     props.dataStream.writeMessageAnnotation({
       type: "thinking",
-      value: "Finished - " + cronJob.name,
+      content: "Finished - " + cronJob.name,
     });
 
     console.log("result", result.usage);

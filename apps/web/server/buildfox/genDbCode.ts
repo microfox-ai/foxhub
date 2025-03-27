@@ -1,11 +1,11 @@
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType, TaskStructure } from "../convertfox/types";
 import { generateText } from "ai";
+import dedent from "dedent";
+import { TaskInstanceMetaType } from "../convertfox/types";
 import { models } from "../models";
 import { codingSystemPrompt } from "./prompt.coding";
-import { writeToFile, writeToFileSystem } from "./writeToFile";
-import dedent from "dedent";
+import { writeToFile, writeToFileSystemAndUpdateSteps } from "./writeToFile";
 
 export const genDbCode = async (
   props: StreamingFucntionProps<any, any>,
@@ -13,7 +13,7 @@ export const genDbCode = async (
   clientRequest: ClientRequest
 ) => {
   // TODO: Instead of hardcoding, fetch from the template repo.
-  writeToFileSystem(
+  writeToFileSystemAndUpdateSteps(
     {
       fileName: "prisma.ts",
       filePath: "src/db",

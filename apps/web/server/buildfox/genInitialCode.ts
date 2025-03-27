@@ -1,11 +1,13 @@
-import { INTERNAL_TEMPLATE_ROOT, writeToFileSystem } from "./writeToFile";
-import dedent from "dedent";
-import { TaskInstanceMetaType } from "../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { readFile } from "fs/promises";
-import path from "path";
+import dedent from "dedent";
 import { promises as fs } from "fs";
+import path from "path";
+import { TaskInstanceMetaType } from "../convertfox/types";
+import {
+  INTERNAL_TEMPLATE_ROOT,
+  writeToFileSystemAndUpdateSteps,
+} from "./writeToFile";
 
 export const genInitialCode = async (
   props: StreamingFucntionProps<any, any>,
@@ -24,12 +26,17 @@ export const genInitialCode = async (
   packageJsonContent.description = taskInstanceMeta.taskInfo?.summary;
   packageJsonContent.version = "1.0." + clientRequest.prNumber;
 
-  writeToFileSystem(
+  writeToFileSystemAndUpdateSteps(
     {
       fileName: "package.json",
       filePath: "",
       fileType: "json",
       content: dedent`${JSON.stringify(packageJsonContent)}`,
+      meta: {
+        packagesUsed: [],
+        timestamp: new Date().toISOString(),
+        contentSize: packageJsonContent.length,
+      },
     },
     clientRequest
   );
@@ -38,12 +45,17 @@ export const genInitialCode = async (
     path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "webpack.config.js"),
     "utf8"
   );
-  writeToFileSystem(
+  writeToFileSystemAndUpdateSteps(
     {
       fileName: "webpack.config.js",
       filePath: "",
       fileType: "js",
       content: webpackConfig,
+      meta: {
+        packagesUsed: [],
+        timestamp: new Date().toISOString(),
+        contentSize: webpackConfig.length,
+      },
     },
     clientRequest
   );
@@ -52,12 +64,17 @@ export const genInitialCode = async (
     path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "serverless.yml"),
     "utf8"
   );
-  writeToFileSystem(
+  writeToFileSystemAndUpdateSteps(
     {
       fileName: "serverless.yml",
       filePath: "",
       fileType: "yml",
       content: serverlessYml,
+      meta: {
+        packagesUsed: [],
+        timestamp: new Date().toISOString(),
+        contentSize: serverlessYml.length,
+      },
     },
     clientRequest
   );

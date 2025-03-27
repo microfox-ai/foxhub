@@ -130,20 +130,16 @@ export const fileReference = z.object({
   fileName: z.string(),
   fileType: z.string(),
   fileDescription: z.string().optional(),
-  status: z.enum(["pending", "draft", "pushed"]),
-  taskType: z.enum([
-    "cronJobs",
-    "lambdaFunctions",
-    "userInteractions",
-    "dbSchema",
-    "root",
-    "other",
-  ]),
+  meta: z.any().optional(),
+  contentSize: z.number().optional(),
+  timestamp: z.string().optional(),
 });
 export type FileReference = z.infer<typeof fileReference>;
 
 export const buildingStep = z.object({
   files: z.array(fileReference),
+  startTime: z.string(),
+  endTime: z.string(),
 });
 export type BuildingStep = z.infer<typeof buildingStep>;
 

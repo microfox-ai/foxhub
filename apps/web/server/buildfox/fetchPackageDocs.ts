@@ -3,7 +3,7 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import { z } from "zod";
 
-async function fetchGithubJson(
+export async function fetchGithubJson(
   owner: string,
   repo: string,
   path: string
@@ -11,6 +11,7 @@ async function fetchGithubJson(
   // GitHub raw content URL format
   const url = `https://raw.githubusercontent.com/${owner}/${repo}${path}`;
 
+  console.log("fetching", url);
   try {
     const response = await fetch(url);
 
@@ -18,7 +19,7 @@ async function fetchGithubJson(
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.text();
     return data;
   } catch (error) {
     console.error("Error fetching GitHub JSON:", error);
@@ -44,19 +45,30 @@ export const fetchPackageDocs = (
     description:
       "Fetch required docs for a package to understand how to use it",
     parameters: z.object({
-      packages: z
+      microfoxPackages: z
         .array(z.string())
         .describe(
           "The exact names of the packages to fetch docs for (@microfox/core , @microfox/aws-ses etc..)"
         ),
     }),
-    execute: async ({ packages }, options) => {
-      const allPackages = await fetchGithubJson(
-        "microfox-ai",
-        "microfox",
-        "/refs/heads/main/packages-info.json"
+    execute: async ({ microfoxPackages }, options) => {
+      const readmes = await Promise.all(
+        microfoxPackages.map(async (pkg) => {
+          let readme;
+          try {
+            readme = await fetchGithubJson(
+              "microfox-ai",
+              "microfox",
+              `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/README.md`
+            );
+            return { readme, package: pkg };
+          } catch (error) {
+            console.error("Error fetching README:", error);
+            return { readme: "", package: pkg };
+          }
+        })
       );
-
+      return readmes;
       // find my package, get some initial understanding of the package
       // accordingly fetch the readme that is most relevant for the integration
 

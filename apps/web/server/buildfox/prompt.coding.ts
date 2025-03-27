@@ -7,7 +7,7 @@ import fs from "fs/promises";
 
 export const codingSystemPrompt = (
   step: "backend" | "frontend",
-  instantiate: boolean = false
+  writingCoreFunctions: boolean = false
 ) => {
   return dedent`
     You are a highly skilled fullstack developer with extensive knoledge in typescript, ${
@@ -51,12 +51,21 @@ export const codingSystemPrompt = (
 
     - to write the code, use the following tools:
       - write_to_file
+    ${
+      writingCoreFunctions
+        ? `
+    - to fetch the docs on a package, use the following tool:
+      - fetch_package_docs (only supports @microfox packages for now)
+    `
+        : ""
+    }
 
-    
     A few things about your workflow:
     - You first carefully analyse the requirements, and then plan what needs to be done.
     - You then critisize your plan, and then refine it to this specific task & keep maximum code in a single file.
-    - If a package is not available, then you can use your own knowledge to integrate said platform
+    - You always try to use @microfox/ packages, unless that package is not available.
+    - If you know a package is going to be used, then you can fetch the docs on it using the fetch_package_docs tool.
+    - If a package doc is not available, then you can use your own knowledge to integrate said platform
     - You then write the code for the task
     - You then modify other files of project if needed to support the new code
     - You finally finish the task.
@@ -67,7 +76,8 @@ export const codingSystemPrompt = (
     Critically, you must carefully analyze the results of each tool call you receive. 
     These outputs might mention error messages, files, or symbols you haven't considered yet.
 
-    package.json should be written at the end of the task.
+    package.json should never be written by you, it should be written by the write_to_file tool.
+    write_to_file will update the package.json file as long as you pass in the packagesUsed array.
 
     AFTER EACH TOOL CALL, do not output any text, just wait for the next tool call.
     `;
@@ -80,7 +90,7 @@ export const codingFileTypePrompt = (fileType: string) => {
         `;
   }
 };
-
+//
 export const codingFunctionPrompt = async ({
   type,
   taskInstanceMeta,

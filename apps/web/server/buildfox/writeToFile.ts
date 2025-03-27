@@ -1,10 +1,10 @@
+import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
+import dedent from "dedent";
 import fs from "fs/promises";
-import { z } from "zod";
-import { updateFileToGit } from "./gitHelpers";
-import { ClientRequest } from "@prisma/client";
 import path from "path";
+import { z } from "zod";
 // GIT - 1000 requests per hour per repo
 
 export const INTERNAL_TEMPLATE_ROOT = `server/buildfox/templates`;
@@ -48,6 +48,7 @@ export const writeToFileSystem = async (
     filePath: string;
     fileType: string;
     content: string;
+    meta?: any;
   },
   clientRequest: ClientRequest
 ) => {
@@ -60,6 +61,20 @@ export const writeToFileSystem = async (
   }
   const { fileWritePath } = await getFilePath(clientRequest, props);
   await fs.writeFile(fileWritePath, props.content, "utf-8");
+};
+
+export const writeToFileSystemAndUpdateSteps = async (
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    content: string;
+    meta?: any;
+  },
+  clientRequest: ClientRequest
+) => {
+  await writeToFileSystem(props, clientRequest);
+  await updateSteps(clientRequest, props);
 };
 
 export const readAllGenFilesList = async (clientRequest: ClientRequest) => {
@@ -83,6 +98,8 @@ export const updateSteps = async (
     fileName: string;
     filePath: string;
     fileType: string;
+    content: string;
+    meta?: any;
   }
 ) => {
   const { rootDir } = await getFilePath(clientRequest, props);
@@ -97,8 +114,14 @@ export const updateSteps = async (
   }
   steps = steps.filter((step: any) => step.fileName !== props.fileName);
   steps.push({
-    ...props,
+    fileName: props.fileName,
+    filePath: props.filePath,
+    fileType: props.fileType,
+    timestamp: new Date().toISOString(),
+    contentSize: props.content?.length ?? 0,
+    meta: props.meta,
   });
+  //console.log("steps", steps);
   await fs.writeFile(
     path.join(rootDir, "steps.json"),
     JSON.stringify(steps, null, 2),
@@ -124,8 +147,16 @@ export const writeToFile = (
         .string()
         .describe("The type of file to write to - ts, tsx, json, etc"),
       content: z.string().describe("The content to write to the file"),
+      packagesUsed: z
+        .array(z.string())
+        .describe(
+          "The packages used in the file - @microfox/core, @microfox/aws-ses etc.."
+        ),
     }),
-    execute: async ({ fileName, filePath, fileType, content }, options) => {
+    execute: async (
+      { fileName, filePath, fileType, content, packagesUsed },
+      options
+    ) => {
       try {
         console.log(
           "updatedFileContent",
@@ -134,21 +165,42 @@ export const writeToFile = (
           filePath,
           fileType
         );
-        // ALSO, somehow store it in the file somewhere to track the changes
-        await updateSteps(clientRequest, {
-          fileName,
-          filePath,
-          fileType,
-        });
-        await writeToFileSystem(
+        await writeToFileSystemAndUpdateSteps(
           {
             fileName,
             filePath,
             fileType,
             content,
+            meta: {
+              packagesUsed,
+              timestamp: new Date().toISOString(),
+              tokenUsage: options,
+            },
           },
           clientRequest
         );
+
+        if (packagesUsed.length > 0) {
+          const packageJson = await fs.readFile(
+            path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "package.json"),
+            "utf8"
+          );
+          const packageJsonContent = JSON.parse(packageJson);
+          packagesUsed.forEach((pkg) => {
+            if (packageJsonContent.dependencies[pkg]) {
+              packageJsonContent.dependencies[pkg] = "*";
+            }
+          });
+          writeToFileSystemAndUpdateSteps(
+            {
+              fileName: "package.json",
+              filePath: "",
+              fileType: "json",
+              content: dedent`${JSON.stringify(packageJsonContent)}`,
+            },
+            clientRequest
+          );
+        }
         // Construct full path from repo root
       } catch (error) {
         console.log("error", error);

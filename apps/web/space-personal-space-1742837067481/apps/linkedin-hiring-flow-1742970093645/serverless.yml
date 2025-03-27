@@ -1,4 +1,4 @@
-service: linkedin-hiring-automation
+service: template-function
 
 # Configuration
 custom:
@@ -23,79 +23,29 @@ provider:
     # Set NODE_ENV based on environment
     NODE_ENV: ${env:NODE_ENV, 'development'}
     DATABASE_URL: ${env:DATABASE_URL}
-    LINKEDIN_API_KEY: ${env:LINKEDIN_API_KEY}
-    LINKEDIN_API_SECRET: ${env:LINKEDIN_API_SECRET}
-    EMAIL_SERVICE_API_KEY: ${env:EMAIL_SERVICE_API_KEY}
 
+    # Insert functions here
 functions:
-  fetchLinkedInApplicants:
-    handler: dist/functions/fetchLinkedInApplicants.handler
-    events:
-      - http:
-          path: /fetch-applicants
-          method: get
-          cors: true
 
-  sendAutomatedEmail:
-    handler: dist/functions/sendAutomatedEmail.handler
-    events:
-      - http:
-          path: /send-email
-          method: post
-          cors: true
 
-  updateApplicantStatus:
-    handler: dist/functions/updateApplicantStatus.handler
-    events:
-      - http:
-          path: /update-status
-          method: put
-          cors: true
-
-  getApplicants:
-    handler: dist/functions/getApplicants.handler
-    events:
-      - http:
-          path: /applicants
-          method: get
-          cors: true
-
-  exportToExcel:
-    handler: dist/functions/exportToExcel.handler
-    events:
-      - http:
-          path: /export-excel
-          method: get
-          cors: true
-
-  fetchApplicantsJob:
-    handler: dist/functions/fetchApplicantsJob.handler
-    events:
-      - schedule: cron(0 1 * * ? *) # Run daily at 1:00 AM UTC
-
-  sendDailyEmails:
-    handler: dist/functions/sendDailyEmails.handler
-    events:
-      - schedule: cron(0 2 * * ? *) # Run daily at 2:00 AM UTC
-
-  getDocs:
-    handler: dist/index.getDocs
-    events:
-      - http:
-          path: /docs.json
-          method: get
-          cors: true
+getDocs:
+handler: dist/index.getDocs
+events:
+  - http:
+      path: /docs.json
+      method: get
+      cors: true
 
 # Resources for API Gateway
 resources:
-  Outputs:
-    ApiEndpoints:
-      Description: "API Endpoints"
-      Value:
-        Fn::Join:
-          - ""
-          - - "API: https://"
-            - Ref: "ApiGatewayRestApi"
-            - ".execute-api."
-            - Ref: "AWS::Region"
-            - ".amazonaws.com/${env:ENVIRONMENT, 'dev'}"
+Outputs:
+ApiEndpoints:
+  Description: "API Endpoints"
+  Value:
+    Fn::Join:
+      - ""
+      - - "API: https://"
+        - Ref: "ApiGatewayRestApi"
+        - ".execute-api."
+        - Ref: "AWS::Region"
+        - ".amazonaws.com/${env:ENVIRONMENT, 'dev'}

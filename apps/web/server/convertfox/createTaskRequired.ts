@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { models } from "../models";
 import { TaskInfo, taskRequiredInfo, TaskIntegrations } from "./types";
-
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 export const createTaskRequiredInfo = async (
   props: StreamingFucntionProps<any, any>,
   taskFinalisedSummary: TaskInfo,
@@ -44,6 +44,11 @@ Task Goal: ${taskInfo.goal}
 Task Summary: ${taskInfo.summary}
 Task Platforms: ${taskIntegrations.platforms}
     `,
+  });
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.googleGeminiFlash.modelId,
+    usage: result.usage,
   });
 
   const _taskRequiredInfo = {

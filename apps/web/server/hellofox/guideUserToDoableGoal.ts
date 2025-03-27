@@ -3,6 +3,7 @@ import { streamText } from "ai";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import { z } from "zod";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 export const guideUserToDoableGoal = (
   props: StreamingFucntionProps<any, any>
@@ -38,6 +39,11 @@ export const guideUserToDoableGoal = (
         `,
         onFinish: (result) => {
           console.log("guideUserToDoableGoal usage", result);
+          TokenUsageAnalyticsTracker.trackUsage({
+            ...props.requestBody,
+            model: models.googleGeminiFlash.modelId,
+            usage: result.usage,
+          });
         },
         onError: (error) => {
           console.log("guideUserToDoableGoal error", error);

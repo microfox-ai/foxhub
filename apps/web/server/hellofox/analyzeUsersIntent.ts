@@ -3,6 +3,7 @@ import { streamText } from "ai";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import { z } from "zod";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 /** Thinking tool */
 export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
@@ -40,6 +41,11 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
     `,
         onFinish: (result) => {
           console.log("analyzeUsersIntent model usage", result.usage);
+          TokenUsageAnalyticsTracker.trackUsage({
+            ...props.requestBody,
+            model: models.googleGeminiFlash.modelId,
+            usage: result.usage,
+          });
         },
         onError: (error) => {
           console.log("analyzeUsersIntent error", error);

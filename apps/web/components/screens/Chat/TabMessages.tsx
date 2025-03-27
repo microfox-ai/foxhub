@@ -7,7 +7,6 @@ interface TabMessagesProps {
   messages: UIMessage[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  onRefresh: (messageIndex: number) => void;
   isStreaming: boolean;
 }
 
@@ -15,7 +14,6 @@ export default function TabMessages({
   messages,
   isLoading,
   messagesEndRef,
-  onRefresh,
   isStreaming,
 }: TabMessagesProps) {
   const renderDateSeparator = (currentDate: string, prevDate?: string) => {
@@ -41,9 +39,6 @@ export default function TabMessages({
               message={update}
               index={index}
               length={messages.length}
-              onRefresh={() => {
-                onRefresh(index);
-              }}
               isStreaming={isStreaming}
               renderDateSeperator={(currDate) =>
                 renderDateSeparator(

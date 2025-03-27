@@ -49,7 +49,7 @@ export const ClientSecretProvider: React.FC<{
   );
 
   if (error) {
-    toast.error("Error fetching client bots.");
+    //toast.error("Error fetching client bots.");
     console.error("ClientSecret fetch error:", error);
   }
 

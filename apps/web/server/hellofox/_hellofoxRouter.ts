@@ -23,7 +23,7 @@ import { updateClientRequest } from "@/utils/services/db_functions/updateClientR
 import { createMessage } from "@/utils/services/db_functions/messages";
 import { prisma } from "@/prisma/prisma";
 import { getFox } from "@/utils/services/db_functions/foxes";
-
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
 // 3. BUILD ->
@@ -113,7 +113,7 @@ export const hellofoxRouter: ServerStreamingFunction<
         : requestBody.messages;
     // do some shit
     result = streamText({
-      model: models.claude35Sonnet,
+      model: models.googleGeminiPro,
       system: `
       - You are called Microfox, 
       - your primary intent/job is to fine-grain the users goal & help him finalise on what he wishes to build.
@@ -143,15 +143,11 @@ export const hellofoxRouter: ServerStreamingFunction<
       },
       onFinish: async (result) => {
         console.log("result", result.usage);
-        // svae minion as an annotation in every message into db.
-        await updateClientRequest({
-          clientRequestId: requestBody.clientRequestId,
-          taskInstanceMeta: {
-            minionType: "hellofox",
-          },
+        TokenUsageAnalyticsTracker.trackUsage({
+          ...props.requestBody,
+          model: models.googleGeminiPro.modelId,
+          usage: result.usage,
         });
-        const lastMesage =
-          result.response.messages[result.response.messages.length - 1];
       },
       onError: (error) => {
         console.log(
@@ -181,68 +177,16 @@ export const hellofoxRouter: ServerStreamingFunction<
         Never tell about your technicalities, unless asked.
         `,
       messages: lastFewMessages,
+      onFinish: (result) => {
+        console.log("result", result.usage);
+        TokenUsageAnalyticsTracker.trackUsage({
+          ...props.requestBody,
+          model: models.googleGeminiFlash.modelId,
+          usage: result.usage,
+        });
+      },
     });
   }
-
-  // const result1 = streamText({
-  //   model: models.claude35Sonnet,
-  //   system: `
-  //       ${getMicrofoxCharacter()}
-  //       - your primary intent/job is to fine-grain the users goal & help him finalise on what he wishes to build.
-  //       - your primary goal is not to understand how to build it, but what to build.
-  //       - you keep your answers/questions short & concise, unless it is needed.
-  //       - You are a great listener, & you are able to understand the user's intent & call tools that can fetch information or help you think.
-  //       - If it is casual conversation, you do not call below tools, & just respond back to the user.
-  //       - you do not aks users any information, you just confirm if the user is okay with providing said information later when building what he needs.
-  //       - you communicate complex technical jargon in a way that is easy to understand.
-  //       - you make it easy for the user to answer your questions (simplify questions by merging them).
-  //       ----
-  //       if user asks/want to know more/does not know about you, call tool - aboutMicrofox.
-  //       if user has specified a goal or a task that he wants done (only for the first time) - call tool - analyseUserIntent.
-  //       if there is not enough information about the user's requirement, call tool - analyseUserIntent.
-  //       if you are not sure if we can build the user's task, call tool - getMissingCapabilities.
-  //       if user's goal or intent is completely clear, call tool - isTaskBuildable.
-  //       if user's goal or intent is not clear, call tool - guideUserToDoableGoal.
-  //       if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
-  //       if user's goal is vague - call tool - analyseUserIntent.
-  //       if task is buildable, just reply back with a summary on how microfox will build it, and only ask for confirmation.
-  //       ---
-  //       Don't think about how to do it, that is not your job, call tools as needed.
-  //       Don't directly respond with tool responses, instead, use tools to think & respond.
-  //       If an existing tool match is not discovered, call tool - sendStruckLogs
-  //       ALWAYS call tools, unless its casual conversation, or you are sure you can do the task.`,
-  //   messages: requestBody.messages,
-  //   toolCallStreaming: true,
-  //   maxSteps: 3,
-  //   toolChoice: "auto", // force the model to call a tool
-  //   tools: {
-  //     aboutMicrofox: aboutMicrofox(props),
-  //     analyseUserIntent: analyseUserIntent(props),
-  //     getMissingCapabilties: getMissingCapabilties(props),
-  //     //getMicrofoxCapabilities: getMicrofoxCapabilitiesTool(props),
-  //     sendStruckLogs: sendStruckLogsTool(props),
-  //   },
-  // onStepFinish: (step) => {
-  //   console.log("step", step.usage);
-  // },
-  // onFinish: (result) => {
-  //   console.log("result", result.usage);
-  //   // svae minion as an annotation in every message into db.
-  // },
-  // onError: (error) => {
-  //   console.log(
-  //     "error",
-  //     error,
-  //     (error.error as any)?.requestBodyValues?.contents
-  //   );
-  // },
-  // });
-
-  //console.log("result1", result1.toolCalls);
-
-  // result1.mergeIntoDataStream(dataStream, {
-  //   experimental_sendStart: false,
-  // });
 
   if (result != null) {
     result.mergeIntoDataStream(dataStream, {

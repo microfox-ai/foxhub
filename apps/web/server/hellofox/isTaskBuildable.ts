@@ -73,6 +73,7 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
             text: "Sure",
             className: "bg-green-500 text-white hover:bg-green-600",
             value: "convertfox",
+            actionText: "Sure!, let's proceed!",
           },
         ],
       };

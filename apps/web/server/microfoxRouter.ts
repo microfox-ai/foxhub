@@ -7,6 +7,7 @@ import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
 import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { createMessage } from "@/utils/services/db_functions/messages";
+import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -19,6 +20,8 @@ const microfoxRouter = new ServerStreamingRouter<
   MicrofoxRequestBody,
   defaultCallbackResultBody
 >();
+
+// ratelimit should be per time per model ().
 
 // TODO: Shift to the frontend.
 const createMessageRouter: ServerStreamingFunction<
@@ -54,6 +57,7 @@ const createMessageRouter: ServerStreamingFunction<
 microfoxRouter.addPath("createMessage", createMessageRouter);
 microfoxRouter.addPath("hellofox", hellofoxRouter);
 microfoxRouter.addPath("convertfox", convertfoxRouter);
+microfoxRouter.addPath("buildfox", buildFoxRouter);
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
@@ -67,6 +71,8 @@ microfoxRouter.setRouting((requestBody: any) => {
     return ["hellofox"];
   } else if (minionType === "convertfox") {
     return ["convertfox"];
+  } else if (minionType === "buildfox") {
+    return ["buildfox"];
   }
   return [];
 });

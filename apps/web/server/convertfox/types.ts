@@ -78,6 +78,10 @@ export const taskStructure = z.object({
       endResult: z
         .string()
         .describe("What is the end result of this lambda function"),
+      method: z
+        .enum(["GET", "POST", "PUT", "DELETE"])
+        .describe("The method of the end point"),
+      path: z.string().describe("The path of the end point"),
     })
   ),
   cronJobs: z.array(
@@ -119,6 +123,30 @@ export const taskStructure = z.object({
   ),
 });
 export type TaskStructure = z.infer<typeof taskStructure>;
+
+export const fileReference = z.object({
+  id: z.string().optional(),
+  filePath: z.string(),
+  fileName: z.string(),
+  fileType: z.string(),
+  fileDescription: z.string().optional(),
+  status: z.enum(["pending", "draft", "pushed"]),
+  taskType: z.enum([
+    "cronJobs",
+    "lambdaFunctions",
+    "userInteractions",
+    "dbSchema",
+    "root",
+    "other",
+  ]),
+});
+export type FileReference = z.infer<typeof fileReference>;
+
+export const buildingStep = z.object({
+  files: z.array(fileReference),
+});
+export type BuildingStep = z.infer<typeof buildingStep>;
+
 // step3
 export const taskInstance = z.object({
   initialSummary: z
@@ -133,6 +161,7 @@ export const taskInstance = z.object({
   taskIntegrations: taskIntegrations.optional(),
   taskRequiredInfo: taskRequiredInfo.optional(),
   taskStructure: taskStructure.optional(),
+  buildingStep: buildingStep.optional(),
 });
 
 export type TaskInstanceMetaType = z.infer<typeof taskInstance>;

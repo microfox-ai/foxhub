@@ -111,7 +111,7 @@ const TaskIntegrations = ({ uiAnnotation, idx }: { uiAnnotation: UIAnnotation, i
 
 const TaskStructure = ({ uiAnnotation, idx }: { uiAnnotation: UIAnnotation, idx: number }) => {
     const object = uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
-    console.log("object", object);
+    //console.log("object", object);
     return (
         <div key={uiAnnotation.objectType + idx} className="flex flex-col gap-2 p-0 px-4 bg-gray-100 rounded-lg">
             <h3 className="text-lg font-bold">{uiAnnotation.text}</h3>

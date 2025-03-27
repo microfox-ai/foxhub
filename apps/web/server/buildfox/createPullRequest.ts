@@ -4,18 +4,24 @@ import {
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
-import { GenAiSdk } from "../GenAiSdk";
-import { SlackBotSdk, SlackChannels } from "../slackBotSdk";
+import { GenAiSdk } from "../../utils/services/GenAiSdk";
+import { createSlackSDK } from "@microfox/slack-web-tiny";
+import { MySlackChannels } from "@/utils/services/slackBotSdk";
+import { SLACK_BOT_OAUTH_TOKEN } from "@/utils/services/slackBotSdk";
+import { DataStreamWriter } from "ai";
 
-export async function createClientRequestPR({
+export async function createPullRequest({
   clientRequestId,
   description,
   title,
+  dataStream,
 }: {
   clientRequestId: string;
   description: string;
   title?: string;
+  dataStream?: DataStreamWriter;
 }) {
+  console.log("triggering Pull Request creation");
   const clientRequest = await prisma.clientRequest.findUnique({
     where: {
       id: clientRequestId,
@@ -71,7 +77,7 @@ export async function createClientRequestPR({
   if (!newBranchResult) {
     throw new Error("Failed to create new branch");
   }
-  console.log("newBranchResult", newBranchResult);
+  //console.log("newBranchResult", newBranchResult);
 
   // Create README.md file on new branch with request description
   const requestDir = `apps/${uniqueRequestTitle}`;
@@ -88,7 +94,7 @@ export async function createClientRequestPR({
   if (!readmeFileContent) {
     throw new Error("Failed to update README.md");
   }
-  console.log("readmeFileContent", readmeFileContent);
+  //console.log("readmeFileContent", readmeFileContent);
 
   // Create pull request from new branch to target branch
   const pr = await githubSdk.rest.pulls.create({
@@ -102,7 +108,7 @@ export async function createClientRequestPR({
   if (!pr) {
     throw new Error("Failed to create pull request");
   }
-  console.log("pr", pr);
+  //console.log("pr", pr);
 
   const updatedClientRequest = await prisma.clientRequest.update({
     where: {
@@ -112,6 +118,7 @@ export async function createClientRequestPR({
       title: requestTitle,
       description: description,
       requestDir: requestDir,
+      repoName: botProject.githubRepoName,
       prUrl: pr.data.html_url,
       prNumber: pr.data.number,
       prBranch: pr.data.head.ref,
@@ -124,7 +131,7 @@ export async function createClientRequestPR({
       createdAt: new Date(),
     },
   });
-  console.log("updatedClientRequest", updatedClientRequest);
+  //console.log("updatedClientRequest", updatedClientRequest);
 
   // Create clientRequest.json file on new branch
   const clientRequestFilePath = `${requestDir}/clientRequest.json`;
@@ -140,20 +147,29 @@ export async function createClientRequestPR({
       branch: newBranch,
     });
   if (!clientRequestFile) {
+    dataStream?.writeMessageAnnotation({
+      type: "thinking_dev",
+      content: "Failed to update clientRequest.json",
+    });
     throw new Error("Failed to update clientRequest.json");
   }
-  console.log("clientRequestFileContent", clientRequestFile);
+
+  //console.log("clientRequestFileContent", clientRequestFile);
 
   // Send slack message
-  const slackBotSdk = new SlackBotSdk();
+  const slackBotSdk = createSlackSDK({
+    botToken: SLACK_BOT_OAUTH_TOKEN,
+    baseUrl: "https://slack.com/api",
+  });
   const slackMsg = `A new request has been created for the project: *${botProject.name}*\n\n*Title*: ${requestTitle}\n*Description*: ${description}\n*PR Link*: ${pr.data.html_url}`;
-  await slackBotSdk.sendSlackMessageviaAPI({
+  await slackBotSdk.sendMessage({
     text: slackMsg,
     channel:
       process.env.NODE_ENV === "production"
-        ? SlackChannels.p_3_custombots
-        : SlackChannels.test_slackbot,
+        ? MySlackChannels.p_3_custombots
+        : MySlackChannels.test_slackbot,
   });
+  console.log("slackMsg", slackMsg);
 
   return updatedClientRequest;
 }

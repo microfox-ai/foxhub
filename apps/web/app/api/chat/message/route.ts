@@ -59,7 +59,7 @@ export async function DELETE(req: NextRequest) {
   const ids = searchParams.get("ids");
   const originClientRequestId = searchParams.get("originClientRequestId");
   const idsArray = ids?.split(",");
-  console.log("idsArray", idsArray, originClientRequestId);
+  //console.log("idsArray", idsArray, originClientRequestId);
   if (!idsArray || !originClientRequestId) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

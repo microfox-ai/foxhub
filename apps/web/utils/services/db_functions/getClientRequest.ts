@@ -21,7 +21,7 @@ export async function getTaskInstanceMeta(clientRequestId: string) {
         originClientRequestId: clientRequestId,
       } as unknown as TaskInstanceMetaType;
     }
-    console.log("taskInstanceMeta", taskInstanceMeta);
+    //console.log("taskInstanceMeta", taskInstanceMeta);
     return taskInstanceMeta as unknown as TaskInstanceMetaType;
   } catch (error) {
     console.error(error);

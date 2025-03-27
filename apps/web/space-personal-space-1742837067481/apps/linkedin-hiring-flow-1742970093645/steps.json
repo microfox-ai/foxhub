@@ -1,0 +1,52 @@
+[
+  {
+    "fileName": "schema.prisma",
+    "filePath": "/prisma/schema.prisma",
+    "fileType": "prisma"
+  },
+  {
+    "fileName": "fetchLinkedInApplicants.ts",
+    "filePath": "src/functions/fetchLinkedInApplicants.ts",
+    "fileType": "ts"
+  },
+  {
+    "fileName": "sendAutomatedEmail.ts",
+    "filePath": "src/functions/sendAutomatedEmail.ts",
+    "fileType": "ts"
+  },
+  {
+    "fileName": "updateApplicantStatus.ts",
+    "filePath": "src/functions/updateApplicantStatus.ts",
+    "fileType": "ts"
+  },
+  {
+    "fileName": "getApplicants.ts",
+    "filePath": "src/functions/getApplicants.ts",
+    "fileType": "ts"
+  },
+  {
+    "fileName": "exportToExcel.ts",
+    "filePath": "src/functions/exportToExcel.ts",
+    "fileType": "ts"
+  },
+  {
+    "fileName": "fetchApplicantsJob.ts",
+    "filePath": "src/functions/fetchApplicantsJob.ts",
+    "fileType": "ts"
+  },
+  {
+    "fileName": "sendDailyEmails.ts",
+    "filePath": "src/functions/sendDailyEmails.ts",
+    "fileType": "ts"
+  },
+  {
+    "fileName": "serverless.yml",
+    "filePath": "serverless.yml",
+    "fileType": "yml"
+  },
+  {
+    "fileName": "index.ts",
+    "filePath": "src/index.ts",
+    "fileType": "ts"
+  }
+]

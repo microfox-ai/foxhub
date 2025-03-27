@@ -11,6 +11,7 @@ import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { Button } from "@/components/ui/button";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import { AnnotationUIList } from "./AnnotationUIList";
+import { ToolInvocationPart } from "./ToolInvocationPart";
 
 // TODO: error boundary for ui annotations 
 //import { ErrorBoundary } from "react-error-boundary";
@@ -39,79 +40,6 @@ const MessagePart = ({ part, messageId }: { part: MessagePartType, messageId: st
   }
 };
 
-const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messageId: string }) => {
-
-  const { setMinionType, setMessages, status, append, handleSubmit, setInput } = useMicrofox();
-
-  if (status === "streaming") {
-    return null;
-  }
-
-  const removeThisPart = () => {
-    setMessages((messages) => messages.map((m) => {
-      if (m.id === messageId) {
-        return {
-          ...m,
-          parts: m.parts?.filter((p: any) => JSON.stringify(p) !== JSON.stringify(part)),
-        };
-      }
-      return m;
-    }));
-    //TODO: updated the removed pasrt in the message db
-  }
-
-  if (part.type === "tool-invocation" && part.toolInvocation.state === "result") {
-    return (
-      <div className="flex flex-col gap-2 my-4">
-        {part.toolInvocation.result.buttons && (
-          <div className="flex flex-wrap gap-2">
-            {part.toolInvocation.result.buttons.map((button: any) => (
-              <Button
-                variant={"default"}
-                key={button.text} className={`text-sm text-black px-2 py-2 rounded-xl cursor-pointer ${button.className}`}
-                onClick={() => {
-                  if (button.action === "shiftMinion") {
-                    setMinionType(button.value);
-                    setInput("");
-                    append({
-                      id: crypto.randomUUID(),
-                      content: button.text,
-                      role: "user",
-                      parts: [{
-                        type: "text",
-                        text: button.actionText ?? button.text ?? "Changing gears..",
-                      }]
-                    });
-                    removeThisPart();
-                  }
-                  if (button.action === "removeThisPart") {
-                    removeThisPart();
-                  }
-                  if (button.action === "appendMessage") {
-                    setInput("")
-                    append({
-                      id: crypto.randomUUID(),
-                      content: button.value,
-                      role: "user",
-                      parts: [{
-                        type: "text",
-                        text: button.value,
-                      }]
-                    })
-                    removeThisPart();
-                  }
-                }}
-              >
-                {button.text}
-              </Button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-}
-
 // RENDER CONTENT BY PARTS AND NOT BY CONTENT, BECAUSE CONTENT MIGHT BE A MERGE OF MULTIPLE PARTS.
 export const MessageWrapper = ({
   message,
@@ -136,9 +64,7 @@ export const MessageWrapper = ({
   );
   const toolInvocations = message.parts?.filter(
     (part) =>
-      part.type === "tool-invocation" &&
-      part.toolInvocation.state === "result" &&
-      part.toolInvocation.result.text != null,
+      part.type === "tool-invocation"
   );
   const [activeTab, setActiveTab] = useState<number>(0);
   useEffect(() => {

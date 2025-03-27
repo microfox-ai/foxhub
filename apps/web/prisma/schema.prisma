@@ -84,6 +84,7 @@ model ClientRequest {
   mentionedClientSecretIds String[]
   title                    String                  @default("Untitled")
   description              String?
+  repoName                 String?
   prUrl                    String?
   prNumber                 Int?
   prBranch                 String?
@@ -109,6 +110,7 @@ model TaskInstanceMeta {
   taskIntegrations    Json?
   taskRequiredInfo    Json?
   taskStructure       Json?  // this should be in seperate model in future
+  buildingStep        Json?
   minionType          String?
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt       

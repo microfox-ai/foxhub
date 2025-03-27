@@ -1,0 +1,166 @@
+import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { tool } from "ai";
+import fs from "fs/promises";
+import { z } from "zod";
+import { updateFileToGit } from "./gitHelpers";
+import { ClientRequest } from "@prisma/client";
+import path from "path";
+// GIT - 1000 requests per hour per repo
+
+export const INTERNAL_TEMPLATE_ROOT = `server/buildfox/templates`;
+
+export const getFilePath = async (
+  clientRequest: ClientRequest,
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+  }
+) => {
+  if (!clientRequest.repoName || !clientRequest.requestDir) {
+    throw new Error("Client request does not have a repo name or request dir");
+  }
+  const rootDir = path.join(clientRequest.repoName, clientRequest.requestDir); // space-personal-space-1742837067481/apps/linkedin-hiring-flow-1742970093645
+  const fullPath = path.join(rootDir, props.filePath); // src/db or prisma
+  let fileWritePath = fullPath; // path.join(fullPath, `${fileName}.${fileType}`);
+
+  if (fileWritePath.indexOf(".") === -1) {
+    if (props.fileName.endsWith(props.fileType)) {
+      fileWritePath = path.join(fileWritePath, props.fileName);
+    } else {
+      fileWritePath = path.join(
+        fileWritePath,
+        `${props.fileName}.${props.fileType}`
+      );
+    }
+  }
+
+  // Create directories recursively if they don't exist
+  const dirPath = path.dirname(fileWritePath);
+  //console.log("dirPath", dirPath);
+  await fs.mkdir(dirPath, { recursive: true });
+  // Write file content
+  return { fileWritePath, dirPath, rootDir };
+};
+export const writeToFileSystem = async (
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    content: string;
+  },
+  clientRequest: ClientRequest
+) => {
+  if (
+    !clientRequest.prBranch ||
+    !clientRequest.repoName ||
+    !clientRequest.requestDir
+  ) {
+    throw new Error("Client request does not have a branch or repo name");
+  }
+  const { fileWritePath } = await getFilePath(clientRequest, props);
+  await fs.writeFile(fileWritePath, props.content, "utf-8");
+};
+
+export const readAllGenFilesList = async (clientRequest: ClientRequest) => {
+  const { rootDir } = await getFilePath(clientRequest, {
+    fileName: "steps.json",
+    filePath: "",
+    fileType: "json",
+  });
+  const fileContent = await fs.readFile(
+    path.join(rootDir, "steps.json"),
+    "utf-8"
+  );
+  return JSON.parse(fileContent ?? "{}");
+};
+const fileExists = async (path: string) =>
+  !!(await fs.stat(path).catch((e) => false));
+
+export const updateSteps = async (
+  clientRequest: ClientRequest,
+  props: {
+    fileName: string;
+    filePath: string;
+    fileType: string;
+  }
+) => {
+  const { rootDir } = await getFilePath(clientRequest, props);
+  let steps = [];
+  let stepsFileExists = await fileExists(path.join(rootDir, "steps.json"));
+  if (stepsFileExists) {
+    const fileContent = await fs.readFile(
+      path.join(rootDir, "steps.json"),
+      "utf-8"
+    );
+    steps = JSON.parse(fileContent);
+  }
+  steps = steps.filter((step: any) => step.fileName !== props.fileName);
+  steps.push({
+    ...props,
+  });
+  await fs.writeFile(
+    path.join(rootDir, "steps.json"),
+    JSON.stringify(steps, null, 2),
+    "utf-8"
+  );
+};
+
+/** Thinking tool */
+export const writeToFile = (
+  props: StreamingFucntionProps<any, any>,
+  clientRequest: ClientRequest
+) => {
+  return tool({
+    description: "Write code to a specific file in the project",
+    parameters: z.object({
+      fileName: z.string().describe("The name of the file to write to"),
+      filePath: z
+        .string()
+        .describe(
+          "The complete file path to write to - relative to the project root"
+        ),
+      fileType: z
+        .string()
+        .describe("The type of file to write to - ts, tsx, json, etc"),
+      content: z.string().describe("The content to write to the file"),
+    }),
+    execute: async ({ fileName, filePath, fileType, content }, options) => {
+      try {
+        console.log(
+          "updatedFileContent",
+          //updatedFileContent,
+          fileName,
+          filePath,
+          fileType
+        );
+        // ALSO, somehow store it in the file somewhere to track the changes
+        await updateSteps(clientRequest, {
+          fileName,
+          filePath,
+          fileType,
+        });
+        await writeToFileSystem(
+          {
+            fileName,
+            filePath,
+            fileType,
+            content,
+          },
+          clientRequest
+        );
+        // Construct full path from repo root
+      } catch (error) {
+        console.log("error", error);
+        throw new Error("Failed to add file");
+      }
+      return {
+        success: true,
+        message: `File ${fileName} updated successfully`,
+        //content: content,
+        filePath: filePath,
+        fileType: fileType,
+      };
+    },
+  });
+};

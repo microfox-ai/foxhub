@@ -8,11 +8,14 @@ import { DataStreamWriter } from "ai";
 import { IMediaPayloadType } from "../types";
 import { prisma } from "@/prisma/prisma";
 import { NextResponse } from "next/server";
-import { TEMPLATE_REPO_OWNER, GITHUB_TOKEN } from "@/utils/constants/githubInfo";
+import {
+  TEMPLATE_REPO_OWNER,
+  GITHUB_TOKEN,
+} from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
 import { REQUESTSTATUS } from "@prisma/client";
 import { InputJsonValue } from "@prisma/client/runtime/library";
-import { SlackChannels, SlackBotSdk } from "@/utils/services/slackBotSdk";
+import { MySlackChannels, SlackBotSdk } from "@/utils/services/slackBotSdk";
 
 const slackBotSdk = new SlackBotSdk();
 export const createOrReOpenPullRequest: ServerStreamingFunction<
@@ -88,7 +91,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
   const lastRequestPrNumber =
     requestUpdates.length > 0
       ? requestUpdates.reduce((acc, curr) =>
-          acc.prNumber > curr.prNumber ? acc : curr,
+          acc.prNumber > curr.prNumber ? acc : curr
         ).prNumber
       : null;
 
@@ -100,7 +103,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
           .map((m) =>
             m.mediaType.startsWith("image")
               ? `![${m.mediaName}](${m.mediaUrl})`
-              : `[${m.mediaName}](${m.mediaUrl})`,
+              : `[${m.mediaName}](${m.mediaUrl})`
           )
           .join("\n")
       : "";
@@ -269,8 +272,8 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
       text: slackMsg,
       channel:
         process.env.NODE_ENV === "production"
-          ? SlackChannels.p_3_custombots
-          : SlackChannels.test_slackbot,
+          ? MySlackChannels.p_3_custombots
+          : MySlackChannels.test_slackbot,
     });
   } else {
     dataStream.writeData({
@@ -281,7 +284,7 @@ export const createOrReOpenPullRequest: ServerStreamingFunction<
     const commentBody = `<Not for Client> Msg from Client: ${content}${mediaMarkdown}`;
     await appRepoSdk.createCommentOnPr(
       lastRequestPrNumber || clientRequest.prNumber || 0,
-      commentBody,
+      commentBody
     );
     // await updateClientRequest(clientRequest);
 

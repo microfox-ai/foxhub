@@ -135,7 +135,7 @@ export const TokenUsageAnalyticsTracker = {
   getTokenUsagePerRequest: async (userId: string, requestId: string) => {
     const usage = await prisma.usageAnalytics.findMany({
       where: {
-        matchId: userId + "--r--" + requestId,
+        matchId: userId + "--r--" + requestId?.substring(0, 5),
       },
     });
     return usage;

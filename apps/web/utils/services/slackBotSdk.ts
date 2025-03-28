@@ -24,13 +24,7 @@ export const SLACK_BOT_OAUTH_TOKEN =
  */
 
 export const MySlackChannels = {
-  y_moon_reminders: "C07A2HJUEPN",
-  y_pay_reminders: "C074572BB2T",
-  executive_channel: "C066K6FKU1X",
-  management_channel: "C06944N1NQ7",
-  test_slackbot: "C08KC9E8J22",
-  b_coreteam: "C065V7MN0AE",
-  p_3_custombots: "C08KN63Q04U",
+  test_slackbot: "#test-slackbot",
   microfox_updates: IN_DEV ? "C08KC9E8J22" : "C08KN63Q04U",
 };
 

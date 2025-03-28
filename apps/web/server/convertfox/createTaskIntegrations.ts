@@ -101,7 +101,6 @@ export const createTaskIntegrations = async (
     `,
     prompt: `
 Name: ${taskInfo.name}
-Description: ${taskInfo.description}
 Goal: ${taskInfo.goal}
 Summary: ${taskInfo.summary}
 ${modification ? `The user specifically mentioned: ${modification}` : ""}

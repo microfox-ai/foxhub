@@ -6,6 +6,7 @@ import { models } from "../models";
 import { TaskInstanceMeta } from "@prisma/client";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
 
 export const createTaskInfo = async (
   props: StreamingFucntionProps<any, any>,
@@ -20,25 +21,32 @@ export const createTaskInfo = async (
   });
   //console.log("taskInstanceMeta", taskInstanceMeta);
   const result = await generateObject({
-    model: models.googleGeminiFlash,
+    model: models.googleGeminiPro,
     system: modification
-      ? `You are a task experet.
+      ? `You are a task expert and also have developer experience.
+        You know all about the task.
+        You know our capabilities & limitations.
         You are given a task summary and a user query to modify the task.
-        You need to re-create a task info based on the prevvious Info and the user query.
+        You need to re-create a task info based on the previous Info and the user query.
+        ----
+        ${getMicrofoxCapabilities()}
         `
       : `
-        You are a task expert.
-        You create a task info based on the summary in prompt:
+        You are a task expert and also have developer experience.
+        You know our capabilities & limitations.
+        You create a task info based on the summary given to you
+        Make sure you read task summary, platforms properly, & our capabilities before you can generate the task details
+        ----
+        ${getMicrofoxCapabilities()}
     `,
     schema: taskInfo,
     prompt: modification
       ? `
-        summary: ${taskInstanceMeta.initialSummary}
         previous task info: ${JSON.stringify(taskInstanceMeta.taskInfo)}
         user query: ${modification}
         `
       : `
-        summary: ${taskInstanceMeta.initialSummary}
+        task summary: ${taskInstanceMeta.initialSummary}
         `,
   });
   console.log("result", result);

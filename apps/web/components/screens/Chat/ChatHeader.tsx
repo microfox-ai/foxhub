@@ -15,10 +15,9 @@ const ChatHeader = ({
   isLoading,
   isValidating,
 }: IChatHeaderProps) => {
-
   const { minionType } = useMicrofox();
   return (
-    <div className="flex items-center justify-between gap-2 p-4">
+    <div className="flex w-full items-center justify-between gap-2 p-4">
       <div className="w-fit">
         <h2 className="line-clamp-1 flex flex-wrap items-center justify-start gap-2 text-sm font-semibold">
           {clientRequest?.title}

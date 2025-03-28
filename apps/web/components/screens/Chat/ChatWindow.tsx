@@ -10,6 +10,8 @@ import ChatInputBox from "./ChatInputBox";
 import { SlashModal } from "./SlashModal";
 import TabMessages from "./TabMessages";
 import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
+import { ButtonSCN } from "@/components/elements/Button";
+import { PanelRightIcon } from "lucide-react";
 export type AttachedMedia = {
   file: File;
   preview: string;
@@ -18,9 +20,13 @@ export type AttachedMedia = {
 function ChatWindow({
   userId,
   clientRequest,
+  isCollapsed,
+  onCollapse,
 }: {
   userId: string;
   clientRequest?: ClientRequest;
+  isCollapsed: boolean;
+  onCollapse: (collapsed: boolean) => void;
 }) {
   // Chat state
   const [activeTab, setActiveTab] = useState("chat");
@@ -63,15 +69,25 @@ function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-
   return (
     <div className="relative flex h-full w-full flex-col">
-      <ChatHeader
-        clientRequest={clientRequest}
-        mutate={mutate}
-        isLoading={isLoading}
-        isValidating={isLoading}
-      />
+      <div className="flex items-center w-full">
+        {isCollapsed && (
+          <ButtonSCN
+            variant="ghost"
+            size="icon"
+            onClick={() => onCollapse(!isCollapsed)}
+          >
+            <PanelRightIcon style={{ height: "1rem", width: "1rem" }} />
+          </ButtonSCN>
+        )}
+        <ChatHeader
+          clientRequest={clientRequest}
+          mutate={mutate}
+          isLoading={isLoading}
+          isValidating={isLoading}
+        />
+      </div>
       {/* Chat Tabs */}
       <Tabs
         value={activeTab}
@@ -123,7 +139,7 @@ function ChatWindow({
         <SlashModal
           clientRequest={clientRequest}
           onSuccess={reloadClientData}
-          onClose={() => { }}
+          onClose={() => {}}
         />
       )}
 
@@ -142,13 +158,22 @@ function ChatWindow({
 export default function ChatWindowWithProvider({
   userId,
   clientRequest,
+  isCollapsed,
+  onCollapse,
 }: {
   userId: string;
   clientRequest?: ClientRequest;
+  isCollapsed: boolean;
+  onCollapse: (collapsed: boolean) => void;
 }) {
   return (
     <MicrofoxProvider clientRequest={clientRequest}>
-      <ChatWindow userId={userId} clientRequest={clientRequest} />
+      <ChatWindow
+        userId={userId}
+        clientRequest={clientRequest}
+        isCollapsed={isCollapsed}
+        onCollapse={onCollapse}
+      />
     </MicrofoxProvider>
   );
 }

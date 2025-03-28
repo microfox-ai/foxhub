@@ -5,6 +5,8 @@ import { BotProject, ClientRequest } from "@prisma/client";
 import {
   ChevronRight,
   MessageSquare,
+  PanelLeftIcon,
+  PanelRightIcon,
   PlusCircle,
   Settings,
 } from "lucide-react";
@@ -24,11 +26,15 @@ export default function Sidebar({
   onSelectRequest,
   onNewRequest,
   onOpenConfig,
+  isCollapsed,
+  onCollapse,
 }: {
   selectedProject: BotProjectWithRequests;
   onSelectRequest: (request: ClientRequest) => void;
   onNewRequest: (project: BotProjectWithRequests) => void;
   onOpenConfig: (project: BotProject) => void;
+  isCollapsed?: boolean;
+  onCollapse?: (collapsed: boolean) => void;
 }) {
   const router = useRouter();
   const params = useParams<{
@@ -47,7 +53,7 @@ export default function Sidebar({
         <div className="flex items-center">
           <span className="truncate font-medium">{selectedProject.name}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           {/* New Request button (passes the current selectedProject) */}
           <ButtonSCN
             variant="ghost"
@@ -69,19 +75,35 @@ export default function Sidebar({
               onOpenConfig(selectedProject); // Pass the project for config handling
             }}
             title="Project Configurations"
-            style={{ padding: "0.25rem" }}
+            style={{ padding: "0.25rem", marginRight: "0.25rem" }}
           >
             <Settings style={{ height: "1rem", width: "1rem" }} />
+          </ButtonSCN>
+          <ButtonSCN
+            variant="ghost"
+            size="icon"
+            onClick={(e: any) => {
+              e.stopPropagation();
+              onCollapse?.(!isCollapsed);
+            }}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            style={{ padding: "0.25rem" }}
+          >
+            {isCollapsed ? (
+              <PanelRightIcon style={{ height: "1rem", width: "1rem" }} />
+            ) : (
+              <PanelLeftIcon style={{ height: "1rem", width: "1rem" }} />
+            )}
           </ButtonSCN>
         </div>
       </div>
 
-      <div className="mb-2 mx-1 mt-1 space-y-1">
+      <div className="mb-2 mx-1 mt-1 space-y-1  px-2">
         {selectedProject?.clientRequests?.length > 0 ? (
           selectedProject?.clientRequests?.map((request: ClientRequest) => (
             <button
               key={request?.id}
-              className={`flex cursor-pointer line-clamp-1 max-w-[27ch] items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
+              className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}
               onClick={() => onSelectRequest(request)}
             >
               {request.id === requestParamId ? (
@@ -104,7 +126,7 @@ export default function Sidebar({
                 />
               )}
               <span
-                className={`flex-1 truncate ${
+                className={`flex-1 truncate text-left ${
                   request.id === requestParamId ? "font-semibold" : ""
                 }`}
               >

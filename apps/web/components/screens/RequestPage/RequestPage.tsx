@@ -32,7 +32,7 @@ export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
-  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
+  const [isRightCollapsed, setIsRightCollapsed] = useState(true);
   const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
   const [isRightTransitioning, setIsRightTransitioning] = useState(false);
   const leftPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle>(null);

@@ -42,6 +42,8 @@ export const MICROFOX_LOGO = `https://microfox.nyc3.cdn.digitaloceanspaces.com/l
 
 export const slackBotSdk = createSlackSDK({
   botToken: SLACK_BOT_OAUTH_TOKEN,
+  baseUrl: "https://slack.com/api",
+  authType: "query",
 });
 
 //new MySlackBotSdk(SLACK_BOT_OAUTH_TOKEN);

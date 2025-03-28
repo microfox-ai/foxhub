@@ -30,6 +30,7 @@ export interface defaultRequestBody {
 export interface defaultCallbackResultBody {
   isLast: boolean;
   isFirst: boolean;
+  blockNextSteps: boolean;
 }
 
 export interface StreamingFucntionProps<T, W> {
@@ -40,7 +41,7 @@ export interface StreamingFucntionProps<T, W> {
 
 export interface ServerStreamingFunction<T, W> {
   (
-    stuff: StreamingFucntionProps<T, W>,
+    stuff: StreamingFucntionProps<T, W>
   ): Promise<ServerStreamingCallbackResult<T, W>>;
 }
 
@@ -90,6 +91,9 @@ export class ServerStreamingRouter<T, W> {
                 isLast: i === pathsInSequence.length - 1,
               },
             });
+            if (responseBodyFull?.responseBody?.blockNextSteps) {
+              break;
+            }
             if (responseBodyFull) {
               responseBody = responseBodyFull?.responseBody;
               appendRequestBody = responseBodyFull?.appendRequestBody;

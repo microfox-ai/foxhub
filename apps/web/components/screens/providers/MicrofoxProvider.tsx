@@ -115,7 +115,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
             }
         },
         onResponse: (response) => {
-            console.log(response);
+            // console.log(response);
         },
         onError: (error) => {
             console.log("error", error);
@@ -128,6 +128,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         },
     });
 
+    //-----------LISTENING-------------
     useEffect(() => {
         console.log("messages", chatOptions.messages);
     }, [chatOptions.messages]);
@@ -136,6 +137,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         console.log("data", chatOptions.data);
     }, [chatOptions.data]);
 
+    //-----------DB OPERATIONS -----------------
     const createMessage = useCallback(async (message: UIMessage) => {
         if (!clientRequest) {
             return;
@@ -169,6 +171,8 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         return await PortalSdk.deleteData(`/api/chat/message?ids=${_ids.join(",")}&originClientRequestId=${clientRequest.id}`, {});
     }, [clientRequest]);
 
+    //-----------USECHAT OVERWITES------------
+    // BYPASSING the original handle submit
     const handleSubmit = async (event?: {
         preventDefault?: () => void;
     }, chatRequestOptions?: ChatRequestOptions) => {

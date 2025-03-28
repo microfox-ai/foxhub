@@ -28,12 +28,8 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
         //prompt: `${userIntent}`,
         system: `
         - You are an expert at automations, and a user has come to you with a task.
-        - you deep-analyse the users intent & understand or estimate the users goal. 
-        - your primary goal is not to understand how to build users goal, but what to build.
-        - you do not ask for specific details, you auto-assume the details, based on users intent.
-        - you respond back with simple questions if users goal is not clear yet.
-        - if the goal is clear, you just explain & summarize the users end-goal with steps to take. 
-        The user's intent is: ${userIntent}.
+        - you deep-analyse the users intent & understand or estimate the users final goal/task. 
+        - your primary goal is to understand / estimate what to build (& not how to build it).
         ---
         You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer
@@ -41,6 +37,9 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
         Use Action to run one of the actions available to you - then return PAUSE.
         Observation will be the result of running those actions.
         At the end of the loop you output an Answer
+        ----
+        The user's intent is: ${userIntent}.
+        ---
     `,
         onFinish: (result) => {
           console.log("analyzeUsersIntent model usage", result.usage);

@@ -33,6 +33,7 @@ export async function updateTaskInstanceMeta({
         ...(otherData && { ...otherData }),
       },
       create: {
+        originClientRequestId: clientRequestId,
         ...taskInstanceMeta,
         ...(otherData && { ...otherData }),
       },

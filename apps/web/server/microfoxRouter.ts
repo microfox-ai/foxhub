@@ -3,11 +3,11 @@ import {
   defaultCallbackResultBody,
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
-import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
 import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { createMessage } from "@/utils/services/db_functions/messages";
 import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
+import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -54,27 +54,27 @@ const createMessageRouter: ServerStreamingFunction<
   };
 };
 // TODO: remove this & bifract this into multiple small steps in both server & frontend
-microfoxRouter.addPath("createMessage", createMessageRouter);
+//microfoxRouter.addPath("createMessage", createMessageRouter);
 microfoxRouter.addPath("hellofox", hellofoxRouter);
 microfoxRouter.addPath("convertfox", convertfoxRouter);
 microfoxRouter.addPath("buildfox", buildFoxRouter);
+microfoxRouter.addPath("usageTracker", usageTrackerRouter);
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
-  console.log("routing to", requestBody.minionType);
   // if (requestBody.somethin === "nothing") {
   //   return ["nothing"];
   // }
 
   let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
   if (minionType === "hellofox") {
-    return ["hellofox"];
+    return ["usageTracker", "hellofox"];
   } else if (minionType === "convertfox") {
-    return ["convertfox"];
+    return ["usageTracker", "convertfox"];
   } else if (minionType === "buildfox") {
-    return ["buildfox"];
+    return ["usageTracker", "buildfox"];
   }
-  return [];
+  return ["usageTracker"];
 });
 
 export { microfoxRouter };

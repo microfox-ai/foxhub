@@ -1,20 +1,12 @@
-import { Message, UIMessage } from "ai";
-import { FileText } from "lucide-react";
-import dayjs from "dayjs";
 import { Skeleton } from "@mui/material";
-import { getMessageClass } from "./helpers/ui";
-import {
-  AnnotationType,
-  ChatUIMessageWithTypes,
-  MessageMetadata,
-} from "../hooks/convertors";
+import { UIMessage } from "ai";
+import dayjs from "dayjs";
 import { MessageWrapper } from "./message/MessageWrapper";
 
 interface TabMessagesProps {
   messages: UIMessage[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  onRefresh: (messageIndex: number) => void;
   isStreaming: boolean;
 }
 
@@ -22,7 +14,6 @@ export default function TabMessages({
   messages,
   isLoading,
   messagesEndRef,
-  onRefresh,
   isStreaming,
 }: TabMessagesProps) {
   const renderDateSeparator = (currentDate: string, prevDate?: string) => {
@@ -48,9 +39,6 @@ export default function TabMessages({
               message={update}
               index={index}
               length={messages.length}
-              onRefresh={() => {
-                onRefresh(index);
-              }}
               isStreaming={isStreaming}
               renderDateSeperator={(currDate) =>
                 renderDateSeparator(

@@ -1,21 +1,19 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { findLastElementWith } from "@/utils/helpers/array";
 import {
   defaultCallbackResultBody,
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
-import { getMicrofoxCharacter } from "./default";
-import { hellofoxTools } from "./tools";
+import { generateObject, streamText } from "ai";
+import { z } from "zod";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { models } from "../models";
-import { aboutMicrofox } from "./aboutMicrofox";
+import { aboutMicrofoxInfo } from "./aboutMicrofox";
 import { analyseUserIntent } from "./analyzeUsersIntent";
-import { getMissingCapabilties } from "./getMissingCapabilties";
-import { getMicrofoxCapabilitiesTool } from "./getMicrofoxCapabilities";
-import { isTaskBuildable } from "./isTaskBuildable";
+import { getMicrofoxCharacter } from "./default";
+import { getMicrofoxCapabilities } from "./getMicrofoxCapabilities";
 import { guideUserToDoableGoal } from "./guideUserToDoableGoal";
-import { sendStruckLogsTool } from "./sendStruckLogs";
-import { findLastElementWith } from "@/utils/helpers/array";
-
+import { isTaskBuildable } from "./isTaskBuildable";
+import { confirmSpecifics } from "./summarizeUserGoal";
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
 // 3. BUILD ->
@@ -41,6 +39,7 @@ import { findLastElementWith } from "@/utils/helpers/array";
 // If it is too simple, it guides the user to expand his goal.
 
 // THE HELLO ROUTER SETUP IS BAD - THE ANSWER HAS TO GO THROUGH DIRECTLY FROM THE INSIDE OF THE TOOLS (No need to come back & convert & again reprint the same information)
+//
 
 // TODO: SUBHAKAR - hellofox is asking too much if the user is lax.
 
@@ -49,9 +48,9 @@ export const hellofoxRouter: ServerStreamingFunction<
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
-  console.log("hellofoxENdpoint", models.googleGeminiFlash);
+  console.log("hellofoxRouter");
+
   // clean up al messages before starting the conversation
-  // console.log("requestBody before", requestBody.messages);
   // VERYY IMPORtANt : SAVES A TON LOT OF TOKENS bypassing the thinking & all other steps
   requestBody.messages = requestBody.messages.map((m: any) => ({
     ...m,
@@ -59,69 +58,233 @@ export const hellofoxRouter: ServerStreamingFunction<
     annotations: [],
     toolInvocations: [],
   }));
-  console.log("requestBody after", requestBody.messages);
-  const result1 = streamText({
-    model: models.claude35Sonnet,
-    system: `
+  //console.log("requestBody after", requestBody.messages);
+  dataStream.writeMessageAnnotation({
+    type: "minion",
+    value: "hellofox",
+  });
+  let lastFewMessages =
+    requestBody.messages.length > 3
+      ? requestBody.messages.slice(-3)
+      : requestBody.messages;
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    text: "Thinking...",
+  });
+  const { object: classification } = await generateObject({
+    model: models.googleGeminiFlash,
+    schema: z.object({
+      reasoning: z.string(),
+      type: z.enum(["casual", "task-query", "task-confirmation"]),
+      complexity: z.enum(["simple", "complex"]),
+      taskClarity: z.enum(["clear", "ambiguous", "clueless"]),
+      //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
+    }),
+    messages: lastFewMessages,
+    system: `Classify the current users Query based on the conversation history.
+    
+    Determine:
+    1. Query type (casual, task-query, task-confirmation)
+    2. Complexity (simple, complex)
+    3. Brief reasoning for classification
+    4. Task Clarity (clear, ambiguous, clueless)
+      a. clear - intent is clear with platforms mentioned
+      b. ambiguous - intent is clear but platforms are not mentioned
+      c. clueless - intent itself is not clear`,
+  }); // 4. Query type (query, modification, answer, confirmation)
+
+  //console.log("classification", classification);
+  dataStream.writeMessageAnnotation({
+    type: "metadata",
+    object: classification,
+    objectType: "classification",
+  });
+
+  let result = null;
+  // if (classification.type === "task-confirmation") {
+  //   const response = streamText({
+  //     model: models.googleGeminiPro,
+  //     messages: lastFewMessages,
+  //     system: `
+  //     - You are called Microfox,
+  //     - You are a smart assistant that summarises the user's goals from the conversation history.
+  //     - You output a summary of the user's goals in a suggestive manner.
+  //     - Your summary is very specific & small short format - easy to read, quick to digest, only covering the important stuff.
+  //     - You do not summarize How the task will be built, but only the specific details (like steps to build, platforms to integrate, etc...)
+  //     that would be needed to build the task.
+  //     - You are capable of building the task, if the user agrees to it.
+  //     - ALWAYS speak in the first person (as if you are microfox).
+  // `,
+  //     onFinish: (result) => {
+  //       console.log("summariseUserGoal model usage", result.usage);
+  //       TokenUsageAnalyticsTracker.trackUsage({
+  //         ...props.requestBody,
+  //         model: models.googleGeminiPro.modelId,
+  //         usage: result.usage,
+  //       });
+  //     },
+  //     onError: (error) => {
+  //       console.log("summariseUserGoal error", error);
+  //     },
+  //   });
+  //   response.mergeIntoDataStream(props.dataStream, {
+  //     experimental_sendFinish: true,
+  //   });
+
+  //   dataStream.writeMessageAnnotation({
+  //     type: "ui",
+  //     objectType: "buttons",
+  //     persona: "hellofox",
+  //     text: `Let's Go!`,
+  //     value: await response.text,
+  //     buttons: [
+  //       {
+  //         action: "removeThisPart",
+  //         text: "Not Yet",
+  //         className: "bg-neutral-200 text-black hover:bg-neutral-300",
+  //       },
+  //       {
+  //         action: "shiftMinion",
+  //         text: "Sure",
+  //         className: "bg-green-500 text-white hover:bg-green-600",
+  //         value: "convertfox",
+  //         actionText: "Sure!, let's proceed!",
+  //       },
+  //     ],
+  //   });
+  // } else
+  if (
+    classification.type === "task-query" ||
+    classification.type === "task-confirmation"
+  ) {
+    lastFewMessages =
+      requestBody.messages.length > 5
+        ? requestBody.messages.slice(-5)
+        : requestBody.messages;
+
+    let toolUsage = ``;
+    if (classification.taskClarity === "clear") {
+      // call isTaskBuildable tool
+      toolUsage = `- isTaskBuildable: Check if the user's task is buildable & then confirm the task. (make sure to pass in the platforms & requirements)`;
+    } else if (classification.taskClarity === "ambiguous") {
+      // call analyseUserIntent tool
+      toolUsage = `
+      - analyseUserIntent: Analyse the user's intent.
+      - confirmSpecifics: Confirm the specific details of the task.
+      `;
+    } else {
+      // call guideUserToDoableGoal tool
+      toolUsage = `
+      - analyseUserIntent: Analyse the user's intent.
+      - guideUserToDoableGoal: Guide the user to a doable goal.
+      - confirmSpecifics: Confirm the specific details of the task.`;
+    }
+    // do some shit
+    result = streamText({
+      model: models.googleGeminiPro,
+      system: `
+      - You are called Microfox, 
+      - your primary intent/job is to fine-grain the users goal & help him finalise on what he wishes to build.
+      - you keep your answers/questions short & concise, unless it is needed.
+      - you are a great listener, & you are able to understand the user's intent 
+      - you call tools that can fetch information or help you think.
+      - you communicate complex technical jargon in a easy to understand manner.
+      - ALWAYS speak in the first person (as if you are microfox).
+      ----
+      Tool usage:
+      ${toolUsage}
+      ----
+      A few things about your workflow:
+      - You first think carefully about the users last messages & the tools you have, and analyse what needs to be done.
+      - You call the tools given based on your analysis in a pattern that is most likely to give you the best results.
+      - The tools will only help you think, & you will have to make the final call on what to respond back to the user.
+  
+      Critically, you must never ask for any specific details from the user.
+      specific details examples:
+       - what is the name/url/email of the website/app/repo/etc?
+       - can you provide API keys/tokens/etc of your slack/whatsapp/etc?
+
+       You can ask for moderate details, like:
+       - do you wish to integrate you web app / backend with another service ?
+       - do you want to integrate with slack/whatsapp/etc ?
+
+      DO NOT CALL ANY OTHER TOOL further, if isTaskBuildable is called.
+      `,
+      messages: lastFewMessages,
+      toolCallStreaming: true,
+      maxSteps: 3,
+      toolChoice: "auto", // force the model to call a tool
+      tools: {
+        ...(classification.taskClarity === "clear"
+          ? {
+              isTaskBuildable: isTaskBuildable(props),
+            }
+          : classification.taskClarity === "ambiguous"
+            ? {
+                analyseUserIntent: analyseUserIntent(props),
+                confirmSpecifics: confirmSpecifics(props),
+              }
+            : {
+                analyseUserIntent: analyseUserIntent(props),
+                guideUserToDoableGoal: guideUserToDoableGoal(props),
+                confirmSpecifics: confirmSpecifics(props),
+              }),
+      },
+      onStepFinish: (step) => {
+        console.log("step", step.usage);
+      },
+      onFinish: async (result) => {
+        console.log("result", result.usage);
+        TokenUsageAnalyticsTracker.trackUsage({
+          ...props.requestBody,
+          model: models.googleGeminiPro.modelId,
+          usage: result.usage,
+        });
+      },
+      onError: (error) => {
+        console.log(
+          "error",
+          error,
+          (error.error as any)?.requestBodyValues?.contents
+        );
+      },
+    });
+    //if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
+  } else {
+    result = streamText({
+      model: models.googleGeminiFlash,
+      system: `
         ${getMicrofoxCharacter()}
-        - your primary intent/job is to fine-grain the users goal & help him finalise on what he wishes to build.
-        - your primary goal is not to understand how to build it, but what to build.
-        - you keep your answers/questions short & concise, unless it is needed.
-        - You are a great listener, & you are able to understand the user's intent & call tools that can fetch information or help you think.
-        - If it is casual conversation, you do not call below tools, & just respond back to the user.
-        - you do not aks users any information, you just confirm if the user is okay with providing said information later when building what he needs.
-        - you communicate complex technical jargon in a way that is easy to understand.
-        - you make it easy for the user to answer your questions (simplify questions by merging them).
-        ----
-        if user asks/want to know more/does not know about you, call tool - aboutMicrofox.
-        if user has specified a goal or a task that he wants done for the first time - call tool - analyseUserIntent.
-        if there is not enough information about the user's requirement, call tool - analyseUserIntent.
-        if you are not sure if we can build the user's task, call tool - getMissingCapabilities.
-        if user's goal or intent is completely clear, call tool - isTaskBuildable.
-        if user's goal or intent is not clear, call tool - guideUserToDoableGoal.
-        if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
-        if user's goal is vague - call tool - analyseUserIntent.
-        Do not ask for any user details needed to build the task, that is not your job, call tool - isTaskBuildable.
-        if the task is buildable, just reply back with a summary on how microfox will build it, and only ask for confirmation, no more questions or asking details
-        if task is buildable, & user confirms the task, finish the conversation by call tool - confirmTask
-        ---
-        Don't think about how to do it or what the user means, that is not your job, call tools as needed.
-        Don't directly respond with tool responses, instead, use tools to think & respond.
-        If an existing tool match is not discovered, call tool - sendStruckLogs
-        ALWAYS call tools, unless its casual conversation, or you are sure you can do the task.`,
-    messages: requestBody.messages,
-    toolCallStreaming: true,
-    maxSteps: 3,
-    toolChoice: "auto", // force the model to call a tool
-    tools: {
-      aboutMicrofox: aboutMicrofox(props),
-      analyseUserIntent: analyseUserIntent(props),
-      getMissingCapabilties: getMissingCapabilties(props),
-      //getMicrofoxCapabilities: getMicrofoxCapabilitiesTool(props),
-      isTaskBuildable: isTaskBuildable(props),
-      guideUserToDoableGoal: guideUserToDoableGoal(props),
-      sendStruckLogs: sendStruckLogsTool(props),
-    },
-    onStepFinish: (step) => {
-      console.log("step", step.usage);
-    },
-    onFinish: (result) => {
-      console.log("result", result.usage);
-    },
-    onError: (error) => {
-      console.log(
-        "error",
-        error,
-        (error.error as any)?.requestBodyValues?.contents
-      );
-    },
-  });
+        - always speak in the first person (as microfox).
+        ___
+        Info About Microfox:
+        ${
+          classification.complexity === "complex"
+            ? `${aboutMicrofoxInfo()}\n\n${getMicrofoxCapabilities()}`
+            : aboutMicrofoxInfo()
+        }
+        ___
+        Respond to the user's query in a short & concise manner.
+        End the conversation asking on how you can be of help to the user.
+        Never tell about your technicalities, unless asked.
+        `,
+      messages: lastFewMessages,
+      onFinish: (result) => {
+        console.log("result", result.usage);
+        TokenUsageAnalyticsTracker.trackUsage({
+          ...props.requestBody,
+          model: models.googleGeminiFlash.modelId,
+          usage: result.usage,
+        });
+      },
+    });
+  }
 
-  //console.log("result1", result1.toolCalls);
-
-  result1.mergeIntoDataStream(dataStream, {
-    experimental_sendStart: false,
-  });
+  if (result != null) {
+    result.mergeIntoDataStream(dataStream, {
+      experimental_sendStart: false,
+    });
+  }
 
   return {
     responseBody: { ...responseBody },

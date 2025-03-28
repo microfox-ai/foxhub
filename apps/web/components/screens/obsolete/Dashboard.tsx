@@ -84,7 +84,7 @@ export default function Dashboard() {
     error,
     isLoading,
   } = useSWR(
-    `/api/bot-project?userId=${user?.id}`,
+    user?.id ? `/api/bot-project?userId=${user?.id}` : null,
     async (url) => await fetch(url).then((res) => res.json()),
   );
 

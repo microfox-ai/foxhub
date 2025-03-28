@@ -1,9 +1,13 @@
 import {
   ServerStreamingRouter,
   defaultCallbackResultBody,
+  ServerStreamingFunction,
 } from "@repo/ai-utils/router";
-import { createOrReOpenPullRequest } from "./system/createOrReOpenPullRequest";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
+import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
+import { createMessage } from "@/utils/services/db_functions/messages";
+import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
+import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -17,19 +21,60 @@ const microfoxRouter = new ServerStreamingRouter<
   defaultCallbackResultBody
 >();
 
-// TODO: remove this & bifract this into multiple small steps in both server & frontend
-microfoxRouter.addPath("createOrReOpenPullRequest", createOrReOpenPullRequest);
-microfoxRouter.addPath("hellofox", hellofoxRouter);
+// ratelimit should be per time per model ().
 
+// TODO: Shift to the frontend.
+const createMessageRouter: ServerStreamingFunction<
+  any,
+  defaultCallbackResultBody
+> = async (props) => {
+  const { dataStream, requestBody, responseBody } = props;
+  const lastMessage =
+    requestBody.messages.length > 0
+      ? requestBody.messages[requestBody.messages.length - 1]
+      : null;
+  let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
+  if (lastMessage) {
+    console.log("createMessage", lastMessage);
+    await createMessage({
+      clientRequestId: requestBody.clientRequestId,
+      message: {
+        ...lastMessage,
+        id: requestBody.clientRequestId + "-" + lastMessage.id,
+        originClientRequestId: requestBody.clientRequestId,
+        userId: requestBody.userId,
+        minionType: minionType,
+        context: "on-start",
+      },
+    });
+  }
+  return {
+    responseBody: props.responseBody,
+    appendRequestBody: props.requestBody,
+  };
+};
+// TODO: remove this & bifract this into multiple small steps in both server & frontend
+//microfoxRouter.addPath("createMessage", createMessageRouter);
+microfoxRouter.addPath("hellofox", hellofoxRouter);
+microfoxRouter.addPath("convertfox", convertfoxRouter);
+microfoxRouter.addPath("buildfox", buildFoxRouter);
+microfoxRouter.addPath("usageTracker", usageTrackerRouter);
+
+// CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
-  //console.log("requestBody", requestBody);
   // if (requestBody.somethin === "nothing") {
   //   return ["nothing"];
   // }
-  if (requestBody.minionType === "hellofox") {
-    return ["hellofox"];
+
+  let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
+  if (minionType === "hellofox") {
+    return ["usageTracker", "hellofox"];
+  } else if (minionType === "convertfox") {
+    return ["usageTracker", "convertfox"];
+  } else if (minionType === "buildfox") {
+    return ["usageTracker", "buildfox"];
   }
-  return [];
+  return ["usageTracker"];
 });
 
 export { microfoxRouter };

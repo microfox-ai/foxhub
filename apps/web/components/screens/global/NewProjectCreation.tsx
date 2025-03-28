@@ -6,6 +6,7 @@ import { Send, Loader2 } from "lucide-react";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { analytics } from "@/utils/services/analytics/client";
 
 export default function NewProjectCreation({
   userId,
@@ -24,12 +25,23 @@ export default function NewProjectCreation({
       toast.error("Please provide both a title and a detailed description.");
       return;
     }
+    if (!userId) {
+      toast.error("Please login to create a project.");
+      return;
+    }
     setSending(true);
     try {
       const newProject = await PortalSdk.postData("/api/bot-project/create", {
         userId,
         projectName: projectTitle.trim(),
         projectDescription: description.trim(),
+      });
+      // track project creation
+      analytics.track("Project Created", {
+        userId,
+        projectId: newProject.id,
+        projectName: newProject.name,
+        timestamp: new Date().toISOString(),
       });
       toast.success("Project created successfully!");
       setProjectTitle("");

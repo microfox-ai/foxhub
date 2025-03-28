@@ -3,14 +3,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientRequest } from "@prisma/client";
 import { useEffect, useRef, useState } from "react";
-import { useMicrofox } from "../hooks/useMicrofox";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { AddClientSecretModal } from "./AddClientSecretModal";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
 import { SlashModal } from "./SlashModal";
 import TabMessages from "./TabMessages";
-import { MicrofoxProvider } from "../providers/MicrofoxProvider";
+import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
 export type AttachedMedia = {
   file: File;
   preview: string;
@@ -38,19 +37,13 @@ function ChatWindow({
     setMessages,
     reload: mutate,
     status,
-    handleSubmit,
     isLoading,
     input,
     setInput,
     handleInputChange,
     append,
     data,
-  } = useMicrofox({
-    clientRequest,
-    resetInputState: () => {
-      resetMedia();
-    },
-  });
+  } = useMicrofox();
 
   // Reload client data when specific operations are completed
   const reloadClientData = async () => {
@@ -70,17 +63,6 @@ function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleRefresh = (messageIndex: number) => {
-    console.log("refreshing", messageIndex);
-    const message = messages[messageIndex];
-    setMessages((messages) => {
-      const newMessages = messages.slice(0, messageIndex);
-      return newMessages;
-    });
-    if (message) append(message);
-  };
-
-  const sendMessage = handleSubmit;
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -115,7 +97,6 @@ function ChatWindow({
             messages={messages}
             isLoading={false}
             messagesEndRef={messagesEndRef}
-            onRefresh={handleRefresh}
             isStreaming={status === "streaming"}
           />
         </TabsContent>
@@ -132,7 +113,6 @@ function ChatWindow({
             input={input}
             messageStatus={status}
             userId={userId}
-            sendMessage={sendMessage}
             handleInputChange={handleInputChange}
           />
         )}

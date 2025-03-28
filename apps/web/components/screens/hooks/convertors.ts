@@ -9,78 +9,18 @@ export interface MessageMetadata {
 }
 
 export interface ChatUIMessageWithTypes
-  extends Omit<
-    ChatUIMessage,
-    "context" | "minionType" | "metadata" | "systemType"
-  > {
-  context: "chat" | "server";
-  systemType?: "git" | "server";
+  extends Omit<ChatUIMessage, "minionType" | "metadata" | "role"> {
+  role: "user" | "assistant" | "system";
   minionType?:
     | "hellofox"
-    | "convert"
-    | "build"
-    | "test"
-    | "deploy"
-    | "review"
-    | "package"
+    | "convertfox"
+    | "buildfox"
+    | "testfox"
+    | "deployfox"
+    | "reviewfox"
+    | "packagefox"
     | null;
   metadata?: MessageMetadata;
 }
 
-export type AnnotationType = "core" | "metadata" | "systemType" | "minion";
-
-export const mapChatUIMessageToVercelUIMessage = (
-  apiResponse: ChatUIMessageWithTypes
-): UIMessage => {
-  const { id, role, content, createdAt, ...rest } = apiResponse;
-
-  return {
-    id,
-    role: role as UIMessage["role"],
-    content,
-    createdAt,
-    parts: rest.parts as any,
-    annotations: [
-      {
-        type: "core",
-        originClientRequestId: rest.originClientRequestId,
-        userId: rest.userId,
-        //updatedAt: rest.updatedAt?.toISOString(),
-      },
-      {
-        type: "metadata",
-        metadata: rest.metadata as any,
-      },
-      {
-        type: "systemType",
-        systemType: rest.systemType as JSONValue,
-      },
-      {
-        type: "minion",
-        minionId: rest.minionId as JSONValue,
-        minionType: rest.minionType as JSONValue,
-      },
-    ],
-  };
-};
-
-export const mapVercelUIMessageToChatUIMessage = (
-  vercelUIMessage: UIMessage,
-  options: {
-    extraData?: MessageMetadata;
-    minionType?: ChatUIMessageWithTypes["minionType"];
-    userId: string;
-    originClientRequestId: string;
-  }
-): ChatUIMessageWithTypes => {
-  return {
-    ...vercelUIMessage,
-    metadata: options.extraData ? (options.extraData as any) : null,
-    context: "chat",
-    minionType: options.minionType,
-    attachments: [],
-    userId: options.userId,
-    originClientRequestId: options.originClientRequestId,
-    updatedAt: new Date(),
-  } as any;
-};
+export type AnnotationType = "loading" | "metadata" | "thinking" | "minion";

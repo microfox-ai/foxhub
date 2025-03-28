@@ -25,8 +25,8 @@ function ChatWindow({
 }: {
   userId: string;
   clientRequest?: ClientRequest;
-  isCollapsed: boolean;
-  onCollapse: (collapsed: boolean) => void;
+  isCollapsed?: boolean;
+  onCollapse?: (collapsed: boolean) => void;
 }) {
   // Chat state
   const [activeTab, setActiveTab] = useState("chat");
@@ -76,7 +76,7 @@ function ChatWindow({
           <ButtonSCN
             variant="ghost"
             size="icon"
-            onClick={() => onCollapse(!isCollapsed)}
+            onClick={() => onCollapse?.(!isCollapsed)}
           >
             <PanelRightIcon style={{ height: "1rem", width: "1rem" }} />
           </ButtonSCN>
@@ -163,8 +163,8 @@ export default function ChatWindowWithProvider({
 }: {
   userId: string;
   clientRequest?: ClientRequest;
-  isCollapsed: boolean;
-  onCollapse: (collapsed: boolean) => void;
+  isCollapsed?: boolean;
+  onCollapse?: (collapsed: boolean) => void;
 }) {
   return (
     <MicrofoxProvider clientRequest={clientRequest}>

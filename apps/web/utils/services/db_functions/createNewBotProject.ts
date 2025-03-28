@@ -4,6 +4,7 @@ import { GITHUB_TOKEN, PROJECT_BRANCH_NAME, PROJECT_INFO_DIR, PROJECT_JSON_FILE_
 import { TEMPLATE_REPO } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { createEmptyClientRequest } from "./createEmptyClientRequest";
+import { createClientMongoDB } from "./createClientMongoDB";
 
 export async function createNewBotProject({
     userId,
@@ -132,6 +133,48 @@ export async function createNewBotProject({
         throw new Error("Failed to create bot project");
     }
     console.log("botProject", botProject);
+
+    await createClientMongoDB({
+        userId: botProject.userId,
+        botProjectId: botProject.id,
+        name: repoResult.data.name,
+    });
+
+    const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+    const awsDefaultRegion = process.env.AWS_REGION;
+    const microfoxApiKey = process.env.MICROFOX_API_KEY;
+
+    if (awsAccessKeyId && awsSecretAccessKey && awsDefaultRegion && microfoxApiKey) {
+        await githubSdk.rest.actions.createEnvironmentVariable({
+            owner: TEMPLATE_REPO_OWNER,
+            repo: repoResult.data.name,
+            environment_name: 'production',
+            name: 'AWS_ACCESS_KEY_ID',
+            value: awsAccessKeyId,
+        });
+        await githubSdk.rest.actions.createEnvironmentVariable({
+            owner: TEMPLATE_REPO_OWNER,
+            repo: repoResult.data.name,
+            environment_name: 'production',
+            name: 'AWS_SECRET_ACCESS_KEY',
+            value: awsSecretAccessKey,
+        });
+        await githubSdk.rest.actions.createEnvironmentVariable({
+            owner: TEMPLATE_REPO_OWNER,
+            repo: repoResult.data.name,
+            environment_name: 'production',
+            name: 'AWS_DEFAULT_REGION',
+            value: awsDefaultRegion,
+        });
+        await githubSdk.rest.actions.createEnvironmentVariable({
+            owner: TEMPLATE_REPO_OWNER,
+            repo: repoResult.data.name,
+            environment_name: 'production',
+            name: 'MICROFOX_API_KEY',
+            value: microfoxApiKey,
+        });
+    }
 
     // Create botProject.json file
     const botProjectData = {

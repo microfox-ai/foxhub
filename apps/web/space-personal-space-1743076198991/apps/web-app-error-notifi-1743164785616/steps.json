@@ -1,0 +1,59 @@
+[
+  {
+    "fileName": "receiveWebAppError.ts",
+    "filePath": "src/functions/receiveWebAppError.ts",
+    "fileType": "ts",
+    "timestamp": "2025-03-28T13:38:40.738Z",
+    "contentSize": 3792,
+    "meta": {
+      "packagesUsed": [
+        "dotenv",
+        "node-fetch"
+      ],
+      "timestamp": "2025-03-28T13:38:40.737Z"
+    }
+  },
+  {
+    "fileName": "createGitHubIssue.ts",
+    "filePath": "src/functions/createGitHubIssue.ts",
+    "fileType": "ts",
+    "timestamp": "2025-03-28T13:38:59.204Z",
+    "contentSize": 3378,
+    "meta": {
+      "packagesUsed": [
+        "dotenv",
+        "@octokit/rest"
+      ],
+      "timestamp": "2025-03-28T13:38:59.201Z"
+    }
+  },
+  {
+    "fileName": "serverless.yml",
+    "filePath": "serverless.yml",
+    "fileType": "yml",
+    "timestamp": "2025-03-28T13:39:07.922Z",
+    "contentSize": 1556,
+    "meta": {
+      "packagesUsed": [],
+      "timestamp": "2025-03-28T13:39:07.921Z"
+    }
+  },
+  {
+    "fileName": "package.json",
+    "filePath": "",
+    "fileType": "json",
+    "timestamp": "2025-03-28T13:39:07.926Z",
+    "contentSize": 1622
+  },
+  {
+    "fileName": "index.ts",
+    "filePath": "src/index.ts",
+    "fileType": "ts",
+    "timestamp": "2025-03-28T13:39:17.019Z",
+    "contentSize": 1686,
+    "meta": {
+      "packagesUsed": [],
+      "timestamp": "2025-03-28T13:39:17.017Z"
+    }
+  }
+]

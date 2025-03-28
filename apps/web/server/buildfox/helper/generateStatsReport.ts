@@ -8,16 +8,13 @@ export const generateStatsReport = (taskInstanceMeta: TaskInstanceMetaType) => {
   );
   const packagesUnique = [...new Set(packagesAll)];
   return `
-          ## Stats
-          Endpoints: ${taskStructure?.lambdaFunctions?.length}
-          Cron Jobs: ${taskStructure?.cronJobs?.length}
-          Total files written: ${buildingStep?.files.length}
-          Total Time Taken for code generation: ${dayjs(
-            buildingStep?.endTime
-          ).diff(dayjs(buildingStep?.startTime), "minutes")} minutes
-          Packages used: ${packagesUnique.join(", ")}
-          
-          Total tokens used: <--have yet to add this-->
-          Total cost: <--have yet to add this-->
-          `;
+  ## Stats
+  Endpoints: ${taskStructure?.lambdaFunctions?.length}
+  Cron Jobs: ${taskStructure?.cronJobs?.length}
+  Total files written: ${buildingStep?.files.length}
+  Total Time Taken for code generation: ${dayjs(buildingStep?.endTime).diff(dayjs(buildingStep?.startTime), "minutes")} minutes
+  Packages used: ${packagesUnique.join(", ")}
+  Total tokens used: <--have yet to add this-->
+  Total cost: <--have yet to add this-->
+  `;
 };

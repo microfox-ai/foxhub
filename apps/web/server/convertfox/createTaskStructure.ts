@@ -68,6 +68,7 @@ export const createTaskStructure = async (
         - if a cron job does the job, no need to create a lambda function, unless it is truly required.
         - you create the required cron jobs, if any.
         - you then create the lambda functions, if any.
+        - if the code file might require packages other than the ones mentioned here, also include them in the genrated functions & cronJobs
         `,
     schema: taskStructure,
     onFinish: (result) => {

@@ -110,6 +110,10 @@ export const codingFunctionPrompt = async ({
     path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "cron.txt"),
     "utf8"
   );
+  const isDbsetup =
+    taskInstanceMeta?.taskStructure?.dbSchemas?.length &&
+    taskInstanceMeta?.taskStructure?.dbSchemas?.length > 0;
+
   return dedent`You are requested to write a serverless function for the following requirement:
             Task Summary: ${taskInstanceMeta?.taskInfo?.summary}
             ${
@@ -123,18 +127,19 @@ export const codingFunctionPrompt = async ({
                 : `Cron Job Details:
             - Name: ${_cron?.name}
             - Description & Schedule: ${_cron?.description}
-            - Result of the cron job: ${_cron?.endResult}`
+            - Result of the cron job: ${_cron?.endResult}
+            - Cron Expression: ${_cron?.cronExpression}`
             }
 
             The following packages are installed in the project:
             - ${taskInstanceMeta?.taskIntegrations?.platforms?.map((platform) => platform?.package).join("\n - ")}
-            - @prisma/client
+            ${isDbsetup ? "- @prisma/client" : ""}
             - dotenv
             
             Requirements:
             - Use TypeScript
             - Implement proper error handling
-            - Use Prisma client (import prisma from '../db/prisma') for database operations
+            ${isDbsetup ? "- Use Prisma client (import prisma from '../db/prisma') for database operations" : "use @upstash/redis for state management - only if data needs to be persisted acrosss function calls"}
             - Follow Serverless best practices
             - Add proper Docs
             - Add appropriate comments
@@ -144,7 +149,7 @@ export const codingFunctionPrompt = async ({
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
             
             The code should be created in the src/functions directory.
-            Make sure to use the prisma client for database operations.
+            ${isDbsetup ? "Make sure to use the prisma client for database operations." : "If needed, use the @upstash/redis client for state management."}
             Make sure to use the necessary imports from the packages when needed.
             Use named exports for the function.
             Also export the doc file for the function.
@@ -153,6 +158,8 @@ export const codingFunctionPrompt = async ({
             Do not write any mock code, it should be production ready code.
             `;
 };
+
+// todo: replace lambdaExample and cronExample for isDbsetup cases
 //
 //- If other files of project are needed or if will be of help, you can use list_files to fetch them.
 

@@ -136,12 +136,17 @@ export const buildFoxRouter: ServerStreamingFunction<
   });
   await genInitialCode(props, taskInstanceMeta, clientRequest);
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Writing db schema",
-  });
-  // write/modify schema files for prisma
-  await genDbCode(props, taskInstanceMeta, clientRequest);
+  if (
+    taskInstanceMeta?.taskStructure?.dbSchemas?.length &&
+    taskInstanceMeta?.taskStructure?.dbSchemas?.length > 0
+  ) {
+    dataStream.writeMessageAnnotation({
+      type: "thinking",
+      content: "Writing db schema",
+    });
+    // write/modify schema files for prisma
+    await genDbCode(props, taskInstanceMeta, clientRequest);
+  }
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
@@ -190,29 +195,17 @@ export const buildFoxRouter: ServerStreamingFunction<
     },
   });
 
-  await slackBotSdk.sendMessage({
-    text: `BuildFox has finished building the project for - ${clientRequest.title}`,
-    blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: generateStatsReport(taskInstanceMetaUpdated as any),
-        },
-      },
-    ],
-    icon_url: MICROFOX_LOGO,
-    username: "Microfox",
-    channel: MySlackChannels.microfox_updates,
-  });
-
   if (clientRequest.prNumber) {
-    await octokitSdk.rest.issues.createComment({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: clientRequest.repoName ?? "",
-      issue_number: clientRequest.prNumber,
-      body: generateStatsReport(taskInstanceMetaUpdated as any),
-    });
+    try {
+      await octokitSdk.rest.issues.createComment({
+        owner: TEMPLATE_REPO_OWNER,
+        repo: clientRequest.repoName ?? "",
+        issue_number: clientRequest.prNumber,
+        body: generateStatsReport(taskInstanceMetaUpdated as any),
+      });
+    } catch (error) {
+      console.error("Error sending message to github", error);
+    }
   }
 
   dataStream.writeMessageAnnotation({
@@ -237,6 +230,32 @@ export const buildFoxRouter: ServerStreamingFunction<
   });
   // TODO: require a router for further file modifications if needed (means changing the prompts & input Data should be the file)
   // TODO: shiftMinion to deployfox
+  try {
+    await slackBotSdk.sendMessage({
+      text: `BuildFox has finished building the project for - ${clientRequest.title} ✅`,
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "plain_text",
+            text: `BuildFox has finished building the project for - ${clientRequest.title}`,
+          },
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `\`\`\`${generateStatsReport(taskInstanceMeta as any)}\`\`\``,
+          },
+        },
+      ],
+      icon_url: MICROFOX_LOGO,
+      username: "Microfox",
+      channel: MySlackChannels.microfox_updates,
+    });
+  } catch (error) {
+    console.error("Error sending message to slack", error);
+  }
 
   return {
     responseBody: { ...responseBody },

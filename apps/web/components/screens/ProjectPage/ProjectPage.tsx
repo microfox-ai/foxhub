@@ -12,6 +12,8 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { CirclePlusIcon } from "lucide-react";
 import { createEmptyClientRequest } from "@/utils/services/db_functions/createEmptyClientRequest";
+import { analytics } from "@/utils/services/analytics/client";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const ProjectPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -29,7 +31,7 @@ export const ProjectPage = () => {
     error,
     isLoading,
   } = useSWR(
-    `/api/bot-project?userId=${user?.id}`,
+    user?.id ? `/api/bot-project?userId=${user?.id}` : null,
     async (url) => await fetch(url).then((res) => res.json())
   );
 
@@ -72,7 +74,24 @@ export const ProjectPage = () => {
               <TabsTrigger value="bots">Bots</TabsTrigger>
             </TabsList>
             <Button
-              onClick={() => createEmptyClientRequest}
+              onClick={async () => {
+                const newRequest = await createEmptyClientRequest({
+                  userId: user.id,
+                  botProjectId: selectedProject.id,
+                });
+                // track client request creation
+                analytics.track("Client Request Created From Project Page", {
+                  userId: user.id,
+                  requestId: newRequest.id,
+                  botProjectId: selectedProject.id,
+                  title: newRequest.title,
+                  timestamp: new Date().toISOString(),
+                });
+                setSelectedProject((prev: any) => ({
+                  ...prev,
+                  clientRequests: [...prev.clientRequests, newRequest],
+                }));
+              }}
               className="flex items-center gap-2 text-sm p-2"
             >
               <CirclePlusIcon size={24} />

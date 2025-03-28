@@ -5,6 +5,7 @@ import { streamText } from "ai";
 import { models } from "../models";
 import { z } from "zod";
 import { getMicrofoxCapabilities } from "./getMicrofoxCapabilities";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 export const getMissingCapabilties = (
   props: StreamingFucntionProps<any, any>
 ) => {
@@ -38,6 +39,11 @@ export const getMissingCapabilties = (
         `,
         onFinish: (result) => {
           console.log("getMissingCapabilties model usage", result.usage);
+          TokenUsageAnalyticsTracker.trackUsage({
+            ...props.requestBody,
+            model: models.googleGeminiFlash.modelId,
+            usage: result.usage,
+          });
         },
         onError: (error) => {
           console.log("getMissingCapabilties error", error);

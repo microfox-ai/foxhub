@@ -48,9 +48,9 @@ export const ProjectDropdown = () => {
     data: projects,
     error,
     isLoading,
-  } = useSWR<BotProject[], any, string>(
-    `/api/bot-project?userId=${user?.id}`,
-    async (url) => await fetch(url).then((res) => res.json()),
+  } = useSWR<BotProject[], any, string | null>(
+    user?.id ? `/api/bot-project?userId=${user?.id}` : null,
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   //console.log("projects", projects);
@@ -114,8 +114,8 @@ export const ProjectDropdown = () => {
                         if (selectedProject?.id !== currentValue) {
                           setSelectedProject(
                             projects.find(
-                              (_project) => _project.id === currentValue,
-                            ),
+                              (_project) => _project.id === currentValue
+                            )
                           );
                           router.push(`/project/${currentValue}`);
                         }
@@ -125,7 +125,7 @@ export const ProjectDropdown = () => {
                       <ChevronRight
                         className={cn(
                           "h-4 w-4",
-                          value === project.id ? "opacity-100" : "opacity-0",
+                          value === project.id ? "opacity-100" : "opacity-0"
                         )}
                       />
                       {project.name}
@@ -133,14 +133,16 @@ export const ProjectDropdown = () => {
                   ))}
                 </CommandGroup>
                 <DialogTrigger className="w-full flex">
-                  <Button
-                    onClick={() => setOpen(false)}
-                    variant={"ghost"}
-                    className="flex opacity-[0.5] flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
-                  >
-                    <CirclePlusIcon className="h-4 w-4" />
-                    New Project
-                  </Button>
+                  <div >
+                    <Button
+                      onClick={() => setOpen(false)}
+                      variant={"ghost"}
+                      className="flex opacity-[0.5] flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
+                    >
+                      <CirclePlusIcon className="h-4 w-4" />
+                      New Project
+                    </Button>
+                  </div>
                 </DialogTrigger>
               </CommandList>
             </Command>

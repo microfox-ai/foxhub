@@ -1,7 +1,9 @@
 import { Metadata } from "next";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { AnalyticsProvider } from "@/components/providers/AnalyticsProvider";
 import "./globals.css";
+import { serverAnalytics } from "@/utils/services/analytics/server";
 
 export const metadata: Metadata = {
   title: "Custom Bots",
@@ -9,6 +11,14 @@ export const metadata: Metadata = {
       of Ai-first, custom made, 
       branded bots`,
 };
+
+// Initialize analytics once on the server side
+if (typeof window === "undefined") {
+  serverAnalytics.init({
+    mixpanelToken: process.env.MIXPANEL_SERVER_TOKEN!,
+    debug: process.env.NODE_ENV !== "production",
+  });
+}
 
 export default function RootLayout({
   children,
@@ -32,9 +42,11 @@ export default function RootLayout({
         ></link>
       </head>
       <body>
-        <AuthProvider>
-          <div className="flex-1">{children}</div>
-        </AuthProvider>
+        <AnalyticsProvider>
+          <AuthProvider>
+            <div className="flex-1">{children}</div>
+          </AuthProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   );

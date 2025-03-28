@@ -1,6 +1,6 @@
 import { microfoxRouter } from "@/server/microfoxRouter";
 
-export const maxDuration = 90;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   const body = await req.json();

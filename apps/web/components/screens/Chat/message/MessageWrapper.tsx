@@ -9,12 +9,16 @@ import { useEffect, useState } from "react";
 import { ChatUIMessage } from "@prisma/client";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { Button } from "@/components/ui/button";
+import { IN_DEV } from "@/utils/constants/appInfo";
+import { AnnotationUIList } from "./AnnotationUIList";
+import { ToolInvocationPart } from "./ToolInvocationPart";
 
+// TODO: error boundary for ui annotations 
+//import { ErrorBoundary } from "react-error-boundary";
 interface MessageWrapperProps {
   message: UIMessage;
   index: number;
   renderDateSeperator: (currentDate: string) => React.ReactNode;
-  onRefresh: () => void;
   length: number;
   isStreaming: boolean;
 }
@@ -36,63 +40,16 @@ const MessagePart = ({ part, messageId }: { part: MessagePartType, messageId: st
   }
 };
 
-const ToolInvocationPart = ({ part, messageId }: { part: MessagePartType, messageId: string }) => {
-
-  const { setMinionType, setMessages, status } = useMicrofox();
-
-  if (status === "streaming") {
-    return null;
-  }
-
-  const removeThisPart = () => {
-    setMessages((messages) => messages.map((m) => {
-      if (m.id === messageId) {
-        return {
-          ...m,
-          parts: m.parts?.filter((p: any) => JSON.stringify(p) !== JSON.stringify(part)),
-        };
-      }
-      return m;
-    }));
-  }
-
-  if (part.type === "tool-invocation" && part.toolInvocation.state === "result") {
-    return (
-      <div className="flex flex-col gap-2 my-4">
-        {part.toolInvocation.result.buttons && (
-          <div className="flex flex-wrap gap-2">
-            {part.toolInvocation.result.buttons.map((button: any) => (
-              <Button
-                variant={"default"}
-                key={button.text} className={`text-sm text-black px-2 py-2 rounded-xl cursor-pointer ${button.className}`}
-                onClick={() => {
-                  if (button.action === "shiftMinion") {
-                    setMinionType(button.value);
-                  }
-                  if (button.action === "removeThisPart") {
-                    removeThisPart();
-                  }
-                }}
-              >
-                {button.text}
-              </Button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-}
-
 // RENDER CONTENT BY PARTS AND NOT BY CONTENT, BECAUSE CONTENT MIGHT BE A MERGE OF MULTIPLE PARTS.
 export const MessageWrapper = ({
   message,
   index,
   renderDateSeperator,
-  onRefresh,
   length,
   isStreaming,
 }: MessageWrapperProps) => {
+
+  const { handleRefresh } = useMicrofox();
   const annotations = message.annotations;
   const core = annotations?.find((a) => (a as any).type === "core");
   const metadata = (
@@ -107,9 +64,7 @@ export const MessageWrapper = ({
   );
   const toolInvocations = message.parts?.filter(
     (part) =>
-      part.type === "tool-invocation" &&
-      part.toolInvocation.state === "result" &&
-      part.toolInvocation.result.text != null,
+      part.type === "tool-invocation"
   );
   const [activeTab, setActiveTab] = useState<number>(0);
   useEffect(() => {
@@ -117,6 +72,13 @@ export const MessageWrapper = ({
       setActiveTab(displayParts.length - 1);
     }
   }, [displayParts, isStreaming]);
+
+  const simpleAnnotations = message.annotations?.filter((a: any) => a.type !== "metadata" && a.type !== "ui");
+  const uiAnnotations = message.annotations?.filter((a: any) => a.type === "ui");
+
+  const onRefresh = async () => {
+    await handleRefresh(index);
+  }
 
   return (
     <div key={message.id}>
@@ -145,7 +107,16 @@ export const MessageWrapper = ({
                 {dayjs(message.createdAt).format("h:mm A")}
               </span>
             )}
-            {message.content && displayParts.length === 1 && (
+            <div className="flex flex-col  bg-red-500 self-start p-0 text-xs text-white">
+              {IN_DEV && message.annotations?.map((annotation: any, idx: number) => {
+                if (!annotation) return null;
+                if (annotation.type === "metadata") {
+                  return <div key={annotation.type + idx}>{annotation.metadata}</div>;
+                }
+                return <div key={annotation.type + idx}>{annotation.content ?? annotation.text}</div>;
+              })}
+            </div>
+            {message.content && message.content.length > 0 && displayParts.length === 1 && (
               <Markdown>{message.content}</Markdown>
             )}
             {displayParts.length > 1 && (
@@ -177,9 +148,9 @@ export const MessageWrapper = ({
                 ))}
               </div>
             )}
-            {/* {message.parts && message.parts.map((part: any) => {
-                            return <Markdown>{part.text}</Markdown>
-                        })} */}
+            {uiAnnotations && uiAnnotations.length > 0 && (
+              <AnnotationUIList uiAnnotations={uiAnnotations as any[]} />
+            )}
             {metadata?.media && (
               <div className="mt-2 flex flex-wrap justify-evenly gap-2">
                 {metadata.media.map((m: any, idx: number) =>

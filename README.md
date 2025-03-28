@@ -10,6 +10,15 @@ ALL primsma cmd line functions are better called inside apps/web folder & not ou
 
 This Turborepo starter is maintained by the Turborepo core team.
 
+Phase 1 - A tool to build smarter & custom-made automations/workflows/bots for specific needs effortlessly - Create & Run them with your teams (UI control, Shared Access, )
+Phase 2 - Focus on Individual creators, taking away their burden, manging everyhting in the space.
+Phase 3 - Helpful, Adapatable, Smart AI Assistant.
+
+Microfox App Builders- - You can publish them in your name, & earn-back credits.
+Ideators Block -
+
+Wikipedia, RSS,
+
 ## Using this example
 
 Run the following command:

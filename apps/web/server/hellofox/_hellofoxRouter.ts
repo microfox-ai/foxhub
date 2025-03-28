@@ -13,7 +13,7 @@ import { getMicrofoxCharacter } from "./default";
 import { getMicrofoxCapabilities } from "./getMicrofoxCapabilities";
 import { guideUserToDoableGoal } from "./guideUserToDoableGoal";
 import { isTaskBuildable } from "./isTaskBuildable";
-import { selfSummariseUserGoal } from "./summarizeUserGoal";
+import { confirmSpecifics } from "./summarizeUserGoal";
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
 // 3. BUILD ->
@@ -75,17 +75,22 @@ export const hellofoxRouter: ServerStreamingFunction<
     model: models.googleGeminiFlash,
     schema: z.object({
       reasoning: z.string(),
-      type: z.enum(["casual", "task-related", "task-confirmation"]),
+      type: z.enum(["casual", "task-query", "task-confirmation"]),
       complexity: z.enum(["simple", "complex"]),
+      taskClarity: z.enum(["clear", "ambiguous", "clueless"]),
       //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
     }),
     messages: lastFewMessages,
     system: `Classify the current users Query based on the conversation history.
     
     Determine:
-    1. Query type (casual, task-related, task-confirmation)
+    1. Query type (casual, task-query, task-confirmation)
     2. Complexity (simple, complex)
-    3. Brief reasoning for classification`,
+    3. Brief reasoning for classification
+    4. Task Clarity (clear, ambiguous, clueless)
+      a. clear - intent is clear with platforms mentioned
+      b. ambiguous - intent is clear but platforms are not mentioned
+      c. clueless - intent itself is not clear`,
   }); // 4. Query type (query, modification, answer, confirmation)
 
   //console.log("classification", classification);
@@ -96,65 +101,84 @@ export const hellofoxRouter: ServerStreamingFunction<
   });
 
   let result = null;
-  if (classification.type === "task-confirmation") {
-    const response = streamText({
-      model: models.googleGeminiPro,
-      messages: lastFewMessages,
-      system: `
-      - You are called Microfox,
-      - you are a smart assistant that summarises the user's goals from the conversation history.
-      - you make assumptions if needed.
-      - you can think from the perspective of the user.
-      - and make assumptions that are best suited for the user.
-      - You output a summary of the user's goals in a suggestive manner.
-      - Your summary is very specific & small short format - easy to read, quick to digest, only covering the important stuff.
-      - You do not summarize How the task will be built, but only the specific details (like steps to build, platforms to integrate, etc...) 
-      that would be needed to build the task.
-      - You are capable of building the task, if the user agrees to it.
-      - ALWAYS speak in the first person (as if you are microfox).
-  `,
-      onFinish: (result) => {
-        console.log("summariseUserGoal model usage", result.usage);
-        TokenUsageAnalyticsTracker.trackUsage({
-          ...props.requestBody,
-          model: models.googleGeminiPro.modelId,
-          usage: result.usage,
-        });
-      },
-      onError: (error) => {
-        console.log("summariseUserGoal error", error);
-      },
-    });
-    response.mergeIntoDataStream(props.dataStream, {
-      experimental_sendFinish: true,
-    });
+  // if (classification.type === "task-confirmation") {
+  //   const response = streamText({
+  //     model: models.googleGeminiPro,
+  //     messages: lastFewMessages,
+  //     system: `
+  //     - You are called Microfox,
+  //     - You are a smart assistant that summarises the user's goals from the conversation history.
+  //     - You output a summary of the user's goals in a suggestive manner.
+  //     - Your summary is very specific & small short format - easy to read, quick to digest, only covering the important stuff.
+  //     - You do not summarize How the task will be built, but only the specific details (like steps to build, platforms to integrate, etc...)
+  //     that would be needed to build the task.
+  //     - You are capable of building the task, if the user agrees to it.
+  //     - ALWAYS speak in the first person (as if you are microfox).
+  // `,
+  //     onFinish: (result) => {
+  //       console.log("summariseUserGoal model usage", result.usage);
+  //       TokenUsageAnalyticsTracker.trackUsage({
+  //         ...props.requestBody,
+  //         model: models.googleGeminiPro.modelId,
+  //         usage: result.usage,
+  //       });
+  //     },
+  //     onError: (error) => {
+  //       console.log("summariseUserGoal error", error);
+  //     },
+  //   });
+  //   response.mergeIntoDataStream(props.dataStream, {
+  //     experimental_sendFinish: true,
+  //   });
 
-    dataStream.writeMessageAnnotation({
-      type: "ui",
-      objectType: "buttons",
-      persona: "hellofox",
-      text: `Let's Go!`,
-      value: await response.text,
-      buttons: [
-        {
-          action: "removeThisPart",
-          text: "Not Yet",
-          className: "bg-neutral-200 text-black hover:bg-neutral-300",
-        },
-        {
-          action: "shiftMinion",
-          text: "Sure",
-          className: "bg-green-500 text-white hover:bg-green-600",
-          value: "convertfox",
-          actionText: "Sure!, let's proceed!",
-        },
-      ],
-    });
-  } else if (classification.type === "task-related") {
+  //   dataStream.writeMessageAnnotation({
+  //     type: "ui",
+  //     objectType: "buttons",
+  //     persona: "hellofox",
+  //     text: `Let's Go!`,
+  //     value: await response.text,
+  //     buttons: [
+  //       {
+  //         action: "removeThisPart",
+  //         text: "Not Yet",
+  //         className: "bg-neutral-200 text-black hover:bg-neutral-300",
+  //       },
+  //       {
+  //         action: "shiftMinion",
+  //         text: "Sure",
+  //         className: "bg-green-500 text-white hover:bg-green-600",
+  //         value: "convertfox",
+  //         actionText: "Sure!, let's proceed!",
+  //       },
+  //     ],
+  //   });
+  // } else
+  if (
+    classification.type === "task-query" ||
+    classification.type === "task-confirmation"
+  ) {
     lastFewMessages =
       requestBody.messages.length > 5
         ? requestBody.messages.slice(-5)
         : requestBody.messages;
+
+    let toolUsage = ``;
+    if (classification.taskClarity === "clear") {
+      // call isTaskBuildable tool
+      toolUsage = `- isTaskBuildable: Check if the user's task is buildable & then confirm the task. (make sure to pass in the platforms & requirements)`;
+    } else if (classification.taskClarity === "ambiguous") {
+      // call analyseUserIntent tool
+      toolUsage = `
+      - analyseUserIntent: Analyse the user's intent.
+      - confirmSpecifics: Confirm the specific details of the task.
+      `;
+    } else {
+      // call guideUserToDoableGoal tool
+      toolUsage = `
+      - analyseUserIntent: Analyse the user's intent.
+      - guideUserToDoableGoal: Guide the user to a doable goal.
+      - confirmSpecifics: Confirm the specific details of the task.`;
+    }
     // do some shit
     result = streamText({
       model: models.googleGeminiPro,
@@ -168,30 +192,43 @@ export const hellofoxRouter: ServerStreamingFunction<
       - ALWAYS speak in the first person (as if you are microfox).
       ----
       Tool usage:
-      - analyseUserIntent: Analyse the user's intent.
-      - isTaskBuildable: Check if the user's task is buildable & then confirm the task.
-      - guideUserToDoableGoal: Guide the user to a doable goal.
+      ${toolUsage}
       ----
       A few things about your workflow:
-      - You first carefully analyse the users intent, requirements, and then plan what needs to be done.
-      - You then critisize your plan, and then refine it to this specific task.
-      - If the task is complex, you take the help of analyseUsersIntent tool to understand the user's intent better.
-      - If the users intent / task is clear, you must call the tool - isTaskBuildable - to confirm the task.
-      - If the task is impossible, you call the tool - guideUserToDoableGoal - to guide the user to a doable goal.
+      - You first think carefully about the users last messages & the tools you have, and analyse what needs to be done.
+      - You call the tools given based on your analysis in a pattern that is most likely to give you the best results.
+      - The tools will only help you think, & you will have to make the final call on what to respond back to the user.
   
-      Critically, you must never ask for any details from the user.
-      
-      DO NOT CALL ANY OTHER TOOL, if isTaskBuildable is called.
+      Critically, you must never ask for any specific details from the user.
+      specific details examples:
+       - what is the name/url/email of the website/app/repo/etc?
+       - can you provide API keys/tokens/etc of your slack/whatsapp/etc?
+
+       You can ask for moderate details, like:
+       - do you wish to integrate you web app / backend with another service ?
+       - do you want to integrate with slack/whatsapp/etc ?
+
+      DO NOT CALL ANY OTHER TOOL further, if isTaskBuildable is called.
       `,
       messages: lastFewMessages,
       toolCallStreaming: true,
       maxSteps: 3,
       toolChoice: "auto", // force the model to call a tool
       tools: {
-        analyseUserIntent: analyseUserIntent(props),
-        isTaskBuildable: isTaskBuildable(props),
-        guideUserToDoableGoal: guideUserToDoableGoal(props),
-        //selfSummariseUserGoal: selfSummariseUserGoal(props),
+        ...(classification.taskClarity === "clear"
+          ? {
+              isTaskBuildable: isTaskBuildable(props),
+            }
+          : classification.taskClarity === "ambiguous"
+            ? {
+                analyseUserIntent: analyseUserIntent(props),
+                confirmSpecifics: confirmSpecifics(props),
+              }
+            : {
+                analyseUserIntent: analyseUserIntent(props),
+                guideUserToDoableGoal: guideUserToDoableGoal(props),
+                confirmSpecifics: confirmSpecifics(props),
+              }),
       },
       onStepFinish: (step) => {
         console.log("step", step.usage);
@@ -223,7 +260,7 @@ export const hellofoxRouter: ServerStreamingFunction<
         Info About Microfox:
         ${
           classification.complexity === "complex"
-            ? getMicrofoxCapabilities()
+            ? `${aboutMicrofoxInfo()}\n\n${getMicrofoxCapabilities()}`
             : aboutMicrofoxInfo()
         }
         ___

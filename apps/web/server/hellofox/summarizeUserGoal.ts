@@ -6,39 +6,48 @@ import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 /** Thinking tool */
-export const selfSummariseUserGoal = (
-  props: StreamingFucntionProps<any, any>
-) => {
+export const confirmSpecifics = (props: StreamingFucntionProps<any, any>) => {
   return tool({
     description:
-      "Self Summarise the user's goals - make assumptions if needed.",
+      "Confirm specifics of the user's goals - make assumptions if needed.",
     parameters: z.object({
-      initialIntent: z.string().describe("The initial intent of the user"),
+      initialGoal: z
+        .string()
+        .describe(
+          "The initial goal of the user that is ambiguos & has missing details"
+        ),
+      missingDetails: z
+        .array(z.string())
+        .describe("The missing details of the user's goal"),
     }),
-    execute: async ({ initialIntent }, options) => {
+    execute: async ({ initialGoal, missingDetails }, options) => {
       props.dataStream.writeMessageAnnotation({
         type: "thinking",
-        toolName: "selfSummariseUserGoal",
+        toolName: "confirmSpecifics",
         toolCallId: options.toolCallId,
-        content: `Self Summarise the user's goals - make assumptions if needed.`,
+        content: `Confirm specifics of the user's goals - make assumptions if needed.`,
       });
       const response = streamText({
         model: models.googleGeminiPro,
         //messages: options.messages,
-        prompt: `${initialIntent}`,
+        prompt: `Users Goal: ${initialGoal}, Missing Details: ${missingDetails.join(
+          ", "
+        )}`,
         system: `
         - You are called Microfox,
-        - you are a helpful assistant that summarises the user's goals.
-        - you make assumptions if needed.
-        - you can think from the perspective of the user.
+        - You are given an initial goal of the user that is ambiguos & has missing details.
+        - You are tasked with confirming the specifics of the user's goals.
+        - you make assumptions if needed for the specifics.
+        - you can think from the perspective of the user to make better assumptions.
         - and make assumptions that are best suited for the user.
-        - You output a summary of the user's goals in a suggestive manner.
+        - You output a summary of the user's goals in a suggestive manner along with the filled-in details & platforms.
+        - you NEVER ask for specific details, you auto-assume the details, based on users initial goal (user can confirm / modify your assumptions later).
     `,
         onFinish: (result) => {
-          console.log("summariseUserGoal model usage", result.usage);
+          console.log("confirm specifics model usage", result.usage);
           TokenUsageAnalyticsTracker.trackUsage({
             ...props.requestBody,
-            model: models.googleGeminiFlash.modelId,
+            model: models.googleGeminiPro.modelId,
             usage: result.usage,
           });
         },
@@ -50,22 +59,10 @@ export const selfSummariseUserGoal = (
         experimental_sendFinish: true,
       });
       return {
-        text: response.text,
-        buttons: [
-          {
-            action: "removeThisPart",
-            text: "Not Yet",
-            className: "bg-neutral-200 text-black hover:bg-neutral-300",
-          },
-          {
-            action: "shiftMinion",
-            text: "Sure",
-            className: "bg-green-500 text-white hover:bg-green-600",
-            value: "convertfox",
-            actionText: "Sure!, let's proceed!",
-          },
-        ],
+        text: await response.text,
       };
     },
   });
 };
+
+// the user has built automations like theese before -

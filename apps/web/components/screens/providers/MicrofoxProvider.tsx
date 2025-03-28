@@ -207,17 +207,6 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         if (messageIndex >= chatOptions.messages.length) {
             return;
         }
-        try {
-            await slackBotSdk.sendMessage({
-                text: `Refreshing message ${messageIndex}`,
-                channel: MySlackChannels.microfox_updates,
-                icon_url: MICROFOX_LOGO,
-                username: "Microfox",
-            })
-        } catch (error) {
-            console.log("error sending message", error);
-        }
-        //return;
         const message = { ...chatOptions.messages[messageIndex] };
         chatOptions.setMessages((messages) => {
             const newMessages = messages.slice(0, messageIndex);

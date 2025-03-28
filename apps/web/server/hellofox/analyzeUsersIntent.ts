@@ -45,7 +45,7 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
           console.log("analyzeUsersIntent model usage", result.usage);
           TokenUsageAnalyticsTracker.trackUsage({
             ...props.requestBody,
-            model: models.googleGeminiFlash.modelId,
+            model: models.googleGeminiPro.modelId,
             usage: result.usage,
           });
         },

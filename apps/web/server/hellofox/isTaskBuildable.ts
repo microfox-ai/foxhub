@@ -5,6 +5,12 @@ import { models } from "../models";
 import { getMicrofoxCapabilities } from "./getMicrofoxCapabilities";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import {
+  MICROFOX_LOGO,
+  MySlackChannels,
+  slackBotSdk,
+} from "@/utils/services/slackBotSdk";
+import { getClientRequest } from "@/utils/services/db_functions/getClientRequest";
 
 export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
   return tool({
@@ -92,6 +98,15 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
           ],
         });
       } else {
+        const clientRequest = await getClientRequest(
+          props.requestBody.clientRequestId
+        );
+        slackBotSdk.sendMessage({
+          text: `Hello, makers of mine!, \n\n A user has hit a snag when trying to create a task. \n\n Task: ${task} \n\n Reason: ${result.object.reason} \n\n Please help them out! I'm attaching the link. <${clientRequest?.repoName}|git-repo>. The pull request is not created yet, as the task was deemed not buildable by me.`,
+          channel: MySlackChannels.microfox_updates,
+          icon_url: MICROFOX_LOGO,
+          username: "Microfox",
+        });
         props.dataStream.writeMessageAnnotation({
           type: "ui",
           objectType: "isTaskBuildable",

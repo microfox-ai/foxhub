@@ -1,6 +1,7 @@
 import React from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { Options } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const components = {
@@ -53,13 +54,17 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   };
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-      {children}
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw]}
+      components={components}
+    >
+      {children.replace(/\n/g, "\n\n")}
     </ReactMarkdown>
   );
 };
 
 export const Markdown = React.memo(
   NonMemoizedMarkdown,
-  (prevProps, nextProps) => prevProps.children === nextProps.children,
+  (prevProps, nextProps) => prevProps.children === nextProps.children
 );

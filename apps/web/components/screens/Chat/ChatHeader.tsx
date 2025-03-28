@@ -22,10 +22,10 @@ const ChatHeader = ({
         <h2 className="line-clamp-1 flex flex-wrap items-center justify-start gap-2 text-sm font-semibold">
           {clientRequest?.title}
         </h2>
-        <p className="text-xs text-gray-500">Request ID: {clientRequest?.id}</p>
-        <p className="text-xs text-gray-500">Minion: {minionType}</p>
+        {/* <p className="text-xs text-gray-500">Request ID: {clientRequest?.id}</p>
+        <p className="text-xs text-gray-500">Minion: {minionType}</p> */}
       </div>
-      <ButtonSCN
+      {/* <ButtonSCN
         variant="outline"
         size="sm"
         onClick={() => mutate()}
@@ -34,8 +34,7 @@ const ChatHeader = ({
         <RefreshCw
           className={`my-auto h-4 w-4 ${isValidating ? "animate-spin" : ""}`}
         />
-        {/* {isValidating ? 'Refreshing...' : 'Refresh'} */}
-      </ButtonSCN>
+      </ButtonSCN> */}
     </div>
   );
 

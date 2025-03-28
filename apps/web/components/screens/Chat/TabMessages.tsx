@@ -34,21 +34,27 @@ export default function TabMessages({
       ) : messages?.length > 0 ? (
         messages.map((update, index) => {
           return (
-            <MessageWrapper
+            <div
               key={update.id}
-              message={update}
-              index={index}
-              length={messages.length}
-              isStreaming={isStreaming}
-              renderDateSeperator={(currDate) =>
-                renderDateSeparator(
-                  currDate,
-                  index > 0
-                    ? new Date(messages?.[index - 1]?.createdAt!).toISOString()!
-                    : "",
-                )
-              }
-            />
+              className={`${index === messages.length - 1 ? "min-h-[calc(85vh-258px)]" : ""}`}
+            >
+              <MessageWrapper
+                message={update}
+                index={index}
+                length={messages.length}
+                isStreaming={isStreaming}
+                renderDateSeperator={(currDate) =>
+                  renderDateSeparator(
+                    currDate,
+                    index > 0
+                      ? new Date(
+                          messages?.[index - 1]?.createdAt!
+                        ).toISOString()!
+                      : ""
+                  )
+                }
+              />
+            </div>
           );
         })
       ) : (

@@ -71,11 +71,12 @@ function ChatWindow({
 
   return (
     <div className="relative flex h-full w-full flex-col">
-      <div className="flex items-center w-full">
+      <div className="flex w-full">
         {isCollapsed && (
           <ButtonSCN
             variant="ghost"
             size="icon"
+            className="mt-2"
             onClick={() => onCollapse?.(!isCollapsed)}
           >
             <PanelRightIcon style={{ height: "1rem", width: "1rem" }} />
@@ -88,52 +89,66 @@ function ChatWindow({
           isValidating={isLoading}
         />
       </div>
-      {/* Chat Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="relative flex h-fit flex-1 flex-col overflow-y-auto"
-      >
-        <div className="w-full px-4">
-          <TabsList className="text-md flex w-full justify-evenly gap-4">
-            <TabsTrigger className="w-full" value="chat">
-              Chat
-            </TabsTrigger>
-            <TabsTrigger className="w-full" value="history">
-              History
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent
-          value="chat"
-          className="h-full max-h-[75vh] flex-1 space-y-4 overflow-y-auto p-4 pb-[100px]"
+      {messages.length > 0 /* Chat Tabs */ ? (
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="relative flex h-fit w-fit mx-auto flex-1 flex-col overflow-y-auto"
         >
-          <TabMessages
-            messages={messages}
-            isLoading={false}
-            messagesEndRef={messagesEndRef}
-            isStreaming={status === "streaming"}
-          />
-        </TabsContent>
+          <div className=" px-4 w-full mx-auto">
+            <TabsList className="text-md flex w-full justify-evenly gap-4">
+              <TabsTrigger className="w-full" value="chat">
+                Chat
+              </TabsTrigger>
+              <TabsTrigger className="w-full" value="history">
+                History
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        {/* <TabsContent
+          <TabsContent
+            value="chat"
+            className="h-full max-h-[75vh] space-y-4 overflow-y-auto p-4"
+          >
+            <div className="max-w-[800px] mx-auto">
+              <TabMessages
+                messages={messages}
+                isLoading={false}
+                messagesEndRef={messagesEndRef}
+                isStreaming={status === "streaming"}
+              />
+            </div>
+          </TabsContent>
+
+          {/* <TabsContent
           value="history"
           className="flex-1 space-y-4 overflow-y-auto"
         >
           <UpdateHistoryTab messages={messages} isLoading={isLoading} />
         </TabsContent> */}
-
-        {activeTab === "chat" && (
+          <div className="  bottom-0 py-2  mx-auto left-0 right-0 w-[800px] overflow-visible">
+            {activeTab === "chat" && (
+              <ChatInputBox
+                input={input}
+                messageStatus={status}
+                userId={userId}
+                handleInputChange={handleInputChange}
+              />
+            )}
+          </div>
+        </Tabs>
+      ) : (
+        <div className="flex relative -mt-10 flex-col gap-4 justify-center items-center h-full">
+          <h1 className="text-4xl font-bold">What would you like to build?</h1>
           <ChatInputBox
             input={input}
             messageStatus={status}
             userId={userId}
             handleInputChange={handleInputChange}
+            className="relative max-w-[800px]"
           />
-        )}
-      </Tabs>
-
+        </div>
+      )}
       {/* Slash Modal: Opened when input starts with '/' */}
       {clientRequest && (
         <SlashModal

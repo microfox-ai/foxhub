@@ -30,6 +30,8 @@ interface AnalyticsConfig {
   mixpanelToken?: string;
   /** Enable debug logging */
   debug?: boolean;
+  /** Force disable analytics regardless of environment */
+  disabled?: boolean;
 }
 
 /**
@@ -41,9 +43,13 @@ class Analytics {
   private static instance: Analytics;
   private initialized: boolean = false;
   private debug: boolean = false;
+  private disabled: boolean = false;
   private firebaseAnalytics: any;
 
-  private constructor() {}
+  private constructor() {
+    // Disable analytics in development mode by default
+    this.disabled = process.env.NODE_ENV === "development";
+  }
 
   /**
    * Gets the singleton instance of the Analytics class.
@@ -90,6 +96,19 @@ class Analytics {
 
     this.debug = config.debug || false;
 
+    // Override disabled state if explicitly set in config
+    if (config.disabled !== undefined) {
+      this.disabled = config.disabled;
+    }
+
+    if (this.disabled) {
+      if (this.debug) {
+        console.log("Analytics disabled - no tracking will occur");
+      }
+      this.initialized = true;
+      return;
+    }
+
     // Initialize Mixpanel if token is provided
     if (config.mixpanelToken) {
       mixpanel.init(config.mixpanelToken, {
@@ -125,6 +144,17 @@ class Analytics {
   public track(eventName: string, properties?: EventProperties) {
     if (!this.initialized) {
       console.warn("Analytics not initialized");
+      return;
+    }
+
+    if (this.disabled) {
+      if (this.debug) {
+        console.log(
+          "Analytics disabled - skipping event:",
+          eventName,
+          properties
+        );
+      }
       return;
     }
 
@@ -164,6 +194,13 @@ class Analytics {
   public identify(userId: string, traits?: Record<string, any>) {
     if (!this.initialized) {
       console.warn("Analytics not initialized");
+      return;
+    }
+
+    if (this.disabled) {
+      if (this.debug) {
+        console.log("Analytics disabled - skipping identify:", userId, traits);
+      }
       return;
     }
 
@@ -208,6 +245,17 @@ class Analytics {
       return;
     }
 
+    if (this.disabled) {
+      if (this.debug) {
+        console.log(
+          "Analytics disabled - skipping page view:",
+          pageName,
+          properties
+        );
+      }
+      return;
+    }
+
     const pageProperties = {
       page_title: pageName,
       page_location: typeof window !== "undefined" ? window.location.href : "",
@@ -248,4 +296,3 @@ export const analytics = Analytics.getInstance();
 
 // Export type for configuration
 export type { AnalyticsConfig };
-

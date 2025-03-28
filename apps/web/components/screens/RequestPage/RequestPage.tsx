@@ -144,7 +144,7 @@ export const RequestPage = () => {
 
   return (
     <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
-      <div className="relative h-[90vh] w-full">
+      <div className="relative h-[92vh] w-full">
         <ResizablePanelGroup direction="horizontal" autoSaveId="request-page">
           <ResizablePanel
             ref={leftPanelRef}
@@ -189,7 +189,6 @@ export const RequestPage = () => {
             </div>
           </ResizablePanel>
           <ResizableHandle
-            withHandle
             className="cursor-pointer"
             onClick={handleLeftResizeHandleClick}
           />

@@ -46,7 +46,7 @@ export default function Sidebar({
   const searchParams: any = useSearchParams();
 
   return (
-    <div className="h-full flex-1 overflow-y-auto border-r">
+    <div className="h-full flex-1 mt-4 overflow-y-auto">
       <div
         className={`flex cursor-pointer items-center justify-between px-4 py-2`}
       >

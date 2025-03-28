@@ -22,6 +22,21 @@ export const taskIntegrations = z.object({
         .string()
         .describe("The package name of the platform")
         .optional(),
+      keysInfo: z
+        .object({
+          key: z.string().describe("The name of the key"),
+          constructors: z
+            .array(z.string())
+            .describe("List of constructors that use this key"),
+          description: z
+            .string()
+            .describe("Description of what this key is used for"),
+          required: z
+            .boolean()
+            .default(true)
+            .describe("Whether this key is required"),
+        })
+        .optional(),
     })
   ),
   alternativePlatforms: z.array(

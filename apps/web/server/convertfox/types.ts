@@ -2,10 +2,13 @@ import { z } from "zod";
 
 // step1. generate a clear cut pure task info
 export const taskInfo = z.object({
-  name: z.string().describe("The name of the task"),
-  description: z.string().describe("The description of the task"),
-  goal: z.string().describe("The end goal of this task"),
-  summary: z.string().describe("A complete detailed summary of the task"),
+  name: z.string().describe("a simple name for the task"),
+  goal: z.string().describe("the final outcome of the task"),
+  summary: z
+    .string()
+    .describe(
+      "A complete detailed summary of the task - include every detail - all the platforms, capabilities, and features of the task."
+    ),
 });
 export type TaskInfo = z.infer<typeof taskInfo>;
 
@@ -70,7 +73,7 @@ export const taskStructure = z.object({
     z.object({
       name: z.string().describe("The name of this lambda function"),
       interactionType: z
-        .array(z.enum(["ui", "api", "cron"]))
+        .array(z.enum(["ui", "api"]))
         .describe(
           "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
         ),
@@ -89,38 +92,33 @@ export const taskStructure = z.object({
       name: z.string().describe("The name of this cron job"),
       description: z.string().describe("What does this cron job do"),
       endResult: z.string().describe("What is the end result of this cron job"),
-      //   endPoint: z.object({
-      //     url: z.string().describe("The url of the end point"),
-      //     method: z.enum(["GET", "POST", "PUT", "DELETE"]).describe("The method of the end point"),
-      //     body: z.any().describe("The body of the end point"),
-      //     headers: z.any().describe("The headers of the end point"),
-      //   }),
-      //   cronExpression: z.string().describe("The cron expression of the cron job"),
+      endPoint: z.object({
+        url: z.string().describe("The url of the end point"),
+        method: z
+          .enum(["GET", "POST", "PUT", "DELETE"])
+          .describe("The method of the end point"),
+        body: z.any().describe("The body of the end point"),
+        headers: z.any().describe("The headers of the end point"),
+      }),
+      cronExpression: z
+        .string()
+        .describe("The cron expression of the cron job"),
     })
   ),
-  endpoints: z.array(
-    z.object({
-      method: z
-        .enum(["GET", "POST", "PUT", "DELETE"])
-        .describe("The method of the end point"),
-      path: z.string().describe("The path of the end point"),
-      description: z.string().describe("What does this end point do"),
-    })
-  ),
-  userInteractions: z.array(
-    z
-      .object({
-        name: z.string().describe("The name of this ui screen"),
-        description: z.string().describe("What does this screen do"),
-        endResult: z
-          .string()
-          .describe("What does the screen enable the user to do"),
-        endpointCall: z
-          .array(z.string())
-          .describe("The endpoints to call while in this screen"),
-      })
-      .describe("The user screens/components that are needed for the task")
-  ),
+  // userInteractions: z.array(
+  //   z
+  //     .object({
+  //       name: z.string().describe("The name of this ui screen"),
+  //       description: z.string().describe("What does this screen do"),
+  //       endResult: z
+  //         .string()
+  //         .describe("What does the screen enable the user to do"),
+  //       endpointCall: z
+  //         .array(z.string())
+  //         .describe("The endpoints to call while in this screen"),
+  //     })
+  //     .describe("The user screens/components that are needed for the task")
+  // ),
 });
 export type TaskStructure = z.infer<typeof taskStructure>;
 

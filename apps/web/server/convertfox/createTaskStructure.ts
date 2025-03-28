@@ -20,7 +20,7 @@ import { taskPlanningPrompt } from "./prompt.taskPlanning";
 import { createStreamableValue } from "ai/rsc";
 import { createReadStream } from "fs";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-
+import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
 const generatePlatformsPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
   if (!taskInstanceMeta.taskIntegrations) {
     throw new Error("Task integrations not found");
@@ -37,7 +37,7 @@ export const createTaskStructure = async (
 ) => {
   const { dataStream, requestBody, responseBody } = props;
 
-  console.log("sdn", taskInstanceMeta);
+  //console.log("sdn", taskInstanceMeta);
   if (!taskInstanceMeta.taskIntegrations || !taskInstanceMeta.taskInfo) {
     throw new Error("Task integrations or task info not found");
   }
@@ -51,10 +51,23 @@ export const createTaskStructure = async (
     model: models.claude35Sonnet,
     system: taskPlanningPrompt(),
     prompt: `
+        You are a sr. developer, who is tasked with creating a plan of action for a task.
         Task Goal: ${taskInstanceMeta.taskInfo.goal}
         Task Summary: ${taskInstanceMeta.taskInfo.summary}
         Platforms: ${generatePlatformsPrompt(taskInstanceMeta)}
         ${modification ? `Modifications Requested: ${modification}` : ""}
+        ---
+        while designing & planning the task, keep our capabilities & limitations in mind.
+        ${getMicrofoxCapabilities()}
+        ----
+        your workflow
+        - before you start, you think if a db setup is really required for this job.
+        - you only create dbSchema if it is truly required for the task. 
+        - if it is minor state management, you use redis inside the serverless functions.
+        - then you divide all the functionalities that are needed to achieve the task into 2 types: - lambda functions (API endpoints) & cron jobs (scheduled tasks).
+        - if a cron job does the job, no need to create a lambda function, unless it is truly required.
+        - you create the required cron jobs, if any.
+        - you then create the lambda functions, if any.
         `,
     schema: taskStructure,
     onFinish: (result) => {

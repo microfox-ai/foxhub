@@ -119,12 +119,11 @@ const TaskStructure = ({ uiAnnotation, idx }: { uiAnnotation: UIAnnotation, idx:
     return (
         <div key={uiAnnotation.objectType + idx} className="flex flex-col gap-2 p-0 px-4 bg-gray-100 rounded-lg">
             <h3 className="text-lg font-bold">{uiAnnotation.text}</h3>
-            <Tabs defaultValue="endpoints" className="w-full">
-                <TabsList className="flex flex-wrap gap-2 mb-8 justify-start items-center">
-                    <TabsTrigger value="endpoints" className="">Endpoints</TabsTrigger>
-                    <TabsTrigger value="lambdaFunctions">Triggers</TabsTrigger>
-                    <TabsTrigger value="cronJobs">Scheduled Jobs</TabsTrigger>
-                    <TabsTrigger value="interactions" className="">User Interactions</TabsTrigger>
+            <Tabs defaultValue="lambdaFunctions" className="w-full">
+                <TabsList className="flex flex-wrap gap-2 justify-start items-center">
+                    <TabsTrigger value="lambdaFunctions">Webhooks</TabsTrigger>
+                    <TabsTrigger value="cronJobs">Scheduled-Jobs</TabsTrigger>
+                    {/* <TabsTrigger value="interactions" className="">User Interactions</TabsTrigger> */}
                     <TabsTrigger value="schemas">Datatstore</TabsTrigger>
                 </TabsList>
                 <TabsContent value="schemas">
@@ -140,12 +139,15 @@ const TaskStructure = ({ uiAnnotation, idx }: { uiAnnotation: UIAnnotation, idx:
                     </div>
                 </TabsContent>
                 <TabsContent value="lambdaFunctions">
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-4">
                         {object?.lambdaFunctions?.map((fn) => (
                             <div key={fn.name} className="flex flex-col gap-1">
-                                <span className="font-bold text-xs tracking-wide text-gray-500">{fn.name}</span>
-                                <span className="text-sm">{fn.description}</span>
-                                <span className="text-xs text-gray-500">Result: {fn.endResult}</span>
+                                <span className="font-bold text-sm tracking-wide text-black">{fn.name}</span>
+                                <span className="text-xs text-gray-800">{fn.method} {fn.path}</span>
+                                <ul className="list-disc pl-4 text-xs text-gray-500">
+                                    <li>What it does: {fn.description}</li>
+                                    <li>Result: {fn.endResult}</li>
+                                </ul>
                             </div>
                         ))}
                     </div>
@@ -157,11 +159,12 @@ const TaskStructure = ({ uiAnnotation, idx }: { uiAnnotation: UIAnnotation, idx:
                                 <span className="font-bold text-xs tracking-wide text-gray-500">{job.name}</span>
                                 <span className="text-sm">{job.description}</span>
                                 <span className="text-xs text-gray-500">Result: {job.endResult}</span>
+                                <span className="text-xs text-gray-500">Cron: {job.cronExpression}</span>
                             </div>
                         ))}
                     </div>
                 </TabsContent>
-                <TabsContent value="endpoints">
+                {/* <TabsContent value="endpoints">
                     <div className="flex flex-col gap-2">
                         {object?.endpoints?.map((endpoint) => (
                             <div key={endpoint.path + endpoint.method} className="flex flex-col gap-1">
@@ -172,8 +175,8 @@ const TaskStructure = ({ uiAnnotation, idx }: { uiAnnotation: UIAnnotation, idx:
                             </div>
                         ))}
                     </div>
-                </TabsContent>
-                <TabsContent value="interactions">
+                </TabsContent> */}
+                {/* <TabsContent value="interactions">
                     <div className="flex flex-col gap-2">
                         {object?.userInteractions?.map((interaction) => (
                             <div key={interaction.name} className="flex flex-col gap-1">
@@ -186,7 +189,7 @@ const TaskStructure = ({ uiAnnotation, idx }: { uiAnnotation: UIAnnotation, idx:
                             </div>
                         ))}
                     </div>
-                </TabsContent>
+                </TabsContent> */}
             </Tabs>
             <ActionButtons buttons={uiAnnotation.buttons} />
         </div>

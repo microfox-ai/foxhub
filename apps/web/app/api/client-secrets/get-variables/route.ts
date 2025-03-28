@@ -3,6 +3,15 @@ import { prisma } from "@/prisma/prisma";
 
 export async function GET(req: NextRequest) {
   try {
+    // Check for the microfox-api-key in the request headers
+    const apiKey = req.headers.get("microfox-api-key");
+    if (apiKey !== process.env.MICROFOX_API_KEY) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const clientRequestId = searchParams.get("clientRequestId");
     const mode = searchParams.get("mode");

@@ -91,6 +91,10 @@ export const usageTrackerRouter: ServerStreamingFunction<
     }
   }
 
+  if (isBlock) {
+    console.log("isBlock", isBlock);
+  }
+
   return {
     responseBody: {
       ...props.responseBody,

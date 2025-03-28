@@ -36,7 +36,7 @@ async function fetchGithubReadMe(
   const data = await response.text();
   return data;
 }
-
+/** this should be removed from tools */
 export const fetchPackageDocs = (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest

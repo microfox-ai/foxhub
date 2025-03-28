@@ -85,6 +85,9 @@ export const taskStructure = z.object({
         .enum(["GET", "POST", "PUT", "DELETE"])
         .describe("The method of the end point"),
       path: z.string().describe("The path of the end point"),
+      packagesUsed: z
+        .array(z.string())
+        .describe("The packages used in this lambda function"),
     })
   ),
   cronJobs: z.array(
@@ -103,6 +106,9 @@ export const taskStructure = z.object({
       cronExpression: z
         .string()
         .describe("The cron expression of the cron job"),
+      packagesUsed: z
+        .array(z.string())
+        .describe("The packages used in this cron job"),
     })
   ),
   // userInteractions: z.array(

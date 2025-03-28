@@ -6,7 +6,11 @@ import {
 import { Octokit } from "octokit";
 import { GenAiSdk } from "../../utils/services/GenAiSdk";
 import { createSlackSDK } from "@microfox/slack-web-tiny";
-import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
+import {
+  MICROFOX_LOGO,
+  MySlackChannels,
+  slackBotSdk,
+} from "@/utils/services/slackBotSdk";
 import { SLACK_BOT_OAUTH_TOKEN } from "@/utils/services/slackBotSdk";
 import { DataStreamWriter } from "ai";
 
@@ -161,6 +165,8 @@ export async function createPullRequest({
   await slackBotSdk.sendMessage({
     text: slackMsg,
     channel: MySlackChannels.microfox_updates,
+    icon_url: MICROFOX_LOGO,
+    username: "Microfox",
   });
   console.log("slackMsg", slackMsg);
 

@@ -119,12 +119,13 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         },
         onError: (error) => {
             console.log("error", error);
-            slackBotSdk.sendMessage({
-                text: `Reporting Error: ${error}`,
-                channel: MySlackChannels.microfox_updates,
-                username: "Microfox",
-                icon_url: MICROFOX_LOGO,
-            })
+
+            // slackBotSdk.sendMessage({
+            //     text: `Reporting Error: ${error}`,
+            //     channel: MySlackChannels.microfox_updates,
+            //     username: "Microfox",
+            //     icon_url: MICROFOX_LOGO,
+            // })
         },
     });
 

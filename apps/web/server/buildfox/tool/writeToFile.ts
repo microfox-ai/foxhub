@@ -87,7 +87,18 @@ export const readAllGenFilesList = async (clientRequest: ClientRequest) => {
     path.join(rootDir, "steps.json"),
     "utf-8"
   );
-  return JSON.parse(fileContent ?? "{}");
+  try {
+    return JSON.parse(fileContent ?? "{}");
+  } catch (error) {
+    console.error(
+      "Error reading steps.json from " +
+        rootDir +
+        "steps.json " +
+        fileContent.length,
+      error
+    );
+    return [];
+  }
 };
 const fileExists = async (path: string) =>
   !!(await fs.stat(path).catch((e) => false));

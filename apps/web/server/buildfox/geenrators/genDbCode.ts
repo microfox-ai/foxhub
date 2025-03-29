@@ -16,6 +16,11 @@ export const genDbCode = async (
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
+  props.dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Writing db schema",
+  });
+
   // TODO: Instead of hardcoding, fetch from the template repo.
   writeToFileSystemAndUpdateSteps(
     {

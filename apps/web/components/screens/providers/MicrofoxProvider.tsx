@@ -243,7 +243,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
           ...chatRequestOptions?.body,
           clientRequestId: clientRequest?.id,
           userId: clientRequest?.userId,
-          minionType: minionType,
+          minionType: (chatRequestOptions?.body as any)?.minionType ?? minionType,
         },
       });
       return id;

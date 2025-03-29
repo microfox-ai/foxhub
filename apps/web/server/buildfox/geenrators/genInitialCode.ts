@@ -14,6 +14,11 @@ export const genInitialCode = async (
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
+  props.dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Generating initial code",
+  });
+
   // TODO: Instead of hardcoding, fetch from the template repo.
   const packageJson = await fs.readFile(
     path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "package.json"),

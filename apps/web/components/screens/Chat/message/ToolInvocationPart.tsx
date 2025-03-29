@@ -87,7 +87,13 @@ export const ToolInvocationPart = ({
                             "Changing gears..",
                         },
                       ],
-                    });
+                    },
+                      {
+                        body: {
+                          minionType: button.value,
+                        },
+                      }
+                    );
                     removeThisPart();
                   }
                   if (button.action === "removeThisPart") {
@@ -103,12 +109,6 @@ export const ToolInvocationPart = ({
                         {
                           type: "text",
                           text: button.value,
-                        },
-                      ],
-                      annotations: [
-                        {
-                          type: "minion",
-                          value: button.value,
                         },
                       ],
                     });

@@ -85,14 +85,13 @@ const ActionButtons = (props: any) => {
                       text:
                         button.actionText ?? button.text ?? "Changing gears..",
                     },
-                  ],
-                  annotations: [
-                    {
-                      type: "minion",
-                      value: button.value,
+                  ]
+                },
+                  {
+                    body: {
+                      minionType: button.value,
                     },
-                  ],
-                });
+                  });
               }
             }}
           >
@@ -356,6 +355,32 @@ const TaskStructure = ({
   );
 };
 
+const EnvCollector = ({
+  uiAnnotation,
+  idx,
+}: {
+  uiAnnotation: UIAnnotation;
+  idx: number;
+}) => {
+  const annotation = uiAnnotation as any;
+  return (
+    <motion.div
+      key={uiAnnotation.objectType + idx}
+      className="flex flex-col gap-2 p-4 bg-white shadow-lg my-4 rounded-xl border border-gray-100"
+    >
+      <h3 className="text-lg uppercase font-bold tracking-wider text-gray-700 border-b pb-2">
+        {uiAnnotation.text}
+      </h3>
+      <div className="flex flex-col gap-2">
+        {annotation?.envVariablesUsed?.map((env: any) => (
+          <span key={env}>{env}</span>
+        ))}
+      </div>
+      <ActionButtons buttons={uiAnnotation.buttons} />
+    </motion.div>
+  );
+};
+
 export const AnnotationUIList = ({
   uiAnnotations,
 }: {
@@ -394,6 +419,15 @@ export const AnnotationUIList = ({
         <ActionButtons
           key={uiAnnotation.objectType + idx}
           buttons={uiAnnotation.buttons}
+        />
+      );
+    }
+    if (uiAnnotation.objectType === "envCollector") {
+      return (
+        <EnvCollector
+          key={uiAnnotation.objectType + idx}
+          uiAnnotation={uiAnnotation}
+          idx={idx}
         />
       );
     }

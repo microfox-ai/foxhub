@@ -22,7 +22,12 @@ export const genFinalCode = async (
   clientRequest: ClientRequest
 ) => {
   try {
-    const allGenFilesList = await readAllGenFilesList(clientRequest);
+    props.dataStream.writeMessageAnnotation({
+      type: "thinking",
+      content: "Writing final code pieces",
+    });
+
+    const allGenFilesList = await readAllGenFilesList(clientRequest, true);
 
     // modify the serverless.yml file to support all the functions & cron jobs
     const serverlessYml = await fs.readFile(
@@ -41,6 +46,7 @@ export const genFinalCode = async (
 
             The serverless.yml file is as follows:
             ${serverlessYml}
+
             The following is the task summary:
             ${taskInstanceMeta?.taskInfo?.summary}
             `,
@@ -54,6 +60,7 @@ export const genFinalCode = async (
         console.log("step", step.usage);
       },
     });
+    console.log("result", result.usage);
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
       model: models.claude35Sonnet.modelId,
@@ -112,6 +119,7 @@ export const genFinalCode = async (
         console.log("step", step.usage);
       },
     });
+    console.log("result2", result2.usage);
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
       model: models.claude35Sonnet.modelId,

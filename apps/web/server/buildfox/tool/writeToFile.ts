@@ -9,6 +9,13 @@ import { z } from "zod";
 
 export const INTERNAL_TEMPLATE_ROOT = `server/buildfox/templates`;
 
+export const getRootDir = async (clientRequest: ClientRequest) => {
+  if (!clientRequest.repoName || !clientRequest.requestDir) {
+    throw new Error("Client request does not have a repo name or request dir");
+  }
+  return path.join(clientRequest.repoName, clientRequest.requestDir);
+};
+
 export const getFilePath = async (
   clientRequest: ClientRequest,
   props: {
@@ -74,31 +81,78 @@ export const writeToFileSystemAndUpdateSteps = async (
   clientRequest: ClientRequest
 ) => {
   await writeToFileSystem(props, clientRequest);
-  await updateSteps(clientRequest, props);
+  //await updateSteps(clientRequest, props);
 };
 
-export const readAllGenFilesList = async (clientRequest: ClientRequest) => {
-  const { rootDir } = await getFilePath(clientRequest, {
-    fileName: "steps.json",
-    filePath: "",
-    fileType: "json",
+export const deleteAllGenFiles = async (clientRequest: ClientRequest) => {
+  const rootDir = await getRootDir(clientRequest);
+  await fs.rm(rootDir, { recursive: true, force: true, maxRetries: 3 });
+};
+
+export const readAllGenFilesList = async (
+  clientRequest: ClientRequest,
+  withPackages?: boolean
+) => {
+  const rootDir = await getRootDir(clientRequest);
+  // read all the files in the rootDir
+  const files = await fs.readdir(rootDir, {
+    recursive: true,
+    withFileTypes: true,
   });
-  const fileContent = await fs.readFile(
-    path.join(rootDir, "steps.json"),
-    "utf-8"
+  let filesList = files
+    .filter((file) => !file.isDirectory())
+    .map((file) => ({
+      fileName: file.name,
+      filePath: path.join(file.parentPath, file.name),
+      fileType: file.name.split(".").pop(),
+      meta: {},
+    }));
+  filesList = await Promise.all(
+    filesList.map(async (file) => {
+      if (
+        file.fileType != "ts" &&
+        file.fileType != "tsx" &&
+        file.fileType != "js"
+      ) {
+        return file;
+      }
+      const fileContent = await fs.readFile(file.filePath, "utf-8");
+      /**
+     * detect regex for statements like
+      import  pkg from "@hello"
+      import { pkg } from "@hello"
+      import * as pkg from "@hello"
+      import _pkg from '@hello'
+      hello can be anything, pkg can be anything I need an array like - ["@hellos", "@hello"] 
+     */
+      const packagesUsed = fileContent
+        .match(
+          /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"](@[^'"]+)['"]/g
+        )
+        ?.map((match) => {
+          const matches = match.match(/from\s+['"](@[^'"]+)['"]/);
+          return matches?.[1];
+        });
+      const envVariablesUsed = fileContent
+        .match(/process\.env\.([\w]+)/g)
+        ?.map((match) => {
+          const matches = match.match(/process\.env\.([\w]+)/);
+          return matches?.[1];
+        });
+      if (withPackages) {
+        return {
+          ...file,
+          meta: {
+            packagesUsed: packagesUsed ?? [],
+            envVariablesUsed: envVariablesUsed ?? [],
+          },
+        };
+      }
+      return file;
+    })
   );
-  try {
-    return JSON.parse(fileContent ?? "{}");
-  } catch (error) {
-    console.error(
-      "Error reading steps.json from " +
-        rootDir +
-        "steps.json " +
-        fileContent.length,
-      error
-    );
-    return [];
-  }
+  console.log("filesList", filesList);
+  return filesList;
 };
 const fileExists = async (path: string) =>
   !!(await fs.stat(path).catch((e) => false));

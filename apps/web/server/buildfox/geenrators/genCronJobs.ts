@@ -19,6 +19,11 @@ export const genCronJobs = async (
     path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "cron.txt"),
     "utf8"
   );
+
+  props.dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Writing cron jobs",
+  });
   // Generate Cron jobs based on the task requirements
   for (const cronJob of taskInstanceMeta?.taskStructure?.cronJobs ?? []) {
     const prompt = await codingFunctionPrompt({

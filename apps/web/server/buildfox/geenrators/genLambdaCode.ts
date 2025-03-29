@@ -12,6 +12,11 @@ export const genLambdaCode = async (
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
+  props.dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Writing lambda functions",
+  });
+
   // Generate Lambda functions based on the task requirements
   for (const _function of taskInstanceMeta?.taskStructure?.lambdaFunctions ??
     []) {

@@ -14,7 +14,7 @@ import { genCronJobs } from "./geenrators/genCronJobs";
 import { genFinalCode } from "./geenrators/genFinalCode";
 import { pushToGit } from "./helper/pushToGit";
 import { fetchGithubJson } from "./tool/fetchPackageDocs";
-import { readAllGenFilesList } from "./tool/writeToFile";
+import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import {
   MICROFOX_LOGO,
@@ -101,7 +101,7 @@ export const buildFoxRouter: ServerStreamingFunction<
 
     const result = streamText({
       model: models.googleGeminiFlash,
-      system: `${getMicrofoxCharacter()}, Tell the user kindlythat you don't support modification at this step. User can scroll up to make changes before the building has began. and retry building your automation!`,
+      system: `${getMicrofoxCharacter()}, Tell the user kindlythat you don't support modification at this step. User can scroll up to make changes before the building has began. and retry building your automation by cliecking refresh!`,
       messages: [lastUserMessage],
     });
     result.mergeIntoDataStream(dataStream, {
@@ -130,56 +130,34 @@ export const buildFoxRouter: ServerStreamingFunction<
     });
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Generating initial code",
-  });
   await genInitialCode(props, taskInstanceMeta, clientRequest);
 
   if (
     taskInstanceMeta?.taskStructure?.dbSchemas?.length &&
     taskInstanceMeta?.taskStructure?.dbSchemas?.length > 0
   ) {
-    dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Writing db schema",
-    });
     // write/modify schema files for prisma
     await genDbCode(props, taskInstanceMeta, clientRequest);
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Writing lambda functions",
-  });
   // write/modify lambda functions
   await genLambdaCode(props, taskInstanceMeta, clientRequest);
   //write/modify cron jobs
   await genCronJobs(props, taskInstanceMeta, clientRequest);
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Writing final code pieces",
-  });
   // write/modify root files - index.ts, package.json, serverless.yml, etc.
   await genFinalCode(props, taskInstanceMeta, clientRequest);
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Pushing to git",
-  });
   // push to git
   await pushToGit(props, clientRequest, taskInstanceMeta);
 
   // record the changes in the build fox steps taken so far using taskInstanceMeta.
-  const filesList = await readAllGenFilesList(clientRequest);
+  const filesList = await readAllGenFilesList(clientRequest, true);
   const newFilesList = filesList.map((file: any) => ({
     fileName: file.fileName,
     filePath: file.filePath,
     fileType: file.fileType,
     meta: file.meta,
-    contentSize: file.meta?.contentSize,
-    timestamp: file.meta?.timestamp,
   }));
   const timeEnd = dayjs();
   const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
@@ -207,6 +185,40 @@ export const buildFoxRouter: ServerStreamingFunction<
       console.error("Error sending message to github", error);
     }
   }
+
+  const envVariablesUsed = (
+    taskInstanceMetaUpdated?.buildingStep as any
+  )?.files?.flatMap(
+    (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
+  );
+  const envVariablesUsedUnique = [...new Set(envVariablesUsed)];
+  const packagesUsed = (
+    taskInstanceMetaUpdated?.buildingStep as any
+  )?.files?.flatMap((file: any) => (file.meta?.packagesUsed as string[]) ?? []);
+  const packagesUsedUnique = [...new Set(packagesUsed)];
+
+  dataStream.writeMessageAnnotation({
+    type: "ui",
+    objectType: "envCollector",
+    persona: "buildfox",
+    text: `Need Some Minor Details !`,
+    envVariablesUsed: envVariablesUsedUnique as any[],
+    packagesUsed: packagesUsedUnique as any[],
+    buttons: [
+      {
+        action: "highlightInput",
+        text: "Make changes",
+        className: "bg-neutral-200 text-black hover:bg-neutral-300",
+      },
+      {
+        action: "shiftMinion",
+        actionText: "Test Automation !",
+        text: "Test Automation !",
+        className: "bg-green-500 text-white hover:bg-green-600",
+        value: "testfox",
+      },
+    ],
+  });
 
   dataStream.writeMessageAnnotation({
     type: "ui",
@@ -256,6 +268,9 @@ export const buildFoxRouter: ServerStreamingFunction<
   } catch (error) {
     console.error("Error sending message to slack", error);
   }
+
+  // delete the files in local directory
+  await deleteAllGenFiles(clientRequest);
 
   return {
     responseBody: { ...responseBody },

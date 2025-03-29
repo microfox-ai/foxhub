@@ -164,12 +164,10 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
 
   //-----------DB OPERATIONS -----------------
   const createMessage = useCallback(
-    async (message: UIMessage) => {
+    async (message: UIMessage, _minionType: ChatUIMessageWithTypes["minionType"]) => {
       if (!clientRequest) {
         return;
       }
-      let _minionType =
-        localStorage.getItem("minionType-" + clientRequest?.id) ?? "hellofox";
       if (!message.id) {
         message.id = crypto.randomUUID();
       }
@@ -235,7 +233,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
   const appendMessage = useCallback(
     async (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions, bypassDb?: boolean) => {
       if (!bypassDb) {
-        await createMessage(message as any);
+        await createMessage(message as any, (chatRequestOptions?.body as any)?.minionType ?? minionType);
       }
       const id = await chatOptions.append(message, {
         ...chatRequestOptions,
@@ -269,7 +267,8 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     // if doing edit, we should also delete the last message from the db
     if (message) {
       try {
-        await appendMessage(message as Message, {}, true);
+        await appendMessage(message as Message, {
+        }, true);
       } catch (error) {
         console.log("error appending message", error);
       }

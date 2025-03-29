@@ -169,7 +169,7 @@ export default function Dashboard() {
                     request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
                     request?.requestStatus !== REQUESTSTATUS.CLOSED
                 );
-                if (openRequests?.length < 3) {
+                if (openRequests?.length < 5) {
                   updateSearchParams({
                     request: "new",
                     view: "newRequest",

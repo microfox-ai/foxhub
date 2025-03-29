@@ -174,7 +174,7 @@ export const RequestPage = () => {
                       request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
                       request?.requestStatus !== REQUESTSTATUS.CLOSED
                   );
-                  if (openRequests?.length < 3) {
+                  if (openRequests?.length < 5) {
                     createNewEmptyRequest();
                   } else {
                     toast.warning(
@@ -182,7 +182,7 @@ export const RequestPage = () => {
                     );
                   }
                 }}
-                onOpenConfig={(project: any) => {}}
+                onOpenConfig={(project: any) => { }}
                 isCollapsed={isLeftCollapsed}
                 onCollapse={handleLeftCollapse}
               />

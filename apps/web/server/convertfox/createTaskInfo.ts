@@ -49,7 +49,7 @@ export const createTaskInfo = async (
         task summary: ${taskInstanceMeta.initialSummary}
         `,
   });
-  console.log("result", result);
+  //console.log("result", result);
   await updateTaskInstanceMeta({
     clientRequestId: requestBody.clientRequestId,
     taskInstanceMeta: {

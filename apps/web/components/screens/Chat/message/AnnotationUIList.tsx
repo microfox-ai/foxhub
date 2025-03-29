@@ -27,6 +27,7 @@ import { useState, useEffect } from "react";
 import { APIKeyDialog } from "@/components/screens/Chat/message/APIKeyDialog";
 import useSWR from "swr";
 import { useParams } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 interface UIAnnotation {
   objectType: string;
@@ -321,6 +322,10 @@ const TaskIntegrations = ({
     (constructor: Constructor) => constructor.auth === "apiKey"
   );
 
+  const areOAuthRequired = pkg.constructors.some(
+    (constructor: Constructor) => constructor.auth === "oauth"
+  );
+
   // Get existing secret only if platform exists
   const existingSecret = platform
     ? secretsData?.clientSecrets?.find(
@@ -348,9 +353,22 @@ const TaskIntegrations = ({
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
     >
-      <h3 className="text-lg font-semibold text-gray-900">
-        {"Configure Integration Settings"}
-      </h3>
+      <div className="">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {"Configure Integration Settings"}
+        </h3>
+        {areKeysRequired && (
+          <p className="text-sm text-gray-500">
+            Please fill in the required API keys before confirming
+          </p>
+        )}
+        {areOAuthRequired && (
+          <p className="text-sm text-gray-500">
+            Please connect to {platform.name} to continue
+          </p>
+        )}
+      </div>
+
       <div className="space-y-6">
         <div className="flex rounded-lg border p-4 flex-col gap-2">
           <div className="flex items-start gap-3">
@@ -368,9 +386,7 @@ const TaskIntegrations = ({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {pkg.constructors.some(
-                    (constructor: Constructor) => constructor.auth === "apiKey"
-                  ) && (
+                  {areOAuthRequired && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -434,11 +450,6 @@ const TaskIntegrations = ({
         buttons={uiAnnotation.buttons}
         areKeysRequired={areKeysRequired}
         areKeysFilled={areKeysFilled}
-        buttonHeaderText={
-          areKeysRequired && !areKeysFilled
-            ? "Please fill in the required API keys before confirming"
-            : undefined
-        }
       />
     </motion.div>
   );

@@ -52,8 +52,11 @@ export const fetchPackageDocs = (
         ),
     }),
     execute: async ({ microfoxPackages }, options) => {
+      const fetchReadMePackages = microfoxPackages.filter((pkg) =>
+        pkg.includes("@microfox/")
+      );
       const readmes = await Promise.all(
-        microfoxPackages.map(async (pkg) => {
+        fetchReadMePackages.map(async (pkg) => {
           let readme;
           try {
             readme = await fetchGithubJson(
@@ -61,6 +64,7 @@ export const fetchPackageDocs = (
               "microfox",
               `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/README.md`
             );
+            console.log("fetched readme for ", pkg, readme);
             return { readme, package: pkg };
           } catch (error) {
             console.error("Error fetching README:", error);
@@ -68,7 +72,14 @@ export const fetchPackageDocs = (
           }
         })
       );
-      return readmes;
+      return readmes.concat(
+        microfoxPackages
+          .filter((pkg) => !pkg.includes("@microfox/"))
+          .map((pkg) => ({
+            readme: " No readme found for this package " + pkg,
+            package: pkg,
+          }))
+      );
       // find my package, get some initial understanding of the package
       // accordingly fetch the readme that is most relevant for the integration
 

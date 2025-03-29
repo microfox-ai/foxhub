@@ -9,6 +9,7 @@ import {
   getOnlyPackageNames,
 } from "./getInternalPackages";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { fetchGithubJson, fetchPackageInfo } from "./fetchPackageInfo";
 /** Thinking tool */
 // export const searchForAlternatives = (props: StreamingFucntionProps<any, any>) => {
 //     return tool({
@@ -78,12 +79,13 @@ export const createTaskIntegrations = async (
 
   // first, get a text of all the platforms we need to integrate with for this task
   const textPlatformsStream = streamText({
-    model: models.googleGeminiFlash,
+    model: models.googleGeminiPro,
     system: `
         You analyse the task information & find the platforms we need to integrate with.
         You return all the third party platforms we need to integrate with (along with specific needs for each platform).
         You also return if there are alternatives for third party platforms.
         platforms can be of different types - social media, payment, email, or tools like excel, google sheets, etc.
+        In house
         ---
         You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer
@@ -98,6 +100,10 @@ export const createTaskIntegrations = async (
           reason: <reason for integrating with this specific platform>
           type: <type of platform>
           alternatives: <alternative platforms for this platform>
+        ---
+        Exclude the following platforms from the list:
+        - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
+        - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
     `,
     prompt: `
 Name: ${taskInfo.name}
@@ -107,6 +113,14 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     `,
     onFinish: (result) => {
       console.log("platform identification token Usage", result.usage);
+      TokenUsageAnalyticsTracker.trackUsage({
+        ...props.requestBody,
+        model: models.googleGeminiPro.modelId,
+        usage: result.usage,
+      });
+    },
+    onError: (error) => {
+      console.log("platform identification error", error);
     },
   });
 
@@ -131,6 +145,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     Search for existing internal packages that can be used to integrate with the platforms.
     package - If you find any, attach the package name.
     package - If you dont find any even in alternatives, attach @microfox/null.
+    Ignore all conditional platforms.
     ____
     You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer
@@ -138,6 +153,10 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
         Use Action to run one of the actions available to you - then return PAUSE.
         Observation will be the result of running those actions.
         At the end of the loop you output an Answer
+         ---
+        Exclude the following platforms from the list:
+        - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
+        - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
     `,
     schema: taskIntegrations,
     prompt: `
@@ -148,7 +167,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
   console.log("packageResult token Usage", packageResult.usage);
   let platforms = packageResult.object?.platforms;
   let alternativePlatforms = packageResult.object?.alternativePlatforms;
-  const finalPlatforms = platforms.map((platform) => {
+  let finalPlatforms = platforms.map((platform) => {
     if (platform?.package === "@microfox/null") {
       let findAlternative = alternativePlatforms?.find(
         (alternative) =>
@@ -170,6 +189,20 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     }
     return platform;
   });
+
+  finalPlatforms = await Promise.all(
+    platforms.map(async (platform) => {
+      if (
+        platform?.package?.startsWith("@microfox/") &&
+        platform?.package !== "@microfox/null"
+      ) {
+        const packageInfo = await fetchPackageInfo(platform?.package);
+        return { ...platform, packageInfo };
+      }
+      return platform;
+    })
+  );
+
   TokenUsageAnalyticsTracker.trackUsage({
     ...props.requestBody,
     model: models.googleGeminiPro.modelId,

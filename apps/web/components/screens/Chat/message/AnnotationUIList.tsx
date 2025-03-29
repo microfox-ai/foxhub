@@ -37,6 +37,9 @@ const ActionButtons = (props: any) => {
   }
   return (
     <div className="flex flex-col gap-2 mt-4">
+      {props?.buttonHeaderText && (
+        <div className="text-md text-gray-500">{props?.buttonHeaderText}</div>
+      )}
       <div className="flex flex-wrap gap-2">
         {props?.buttons?.map((button: any) => (
           <Button
@@ -85,6 +88,12 @@ const ActionButtons = (props: any) => {
                       text:
                         button.actionText ?? button.text ?? "Changing gears..",
                     },
+                  ],
+                  annotations: [
+                    {
+                      type: "minion",
+                      value: button.value,
+                    }
                   ]
                 },
                   {
@@ -419,6 +428,7 @@ export const AnnotationUIList = ({
         <ActionButtons
           key={uiAnnotation.objectType + idx}
           buttons={uiAnnotation.buttons}
+          buttonHeaderText={(uiAnnotation as any).buttonHeaderText}
         />
       );
     }

@@ -87,6 +87,12 @@ export const ToolInvocationPart = ({
                             "Changing gears..",
                         },
                       ],
+                      annotations: [
+                        {
+                          type: "minion",
+                          value: button.value,
+                        },
+                      ],
                     },
                       {
                         body: {

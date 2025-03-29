@@ -151,7 +151,7 @@ export const readAllGenFilesList = async (
       return file;
     })
   );
-  console.log("filesList", filesList);
+  //console.log("filesList", filesList);
   return filesList;
 };
 const fileExists = async (path: string) =>

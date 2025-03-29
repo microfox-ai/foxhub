@@ -233,8 +233,10 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
 
   /** should prefill the minion annotation */
   const appendMessage = useCallback(
-    async (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions) => {
-      await createMessage(message as any);
+    async (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions, bypassDb?: boolean) => {
+      if (!bypassDb) {
+        await createMessage(message as any);
+      }
       const id = await chatOptions.append(message, {
         ...chatRequestOptions,
         body: {
@@ -267,7 +269,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     // if doing edit, we should also delete the last message from the db
     if (message) {
       try {
-        await chatOptions.append(message as Message);
+        await appendMessage(message as Message, {}, true);
       } catch (error) {
         console.log("error appending message", error);
       }

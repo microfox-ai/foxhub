@@ -7,7 +7,12 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -91,7 +96,7 @@ export const ProjectDropdown = () => {
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
+          <PopoverContent className="w-[200px] p-1">
             <Command>
               <CommandInput
                 // value={search}
@@ -133,15 +138,12 @@ export const ProjectDropdown = () => {
                   ))}
                 </CommandGroup>
                 <DialogTrigger className="w-full flex">
-                  <div >
-                    <Button
-                      onClick={() => setOpen(false)}
-                      variant={"ghost"}
-                      className="flex opacity-[0.5] flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
-                    >
-                      <CirclePlusIcon className="h-4 w-4" />
-                      New Project
-                    </Button>
+                  <div
+                    onClick={() => setOpen(false)}
+                    className="flex opacity-[0.5] items-center py-2 flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
+                  >
+                    <CirclePlusIcon className="h-4 w-4" />
+                    New Project
                   </div>
                 </DialogTrigger>
               </CommandList>
@@ -150,6 +152,7 @@ export const ProjectDropdown = () => {
         </Popover>
       </div>
       <DialogContent>
+        <DialogTitle className="sr-only">Create a new project</DialogTitle>
         <NewProjectCreation
           userId={user?.id}
           onProjectCreated={(newProject) => {

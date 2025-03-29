@@ -1,6 +1,5 @@
 "use client";
 
-
 import CustomBotsHeader from "@/components/screens/global/Header";
 import { Toaster } from "sonner";
 import { usePathname } from "next/navigation";

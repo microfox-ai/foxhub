@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import { createClientRequestPR } from "@/utils/services/db_functions/createClientRequestPR";
 
 export async function GET(req: Request) {
   try {

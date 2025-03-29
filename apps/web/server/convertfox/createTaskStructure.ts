@@ -78,6 +78,9 @@ export const createTaskStructure = async (
         usage: result.usage,
       });
     },
+    onError: (error) => {
+      console.error("Error creating task structure", error);
+    },
   });
   for await (const chunk of result.partialObjectStream) {
     //console.log("chunk", chunk);
@@ -119,12 +122,14 @@ export const createTaskStructure = async (
       {
         action: "highlightInput",
         text: "Not Yet",
+        type: "deny",
         className: "bg-neutral-200 text-black hover:bg-neutral-300",
       },
       {
         action: "shiftMinion",
         actionText: "Start Building !",
         text: "Start Building !",
+        type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "buildfox",
       },

@@ -75,11 +75,13 @@ export const createTaskInfo = async (
       {
         action: "highlightInput",
         text: "Not Yet",
+        type: "deny",
         className: "bg-neutral-200 text-black hover:bg-neutral-300",
       },
       {
         action: "appendMessage",
         text: "Yes, That's Correct!",
+        type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "Yes, That's Correct!",
       },

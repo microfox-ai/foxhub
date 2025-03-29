@@ -182,7 +182,7 @@ export const RequestPage = () => {
                     );
                   }
                 }}
-                onOpenConfig={(project: any) => { }}
+                onOpenConfig={(project: any) => {}}
                 isCollapsed={isLeftCollapsed}
                 onCollapse={handleLeftCollapse}
               />

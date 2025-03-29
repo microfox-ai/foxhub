@@ -212,11 +212,13 @@ export const buildFoxRouter: ServerStreamingFunction<
       {
         action: "highlightInput",
         text: "Make changes",
+        type: "deny",
         className: "bg-neutral-200 text-black hover:bg-neutral-300",
       },
       {
         action: "shiftMinion",
         actionText: "Test Automation !",
+        type: "confirm",
         text: "Test Automation !",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "testfox",
@@ -233,12 +235,14 @@ export const buildFoxRouter: ServerStreamingFunction<
       {
         action: "highlightInput",
         text: "Make changes",
+        type: "deny",
         className: "bg-neutral-200 text-black hover:bg-neutral-300",
       },
       {
         action: "shiftMinion",
         actionText: "Test Automation !",
         text: "Test Automation !",
+        type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "testfox",
       },

@@ -57,9 +57,8 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
   resetInputState,
   chatOptions: userChatOptions,
 }) => {
-  const [minionType, setMinionType] = useState<
-    ChatUIMessageWithTypes["minionType"]
-  >("hellofox");
+  const [minionType, setMinionType] =
+    useState<ChatUIMessageWithTypes["minionType"]>("hellofox");
 
   const {
     data: serverMessages,
@@ -164,7 +163,10 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
 
   //-----------DB OPERATIONS -----------------
   const createMessage = useCallback(
-    async (message: UIMessage, _minionType: ChatUIMessageWithTypes["minionType"]) => {
+    async (
+      message: UIMessage,
+      _minionType: ChatUIMessageWithTypes["minionType"]
+    ) => {
       if (!clientRequest) {
         return;
       }
@@ -223,7 +225,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
           type: "text",
           text: chatOptions.input,
         },
-      ]
+      ],
     };
     chatOptions.setInput("");
     await appendMessage(newMessage, chatRequestOptions);
@@ -231,9 +233,16 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
 
   /** should prefill the minion annotation */
   const appendMessage = useCallback(
-    async (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions, bypassDb?: boolean) => {
+    async (
+      message: Message | CreateMessage,
+      chatRequestOptions?: ChatRequestOptions,
+      bypassDb?: boolean
+    ) => {
       if (!bypassDb) {
-        await createMessage(message as any, (chatRequestOptions?.body as any)?.minionType ?? minionType);
+        await createMessage(
+          message as any,
+          (chatRequestOptions?.body as any)?.minionType ?? minionType
+        );
       }
       const id = await chatOptions.append(message, {
         ...chatRequestOptions,
@@ -241,11 +250,14 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
           ...chatRequestOptions?.body,
           clientRequestId: clientRequest?.id,
           userId: clientRequest?.userId,
-          minionType: (chatRequestOptions?.body as any)?.minionType ?? minionType,
+          minionType:
+            (chatRequestOptions?.body as any)?.minionType ?? minionType,
         },
       });
       return id;
-    }, [clientRequest, minionType]);
+    },
+    [clientRequest, minionType]
+  );
 
   const handleRefresh = async (messageIndex: number) => {
     //console.log("refreshing", messageIndex);
@@ -267,8 +279,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     // if doing edit, we should also delete the last message from the db
     if (message) {
       try {
-        await appendMessage(message as Message, {
-        }, true);
+        await appendMessage(message as Message, {}, true);
       } catch (error) {
         console.log("error appending message", error);
       }

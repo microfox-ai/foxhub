@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import { updateClientRequest } from "@/utils/services/customBots/clientRequests/updateClientRequest";
+import { createClientRequestPR } from "@/utils/services/db_functions/createClientRequestPR";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const clientRequestId = searchParams.get("requestId");
+
     if (!clientRequestId)
       return NextResponse.json(
         { error: "Missing clientRequestId" },
@@ -22,11 +23,15 @@ export async function GET(req: Request) {
         { status: 404 },
       );
 
-    // const updatedClientRequest = await updateClientRequest(clientRequest);
+    if (!clientRequest.chatUIMessages)
+      return NextResponse.json(
+        { error: "No chat messages found" },
+        { status: 404 },
+      );
 
     return NextResponse.json(
       {
-        chatUIMessages: clientRequest.chatUIMessages,
+        chatUIMessages: clientRequest?.chatUIMessages,
         requestStatus: clientRequest?.requestStatus,
       },
       { status: 200 },

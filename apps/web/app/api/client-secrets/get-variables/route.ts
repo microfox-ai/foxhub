@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-
+import { APP_BASE_FOR_SITES } from "@/utils/constants/appInfo";
 export async function GET(req: NextRequest) {
   try {
+    // Check for the microfox-api-key in the request headers
+    const apiKey = req.headers.get("microfox-api-key");
+    const origin = req.nextUrl.origin;
+
+    console.log(origin);
+    // TODO: Need to enable checkers for internal requests & ybgpasss internal requests
+    // Skip validation in dev mode or if request is from APP_DOMAIN
+    // if (
+    //   process.env.NODE_ENV !== "development" &&
+    //   !origin.startsWith(APP_BASE_FOR_SITES)
+    // ) {
+    if (apiKey !== process.env.MICROFOX_API_KEY) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    // }
+
     const { searchParams } = new URL(req.url);
     const clientRequestId = searchParams.get("clientRequestId");
     const mode = searchParams.get("mode");
@@ -10,7 +26,7 @@ export async function GET(req: NextRequest) {
     if (!clientRequestId || !mode) {
       return NextResponse.json(
         { error: "Missing clientRequestId or mode parameter" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -22,15 +38,15 @@ export async function GET(req: NextRequest) {
     if (!clientRequest) {
       return NextResponse.json(
         { error: "Client request not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     // Get all mentioned client bots
     const clientSecrets = await Promise.all(
       clientRequest.mentionedClientSecretIds.map((id) =>
-        prisma.clientSecret.findUnique({ where: { id } }),
-      ),
+        prisma.clientSecret.findUnique({ where: { id } })
+      )
     );
 
     // Filter out null values and extract variables with matching mode
@@ -57,7 +73,7 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching variables:", error);
     return NextResponse.json(
       { error: "Error fetching variables" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

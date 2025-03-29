@@ -57,9 +57,9 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
   resetInputState,
   chatOptions: userChatOptions,
 }) => {
-  const [minionType, setMinionType] = useLocalState<
-    ChatUIMessageWithTypes["minionType"] | null
-  >("minionType-" + clientRequest?.id, "hellofox");
+  const [minionType, setMinionType] = useState<
+    ChatUIMessageWithTypes["minionType"]
+  >("hellofox");
 
   const {
     data: serverMessages,
@@ -76,9 +76,12 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
 
   useEffect(() => {
     if (serverMessages && serverMessages.length > 0) {
-      console.log("serverMessages", serverMessages);
-      const lastMessage = serverMessages[serverMessages.length - 1];
-      setMinionType(lastMessage?.minionType ?? "hellofox");
+      //console.log("serverMessages", serverMessages);
+      let userMessages = serverMessages.filter((m) => m.role === "user");
+      if (userMessages.length > 0) {
+        const lastMessage = userMessages[userMessages.length - 1];
+        setMinionType(lastMessage?.minionType ?? "hellofox");
+      }
     }
   }, [serverMessages]);
 
@@ -88,18 +91,18 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     initialInput: "",
     ...userChatOptions,
     id: clientRequest?.id,
-    experimental_prepareRequestBody: (options) => {
-      let _minionType =
-        localStorage.getItem("minionType-" + clientRequest?.id) ?? "hellofox";
-      console.log("lstMsg", _minionType);
-      return {
-        // todo: only send the last message, & server fetch the rest.
-        ...options,
-        minionType: _minionType,
-        clientRequestId: clientRequest?.id,
-        userId: clientRequest?.userId,
-      };
-    },
+    // experimental_prepareRequestBody: (options) => {
+    //   let _minionType =
+    //     localStorage.getItem("minionType-" + clientRequest?.id) ?? "hellofox";
+    //   console.log("lstMsg", _minionType);
+    //   return {
+    //     // todo: only send the last message, & server fetch the rest.
+    //     ...options,
+    //     minionType: _minionType,
+    //     clientRequestId: clientRequest?.id,
+    //     userId: clientRequest?.userId,
+    //   };
+    // },
     onFinish: (response) => {
       try {
         const { experimental_attachments, id, reasoning, data, ...rest } =
@@ -141,7 +144,6 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     },
     onError: (error) => {
       console.log("error", error);
-
       // slackBotSdk.sendMessage({
       //     text: `Reporting Error: ${error}`,
       //     channel: MySlackChannels.microfox_updates,
@@ -223,27 +225,27 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
           type: "text",
           text: chatOptions.input,
         },
-      ],
-      annotations: [
-        {
-          type: "minion",
-          value: minionType ?? "hellofox",
-        },
-      ],
+      ]
     };
     chatOptions.setInput("");
     await appendMessage(newMessage, chatRequestOptions);
   };
 
   /** should prefill the minion annotation */
-  const appendMessage = async (
-    message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions
-  ) => {
-    await createMessage(message as any);
-    const id = await chatOptions.append(message, chatRequestOptions);
-    return id;
-  };
+  const appendMessage = useCallback(
+    async (message: Message | CreateMessage, chatRequestOptions?: ChatRequestOptions) => {
+      await createMessage(message as any);
+      const id = await chatOptions.append(message, {
+        ...chatRequestOptions,
+        body: {
+          ...chatRequestOptions?.body,
+          clientRequestId: clientRequest?.id,
+          userId: clientRequest?.userId,
+          minionType: minionType,
+        },
+      });
+      return id;
+    }, [clientRequest, minionType]);
 
   const handleRefresh = async (messageIndex: number) => {
     //console.log("refreshing", messageIndex);
@@ -263,12 +265,13 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
     // bypass the createMessage by using the original append method (as we did not delete the last message from the db)
     // if doing edit, we should also delete the last message from the db
-    if (message)
+    if (message) {
       try {
         await chatOptions.append(message as Message);
       } catch (error) {
         console.log("error appending message", error);
       }
+    }
     // console.log("deleted messages", extraMessages.map(m => m.id));
   };
 

@@ -43,12 +43,12 @@ export default function RootLayout({
         ></link>
       </head>
       <body>
-        <Suspense>
-          <AnalyticsProvider>
-            <AuthProvider>
+        <Suspense fallback={<div>Loading...</div>}>
+          <AuthProvider>
+            <AnalyticsProvider>
               <div className="flex-1">{children}</div>
-            </AuthProvider>
-          </AnalyticsProvider>
+            </AnalyticsProvider>
+          </AuthProvider>
         </Suspense>
       </body>
     </html>

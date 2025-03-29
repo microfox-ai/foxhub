@@ -46,9 +46,9 @@ export default function Sidebar({
   const searchParams: any = useSearchParams();
 
   return (
-    <div className="h-full flex-1 mt-4 overflow-y-auto">
+    <div className="h-full flex-1 overflow-y-auto">
       <div
-        className={`flex cursor-pointer items-center justify-between px-4 py-2`}
+        className={`flex cursor-pointer items-center justify-between px-4 pb-2`}
       >
         <div className="flex items-center">
           <span className="truncate font-medium">{selectedProject.name}</span>
@@ -67,7 +67,7 @@ export default function Sidebar({
           >
             <PlusCircle style={{ height: "1rem", width: "1rem" }} />
           </ButtonSCN>
-          <ButtonSCN
+          {/* <ButtonSCN
             variant="ghost"
             size="icon"
             onClick={(e: any) => {
@@ -78,7 +78,7 @@ export default function Sidebar({
             style={{ padding: "0.25rem", marginRight: "0.25rem" }}
           >
             <Settings style={{ height: "1rem", width: "1rem" }} />
-          </ButtonSCN>
+          </ButtonSCN> */}
           <ButtonSCN
             variant="ghost"
             size="icon"
@@ -126,9 +126,8 @@ export default function Sidebar({
                 />
               )}
               <span
-                className={`flex-1 truncate text-left ${
-                  request.id === requestParamId ? "font-semibold" : ""
-                }`}
+                className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""
+                  }`}
               >
                 {request.title}
               </span>

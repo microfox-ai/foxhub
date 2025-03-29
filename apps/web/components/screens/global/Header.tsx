@@ -21,6 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
 
 const Header: React.FC = () => {
   const { user, handleLogout } = useUser();
@@ -41,25 +42,33 @@ const Header: React.FC = () => {
   //console.log(user);
   return (
     <>
-      <header className="z-9 fixed left-0 right-0 flex items-center justify-between border-b border-gray-200 px-4 py-2 font-bold text-black backdrop-blur">
-        <div className="flex cursor-pointer items-center gap-2 text-2xl">
+      <header className="z-9 fixed left-0 right-0 grid grid-cols-12 items-center justify-between border-b border-gray-200 px-4 py-2 font-bold text-black backdrop-blur">
+        <div className="col-span-2 flex cursor-pointer items-center gap-2 text-2xl">
           <div
             onClick={() => {
               router.push("/");
             }}
             className="flex cursor-pointer items-center gap-2 text-2xl"
           >
-            <span className="material-symbols-outlined inherit">
-              app_badging
-            </span>
-            <div>
-              <h1 className="font-bold">Microfox</h1>
-              {/* <p className='text-[8px] font-medium text-gray-500'>Alpha - version 1.0.1</p> */}
+            <img
+              src="/logo-mini.png"
+              alt=""
+              width={32}
+              height={32}
+              className="rounded-md w-10 min-w-10 h-10 min-h-10"
+            />
+            <div className="flex items-center gap-2">
+              <h1 className="font-medium text-xl text-gray-800">
+                Microfox
+              </h1>
+              <p className="text-xs font-medium text-gray-500 mt-1">v1.0.1</p>
             </div>
           </div>
+        </div>
+        <div className="col-span-6 flex items-center justify-start gap-4 text-xl -ml-5">
           <ProjectDropdown />
         </div>
-        <div className="flex items-center gap-4 text-xl">
+        <div className="col-span-4 flex items-center justify-end gap-4 text-xl">
           <div className="flex items-center gap-4 text-xl">
             {/* <Link
                         href={APP_ROUTES.customBots + "/idea"}

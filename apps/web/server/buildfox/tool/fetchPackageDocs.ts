@@ -64,7 +64,7 @@ export const fetchPackageDocs = (
               "microfox",
               `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/README.md`
             );
-            console.log("fetched readme for ", pkg, readme);
+            //console.log("fetched readme for ", pkg, readme);
             return { readme, package: pkg };
           } catch (error) {
             console.error("Error fetching README:", error);

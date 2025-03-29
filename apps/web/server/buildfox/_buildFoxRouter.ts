@@ -34,6 +34,7 @@ import {
   TokenUsageAnalyticsTracker,
   TokenUsageModel,
 } from "../analytics/helper";
+import { genEnvCollector } from "./geenrators/genEnvCollector";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -191,11 +192,13 @@ export const buildFoxRouter: ServerStreamingFunction<
   )?.files?.flatMap(
     (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
   );
-  const envVariablesUsedUnique = [...new Set(envVariablesUsed)];
+  const envVariablesUsedUnique = [...new Set(envVariablesUsed)] as string[];
   const packagesUsed = (
     taskInstanceMetaUpdated?.buildingStep as any
   )?.files?.flatMap((file: any) => (file.meta?.packagesUsed as string[]) ?? []);
   const packagesUsedUnique = [...new Set(packagesUsed)];
+
+  const envVariables = await genEnvCollector(props, envVariablesUsedUnique);
 
   dataStream.writeMessageAnnotation({
     type: "ui",
@@ -204,6 +207,7 @@ export const buildFoxRouter: ServerStreamingFunction<
     text: `Need Some Minor Details !`,
     envVariablesUsed: envVariablesUsedUnique as any[],
     packagesUsed: packagesUsedUnique as any[],
+    envVariables: envVariables as any[],
     buttons: [
       {
         action: "highlightInput",

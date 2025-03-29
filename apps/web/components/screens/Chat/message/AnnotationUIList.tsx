@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType, ExtraEnvVariable } from "@/server/convertfox/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import {
@@ -372,6 +372,7 @@ const EnvCollector = ({
   idx: number;
 }) => {
   const annotation = uiAnnotation as any;
+  const envVariables = annotation?.envVariables as ExtraEnvVariable[];
   return (
     <motion.div
       key={uiAnnotation.objectType + idx}
@@ -381,8 +382,17 @@ const EnvCollector = ({
         {uiAnnotation.text}
       </h3>
       <div className="flex flex-col gap-2">
-        {annotation?.envVariablesUsed?.map((env: any) => (
-          <span key={env}>{env}</span>
+        {envVariables?.map((env: ExtraEnvVariable) => (
+          <div className="flex flex-col gap-1">
+            <span className="font-bold text-sm tracking-wide text-black">{env.env}</span>
+            <span className="text-xs text-gray-500">{env.name}</span>
+            <span className="text-xs text-gray-500">What: {env.what}</span>
+            <span className="text-xs text-gray-500">Why: {env.why}</span>
+            <span className="text-xs text-gray-500">How: {env.how}</span>
+            <span className="text-xs text-gray-500">
+              Is same as: {env.isSameAs?.join(", ")}
+            </span>
+          </div>
         ))}
       </div>
       <ActionButtons buttons={uiAnnotation.buttons} />

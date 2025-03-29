@@ -170,3 +170,16 @@ export const taskInstance = z.object({
 
 export type TaskInstanceMetaType = z.infer<typeof taskInstance>;
 // the collected information must be stored NOT in the taskInstance record.
+
+export const extraEnvVariables = z.object({
+  env: z.string().describe("The env variable name"),
+  name: z.string().describe("A readable name for the env variable"),
+  what: z.string().describe("What is this env variable used for"),
+  why: z.string().describe("Why is this env variable needed").optional(),
+  how: z.string().describe("How to get this env from the platform"),
+  isSameAs: z
+    .array(z.string())
+    .describe("similar exisiting env variables that were duped in the code")
+    .optional(),
+});
+export type ExtraEnvVariable = z.infer<typeof extraEnvVariables>;

@@ -14,18 +14,21 @@ import { useClientSecrets } from "../providers/ClientSecretProvider";
 import { ChatUIMessageWithTypes } from "../hooks/convertors";
 import { useMicrofox } from "../providers/MicrofoxProvider";
 import { cn } from "@/lib/utils";
+import { UIMessage } from "ai";
 interface ChatInputBoxProps {
   input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
   userId: string;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   className?: string;
+  lastMessage?: UIMessage;
 }
 
 export default function ChatInputBox({
   input,
   messageStatus,
   userId,
+  lastMessage,
   handleInputChange,
   className,
 }: ChatInputBoxProps) {
@@ -108,6 +111,11 @@ export default function ChatInputBox({
             }
           }}
           disabled={
+            (
+              lastMessage?.annotations?.[
+                lastMessage.annotations.length - 1
+              ] as any
+            )?.type === "ui" ||
             messageStatus === "pending" ||
             messageStatus === "streaming" ||
             mediaUploadStatus === "UPLOADING" ||
@@ -124,6 +132,11 @@ export default function ChatInputBox({
           <button
             onClick={() => handleSubmit()}
             disabled={
+              (
+                lastMessage?.annotations?.[
+                  lastMessage.annotations.length - 1
+                ] as any
+              )?.type === "ui" ||
               (!input.trim() && attachedMedia.length === 0) ||
               messageStatus === "pending" ||
               messageStatus === "streaming" ||

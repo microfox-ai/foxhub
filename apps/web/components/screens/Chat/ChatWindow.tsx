@@ -131,6 +131,7 @@ function ChatWindow({
           <div className="  bottom-0 py-2  mx-auto left-0 right-0 w-[800px] overflow-visible">
             {activeTab === "chat" && (
               <ChatInputBox
+                lastMessage={messages[messages.length - 1]}
                 input={input}
                 messageStatus={status}
                 userId={userId}

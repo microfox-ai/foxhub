@@ -4,6 +4,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { AnalyticsProvider } from "@/components/providers/AnalyticsProvider";
 import "./globals.css";
 import { serverAnalytics } from "@/utils/services/analytics/server";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Custom Bots",
@@ -42,11 +43,13 @@ export default function RootLayout({
         ></link>
       </head>
       <body>
-        <AnalyticsProvider>
+        <Suspense fallback={<div>Loading...</div>}>
           <AuthProvider>
-            <div className="flex-1">{children}</div>
+            <AnalyticsProvider>
+              <div className="flex-1">{children}</div>
+            </AnalyticsProvider>
           </AuthProvider>
-        </AnalyticsProvider>
+        </Suspense>
       </body>
     </html>
   );

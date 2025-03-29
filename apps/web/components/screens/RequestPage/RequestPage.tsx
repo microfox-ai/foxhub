@@ -4,7 +4,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { Skeleton } from "@mui/material";
 import { REQUESTSTATUS } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import ChatWindow from "../Chat/ChatWindow";
@@ -13,10 +13,30 @@ import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ClientSecretProvider } from "../providers/ClientSecretProvider";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { analytics } from "@/utils/services/analytics/client";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import * as ResizablePrimitive from "react-resizable-panels";
+import { Button } from "@/components/ui/button";
+import {
+  PanelLeftIcon,
+  PanelRightIcon,
+  PlusCircle,
+  Settings,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isRightCollapsed, setIsRightCollapsed] = useState(true);
+  const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
+  const [isRightTransitioning, setIsRightTransitioning] = useState(false);
+  const leftPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle>(null);
+  const rightPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle>(null);
   const { user } = useUser();
   const router = useRouter();
 
@@ -74,6 +94,42 @@ export const RequestPage = () => {
     router.push(`/project/${selectedProject.id}/request/${newRequest.id}`);
   };
 
+  const handleLeftCollapse = (collapsed: boolean) => {
+    setIsLeftTransitioning(true);
+    if (leftPanelRef.current) {
+      if (collapsed) {
+        leftPanelRef.current.collapse();
+      } else {
+        leftPanelRef.current.expand();
+      }
+    }
+    setIsLeftCollapsed(collapsed);
+    // Remove transition after animation completes
+    setTimeout(() => setIsLeftTransitioning(false), 300);
+  };
+
+  const handleRightCollapse = (collapsed: boolean) => {
+    setIsRightTransitioning(true);
+    if (rightPanelRef.current) {
+      if (collapsed) {
+        rightPanelRef.current.collapse();
+      } else {
+        rightPanelRef.current.expand();
+      }
+    }
+    setIsRightCollapsed(collapsed);
+    // Remove transition after animation completes
+    setTimeout(() => setIsRightTransitioning(false), 300);
+  };
+
+  const handleLeftResizeHandleClick = () => {
+    handleLeftCollapse(!isLeftCollapsed);
+  };
+
+  const handleRightResizeHandleClick = () => {
+    handleRightCollapse(!isRightCollapsed);
+  };
+
   if (!user || !selectedProject || !selectedRequest || isLoading) {
     return (
       <div className="flex h-screen flex-col items-center justify-center p-8">
@@ -88,43 +144,85 @@ export const RequestPage = () => {
 
   return (
     <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
-      <div className="relative grid h-[90vh] w-full grid-cols-6">
-        <div className="col-span-1">
-          <Sidebar
-            selectedProject={selectedProject}
-            onSelectRequest={(request) => {
-              setSelectedRequest(request);
-              router.push(
-                `/project/${selectedProject?.id}/request/${request?.id}`
-              );
-            }}
-            onNewRequest={(project) => {
-              const openRequests = project?.clientRequests?.filter(
-                (request) =>
-                  request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                  request?.requestStatus !== REQUESTSTATUS.CLOSED
-              );
-              if (openRequests?.length < 3) {
-                createNewEmptyRequest();
-              } else {
-                toast.warning(
-                  "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
-                );
-              }
-            }}
-            onOpenConfig={(project: any) => {
-              //setSelectedProject(project);
-              // updateSearchParams({ project: project?.id, view: 'project' });
-              // setIsConfigModalOpen(true);
-            }}
+      <div className="relative h-[92vh] w-full">
+        <ResizablePanelGroup direction="horizontal" autoSaveId="request-page">
+          <ResizablePanel
+            ref={leftPanelRef}
+            defaultSize={16}
+            minSize={0}
+            maxSize={16}
+            collapsible={true}
+            collapsedSize={0}
+            onCollapse={() => setIsLeftCollapsed(true)}
+            onExpand={() => setIsLeftCollapsed(false)}
+            className={cn(
+              isLeftTransitioning && "transition-all duration-300 ease-in-out"
+            )}
+          >
+            <div className="flex h-full flex-col">
+              <Sidebar
+                selectedProject={selectedProject}
+                onSelectRequest={(request) => {
+                  setSelectedRequest(request);
+                  router.push(
+                    `/project/${selectedProject?.id}/request/${request?.id}`
+                  );
+                }}
+                onNewRequest={(project) => {
+                  const openRequests = project?.clientRequests?.filter(
+                    (request) =>
+                      request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
+                      request?.requestStatus !== REQUESTSTATUS.CLOSED
+                  );
+                  if (openRequests?.length < 3) {
+                    createNewEmptyRequest();
+                  } else {
+                    toast.warning(
+                      "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
+                    );
+                  }
+                }}
+                onOpenConfig={(project: any) => {}}
+                isCollapsed={isLeftCollapsed}
+                onCollapse={handleLeftCollapse}
+              />
+            </div>
+          </ResizablePanel>
+          <ResizableHandle
+            className="cursor-pointer"
+            onClick={handleLeftResizeHandleClick}
           />
-        </div>
-        <div className="col-span-3 h-full p-4">
-          <ChatWindow userId={user.id} clientRequest={selectedRequest} />
-        </div>
-        <div className="col-span-2">
-          <PreviewWindow />
-        </div>
+          <ResizablePanel>
+            <div className="h-full p-4">
+              <ChatWindow
+                onCollapse={handleLeftCollapse}
+                isCollapsed={isLeftCollapsed}
+                userId={user.id}
+                clientRequest={selectedRequest}
+              />
+            </div>
+          </ResizablePanel>
+          <ResizableHandle
+            withHandle
+            className="cursor-pointer"
+            onClick={handleRightResizeHandleClick}
+          />
+          <ResizablePanel
+            ref={rightPanelRef}
+            defaultSize={30}
+            minSize={0}
+            maxSize={30}
+            collapsible={true}
+            collapsedSize={0}
+            onCollapse={() => setIsRightCollapsed(true)}
+            onExpand={() => setIsRightCollapsed(false)}
+            className={cn(
+              isRightTransitioning && "transition-all duration-300 ease-in-out"
+            )}
+          >
+            <PreviewWindow />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </ClientSecretProvider>
   );

@@ -14,7 +14,17 @@ export const uploadToRepo = async (
 ) => {
   try {
     // gets commit's AND its tree's SHA
-    const currentCommit = await getCurrentCommit(octo, org, repo, branch);
+
+    const lastCommit = await getCurrentCommit(octo, org, repo, branch);
+    const currentCommit = await revertCommit(
+      octo,
+      org,
+      repo,
+      branch,
+      lastCommit.commitSha,
+      lastCommit.treeSha,
+      lastCommit.parentSha
+    );
     const filesPaths = await glob(coursePath);
     const filesBlobs = await Promise.all(
       filesPaths.map(createBlobForFile(octo, org, repo))
@@ -47,6 +57,45 @@ export const uploadToRepo = async (
   }
 };
 
+const revertCommit = async (
+  octo: Octokit,
+  org: string,
+  repo: string,
+  branch: string,
+  commitSha: string,
+  treeSha: string,
+  parentSha?: string
+) => {
+  // Get the parent commit's tree SHA
+  const { data: parentCommit } = await octo.rest.git.getCommit({
+    owner: org,
+    repo,
+    commit_sha: parentSha ?? commitSha,
+  });
+
+  // Create a revert commit using the parent's tree
+  const { data: newCommit } = await octo.rest.git.createCommit({
+    owner: org,
+    repo,
+    message: `Revert commit ${commitSha}`,
+    parents: [commitSha],
+    tree: parentCommit.tree.sha, // Use parent's tree instead of current tree
+  });
+
+  // Update the branch reference
+  const { data: refData } = await octo.rest.git.updateRef({
+    owner: org,
+    repo,
+    ref: `heads/${branch}`,
+    sha: newCommit.sha,
+  });
+
+  return {
+    commitSha: newCommit.sha,
+    treeSha: parentCommit.tree.sha, // Return parent's tree SHA
+  };
+};
+
 const getCurrentCommit = async (
   octo: Octokit,
   org: string,
@@ -67,6 +116,7 @@ const getCurrentCommit = async (
   return {
     commitSha,
     treeSha: commitData.tree.sha,
+    parentSha: commitData.parents[0]?.sha,
   };
 };
 

@@ -187,11 +187,13 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
       {
         action: "highlightInput",
         text: "Not Yet",
+        type: "deny",
         className: "bg-neutral-200 text-black hover:bg-neutral-300",
       },
       {
         action: "appendMessage",
-        text: "Confirm !",
+        text: "Confirm",
+        type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "Yes, Everything looks good to me.",
       },

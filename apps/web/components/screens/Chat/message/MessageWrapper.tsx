@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import { AnnotationUIList } from "./AnnotationUIList";
 import { ToolInvocationPart } from "./ToolInvocationPart";
+import { AnimatePresence, motion } from "framer-motion";
 
 // Define types for annotations
 type ThinkingAnnotation = {
@@ -164,13 +165,22 @@ export const MessageWrapper = ({
                       latestAnnotation.type === "thinking"
                         ? latestAnnotation.contents || latestAnnotation.content
                         : latestAnnotation.text ||
-                        latestAnnotation.content ||
-                        latestAnnotation.contents;
+                          latestAnnotation.content ||
+                          latestAnnotation.contents;
 
                     return (
-                      <div className="relative bg-repeat text-transparent bg-clip-text first-letter:uppercase  overflow-hidden animate-shimmer bg-gradient-to-r from-gray-400 via-gray-800 to-gray-400 bg-[length:200%_100%]">
-                        {content}
-                      </div>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={content}
+                          className=" relative bg-repeat text-transparent bg-clip-text first-letter:uppercase  overflow-hidden animate-shimmer bg-gradient-to-r from-gray-400 via-gray-800 to-gray-400 bg-[length:200%_100%]"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          {content}
+                        </motion.div>
+                      </AnimatePresence>
                     );
                   })()}
                 </div>
@@ -194,8 +204,9 @@ export const MessageWrapper = ({
               <div className="w-[400px] p-0 bg-transparent">
                 <div className="flex gap-1 mb-3 bg-transparent">
                   <ChevronLeft
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab > 0 ? "opacity-100" : "opacity-50"
-                      }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
+                      activeTab > 0 ? "opacity-100" : "opacity-50"
+                    }`}
                     onClick={() => setActiveTab(activeTab - 1)}
                   />
                   <div
@@ -204,10 +215,11 @@ export const MessageWrapper = ({
                     Step {activeTab + 1}
                   </div>
                   <ChevronRight
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab < displayParts?.length - 1
-                      ? "opacity-100"
-                      : "opacity-50"
-                      }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
+                      activeTab < displayParts?.length - 1
+                        ? "opacity-100"
+                        : "opacity-50"
+                    }`}
                     onClick={() => setActiveTab(activeTab + 1)}
                   />
                 </div>
@@ -227,7 +239,10 @@ export const MessageWrapper = ({
               </div>
             )}
             {uiAnnotations && uiAnnotations.length > 0 && (
-              <AnnotationUIList uiAnnotations={uiAnnotations as any[]} />
+              <AnnotationUIList
+                uiAnnotations={uiAnnotations as any[]}
+                lastMessage={index === length - 1}
+              />
             )}
             {metadata?.media && (
               <div className="mt-2 flex flex-wrap justify-evenly gap-2">

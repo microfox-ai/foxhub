@@ -2,6 +2,7 @@ import { ButtonSCN } from "@/components/elements/Button";
 import { ClientRequest } from "@prisma/client";
 import { RefreshCw } from "lucide-react";
 import { useMicrofox } from "../providers/MicrofoxProvider";
+import { IN_DEV } from "@/utils/constants/appInfo";
 
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
@@ -22,8 +23,14 @@ const ChatHeader = ({
         <h2 className="line-clamp-1 flex flex-wrap items-center justify-start gap-2 text-sm font-semibold">
           {clientRequest?.title}
         </h2>
-        {/* <p className="text-xs text-gray-500">Request ID: {clientRequest?.id}</p>
-        <p className="text-xs text-gray-500">Minion: {minionType}</p> */}
+        {IN_DEV && (
+          <>
+            <p className="text-xs text-gray-500">
+              Request ID: {clientRequest?.id}
+            </p>
+            <p className="text-xs text-gray-500">Minion: {minionType}</p>
+          </>
+        )}
       </div>
       {/* <ButtonSCN
         variant="outline"

@@ -132,11 +132,11 @@ model UsageAnalytics {
 model ClientSecret {
   id               String     @id @default(uuid())
   botProjectId     String
-  clientRequestIds String[]
+  clientRequestIds String[] 
   userId           String
   name             String
-  type             String
-  variables        Json[]
+  type             String // kind of secret eg google, github, etc
+  variables        Json[] // this will be in the format of { key: "apiKey", value: "1234567890", isOptional: false}
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   botProject       BotProject @relation(fields: [botProjectId], references: [id])

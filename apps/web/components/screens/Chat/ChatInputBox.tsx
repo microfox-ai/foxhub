@@ -8,24 +8,27 @@ import {
   FileText,
   Plus,
 } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { useClientSecrets } from "../providers/ClientSecretProvider";
 import { ChatUIMessageWithTypes } from "../hooks/convertors";
 import { useMicrofox } from "../providers/MicrofoxProvider";
 import { cn } from "@/lib/utils";
+import { UIMessage } from "ai";
 interface ChatInputBoxProps {
   input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
   userId: string;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   className?: string;
+  lastMessage?: UIMessage;
 }
 
 export default function ChatInputBox({
   input,
   messageStatus,
   userId,
+  lastMessage,
   handleInputChange,
   className,
 }: ChatInputBoxProps) {
@@ -34,6 +37,14 @@ export default function ChatInputBox({
     useFileUpload();
   const { setShowSlashModal } = useClientSecrets();
   const { handleSubmit } = useMicrofox();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    console.log("textareaRef", textareaRef.current);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto"; // Reset height
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
+    }
+  }, [input]); // Runs when input changes
 
   const handleFileInputChange = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -88,8 +99,9 @@ export default function ChatInputBox({
       )}
       <div className="flex flex-col gap-2 !rounded-4xl shadow-md border border-gray-200 bg-white p-3 relative">
         <textarea
+          ref={textareaRef}
           placeholder="Ask anything"
-          className="flex-1 resize-none overflow-hidden overflow-y-auto bg-transparent px-2 py-2 text-gray-800 placeholder-gray-500 outline-none min-h-[56px]"
+          className="flex-1 overflow-hidden bg-transparent px-2 py-2 text-gray-800 placeholder-gray-500 outline-none resize-none min-h-[56px]"
           value={input}
           rows={1}
           onChange={handleCustomInputChange}
@@ -99,6 +111,11 @@ export default function ChatInputBox({
             }
           }}
           disabled={
+            (
+              lastMessage?.annotations?.[
+                lastMessage.annotations.length - 1
+              ] as any
+            )?.type === "ui" ||
             messageStatus === "pending" ||
             messageStatus === "streaming" ||
             mediaUploadStatus === "UPLOADING" ||
@@ -115,6 +132,11 @@ export default function ChatInputBox({
           <button
             onClick={() => handleSubmit()}
             disabled={
+              (
+                lastMessage?.annotations?.[
+                  lastMessage.annotations.length - 1
+                ] as any
+              )?.type === "ui" ||
               (!input.trim() && attachedMedia.length === 0) ||
               messageStatus === "pending" ||
               messageStatus === "streaming" ||

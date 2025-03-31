@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
-import { TaskInstanceMetaType, ExtraEnvVariable } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +13,8 @@ import {
   ExternalLink,
   Key,
   Link,
+  CheckCircle,
+  CheckCircle2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -20,6 +23,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { APIKeyDialog } from "@/components/screens/Chat/message/APIKeyDialog";
+import useSWR from "swr";
+import { useParams } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 interface UIAnnotation {
   objectType: string;
@@ -27,6 +35,50 @@ interface UIAnnotation {
   text?: string;
   persona?: string;
   buttons?: any[];
+}
+
+interface ClientSecret {
+  id: string;
+  name: string;
+  type: string;
+  variables: Array<{
+    key: string;
+    value: string;
+    isOptional: boolean;
+  }>;
+}
+
+interface RequiredKey {
+  key: string;
+  displayName: string;
+  description: string;
+}
+
+interface Constructor {
+  name: string;
+  description: string;
+  zodSecretSchema: string;
+  auth: "apiKey" | "oauth";
+  requiredKeys?: RequiredKey[];
+  internalKeys: string[];
+}
+
+interface Package {
+  name: string;
+  title: string;
+  description: string;
+  path: string;
+  icon: string;
+  dependencies: string[];
+  status: string;
+  documentation: string;
+  constructors: Constructor[];
+}
+
+interface Platform {
+  name: string;
+  reason: string;
+  packageInfo: Package;
 }
 
 const ActionButtons = (props: any) => {
@@ -40,7 +92,7 @@ const ActionButtons = (props: any) => {
       {props?.buttonHeaderText && (
         <div className="text-md text-gray-500">{props?.buttonHeaderText}</div>
       )}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 w-full">
         {props?.buttons?.map((button: any) => (
           <Button
             variant={"outline"}
@@ -52,9 +104,16 @@ const ActionButtons = (props: any) => {
               text-gray-700 hover:text-gray-900
               border border-gray-200 hover:border-gray-300
               transition-colors duration-200
+              disabled:opacity-50 disabled:cursor-not-allowed
             `,
-              button.className
+              button.type === "confirm" &&
+                "bg-black text-white hover:bg-black/80 hover:text-white"
             )}
+            disabled={
+              props.areKeysRequired &&
+              !props.areKeysFilled &&
+              button.type === "confirm"
+            }
             onClick={() => {
               console.log("button", button);
               if (button.action === "highlightInput") {
@@ -77,30 +136,34 @@ const ActionButtons = (props: any) => {
                 console.log("shiftMinion", button.value);
                 setMinionType(button.value);
                 setInput("");
-                append({
-                  id: crypto.randomUUID(),
-                  content:
-                    button.actionText ?? button.text ?? "Changing gears..",
-                  role: "user",
-                  parts: [
-                    {
-                      type: "text",
-                      text:
-                        button.actionText ?? button.text ?? "Changing gears..",
-                    },
-                  ],
-                  annotations: [
-                    {
-                      type: "minion",
-                      value: button.value,
-                    }
-                  ]
-                },
+                append(
+                  {
+                    id: crypto.randomUUID(),
+                    content:
+                      button.actionText ?? button.text ?? "Changing gears..",
+                    role: "user",
+                    parts: [
+                      {
+                        type: "text",
+                        text:
+                          button.actionText ??
+                          button.text ??
+                          "Changing gears..",
+                      },
+                    ],
+                    annotations: [
+                      {
+                        type: "minion",
+                        value: button.value,
+                      },
+                    ],
+                  },
                   {
                     body: {
                       minionType: button.value,
                     },
-                  });
+                  }
+                );
               }
             }}
           >
@@ -120,15 +183,16 @@ const TaskInfo = ({
   idx: number;
 }) => {
   const object = uiAnnotation.object;
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const getIconForKey = (key: string) => {
     switch (key.toLowerCase()) {
       case "goal":
-        return <Target className="w-5 h-5 text-blue-500" />;
+        return <Target className="w-5 h-5 opacity-50 mt-1" />;
       case "name":
-        return <TextQuote className="w-5 h-5 text-purple-500" />;
+        return <TextQuote className="w-5 h-5 opacity-50 mt-1" />;
       case "summary":
-        return <FileText className="w-5 h-5 text-green-500" />;
+        return <FileText className="w-5 h-5 opacity-50 mt-1" />;
       default:
         return null;
     }
@@ -144,11 +208,14 @@ const TaskInfo = ({
       transition={{ duration: 0.3 }}
     >
       <h3 className="text-lg uppercase font-bold tracking-wider text-gray-700 border-b pb-2">
-        {uiAnnotation.objectType}
+        {object.name}
       </h3>
       <div className="space-y-4">
         {Object.keys(object).map((key: string) => {
           const icon = getIconForKey(key);
+          if (key === "name") {
+            return null;
+          }
           return (
             <div key={key} className="flex flex-col space-y-1">
               <div className="flex items-center gap-2">
@@ -157,9 +224,28 @@ const TaskInfo = ({
                   {key}
                 </span>
               </div>
-              <span className="tracking-base pl-7 text-sm text-gray-600">
-                {object[key]}
-              </span>
+              {key === "summary" ? (
+                <div className="flex flex-col gap-1">
+                  <span
+                    className={cn(
+                      "tracking-base pl-7 text-sm text-gray-600",
+                      !isExpanded && "line-clamp-2"
+                    )}
+                  >
+                    {object[key]}
+                  </span>
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="pl-7 text-left text-sm text-blue-500 hover:text-blue-700 font-medium"
+                  >
+                    {isExpanded ? "Show less" : "Show more"}
+                  </button>
+                </div>
+              ) : (
+                <span className="tracking-base pl-7 text-sm text-gray-600">
+                  {object[key]}
+                </span>
+              )}
             </div>
           );
         })}
@@ -176,7 +262,88 @@ const TaskIntegrations = ({
   uiAnnotation: UIAnnotation;
   idx: number;
 }) => {
-  const platforms = uiAnnotation.object?.platforms;
+  const platforms = uiAnnotation.object.platforms as Platform[];
+
+  // Since we're guaranteed to have only one platform and one package for now
+  const platform = platforms?.[0];
+  const pkg = platform?.packageInfo;
+
+  console.log("platform", platforms, platform, pkg);
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [areKeysFilled, setAreKeysFilled] = useState(false);
+  const params = useParams<{
+    project_id?: string;
+    request_id?: string;
+  }>();
+
+  const projectParamId = params?.project_id;
+  const requestParamId = params?.request_id;
+  const { data: secretsData } = useSWR<{
+    clientSecrets: ClientSecret[];
+  }>(
+    requestParamId
+      ? `/api/client-secrets?clientRequestId=${requestParamId}`
+      : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch secrets");
+      return res.json();
+    }
+  );
+
+  // Check for existing keys when component mounts or secrets data changes
+  useEffect(() => {
+    if (secretsData?.clientSecrets && platform?.name) {
+      const existingSecret = secretsData.clientSecrets.find(
+        (secret) => secret.type.toLowerCase() === platform.name.toLowerCase()
+      );
+      // Check if all required keys are present in the existing secret
+      if (existingSecret && pkg?.constructors) {
+        const requiredKeys = pkg.constructors.flatMap(
+          (constructor: Constructor) => constructor.requiredKeys ?? []
+        );
+        const hasAllKeys = requiredKeys.every((keyInfo: RequiredKey) =>
+          existingSecret.variables.some(
+            (variable) => variable.key === keyInfo.key && variable.value.trim()
+          )
+        );
+        setAreKeysFilled(hasAllKeys);
+      }
+    }
+  }, [secretsData, platform?.name, pkg?.constructors]);
+
+  // If no platform or package is available, don't render anything
+  if (!platform || !pkg) {
+    return null;
+  }
+
+  const areKeysRequired = pkg.constructors.some(
+    (constructor: Constructor) => constructor.auth === "apiKey"
+  );
+
+  const areOAuthRequired = pkg.constructors.some(
+    (constructor: Constructor) => constructor.auth === "oauth"
+  );
+
+  // Get existing secret only if platform exists
+  const existingSecret = platform
+    ? secretsData?.clientSecrets?.find(
+        (secret) => secret.type.toLowerCase() === platform.name.toLowerCase()
+      )
+    : undefined;
+
+  const handleOpenDialog = () => {
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = (submitted?: boolean) => {
+    setIsDialogOpen(false);
+    if (submitted) {
+      setAreKeysFilled(true);
+    }
+  };
+
   return (
     <motion.div
       key={uiAnnotation.objectType + idx}
@@ -186,45 +353,55 @@ const TaskIntegrations = ({
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
     >
-      <h3 className="text-lg font-semibold text-gray-900">
-        {uiAnnotation.text || "Finalised the Integrations"}
-      </h3>
+      <div className="">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {"Configure Integration Settings"}
+        </h3>
+        {areKeysRequired && (
+          <p className="text-sm text-gray-500">
+            Please fill in the required API keys before confirming
+          </p>
+        )}
+        {areOAuthRequired && (
+          <p className="text-sm text-gray-500">
+            Please connect to {platform.name} to continue
+          </p>
+        )}
+      </div>
+
       <div className="space-y-6">
-        {platforms?.map((platform: any) => (
-          <div
-            key={platform.name}
-            className="flex rounded-lg border p-4 flex-col gap-2"
-          >
-            <div className="flex items-start gap-3">
-              <Package className="w-5 h-5 text-blue-500 mt-2" />
-              <div className="flex-1">
-                <div className="flex items-center  justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">
-                      {platform.name}
+        <div className="flex rounded-lg border p-4 flex-col gap-2">
+          <div className="flex items-start gap-3">
+            <img src={pkg.icon} alt={pkg.name} className="w-5 h-5 mt-2" />
+            <div className="flex-1">
+              <div className="flex gap-2 items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium w-fit text-gray-900">
+                    {platform.name}
+                  </span>
+                  {pkg.name && (
+                    <span className="text-xs flex-1 w-full bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                      {pkg.name}
                     </span>
-                    {platform.package && (
-                      <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                        {platform.package}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {areOAuthRequired && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                            onClick={() => {
-                              console.log(
-                                "Open API key modal for",
-                                platform.name
-                              );
-                            }}
+                            className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full border border-gray-200 relative"
+                            onClick={handleOpenDialog}
                           >
                             <Key className="h-4 w-4" />
+                            {!areKeysFilled ? (
+                              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-yellow-400 animate-pulse" />
+                            ) : (
+                              <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-2.5 w-2.5 rounded-full text-green-500" />
+                            )}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -232,7 +409,10 @@ const TaskIntegrations = ({
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-
+                  )}
+                  {pkg.constructors.some(
+                    (constructor: Constructor) => constructor.auth === "oauth"
+                  ) && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -243,15 +423,34 @@ const TaskIntegrations = ({
                     >
                       Connect
                     </Button>
-                  </div>
+                  )}
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{platform.reason}</p>
               </div>
+              <p className="text-sm text-gray-600 mt-1">{platform.reason}</p>
             </div>
           </div>
-        ))}
+        </div>
       </div>
-      <ActionButtons buttons={uiAnnotation.buttons} />
+
+      <APIKeyDialog
+        isOpen={isDialogOpen}
+        onClose={handleCloseDialog}
+        platform={{
+          name: platform.name,
+          requiredKeys: pkg.constructors.flatMap(
+            (constructor: Constructor) => constructor.requiredKeys ?? []
+          ),
+          packageDocumentation: pkg.documentation,
+        }}
+        existingSecret={existingSecret}
+        projectId={projectParamId}
+        requestId={requestParamId}
+      />
+      <ActionButtons
+        buttons={uiAnnotation.buttons}
+        areKeysRequired={areKeysRequired}
+        areKeysFilled={areKeysFilled}
+      />
     </motion.div>
   );
 };
@@ -372,7 +571,6 @@ const EnvCollector = ({
   idx: number;
 }) => {
   const annotation = uiAnnotation as any;
-  const envVariables = annotation?.envVariables as ExtraEnvVariable[];
   return (
     <motion.div
       key={uiAnnotation.objectType + idx}
@@ -382,17 +580,8 @@ const EnvCollector = ({
         {uiAnnotation.text}
       </h3>
       <div className="flex flex-col gap-2">
-        {envVariables?.map((env: ExtraEnvVariable) => (
-          <div className="flex flex-col gap-1">
-            <span className="font-bold text-sm tracking-wide text-black">{env.env}</span>
-            <span className="text-xs text-gray-500">{env.name}</span>
-            <span className="text-xs text-gray-500">What: {env.what}</span>
-            <span className="text-xs text-gray-500">Why: {env.why}</span>
-            <span className="text-xs text-gray-500">How: {env.how}</span>
-            <span className="text-xs text-gray-500">
-              Is same as: {env.isSameAs?.join(", ")}
-            </span>
-          </div>
+        {annotation?.envVariablesUsed?.map((env: any) => (
+          <span key={env}>{env}</span>
         ))}
       </div>
       <ActionButtons buttons={uiAnnotation.buttons} />
@@ -402,8 +591,10 @@ const EnvCollector = ({
 
 export const AnnotationUIList = ({
   uiAnnotations,
+  lastMessage,
 }: {
   uiAnnotations: UIAnnotation[];
+  lastMessage: boolean;
 }) => {
   return uiAnnotations.map((uiAnnotation: UIAnnotation, idx: number) => {
     if (uiAnnotation.objectType === "taskInfo") {
@@ -433,7 +624,7 @@ export const AnnotationUIList = ({
         />
       );
     }
-    if (uiAnnotation.objectType === "buttons") {
+    if (uiAnnotation.objectType === "buttons" && lastMessage) {
       return (
         <ActionButtons
           key={uiAnnotation.objectType + idx}
@@ -453,4 +644,3 @@ export const AnnotationUIList = ({
     }
   });
 };
-

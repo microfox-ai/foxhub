@@ -47,6 +47,8 @@ function ChatWindow({
     input,
     setInput,
     handleInputChange,
+    isLastMessage,
+    setIsLastMessage,
     append,
     data,
   } = useMicrofox();
@@ -108,7 +110,7 @@ function ChatWindow({
 
           <TabsContent
             value="chat"
-            className="h-full max-h-[75vh] space-y-4 overflow-y-auto p-4"
+            className="h-full max-h-[75vh] space-y-4 overflow-y-auto thin-scrollbar p-4"
           >
             <div className="max-w-[800px] mx-auto">
               <TabMessages
@@ -129,6 +131,7 @@ function ChatWindow({
           <div className="  bottom-0 py-2  mx-auto left-0 right-0 w-[800px] overflow-visible">
             {activeTab === "chat" && (
               <ChatInputBox
+                lastMessage={messages[messages.length - 1]}
                 input={input}
                 messageStatus={status}
                 userId={userId}
@@ -138,16 +141,20 @@ function ChatWindow({
           </div>
         </Tabs>
       ) : (
-        <div className="flex relative -mt-10 flex-col gap-4 justify-center items-center h-full">
-          <h1 className="text-4xl font-bold">What would you like to build?</h1>
-          <ChatInputBox
-            input={input}
-            messageStatus={status}
-            userId={userId}
-            handleInputChange={handleInputChange}
-            className="relative max-w-[800px]"
-          />
-        </div>
+        !isLoading && (
+          <div className="flex relative -mt-10 flex-col gap-4 justify-center items-center h-full">
+            <h1 className="text-4xl font-bold">
+              What would you like to build?
+            </h1>
+            <ChatInputBox
+              input={input}
+              messageStatus={status}
+              userId={userId}
+              handleInputChange={handleInputChange}
+              className="relative max-w-[800px]"
+            />
+          </div>
+        )
       )}
       {/* Slash Modal: Opened when input starts with '/' */}
       {clientRequest && (

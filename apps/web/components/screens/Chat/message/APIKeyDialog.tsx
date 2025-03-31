@@ -45,8 +45,9 @@ interface ClientSecret {
 interface APIKeyDialogProps {
   isOpen: boolean;
   onClose: (submitted?: boolean) => void;
-  platform: {
+  pkg: {
     name: string;
+    type: string | undefined;
     requiredKeys: Array<{
       key: string;
       displayName: string;
@@ -55,15 +56,19 @@ interface APIKeyDialogProps {
     }>;
     packageDocumentation?: string;
   };
+  platformName: string;
   existingSecret?: ClientSecret;
   projectId?: string;
   requestId?: string;
+  mutateSecrets?: () => void;
 }
 
 export const APIKeyDialog = ({
+  mutateSecrets,
   isOpen,
   onClose,
-  platform,
+  platformName,
+  pkg,
   existingSecret,
   projectId,
   requestId,
@@ -102,7 +107,7 @@ export const APIKeyDialog = ({
     let hasError = false;
     let firstErrorKey: string | null = null;
 
-    platform.requiredKeys.forEach((keyInfo) => {
+    pkg.requiredKeys.forEach((keyInfo) => {
       if (!apiKeys[keyInfo.key]?.trim()) {
         errors[keyInfo.key] = true;
         hasError = true;
@@ -125,7 +130,7 @@ export const APIKeyDialog = ({
     setIsLoading(true);
     try {
       // Format the variables as per schema requirement
-      const variables = platform.requiredKeys.map((keyInfo) => ({
+      const variables = pkg.requiredKeys.map((keyInfo) => ({
         key: keyInfo.key,
         value: apiKeys[keyInfo.key],
         isOptional: false,
@@ -141,15 +146,15 @@ export const APIKeyDialog = ({
             clientRequestId: requestId,
             botProjectId: projectId,
             userId: user?.id,
-            name: platform.name,
-            type: platform.name.toLowerCase(),
+            name: pkg.name,
+            type: pkg.type,
           }
         : {
             botProjectId: projectId,
             clientRequestId: requestId,
             userId: user?.id,
-            name: platform.name,
-            type: platform.name.toLowerCase(),
+            name: pkg.name,
+            type: pkg.type,
             variables,
           };
 
@@ -171,6 +176,7 @@ export const APIKeyDialog = ({
           : "API keys saved successfully"
       );
       onClose(true);
+      mutateSecrets?.();
     } catch (error) {
       console.error("Failed to save API keys:", error);
       toast.error("Failed to save API keys. Please try again.");
@@ -187,7 +193,7 @@ export const APIKeyDialog = ({
           <DialogTitle className="flex items-start gap-2 text-xl font-semibold">
             <Key className="h-5 w-5 mt-1" />
             {existingSecret ? "Update" : "Configure"} API Keys for{" "}
-            {platform.name}
+            {platformName}
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-500">
             {existingSecret
@@ -196,7 +202,7 @@ export const APIKeyDialog = ({
           </DialogDescription>
           <DialogDescription className="text-sm text-gray-500 w-fit">
             <Link
-              href={platform.packageDocumentation ?? ""}
+              href={pkg.packageDocumentation ?? ""}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:text-blue-600 text-xs flex gap-1 items-center"
@@ -208,7 +214,7 @@ export const APIKeyDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 pl-2 py-6 min-h-[200px] max-h-[400px] overflow-y-auto pr-4 -mr-4 scrollbar-thin">
-          {platform.requiredKeys.map((keyInfo) => (
+          {pkg.requiredKeys.map((keyInfo) => (
             <div
               key={keyInfo.key}
               className="space-y-3"

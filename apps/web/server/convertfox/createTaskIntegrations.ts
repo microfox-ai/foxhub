@@ -10,55 +10,8 @@ import {
 } from "./getInternalPackages";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { fetchGithubJson, fetchPackageInfo } from "./fetchPackageInfo";
-/** Thinking tool */
-// export const searchForAlternatives = (props: StreamingFucntionProps<any, any>) => {
-//     return tool({
-//       description:
-//         "Search for alternatives to the platform that the user wants to integrate with.",
-//       parameters: z.object({
-//         platform: z.string().describe("The platform that the user wants to integrate with"),
-//       }),
-//       execute: async ({ platform }, options) => {
-//         props.dataStream.writeMessageAnnotation({
-//           type: "thinking",
-//           toolName: "analyseUserIntent",
-//           toolCallId: options.toolCallId,
-//           content: `Analyse & understand the user's intent & confirm the user's goal`,
-//         });
-//         const response = streamText({
-//           model: models.googleGeminiFlash,
-//           //messages: options.messages,
-//           prompt: `User wants this platform: ${platform}. But the platform has no API or any Integration support.`,
-//           system: `
-//           - you deep-analyse the users intent & understand or estimate the users goal.
-//           - your primary goal is not to understand how to build users goal, but what to build.
-//           - you do not ask for specific details, you auto-assume the details, based on users intent, and just ask for confirmation.
-//           - you respond back with simple questions if users goal is not clear yet.
-//           - if the goal is clear, you just explain & summarize the users end-goal with steps to take & info to collect later.
-//           The user's intent is: ${userIntent}. Reference the previous messages to understand the user's intent better.
-//           ---
-//           You run in a loop of Thought, Action, PAUSE, Observation.
-//           At the end of the loop you output an Answer
-//           Use Thought to describe your thoughts about the question you have been asked.
-//           Use Action to run one of the actions available to you - then return PAUSE.
-//           Observation will be the result of running those actions.
-//           At the end of the loop you output an Answer
-//       `,
-//           onFinish: (result) => {
-//             console.log("analyzeUsersIntent model usage", result.usage);
-//           },
-//           onError: (error) => {
-//             console.log("analyzeUsersIntent error", error);
-//           },
-//         });
-//         response.mergeIntoDataStream(props.dataStream, {
-//           experimental_sendFinish: true,
-//         });
-//         return response.text;
-//       },
-//     });
-//   };
 
+// IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
 export const createTaskIntegrations = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,

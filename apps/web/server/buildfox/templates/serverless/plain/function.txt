@@ -1,5 +1,3 @@
-import prisma from '../db/prisma'
-
 /**
  * GET endpoint to fetch data from an external API
  */
@@ -18,8 +16,6 @@ export const getExternalData = async (event: any) => {
       statusCode: 500,
       body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }
 

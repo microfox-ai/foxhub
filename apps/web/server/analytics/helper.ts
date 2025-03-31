@@ -18,6 +18,14 @@ export enum TokenUsageModel {
 }
 export const TokenUsageAnalyticsTracker = {
   updateUsage: async (usageData: TokenUsageAnalytics) => {
+    if (
+      !usageData.promptTokens ||
+      !usageData.totalTokens ||
+      !usageData.completionTokens
+    ) {
+      console.error("usageData is missing required fields", usageData);
+      return;
+    }
     let matchId = `${usageData.userId}${
       usageData.requestId != undefined
         ? "--r--" + usageData.requestId?.substring(0, 5)

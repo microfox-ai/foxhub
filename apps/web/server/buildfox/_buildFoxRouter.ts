@@ -1,40 +1,36 @@
 import { createPullRequest } from "@/server/buildfox/createPullRequest";
+import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { findLastElementWith } from "@/utils/helpers/array";
 import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
-import { genDbCode } from "./geenrators/genDbCode";
-import { genInitialCode } from "./geenrators/genInitialCode";
-import { genLambdaCode } from "./geenrators/genLambdaCode";
-import { genCronJobs } from "./geenrators/genCronJobs";
-import { genFinalCode } from "./geenrators/genFinalCode";
-import { pushToGit } from "./helper/pushToGit";
-import { fetchGithubJson } from "./tool/fetchPackageDocs";
-import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
+import {
+  defaultCallbackResultBody,
+  ServerStreamingFunction,
+} from "@repo/ai-utils/router";
+import { generateObject, streamText } from "ai";
 import dayjs from "dayjs";
+import { z } from "zod";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { getMicrofoxCharacter } from "../hellofox/default";
+import { models } from "../models";
+import { genCronJobs } from "./geenrators/genCronJobs";
+import { genDbCode } from "./geenrators/genDbCode";
+import { genEnvCollector } from "./geenrators/genEnvCollector";
+import { genFinalCode } from "./geenrators/genFinalCode";
+import { genInitialCode } from "./geenrators/genInitialCode";
+import { genLambdaCode } from "./geenrators/genLambdaCode";
 import { generateStatsReport } from "./helper/generateStatsReport";
 import { octokitSdk } from "./helper/gitHelpers";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
-import { models } from "../models";
-import { generateObject, streamText } from "ai";
-import { z } from "zod";
-import { findLastElementWith } from "@/utils/helpers/array";
-import { getMicrofoxCharacter } from "../hellofox/default";
-import {
-  TokenUsageAnalyticsTracker,
-  TokenUsageModel,
-} from "../analytics/helper";
-import { genEnvCollector } from "./geenrators/genEnvCollector";
+import { pushToGit } from "./helper/pushToGit";
+import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -160,6 +156,23 @@ export const buildFoxRouter: ServerStreamingFunction<
     fileType: file.fileType,
     meta: file.meta,
   }));
+
+  const allEnvVariablesUsed = newFilesList?.flatMap(
+    (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
+  );
+  const envVariablesUsedUnique = [...new Set(allEnvVariablesUsed)] as string[];
+  const allPackagesUsed = newFilesList?.flatMap(
+    (file: any) => (file.meta?.packagesUsed as string[]) ?? []
+  );
+  const packagesUsedUnique = [...new Set(allPackagesUsed)];
+
+  console.log("envVariablesUsedUnique", envVariablesUsedUnique);
+  const envVariables = await genEnvCollector(
+    props,
+    envVariablesUsedUnique,
+    taskInstanceMeta
+  );
+
   const timeEnd = dayjs();
   const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
     clientRequestId,
@@ -170,6 +183,8 @@ export const buildFoxRouter: ServerStreamingFunction<
         endTime: timeEnd,
         ...taskInstanceMeta.buildingStep,
         files: newFilesList,
+        envVariablesUsed: allEnvVariablesUsed,
+        packagesUsed: allPackagesUsed,
       },
     },
   });
@@ -186,19 +201,6 @@ export const buildFoxRouter: ServerStreamingFunction<
       console.error("Error sending message to github", error);
     }
   }
-
-  const envVariablesUsed = (
-    taskInstanceMetaUpdated?.buildingStep as any
-  )?.files?.flatMap(
-    (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
-  );
-  const envVariablesUsedUnique = [...new Set(envVariablesUsed)] as string[];
-  const packagesUsed = (
-    taskInstanceMetaUpdated?.buildingStep as any
-  )?.files?.flatMap((file: any) => (file.meta?.packagesUsed as string[]) ?? []);
-  const packagesUsedUnique = [...new Set(packagesUsed)];
-
-  const envVariables = await genEnvCollector(props, envVariablesUsedUnique);
 
   dataStream.writeMessageAnnotation({
     type: "ui",

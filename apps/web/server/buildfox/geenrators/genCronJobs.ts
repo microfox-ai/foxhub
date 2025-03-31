@@ -7,7 +7,7 @@ import { TaskInstanceMetaType } from "../../convertfox/types";
 import { models } from "../../models";
 import { fetchPackageDocs } from "../tool/fetchPackageDocs";
 import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
-import { INTERNAL_TEMPLATE_ROOT, writeToFile } from "../tool/writeToFile";
+import { INTERNAL_TEMPLATE_PLAIN_ROOT, writeToFile } from "../tool/writeToFile";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 
 export const genCronJobs = async (
@@ -15,11 +15,6 @@ export const genCronJobs = async (
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
-  const cronExample = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "cron.txt"),
-    "utf8"
-  );
-
   props.dataStream.writeMessageAnnotation({
     type: "thinking",
     content: "Writing cron jobs",
@@ -30,6 +25,7 @@ export const genCronJobs = async (
       type: "cron",
       taskInstanceMeta,
       cron: cronJob,
+      template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
     });
     console.log("generating cron job", cronJob.name);
     const result = await generateText({

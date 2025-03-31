@@ -5,7 +5,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { TaskInstanceMetaType } from "../../convertfox/types";
 import {
-  INTERNAL_TEMPLATE_ROOT,
+  INTERNAL_TEMPLATE_PLAIN_ROOT,
   writeToFileSystemAndUpdateSteps,
 } from "../tool/writeToFile";
 
@@ -21,14 +21,14 @@ export const genInitialCode = async (
 
   // TODO: Instead of hardcoding, fetch from the template repo.
   const packageJson = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "package.json"),
+    path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "package.json"),
     "utf8"
   );
   const packageJsonContent = JSON.parse(packageJson);
   packageJsonContent.name = clientRequest.title
     .replaceAll(" ", "-")
     .toLowerCase();
-  packageJsonContent.description = taskInstanceMeta.taskInfo?.summary;
+  packageJsonContent.description = taskInstanceMeta.taskInfo?.goal;
   packageJsonContent.version = "1.0." + clientRequest.prNumber;
 
   writeToFileSystemAndUpdateSteps(
@@ -37,36 +37,36 @@ export const genInitialCode = async (
       filePath: "",
       fileType: "json",
       content: dedent`${JSON.stringify(packageJsonContent)}`,
-      meta: {
-        packagesUsed: [],
-        timestamp: new Date().toISOString(),
-        contentSize: packageJsonContent.length,
-      },
     },
     clientRequest
   );
 
-  const webpackConfig = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "webpack.config.js"),
+  const tsconfig = await fs.readFile(
+    path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "tsconfig.json"),
     "utf8"
   );
   writeToFileSystemAndUpdateSteps(
     {
-      fileName: "webpack.config.js",
+      fileName: "tsconfig.json",
       filePath: "",
-      fileType: "js",
-      content: webpackConfig,
-      meta: {
-        packagesUsed: [],
-        timestamp: new Date().toISOString(),
-        contentSize: webpackConfig.length,
-      },
+      fileType: "json",
+      content: tsconfig,
     },
     clientRequest
   );
 
+  // writeToFileSystemAndUpdateSteps(
+  //   {
+  //     fileName: "webpack.config.js",
+  //     filePath: "",
+  //     fileType: "js",
+  //     content: webpackConfig,
+  //   },
+  //   clientRequest
+  // );
+
   const serverlessYml = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "serverless.yml"),
+    path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "serverless.yml"),
     "utf8"
   );
   writeToFileSystemAndUpdateSteps(
@@ -75,11 +75,6 @@ export const genInitialCode = async (
       filePath: "",
       fileType: "yml",
       content: serverlessYml,
-      meta: {
-        packagesUsed: [],
-        timestamp: new Date().toISOString(),
-        contentSize: serverlessYml.length,
-      },
     },
     clientRequest
   );

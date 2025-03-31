@@ -124,6 +124,7 @@ export const buildFoxRouter: ServerStreamingFunction<
       clientRequestId,
       description: taskInstanceMeta.taskInfo?.summary,
       title: taskInstanceMeta.taskInfo?.name,
+      requestSubdir: taskInstanceMeta.taskStructure?.templateType,
     });
   }
 

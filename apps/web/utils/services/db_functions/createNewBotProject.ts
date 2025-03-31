@@ -1,3 +1,5 @@
+"use server";
+
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import {

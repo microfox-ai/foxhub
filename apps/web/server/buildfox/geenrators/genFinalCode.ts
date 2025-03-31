@@ -3,7 +3,8 @@ import { TaskInstanceMetaType } from "../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { generateText, streamText } from "ai";
 import {
-  INTERNAL_TEMPLATE_ROOT,
+  getFilePath,
+  INTERNAL_TEMPLATE_PLAIN_ROOT,
   readAllGenFilesList,
   writeToFile,
   writeToFileSystemAndUpdateSteps,
@@ -16,17 +17,23 @@ import { promises as fs } from "fs";
 import dedent from "dedent";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 
+// IMPROTANT TODO: serverless.yml being written has no idea what env variables are needed..
 export const genFinalCode = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
   try {
-    const allGenFilesList = await readAllGenFilesList(clientRequest);
+    props.dataStream.writeMessageAnnotation({
+      type: "thinking",
+      content: "Writing final code pieces",
+    });
+
+    const allGenFilesList = await readAllGenFilesList(clientRequest, true);
 
     // modify the serverless.yml file to support all the functions & cron jobs
     const serverlessYml = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "serverless.yml"),
+      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "serverless.yml"),
       "utf8"
     );
     const result = await generateText({
@@ -41,19 +48,22 @@ export const genFinalCode = async (
 
             The serverless.yml file is as follows:
             ${serverlessYml}
+
             The following is the task summary:
             ${taskInstanceMeta?.taskInfo?.summary}
             `,
       tools: {
         write_to_file: writeToFile(props, clientRequest),
       },
-      toolChoice: "auto",
+      toolChoice: "required",
       maxSteps: 1,
       maxTokens: 3000,
+      maxRetries: 1,
       onStepFinish: (step) => {
         console.log("step", step.usage);
       },
     });
+    console.log("result", result.usage);
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
       model: models.claude35Sonnet.modelId,
@@ -62,12 +72,12 @@ export const genFinalCode = async (
     // modify the package.json file to support all the functions & cron jobs
 
     const packageJson = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "package.json"),
+      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "package.json"),
       "utf8"
     );
     const packageJsonContent = JSON.parse(packageJson);
     taskInstanceMeta.taskIntegrations?.platforms?.forEach((platform) => {
-      if (platform.package) {
+      if (platform.package && platform.package != "@microfox/null") {
         packageJsonContent.dependencies[platform.package] = "*";
       }
     });
@@ -83,16 +93,31 @@ export const genFinalCode = async (
 
     // modify the index.ts file to support all the functions & cron jobs
     const indexTs = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "index.txt"),
+      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "index.txt"),
       "utf8"
     );
+    const allFilesRelativeToRoot = await Promise.all(
+      allGenFilesList?.map(async (file: any) => {
+        const { rootDir } = await getFilePath(clientRequest, {
+          fileName: file.fileName,
+          filePath: file.filePath,
+          fileType: file.fileType,
+        });
+        const relativePath = file.filePath.replace(rootDir, "");
+        return {
+          ...file,
+          filePath: relativePath,
+        };
+      })
+    );
+    console.log("allFilesRelativeToRoot", allFilesRelativeToRoot);
     const result2 = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
       prompt: `You are requested to create an index.ts file for the following requirement & example:
 
             The following files are already generated for the task:
-            ${allGenFilesList?.map((file: any) => JSON.stringify(file)).join("\n - ")}
+            ${allFilesRelativeToRoot?.map((file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`).join("\n - ")}
 
             The example index.ts file is as follows:
             ${indexTs}
@@ -100,18 +125,19 @@ export const genFinalCode = async (
             make sure that all the functions are imported and re-exported in the index.ts file.
             make sure that the docs are properly setup in the index.ts file.
             make sure you rewrite the entire file instead of any diffs.
-            make sure that file is writed in src/ folder.
+            make sure that index.ts file is writen in "src/" folder.
             `,
       tools: {
         write_to_file: writeToFile(props, clientRequest),
       },
-      toolChoice: "auto",
+      toolChoice: "required",
       maxSteps: 1,
       maxTokens: 3000,
       onStepFinish: (step) => {
         console.log("step", step.usage);
       },
     });
+    console.log("result2", result2.usage);
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
       model: models.claude35Sonnet.modelId,

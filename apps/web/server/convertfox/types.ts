@@ -18,6 +18,17 @@ export const taskIntegrations = z.object({
     z.object({
       name: z.string().describe("The name of the platform"),
       reason: z.string().describe("why this platform is needed for the task"),
+      optional: z
+        .boolean()
+        .default(false)
+        .describe("Whether this platform is optional"),
+      // TODO: this is better done post the platforms are created.
+      preferredAuth: z
+        .enum(["oauth", "apiKey"])
+        .describe(
+          "The preferred auth method for the platform based on the given task"
+        )
+        .optional(),
       package: z
         .string()
         .describe("The package name of the platform")
@@ -58,6 +69,9 @@ export const taskRequiredInfo = z.object({
 export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
 export const taskStructure = z.object({
+  templateType: z
+    .enum(["plain", "upstash", "mongodb"])
+    .describe("The type of template to use"),
   dbSchemas: z
     .array(
       z.object({
@@ -144,6 +158,8 @@ export const buildingStep = z.object({
   files: z.array(fileReference),
   startTime: z.string(),
   endTime: z.string(),
+  envVariablesUsed: z.array(z.string()).optional(),
+  packagesUsed: z.array(z.string()).optional(),
 });
 export type BuildingStep = z.infer<typeof buildingStep>;
 
@@ -166,3 +182,19 @@ export const taskInstance = z.object({
 
 export type TaskInstanceMetaType = z.infer<typeof taskInstance>;
 // the collected information must be stored NOT in the taskInstance record.
+
+export const extraEnvVariables = z.object({
+  env: z.string().describe("The env variable name"),
+  name: z.string().describe("A readable name for the env variable"),
+  what: z.string().describe("What is this env variable used for"),
+  why: z
+    .string()
+    .describe("Why is this env variable needed in a single line")
+    .optional(),
+  how: z.string().describe("How to get this env from the platform"),
+  isSameAs: z
+    .array(z.string())
+    .describe("similar exisiting env variables that were duped in the code")
+    .optional(),
+});
+export type ExtraEnvVariable = z.infer<typeof extraEnvVariables>;

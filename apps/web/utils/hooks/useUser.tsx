@@ -21,7 +21,7 @@ export function useUser(): UseUserReturn {
 
   // Function to identify user in analytics only if user data has changed
   const identifyUser = (user: User) => {
-    const previousUser = localStorage.getItem("app_user");
+    const previousUser = localStorage.getItem("microfox_app_user");
     const shouldIdentify =
       !previousUser ||
       JSON.parse(previousUser).id !== user.id ||
@@ -35,7 +35,7 @@ export function useUser(): UseUserReturn {
         name: user.name,
         avatar: user.avatar,
       });
-      localStorage.setItem("app_user", JSON.stringify(user));
+      localStorage.setItem("micorfoxapp_user", JSON.stringify(user));
     }
   };
 

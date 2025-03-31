@@ -2,7 +2,22 @@
 
 @plugin "tailwindcss-animate";
 
+@plugin "tailwind-scrollbar";
+
 @custom-variant dark (&:is(.dark *));
+
+@theme {
+  --animate-shimmer: shimmer 2s infinite linear;
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -119,6 +134,16 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  .thin-scrollbar {
+    @apply [&::-webkit-scrollbar]:!w-2
+    [&::-webkit-scrollbar-track]:!rounded-full
+    [&::-webkit-scrollbar-track]:!bg-gray-100
+    [&::-webkit-scrollbar-thumb]:!rounded-full
+    [&::-webkit-scrollbar-thumb]:!bg-gray-300
+    dark:[&::-webkit-scrollbar-track]:!bg-neutral-700
+    dark:[&::-webkit-scrollbar-thumb]:!bg-neutral-500;
   }
 
   button {

@@ -7,6 +7,11 @@ export const generateStatsReport = (taskInstanceMeta: TaskInstanceMetaType) => {
     (file: any) => (file.meta?.packagesUsed as string[]) ?? []
   );
   const packagesUnique = [...new Set(packagesAll)];
+
+  const envVariables = buildingStep?.files.flatMap(
+    (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
+  );
+  const envVariablesUnique = [...new Set(envVariables)];
   return `
   ## Stats
   Endpoints: ${taskStructure?.lambdaFunctions?.length}
@@ -14,6 +19,7 @@ export const generateStatsReport = (taskInstanceMeta: TaskInstanceMetaType) => {
   Total files written: ${buildingStep?.files.length}
   Total Time Taken for code generation: ${dayjs(buildingStep?.endTime).diff(dayjs(buildingStep?.startTime), "minutes")} minutes
   Packages used: ${packagesUnique.join(", ")}
+  Env Variables: ${envVariablesUnique.join(", ")}
   Total tokens used: <--have yet to add this-->
   Total cost: <--have yet to add this-->
   `;

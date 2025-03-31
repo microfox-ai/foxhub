@@ -81,16 +81,20 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
           type: "ui",
           objectType: "buttons",
           persona: "hellofox",
-          text: `Yes, we can build the task`,
+          text: `Yes, we can build the task. Do you wish to proceed ?`,
+          buttonHeaderText:
+            "Yes, we can build the task. Do you wish to proceed ?",
           buttons: [
             {
               action: "removeThisPart",
+              type: "deny",
               text: "Not Yet",
               className: "bg-neutral-200 text-black hover:bg-neutral-300",
             },
             {
               action: "shiftMinion",
               text: "Sure",
+              type: "confirm",
               className: "bg-green-500 text-white hover:bg-green-600",
               value: "convertfox",
               actionText: "Sure!, let's proceed!",

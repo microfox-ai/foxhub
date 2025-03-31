@@ -9,55 +9,9 @@ import {
   getOnlyPackageNames,
 } from "./getInternalPackages";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-/** Thinking tool */
-// export const searchForAlternatives = (props: StreamingFucntionProps<any, any>) => {
-//     return tool({
-//       description:
-//         "Search for alternatives to the platform that the user wants to integrate with.",
-//       parameters: z.object({
-//         platform: z.string().describe("The platform that the user wants to integrate with"),
-//       }),
-//       execute: async ({ platform }, options) => {
-//         props.dataStream.writeMessageAnnotation({
-//           type: "thinking",
-//           toolName: "analyseUserIntent",
-//           toolCallId: options.toolCallId,
-//           content: `Analyse & understand the user's intent & confirm the user's goal`,
-//         });
-//         const response = streamText({
-//           model: models.googleGeminiFlash,
-//           //messages: options.messages,
-//           prompt: `User wants this platform: ${platform}. But the platform has no API or any Integration support.`,
-//           system: `
-//           - you deep-analyse the users intent & understand or estimate the users goal.
-//           - your primary goal is not to understand how to build users goal, but what to build.
-//           - you do not ask for specific details, you auto-assume the details, based on users intent, and just ask for confirmation.
-//           - you respond back with simple questions if users goal is not clear yet.
-//           - if the goal is clear, you just explain & summarize the users end-goal with steps to take & info to collect later.
-//           The user's intent is: ${userIntent}. Reference the previous messages to understand the user's intent better.
-//           ---
-//           You run in a loop of Thought, Action, PAUSE, Observation.
-//           At the end of the loop you output an Answer
-//           Use Thought to describe your thoughts about the question you have been asked.
-//           Use Action to run one of the actions available to you - then return PAUSE.
-//           Observation will be the result of running those actions.
-//           At the end of the loop you output an Answer
-//       `,
-//           onFinish: (result) => {
-//             console.log("analyzeUsersIntent model usage", result.usage);
-//           },
-//           onError: (error) => {
-//             console.log("analyzeUsersIntent error", error);
-//           },
-//         });
-//         response.mergeIntoDataStream(props.dataStream, {
-//           experimental_sendFinish: true,
-//         });
-//         return response.text;
-//       },
-//     });
-//   };
+import { fetchGithubJson, fetchPackageInfo } from "./gitFetchers";
 
+// IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
 export const createTaskIntegrations = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
@@ -78,12 +32,13 @@ export const createTaskIntegrations = async (
 
   // first, get a text of all the platforms we need to integrate with for this task
   const textPlatformsStream = streamText({
-    model: models.googleGeminiFlash,
+    model: models.googleGeminiPro,
     system: `
         You analyse the task information & find the platforms we need to integrate with.
         You return all the third party platforms we need to integrate with (along with specific needs for each platform).
         You also return if there are alternatives for third party platforms.
         platforms can be of different types - social media, payment, email, or tools like excel, google sheets, etc.
+        In house
         ---
         You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer
@@ -98,6 +53,10 @@ export const createTaskIntegrations = async (
           reason: <reason for integrating with this specific platform>
           type: <type of platform>
           alternatives: <alternative platforms for this platform>
+        ---
+        Exclude the following platforms from the list:
+        - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
+        - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
     `,
     prompt: `
 Name: ${taskInfo.name}
@@ -107,6 +66,14 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     `,
     onFinish: (result) => {
       console.log("platform identification token Usage", result.usage);
+      TokenUsageAnalyticsTracker.trackUsage({
+        ...props.requestBody,
+        model: models.googleGeminiPro.modelId,
+        usage: result.usage,
+      });
+    },
+    onError: (error) => {
+      console.log("platform identification error", error);
     },
   });
 
@@ -131,6 +98,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     Search for existing internal packages that can be used to integrate with the platforms.
     package - If you find any, attach the package name.
     package - If you dont find any even in alternatives, attach @microfox/null.
+    Ignore all conditional platforms.
     ____
     You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer
@@ -138,6 +106,10 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
         Use Action to run one of the actions available to you - then return PAUSE.
         Observation will be the result of running those actions.
         At the end of the loop you output an Answer
+         ---
+        Exclude the following platforms from the list:
+        - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
+        - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
     `,
     schema: taskIntegrations,
     prompt: `
@@ -148,7 +120,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
   console.log("packageResult token Usage", packageResult.usage);
   let platforms = packageResult.object?.platforms;
   let alternativePlatforms = packageResult.object?.alternativePlatforms;
-  const finalPlatforms = platforms.map((platform) => {
+  let finalPlatforms = platforms.map((platform) => {
     if (platform?.package === "@microfox/null") {
       let findAlternative = alternativePlatforms?.find(
         (alternative) =>
@@ -170,6 +142,20 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     }
     return platform;
   });
+
+  finalPlatforms = await Promise.all(
+    platforms.map(async (platform) => {
+      if (
+        platform?.package?.startsWith("@microfox/") &&
+        platform?.package !== "@microfox/null"
+      ) {
+        const packageInfo = await fetchPackageInfo(platform?.package);
+        return { ...platform, packageInfo };
+      }
+      return platform;
+    })
+  );
+
   TokenUsageAnalyticsTracker.trackUsage({
     ...props.requestBody,
     model: models.googleGeminiPro.modelId,
@@ -201,11 +187,13 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
       {
         action: "highlightInput",
         text: "Not Yet",
+        type: "deny",
         className: "bg-neutral-200 text-black hover:bg-neutral-300",
       },
       {
         action: "appendMessage",
-        text: "Confirm !",
+        text: "Confirm",
+        type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "Yes, Everything looks good to me.",
       },

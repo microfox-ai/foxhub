@@ -1,39 +1,36 @@
 import { createPullRequest } from "@/server/buildfox/createPullRequest";
+import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { findLastElementWith } from "@/utils/helpers/array";
 import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
-import { genDbCode } from "./geenrators/genDbCode";
-import { genInitialCode } from "./geenrators/genInitialCode";
-import { genLambdaCode } from "./geenrators/genLambdaCode";
-import { genCronJobs } from "./geenrators/genCronJobs";
-import { genFinalCode } from "./geenrators/genFinalCode";
-import { pushToGit } from "./helper/pushToGit";
-import { fetchGithubJson } from "./tool/fetchPackageDocs";
-import { readAllGenFilesList } from "./tool/writeToFile";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
+import {
+  defaultCallbackResultBody,
+  ServerStreamingFunction,
+} from "@repo/ai-utils/router";
+import { generateObject, streamText } from "ai";
 import dayjs from "dayjs";
+import { z } from "zod";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { getMicrofoxCharacter } from "../hellofox/default";
+import { models } from "../models";
+import { genCronJobs } from "./geenrators/genCronJobs";
+import { genDbCode } from "./geenrators/genDbCode";
+import { genEnvCollector } from "./geenrators/genEnvCollector";
+import { genFinalCode } from "./geenrators/genFinalCode";
+import { genInitialCode } from "./geenrators/genInitialCode";
+import { genLambdaCode } from "./geenrators/genLambdaCode";
 import { generateStatsReport } from "./helper/generateStatsReport";
 import { octokitSdk } from "./helper/gitHelpers";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
-import { models } from "../models";
-import { generateObject, streamText } from "ai";
-import { z } from "zod";
-import { findLastElementWith } from "@/utils/helpers/array";
-import { getMicrofoxCharacter } from "../hellofox/default";
-import {
-  TokenUsageAnalyticsTracker,
-  TokenUsageModel,
-} from "../analytics/helper";
+import { pushToGit } from "./helper/pushToGit";
+import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -101,7 +98,7 @@ export const buildFoxRouter: ServerStreamingFunction<
 
     const result = streamText({
       model: models.googleGeminiFlash,
-      system: `${getMicrofoxCharacter()}, Tell the user kindlythat you don't support modification at this step. User can scroll up to make changes before the building has began. and retry building your automation!`,
+      system: `${getMicrofoxCharacter()}, Tell the user kindlythat you don't support modification at this step. User can scroll up to make changes before the building has began. and retry building your automation by cliecking refresh!`,
       messages: [lastUserMessage],
     });
     result.mergeIntoDataStream(dataStream, {
@@ -130,57 +127,53 @@ export const buildFoxRouter: ServerStreamingFunction<
     });
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Generating initial code",
-  });
   await genInitialCode(props, taskInstanceMeta, clientRequest);
 
   if (
     taskInstanceMeta?.taskStructure?.dbSchemas?.length &&
     taskInstanceMeta?.taskStructure?.dbSchemas?.length > 0
   ) {
-    dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Writing db schema",
-    });
     // write/modify schema files for prisma
     await genDbCode(props, taskInstanceMeta, clientRequest);
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Writing lambda functions",
-  });
   // write/modify lambda functions
   await genLambdaCode(props, taskInstanceMeta, clientRequest);
   //write/modify cron jobs
   await genCronJobs(props, taskInstanceMeta, clientRequest);
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Writing final code pieces",
-  });
   // write/modify root files - index.ts, package.json, serverless.yml, etc.
   await genFinalCode(props, taskInstanceMeta, clientRequest);
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Pushing to git",
-  });
   // push to git
   await pushToGit(props, clientRequest, taskInstanceMeta);
 
   // record the changes in the build fox steps taken so far using taskInstanceMeta.
-  const filesList = await readAllGenFilesList(clientRequest);
+  const filesList = await readAllGenFilesList(clientRequest, true);
   const newFilesList = filesList.map((file: any) => ({
     fileName: file.fileName,
     filePath: file.filePath,
     fileType: file.fileType,
     meta: file.meta,
-    contentSize: file.meta?.contentSize,
-    timestamp: file.meta?.timestamp,
   }));
+
+  const allEnvVariablesUsed = newFilesList?.flatMap(
+    (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
+  );
+  const envVariablesUsedUnique = [...new Set(allEnvVariablesUsed)] as string[];
+  const allPackagesUsed = newFilesList?.flatMap(
+    (file: any) => (file.meta?.packagesUsed as string[]) ?? []
+  );
+  const packagesUsedUnique = [...new Set(allPackagesUsed)];
+
+  console.log("envVariablesUsedUnique", envVariablesUsedUnique);
+  const envVariables = await genEnvCollector(
+    props,
+    envVariablesUsedUnique,
+    taskInstanceMeta
+  );
+  console.log("envVariablesShouldAsk", envVariables);
+
   const timeEnd = dayjs();
   const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
     clientRequestId,
@@ -191,6 +184,9 @@ export const buildFoxRouter: ServerStreamingFunction<
         endTime: timeEnd,
         ...taskInstanceMeta.buildingStep,
         files: newFilesList,
+        envsToCollect: envVariables,
+        envVariablesUsed: envVariablesUsedUnique,
+        packagesUsed: allPackagesUsed,
       },
     },
   });
@@ -210,6 +206,32 @@ export const buildFoxRouter: ServerStreamingFunction<
 
   dataStream.writeMessageAnnotation({
     type: "ui",
+    objectType: "envCollector",
+    persona: "buildfox",
+    text: `Need Some Minor Details !`,
+    envVariablesAll: envVariablesUsedUnique as any[],
+    packagesUsed: packagesUsedUnique as any[],
+    envVariablesCollect: envVariables as any[],
+    buttons: [
+      {
+        action: "highlightInput",
+        text: "Make changes",
+        type: "deny",
+        className: "bg-neutral-200 text-black hover:bg-neutral-300",
+      },
+      {
+        action: "shiftMinion",
+        actionText: "Test Automation !",
+        type: "confirm",
+        text: "Test Automation !",
+        className: "bg-green-500 text-white hover:bg-green-600",
+        value: "testfox",
+      },
+    ],
+  });
+
+  dataStream.writeMessageAnnotation({
+    type: "ui",
     objectType: "buttons",
     persona: "buildfox",
     text: `All Done !`,
@@ -217,12 +239,14 @@ export const buildFoxRouter: ServerStreamingFunction<
       {
         action: "highlightInput",
         text: "Make changes",
+        type: "deny",
         className: "bg-neutral-200 text-black hover:bg-neutral-300",
       },
       {
         action: "shiftMinion",
         actionText: "Test Automation !",
         text: "Test Automation !",
+        type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "testfox",
       },
@@ -256,6 +280,9 @@ export const buildFoxRouter: ServerStreamingFunction<
   } catch (error) {
     console.error("Error sending message to slack", error);
   }
+
+  // delete the files in local directory
+  await deleteAllGenFiles(clientRequest);
 
   return {
     responseBody: { ...responseBody },

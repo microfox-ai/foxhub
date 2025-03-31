@@ -1,0 +1,12 @@
+[
+  {
+    "key": "UPSTASH_REDIS_REST_URL",
+    "value": "https://<your-upstash-redis-url>",
+    "description": "The URL of the Upstash Redis instance"
+  },
+  {
+    "key": "UPSTASH_REDIS_REST_TOKEN",
+    "value": "<your-upstash-redis-token>",
+    "description": "The token of the Upstash Redis instance"
+  }
+]

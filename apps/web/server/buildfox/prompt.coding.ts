@@ -2,19 +2,24 @@ import dedent from "dedent";
 import { TaskInstanceMetaType } from "../convertfox/types";
 import { TaskStructure } from "../convertfox/types";
 import path from "path";
-import { INTERNAL_TEMPLATE_ROOT } from "./tool/writeToFile";
+import {
+  INTERNAL_TEMPLATE_PLAIN_ROOT,
+  INTERNAL_TEMPLATE_UPSTASH_ROOT,
+  INTERNAL_TEMPLATE_MONGODB_ROOT,
+} from "./tool/writeToFile";
 import fs from "fs/promises";
 
 export const codingSystemPrompt = (
   step: "backend" | "frontend",
   writingCoreFunctions: boolean = false
 ) => {
+  // also inset expertise in theese packages -  @upstash/redis, @mongoose (if mongodb is used),
   return dedent`
     You are a highly skilled fullstack developer with extensive knoledge in typescript, ${
       step === "frontend"
         ? "vite shadcn/ui and tailwindcss"
         : step === "backend"
-          ? "serverless framework, node.js, prisma, postgresql"
+          ? "serverless framework, node.js, "
           : ""
     }.
     You experise in writing microservices in typescript & deploy them to aws lambda functions using serverless framework.
@@ -34,8 +39,7 @@ export const codingSystemPrompt = (
         The file structure is as follows (observed from the project root):
         [root]
         - src/
-          - index.ts (Never modify this file)
-          - app.ts (This file is the entry point for the lambda function)
+          - index.ts (This file is the entry point for the lambda function)
           - functions (Write any lambda function / cron job code in this folder)
             - functionName.ts (This file should hold the key lambda function code, refer to )
           - db (Write any db related code file in this folder)
@@ -96,18 +100,27 @@ export const codingFunctionPrompt = async ({
   taskInstanceMeta,
   function: _function,
   cron: _cron,
+  template_type,
 }: {
   type: "lambda" | "cron";
   taskInstanceMeta: TaskInstanceMetaType;
   function?: TaskStructure["lambdaFunctions"][0];
   cron?: TaskStructure["cronJobs"][0];
+  template_type: "plain" | "upstash" | "mongodb";
 }) => {
+  const rootDir =
+    template_type === "plain"
+      ? INTERNAL_TEMPLATE_PLAIN_ROOT
+      : template_type === "upstash"
+        ? INTERNAL_TEMPLATE_UPSTASH_ROOT
+        : INTERNAL_TEMPLATE_MONGODB_ROOT;
+
   const lambdaExample = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "function.txt"),
+    path.join(process.cwd(), rootDir, "function.txt"),
     "utf8"
   );
   const cronExample = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "cron.txt"),
+    path.join(process.cwd(), rootDir, "cron.txt"),
     "utf8"
   );
   const isDbsetup =
@@ -133,13 +146,25 @@ export const codingFunctionPrompt = async ({
 
             The following packages are installed in the project:
             - ${taskInstanceMeta?.taskIntegrations?.platforms?.map((platform) => platform?.package).join("\n - ")}
-            ${isDbsetup ? "- @prisma/client" : ""}
+            ${
+              template_type === "mongodb"
+                ? "- @mongoose"
+                : template_type === "upstash"
+                  ? "- @upstash/redis"
+                  : ""
+            }
             - dotenv
             
             Requirements:
             - Use TypeScript
             - Implement proper error handling
-            ${isDbsetup ? "- Use Prisma client (import prisma from '../db/prisma') for database operations" : "use @upstash/redis for state management - only if data needs to be persisted acrosss function calls"}
+            ${
+              template_type === "mongodb"
+                ? "- Use Mongoose client (import mongoose from 'mongoose') for database operations"
+                : template_type === "upstash"
+                  ? "use @upstash/redis for state management - only if data needs to be persisted acrosss function calls"
+                  : ""
+            }
             - Follow Serverless best practices
             - Add proper Docs
             - Add appropriate comments
@@ -147,15 +172,20 @@ export const codingFunctionPrompt = async ({
 
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
+
             
             The code should be created in the src/functions directory.
-            ${isDbsetup ? "Make sure to use the prisma client for database operations." : "If needed, use the @upstash/redis client for state management."}
             Make sure to use the necessary imports from the packages when needed.
+            Always call fetch_package_docs for the packages that start with @microfox to better understand how to use them.
             Use named exports for the function.
             Also export the doc file for the function.
             Only use the packages that are listed above in the project.
             Make no assumption of utils, or outside files - Create complete functionality in a single file.
             Do not write any mock code, it should be production ready code.
+
+            Some instructions for docs
+            - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
+            - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.
             `;
 };
 

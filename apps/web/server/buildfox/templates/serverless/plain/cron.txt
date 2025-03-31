@@ -1,4 +1,3 @@
-import prisma from '../db/prisma'
 
 /**
  * Cron job that runs every day at 8:00 AM
@@ -9,13 +8,8 @@ export const dailyMorningJob = async (event: any) => {
     const date = new Date()
     date.setDate(date.getDate() - 30)
 
-    const result = await prisma.user.deleteMany({
-      where: {
-        created_at: {
-          lt: date,
-        },
-      },
-    })
+    //TODO: API endpoint or Internal helper function to call to cleanup old records as is needed.
+
 
     return {
       statusCode: 200,
@@ -31,7 +25,6 @@ export const dailyMorningJob = async (event: any) => {
       body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
     }
   } finally {
-    await prisma.$disconnect()
   }
 }
 

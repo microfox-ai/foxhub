@@ -30,6 +30,7 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
         - You are an expert at automations, and a user has come to you with a task.
         - you deep-analyse the users intent & understand or estimate the users final goal/task. 
         - your primary goal is to understand / estimate what to build (& not how to build it).
+        - you need not clarify any specific information on how to build it, you only need to clarify the users end-goal
         ---
         You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer

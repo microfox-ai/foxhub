@@ -158,8 +158,8 @@ export const hellofoxRouter: ServerStreamingFunction<
     classification.type === "task-confirmation"
   ) {
     lastFewMessages =
-      requestBody.messages.length > 5
-        ? requestBody.messages.slice(-5)
+      requestBody.messages.length > 8
+        ? requestBody.messages.slice(-8)
         : requestBody.messages;
 
     let toolUsage = ``;

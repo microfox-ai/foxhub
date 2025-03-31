@@ -2,6 +2,7 @@ import { ButtonSCN } from "@/components/elements/Button";
 import { ClientRequest } from "@prisma/client";
 import { RefreshCw } from "lucide-react";
 import { useMicrofox } from "../providers/MicrofoxProvider";
+import { IN_DEV } from "@/utils/constants/appInfo";
 
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
@@ -15,18 +16,23 @@ const ChatHeader = ({
   isLoading,
   isValidating,
 }: IChatHeaderProps) => {
-
   const { minionType } = useMicrofox();
   return (
-    <div className="flex items-center justify-between gap-2 p-4">
+    <div className="flex w-full items-center justify-between gap-2 p-4">
       <div className="w-fit">
         <h2 className="line-clamp-1 flex flex-wrap items-center justify-start gap-2 text-sm font-semibold">
           {clientRequest?.title}
         </h2>
-        <p className="text-xs text-gray-500">Request ID: {clientRequest?.id}</p>
-        <p className="text-xs text-gray-500">Minion: {minionType}</p>
+        {IN_DEV && (
+          <>
+            <p className="text-xs text-gray-500">
+              Request ID: {clientRequest?.id}
+            </p>
+            <p className="text-xs text-gray-500">Minion: {minionType}</p>
+          </>
+        )}
       </div>
-      <ButtonSCN
+      {/* <ButtonSCN
         variant="outline"
         size="sm"
         onClick={() => mutate()}
@@ -35,8 +41,7 @@ const ChatHeader = ({
         <RefreshCw
           className={`my-auto h-4 w-4 ${isValidating ? "animate-spin" : ""}`}
         />
-        {/* {isValidating ? 'Refreshing...' : 'Refresh'} */}
-      </ButtonSCN>
+      </ButtonSCN> */}
     </div>
   );
 

@@ -7,60 +7,75 @@ import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { writeToFile } from "../tool/writeToFile";
 import { fetchPackageDocs } from "../tool/fetchPackageDocs";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
+
+// IMPORTANT TODO: decide to fetch package Info or fetch example based on previous builds (& then, only then required info is fetched)
 export const genLambdaCode = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
-  // Generate Lambda functions based on the task requirements
-  for (const _function of taskInstanceMeta?.taskStructure?.lambdaFunctions ??
-    []) {
-    const prompt = await codingFunctionPrompt({
-      type: "lambda",
-      taskInstanceMeta,
-      function: _function,
-    });
-    console.log("generating lambda function", _function.name);
-    const result = await generateText({
-      model: models.claude35Sonnet,
-      system: codingSystemPrompt("backend"),
-      prompt,
-      toolChoice: "auto",
-      maxSteps: 2,
-      maxTokens: 5000,
-      tools: {
-        write_to_file: writeToFile(props, clientRequest),
-        fetch_package_docs: fetchPackageDocs(props, clientRequest),
-      },
-      onStepFinish: (step) => {
-        console.log("step", step.usage);
-      },
-      // onFinish: async (result) => {
-      //   console.log("result", result.usage);
-      // },
-      //   onError: (error) => {
-      //     console.log("error", error);
-      //   },
-    });
-    TokenUsageAnalyticsTracker.trackUsage({
-      ...props.requestBody,
-      model: models.claude35Sonnet.modelId,
-      usage: result.usage,
-    });
+  props.dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Writing lambda functions",
+  });
+
+  try {
+    // Generate Lambda functions based on the task requirements
+    for (const _function of taskInstanceMeta?.taskStructure?.lambdaFunctions ??
+      []) {
+      const prompt = await codingFunctionPrompt({
+        type: "lambda",
+        taskInstanceMeta,
+        function: _function,
+        template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
+      });
+      console.log("generating lambda function", _function.name);
+      const result = await generateText({
+        model: models.claude35Sonnet,
+        system: codingSystemPrompt("backend"),
+        prompt,
+        toolChoice: "auto",
+        maxSteps: 2,
+        maxTokens: 5000,
+        tools: {
+          write_to_file: writeToFile(props, clientRequest),
+          fetch_package_docs: fetchPackageDocs(props, clientRequest),
+        },
+        onStepFinish: (step) => {
+          console.log("step", step.usage);
+        },
+        // onFinish: async (result) => {
+        //   console.log("result", result.usage);
+        // },
+        //   onError: (error) => {
+        //     console.log("error", error);
+        //   },
+      });
+      TokenUsageAnalyticsTracker.trackUsage({
+        ...props.requestBody,
+        model: models.claude35Sonnet.modelId,
+        usage: result.usage,
+      });
+      props.dataStream.writeMessageAnnotation({
+        type: "thinking",
+        content: "Finished - " + _function.name,
+      });
+
+      console.log("result", result.usage);
+      return taskInstanceMeta;
+    }
+  } catch (err) {
+    console.log("error", err);
     props.dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Finished - " + _function.name,
+      type: "error",
+      content: "Error generating lambda function",
     });
-
-    console.log("result", result.usage);
-
-    // result.mergeIntoDataStream(props.dataStream, {
-    //   experimental_sendStart: false,
-    //   experimental_sendFinish: false,
-    // });
-
-    //await result.text;
+    throw err;
   }
+  // result.mergeIntoDataStream(props.dataStream, {
+  //   experimental_sendStart: false,
+  //   experimental_sendFinish: false,
+  // });
 
-  return taskInstanceMeta;
+  //await result.text;
 };

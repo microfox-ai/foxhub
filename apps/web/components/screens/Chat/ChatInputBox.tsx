@@ -1,44 +1,66 @@
 import { ButtonSCN } from "@/components/elements/Button";
-import { FilePlus, FileText, RefreshCw, Send } from "lucide-react";
-import { useRef } from "react";
+import {
+  FilePlus,
+  Search,
+  Lightbulb,
+  Send,
+  RefreshCw,
+  FileText,
+  Plus,
+} from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { useClientSecrets } from "../providers/ClientSecretProvider";
 import { ChatUIMessageWithTypes } from "../hooks/convertors";
 import { useMicrofox } from "../providers/MicrofoxProvider";
+import { cn } from "@/lib/utils";
+import { UIMessage } from "ai";
 interface ChatInputBoxProps {
   input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
   userId: string;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  className?: string;
+  lastMessage?: UIMessage;
 }
 
 export default function ChatInputBox({
   input,
   messageStatus,
   userId,
+  lastMessage,
   handleInputChange,
+  className,
 }: ChatInputBoxProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
   const { setShowSlashModal } = useClientSecrets();
   const { handleSubmit } = useMicrofox();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    console.log("textareaRef", textareaRef.current);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto"; // Reset height
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
+    }
+  }, [input]); // Runs when input changes
 
   const handleFileInputChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (e.target.files) {
       await handleFileChange(
         e.target.files,
         userId,
-        "customBots/clientMessages",
+        "customBots/clientMessages"
       );
       e.target.value = "";
     }
   };
 
   const handleCustomInputChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
     handleInputChange(e);
     if (e.target.value?.startsWith("/")) {
@@ -49,7 +71,7 @@ export default function ChatInputBox({
   };
 
   return (
-    <div className="absolute bottom-0 right-0 w-full bg-white px-4 py-1">
+    <div className={cn("w-full overflow-visible", className)}>
       {attachedMedia.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2">
           {attachedMedia.map((media, index) => (
@@ -75,11 +97,13 @@ export default function ChatInputBox({
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2">
+      <div className="flex flex-col gap-2 !rounded-4xl shadow-md border border-gray-200 bg-white p-3 relative">
         <textarea
-          placeholder="Type your message... (start with '/' to choose a ClientSecret)"
-          className="w-full resize-none rounded-lg border p-3 outline-none"
+          ref={textareaRef}
+          placeholder="Ask anything"
+          className="flex-1 overflow-hidden bg-transparent px-2 py-2 text-gray-800 placeholder-gray-500 outline-none resize-none min-h-[56px]"
           value={input}
+          rows={1}
           onChange={handleCustomInputChange}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -87,40 +111,50 @@ export default function ChatInputBox({
             }
           }}
           disabled={
+            (
+              lastMessage?.annotations?.[
+                lastMessage.annotations.length - 1
+              ] as any
+            )?.type === "ui" ||
             messageStatus === "pending" ||
             messageStatus === "streaming" ||
             mediaUploadStatus === "UPLOADING" ||
             mediaUploadStatus === "ERROR"
           }
         />
-        <div className="flex flex-col-reverse gap-1">
-          <ButtonSCN
+        <div className="flex w-full items-center justify-between">
+          <button
+            className="p-2 h-fit ml-2 border border-gray-300 rounded-full text-gray-500 hover:text-gray-700"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+          <button
             onClick={() => handleSubmit()}
             disabled={
+              (
+                lastMessage?.annotations?.[
+                  lastMessage.annotations.length - 1
+                ] as any
+              )?.type === "ui" ||
               (!input.trim() && attachedMedia.length === 0) ||
               messageStatus === "pending" ||
               messageStatus === "streaming" ||
               mediaUploadStatus === "UPLOADING" ||
               mediaUploadStatus === "ERROR"
             }
-            className="py-1"
+            className="rounded-full mr-2 bg-black p-2 text-white disabled:bg-gray-400  hover:bg-black/80"
           >
             {!(
               messageStatus === "streaming" ||
               messageStatus === "pending" ||
               mediaUploadStatus === "UPLOADING"
             ) ? (
-              <Send className="my-auto h-4 w-4" />
+              <Send className="h-5 w-5" />
             ) : (
-              <RefreshCw className="my-auto h-4 w-4 animate-spin" />
+              <RefreshCw className="h-5 w-5 animate-spin" />
             )}
-          </ButtonSCN>
-          <ButtonSCN
-            onClick={() => fileInputRef.current?.click()}
-            className="py-1"
-          >
-            <FilePlus className="my-auto h-4 w-4" />
-          </ButtonSCN>
+          </button>
         </div>
         <input
           type="file"

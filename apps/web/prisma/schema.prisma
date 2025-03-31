@@ -97,7 +97,7 @@ model ClientRequest {
   updatedAt                DateTime                @updatedAt
   chatUIMessages           ChatUIMessage[]
   botProject               BotProject              @relation(fields: [botProjectId], references: [id])
-  deployedFunctions        ClientRequestFunction[]
+  deployedFunctions        ClientDeployment[]
   requestUpdates           RequestUpdate[]
   taskInstanceMeta         TaskInstanceMeta?
 }
@@ -132,27 +132,28 @@ model UsageAnalytics {
 model ClientSecret {
   id               String     @id @default(uuid())
   botProjectId     String
-  clientRequestIds String[]
+  clientRequestIds String[] 
   userId           String
   name             String
-  type             String
-  variables        Json[]
+  type             String // kind of secret eg google, github, etc
+  variables        Json[] // this will be in the format of { key: "apiKey", value: "1234567890", isOptional: false}
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   botProject       BotProject @relation(fields: [botProjectId], references: [id])
 }
 
-model ClientRequestFunction {
+model ClientDeployment {
   id                    String        @id @default(uuid())
   userId                String
   botProjectId          String
   originClientRequestId String
   name                  String        @unique
   baseUrl               String
-  mode                  SECRETMODE
+  stage                 DEPLOY_STAGE
   type                  FUNCTIONTYPE
-  endpoints             Json[]
-  schedules             Json[]
+  docs                  String?
+  endpoints             Json[]        @default([])
+  schedules             Json[]        @default([])
   metadata              Json?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
@@ -175,7 +176,7 @@ model RequestUpdate {
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
-enum SECRETMODE {
+enum DEPLOY_STAGE {
   DEV
   PROD
   STAGING
@@ -192,7 +193,6 @@ enum REQUESTSTATUS {
 
 enum FUNCTIONTYPE {
   WEBHOOK
-  API
-  SCHEDULED
+  CRON
   MIXED
 }

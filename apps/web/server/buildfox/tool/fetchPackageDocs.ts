@@ -1,31 +1,14 @@
+import {
+  fetchGithubJson,
+  fetchGithubText,
+} from "@/server/convertfox/gitFetchers";
+import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { models } from "@/server/models";
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { tool } from "ai";
+import { generateObject, tool } from "ai";
 import { z } from "zod";
 
-export async function fetchGithubJson(
-  owner: string,
-  repo: string,
-  path: string
-): Promise<any> {
-  // GitHub raw content URL format
-  const url = `https://raw.githubusercontent.com/${owner}/${repo}${path}`;
-
-  console.log("fetching", url);
-  try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.text();
-    return data;
-  } catch (error) {
-    console.error("Error fetching GitHub JSON:", error);
-    throw error;
-  }
-}
 async function fetchGithubReadMe(
   owner: string,
   repo: string,
@@ -39,7 +22,8 @@ async function fetchGithubReadMe(
 /** this should be removed from tools */
 export const fetchPackageDocs = (
   props: StreamingFucntionProps<any, any>,
-  clientRequest: ClientRequest
+  clientRequest: ClientRequest,
+  taskInstanceMeta?: TaskInstanceMetaType
 ) => {
   return tool({
     description:
@@ -52,15 +36,41 @@ export const fetchPackageDocs = (
         ),
     }),
     execute: async ({ microfoxPackages }, options) => {
+      const fetchReadMePackages = microfoxPackages.filter((pkg) =>
+        pkg.includes("@microfox/")
+      );
       const readmes = await Promise.all(
-        microfoxPackages.map(async (pkg) => {
+        fetchReadMePackages.map(async (pkg) => {
           let readme;
           try {
-            readme = await fetchGithubJson(
+            let mainReadme = await fetchGithubText(
               "microfox-ai",
               "microfox",
               `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/README.md`
             );
+            readme = mainReadme;
+            // let packageInfo = await fetchGithubJson(
+            //   "microfox-ai",
+            //   "microfox",
+            //   `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/package-info.json`
+            // );
+            // const isDynamicReadme =
+            //   packageInfo.readme_map?.type === "dynamic_path";
+            // if (isDynamicReadme) {
+            //   const dynamic_setters = packageInfo.readme_map?.dynamic_setters;
+            // TODO: recursively loop until you have all the readmes you need to fetch & attach
+            // for (const setter of dynamic_setters) {
+            //   const selectDynamicSetter = await generateObject({
+            //     model: models.claude35Sonnet,
+            //     schema: z.object({
+            //       scopes: z.array(z.string()),
+            //     }),
+            //     system: `Pick the most relevant scopes that suit the task`,
+            //     prompt: `Select the most relevant readmes for the package ${pkg}`,
+            //   });
+            // }
+            // }
+            console.log("fetched readme for ", pkg);
             return { readme, package: pkg };
           } catch (error) {
             console.error("Error fetching README:", error);
@@ -68,7 +78,21 @@ export const fetchPackageDocs = (
           }
         })
       );
-      return readmes;
+
+      console.log("all readmes", readmes.map((r) => r.package).join(", "));
+      console.log(
+        "readmes not found",
+        readmes.filter((r) => r.readme === "").map((r) => r.package)
+      );
+
+      return readmes.concat(
+        microfoxPackages
+          .filter((pkg) => !pkg.includes("@microfox/"))
+          .map((pkg) => ({
+            readme: " No readme found for this package " + pkg,
+            package: pkg,
+          }))
+      );
       // find my package, get some initial understanding of the package
       // accordingly fetch the readme that is most relevant for the integration
 

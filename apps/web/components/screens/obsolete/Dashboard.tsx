@@ -52,7 +52,7 @@ export default function Dashboard() {
       const res = await fetch(url, {});
       if (!res.ok) throw new Error("Failed to fetch latest request");
       return res.json();
-    },
+    }
   );
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function Dashboard() {
     isLoading,
   } = useSWR(
     user?.id ? `/api/bot-project?userId=${user?.id}` : null,
-    async (url) => await fetch(url).then((res) => res.json()),
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   useEffect(() => {
@@ -167,9 +167,9 @@ export default function Dashboard() {
                 const openRequests = project?.clientRequests?.filter(
                   (request) =>
                     request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                    request?.requestStatus !== REQUESTSTATUS.CLOSED,
+                    request?.requestStatus !== REQUESTSTATUS.CLOSED
                 );
-                if (openRequests?.length < 3) {
+                if (openRequests?.length < 5) {
                   updateSearchParams({
                     request: "new",
                     view: "newRequest",
@@ -177,7 +177,7 @@ export default function Dashboard() {
                   });
                 } else {
                   toast.warning(
-                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved.",
+                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
                   );
                 }
               }}

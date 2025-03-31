@@ -1,26 +1,18 @@
 import { prisma } from "@/prisma/prisma";
-import { FUNCTIONTYPE, SECRETMODE } from "@prisma/client";
+import { FUNCTIONTYPE, DEPLOY_STAGE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
-// Create ClientRequestFunction
+// Create ClientDeployment
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      originClientRequestId,
-      name,
-      baseUrl,
-      mode,
-      type,
-      endpoints,
-      schedules,
-      metadata,
-    } = body;
+    const { originClientRequestId, name, baseUrl, stage, type, metadata } =
+      body;
 
-    if (!originClientRequestId || !name || !baseUrl || !type || !mode) {
+    if (!originClientRequestId || !name || !baseUrl || !type || !stage) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -32,52 +24,51 @@ export async function POST(req: NextRequest) {
     if (!clientRequest) {
       return NextResponse.json(
         { error: "ClientRequest not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     const { userId, botProjectId } = clientRequest;
 
-    // Create the ClientRequestFunction
-    const clientFunction = await prisma.clientRequestFunction.create({
+    // Create the ClientDeployment
+    const clientFunction = await prisma.clientDeployment.create({
       data: {
         userId,
         botProjectId,
         originClientRequestId,
         name,
         baseUrl,
-        mode: mode as SECRETMODE,
+        stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
-        endpoints,
-        schedules,
         metadata,
       },
     });
 
     // Add notification in chat if needed
-    await prisma.chatUIMessage.create({
-      data: {
-        originClientRequestId,
-        userId,
-        content: `A new ${type.toLowerCase()} function "${name}" has been deployed to ${mode} mode`,
-        context: `server`,
-        role: `assistant`,
-        minionType: `other`,
-        createdAt: new Date(),
-      },
-    });
+    // TODO: VISHWAJEET - send not only a message, but also an email to the user.
+    // await prisma.chatUIMessage.create({
+    //   data: {
+    //     originClientRequestId,
+    //     userId,
+    //     content: `A new ${type.toLowerCase()} function "${name}" has been deployed to ${mode} mode`,
+    //     context: `server`,
+    //     role: `assistant`,
+    //     minionType: `other`,
+    //     createdAt: new Date(),
+    //   },
+    // });
 
     return NextResponse.json(clientFunction, { status: 201 });
   } catch (error) {
-    console.error("Error creating ClientRequestFunction:", error);
+    console.error("Error creating ClientDeployment:", error);
     return NextResponse.json(
-      { error: "Error creating ClientRequestFunction" },
-      { status: 500 },
+      { error: "Error creating ClientDeployment" },
+      { status: 500 }
     );
   }
 }
 
-// Get ClientRequestFunction(s)
+// Get ClientDeployment(s)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -94,11 +85,11 @@ export async function GET(req: NextRequest) {
           error:
             "Missing id, name, userId, botProjectId, or clientRequestId parameter",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const clientFunctions = await prisma.clientRequestFunction.findMany({
+    const clientFunctions = await prisma.clientDeployment.findMany({
       where: {
         ...(id && { id }),
         ...(name && { name }),
@@ -113,15 +104,15 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ clientFunctions }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching ClientRequestFunction:", error);
+    console.error("Error fetching ClientDeployment:", error);
     return NextResponse.json(
-      { error: "Error fetching ClientRequestFunction" },
-      { status: 500 },
+      { error: "Error fetching ClientDeployment" },
+      { status: 500 }
     );
   }
 }
 
-// Update ClientRequestFunction
+// Update ClientDeployment
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
@@ -131,18 +122,18 @@ export async function PUT(req: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { error: "Missing function ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const clientFunction = await prisma.clientRequestFunction.findUnique({
+    const clientFunction = await prisma.clientDeployment.findUnique({
       where: { id },
     });
 
     if (!clientFunction) {
       return NextResponse.json(
         { error: "Function not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -151,13 +142,11 @@ export async function PUT(req: NextRequest) {
 
     if (name !== undefined) updateData.name = name;
     if (type !== undefined) updateData.type = type as FUNCTIONTYPE;
-    if (mode !== undefined) updateData.mode = mode as SECRETMODE;
+    if (mode !== undefined) updateData.mode = mode as DEPLOY_STAGE;
     if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
-    if (endpoints !== undefined) updateData.endpoints = endpoints;
-    if (schedules !== undefined) updateData.schedules = schedules;
     if (metadata !== undefined) updateData.metadata = metadata;
 
-    const updatedFunction = await prisma.clientRequestFunction.update({
+    const updatedFunction = await prisma.clientDeployment.update({
       where: { id },
       data: updateData,
     });
@@ -179,15 +168,15 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(updatedFunction, { status: 200 });
   } catch (error) {
-    console.error("Error updating ClientRequestFunction:", error);
+    console.error("Error updating ClientDeployment:", error);
     return NextResponse.json(
-      { error: "Error updating ClientRequestFunction" },
-      { status: 500 },
+      { error: "Error updating ClientDeployment" },
+      { status: 500 }
     );
   }
 }
 
-// Delete ClientRequestFunction
+// Delete ClientDeployment
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -196,51 +185,52 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json(
         { error: "Missing function ID" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const clientFunction = await prisma.clientRequestFunction.findUnique({
+    const clientFunction = await prisma.clientDeployment.findUnique({
       where: { id },
     });
 
     if (!clientFunction) {
       return NextResponse.json(
         { error: "Function not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     // Store data before deletion for notifications
-    const { name, originClientRequestId, userId, mode } = clientFunction;
+    const { name, originClientRequestId, userId, stage } = clientFunction;
 
     // Delete the function
-    await prisma.clientRequestFunction.delete({
+    await prisma.clientDeployment.delete({
       where: { id },
     });
 
     // Notify in chat about deletion
-    await prisma.chatUIMessage.create({
-      data: {
-        originClientRequestId,
-        userId,
-        content: `Function "${name}" has been removed from ${mode} mode`,
-        context: `server`,
-        role: `assistant`,
-        minionType: `other`,
-        createdAt: new Date(),
-      },
-    });
+    // TODO: VISHWAJEET - no need to send a mesaage i think, but will have to take a look later
+    // await prisma.chatUIMessage.create({
+    //   data: {
+    //     originClientRequestId,
+    //     userId,
+    //     content: `Function "${name}" has been removed from ${mode} mode`,
+    //     context: `server`,
+    //     role: `assistant`,
+    //     minionType: `other`,
+    //     createdAt: new Date(),
+    //   },
+    // });
 
     return NextResponse.json(
       { message: "Function deleted successfully" },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
-    console.error("Error deleting ClientRequestFunction:", error);
+    console.error("Error deleting ClientDeployment:", error);
     return NextResponse.json(
-      { error: "Error deleting ClientRequestFunction" },
-      { status: 500 },
+      { error: "Error deleting ClientDeployment" },
+      { status: 500 }
     );
   }
 }

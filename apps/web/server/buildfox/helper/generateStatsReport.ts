@@ -9,7 +9,7 @@ export const generateStatsReport = (taskInstanceMeta: TaskInstanceMetaType) => {
   const packagesUnique = [...new Set(packagesAll)];
 
   const envVariables = buildingStep?.files.flatMap(
-    (file: any) => (file.meta?.envVariables as string[]) ?? []
+    (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
   );
   const envVariablesUnique = [...new Set(envVariables)];
   return `

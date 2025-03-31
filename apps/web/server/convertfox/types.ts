@@ -22,6 +22,13 @@ export const taskIntegrations = z.object({
         .boolean()
         .default(false)
         .describe("Whether this platform is optional"),
+      // TODO: this is better done post the platforms are created.
+      preferredAuth: z
+        .enum(["oauth", "apiKey"])
+        .describe(
+          "The preferred auth method for the platform based on the given task"
+        )
+        .optional(),
       package: z
         .string()
         .describe("The package name of the platform")
@@ -62,6 +69,9 @@ export const taskRequiredInfo = z.object({
 export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
 export const taskStructure = z.object({
+  templateType: z
+    .enum(["plain", "upstash", "mongodb"])
+    .describe("The type of template to use"),
   dbSchemas: z
     .array(
       z.object({
@@ -148,6 +158,8 @@ export const buildingStep = z.object({
   files: z.array(fileReference),
   startTime: z.string(),
   endTime: z.string(),
+  envVariablesUsed: z.array(z.string()).optional(),
+  packagesUsed: z.array(z.string()).optional(),
 });
 export type BuildingStep = z.infer<typeof buildingStep>;
 

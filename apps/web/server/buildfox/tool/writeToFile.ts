@@ -7,7 +7,9 @@ import path from "path";
 import { z } from "zod";
 // GIT - 1000 requests per hour per repo
 
-export const INTERNAL_TEMPLATE_ROOT = `server/buildfox/templates`;
+export const INTERNAL_TEMPLATE_PLAIN_ROOT = `server/buildfox/templates/serverless/plain`;
+export const INTERNAL_TEMPLATE_UPSTASH_ROOT = `server/buildfox/templates/serverless/upstash`;
+export const INTERNAL_TEMPLATE_MONGODB_ROOT = `server/buildfox/templates/serverless/mongodb`;
 
 export const getRootDir = async (clientRequest: ClientRequest) => {
   if (!clientRequest.repoName || !clientRequest.requestDir) {
@@ -251,7 +253,11 @@ export const writeToFile = (
 
         if (packagesUsed.length > 0) {
           const packageJson = await fs.readFile(
-            path.join(process.cwd(), INTERNAL_TEMPLATE_ROOT, "package.json"),
+            path.join(
+              process.cwd(),
+              INTERNAL_TEMPLATE_PLAIN_ROOT,
+              "package.json"
+            ),
             "utf8"
           );
           const packageJsonContent = JSON.parse(packageJson);

@@ -1,0 +1,42 @@
+{
+  "name": "template-function",
+  "version": "1.0.0",
+  "description": "Template function with various API endpoints",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "npm run build && serverless deploy --stage dev",
+    "deploy:preview": "npm run build && serverless deploy --stage preview",
+    "deploy:prod": "npm run build && serverless deploy --stage prod",
+    "remove": "serverless remove",
+    "remove:preview": "serverless remove --stage preview",
+    "remove:prod": "serverless remove --stage prod",
+    "start": "serverless offline start",
+    "lint": "eslint  --ignore-path .gitignore ."
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "eslint": "^9.23.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.31.0",
+    "serverless": "^3.38.0",
+    "serverless-offline": "^13.3.3",
+    "serverless-webpack": "^5.13.0",
+    "ts-jest": "^29.1.2",
+    "ts-loader": "^9.5.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3",
+    "webpack": "^5.90.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
+  },
+  "eslintConfig": {
+    "extends": "@serverless/eslint-config/node",
+    "root": true
+  }
+}

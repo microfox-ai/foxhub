@@ -3,7 +3,7 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import { z } from "zod";
 
-export async function fetchGithubJson(
+export async function fetchGithubText(
   owner: string,
   repo: string,
   path: string
@@ -59,12 +59,12 @@ export const fetchPackageDocs = (
         fetchReadMePackages.map(async (pkg) => {
           let readme;
           try {
-            readme = await fetchGithubJson(
+            readme = await fetchGithubText(
               "microfox-ai",
               "microfox",
               `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/README.md`
             );
-            //console.log("fetched readme for ", pkg, readme);
+            console.log("fetched readme for ", pkg);
             return { readme, package: pkg };
           } catch (error) {
             console.error("Error fetching README:", error);
@@ -72,6 +72,13 @@ export const fetchPackageDocs = (
           }
         })
       );
+
+      console.log("all readmes", readmes.map((r) => r.package).join(", "));
+      console.log(
+        "readmes not found",
+        readmes.filter((r) => r.readme === "").map((r) => r.package)
+      );
+
       return readmes.concat(
         microfoxPackages
           .filter((pkg) => !pkg.includes("@microfox/"))

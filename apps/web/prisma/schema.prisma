@@ -97,7 +97,7 @@ model ClientRequest {
   updatedAt                DateTime                @updatedAt
   chatUIMessages           ChatUIMessage[]
   botProject               BotProject              @relation(fields: [botProjectId], references: [id])
-  deployedFunctions        ClientRequestFunction[]
+  deployedFunctions        ClientDeployment[]
   requestUpdates           RequestUpdate[]
   taskInstanceMeta         TaskInstanceMeta?
 }
@@ -142,17 +142,18 @@ model ClientSecret {
   botProject       BotProject @relation(fields: [botProjectId], references: [id])
 }
 
-model ClientRequestFunction {
+model ClientDeployment {
   id                    String        @id @default(uuid())
   userId                String
   botProjectId          String
   originClientRequestId String
   name                  String        @unique
   baseUrl               String
-  mode                  SECRETMODE
+  stage                 DEPLOY_STAGE
   type                  FUNCTIONTYPE
-  endpoints             Json[]
-  schedules             Json[]
+  docs                  String?
+  endpoints             Json[]        @default([])
+  schedules             Json[]        @default([])
   metadata              Json?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
@@ -175,7 +176,7 @@ model RequestUpdate {
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
-enum SECRETMODE {
+enum DEPLOY_STAGE {
   DEV
   PROD
   STAGING
@@ -192,7 +193,6 @@ enum REQUESTSTATUS {
 
 enum FUNCTIONTYPE {
   WEBHOOK
-  API
-  SCHEDULED
+  CRON
   MIXED
 }

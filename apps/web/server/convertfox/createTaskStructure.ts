@@ -69,6 +69,13 @@ export const createTaskStructure = async (
         - you create the required cron jobs, if any.
         - you then create the lambda functions, if any.
         - if the code file might require packages other than the ones mentioned here, also include them in the genrated functions & cronJobs
+        - you also decide the template type to use for the task.
+          - plain: for simple tasks that do not require a db or a state in the serverless function.
+          - upstash: for tasks that require a state/minor database in the serverless function.
+          - mongodb: for tasks that require a database.
+        ---
+        some rules
+        - Never use theese packages - axios
         `,
     schema: taskStructure,
     onFinish: (result) => {
@@ -89,7 +96,7 @@ export const createTaskStructure = async (
   }
   const object = await result.object;
 
-  console.log("result", result);
+  console.log("result", result.object);
 
   dataStream.writeMessageAnnotation({
     type: "thinking",

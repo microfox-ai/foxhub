@@ -7,6 +7,8 @@ import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { writeToFile } from "../tool/writeToFile";
 import { fetchPackageDocs } from "../tool/fetchPackageDocs";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
+
+// IMPORTANT TODO: decide to fetch package Info or fetch example based on previous builds (& then, only then required info is fetched)
 export const genLambdaCode = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
@@ -24,6 +26,7 @@ export const genLambdaCode = async (
       type: "lambda",
       taskInstanceMeta,
       function: _function,
+      template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
     });
     console.log("generating lambda function", _function.name);
     const result = await generateText({

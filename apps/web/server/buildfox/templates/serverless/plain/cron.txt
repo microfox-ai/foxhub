@@ -1,0 +1,64 @@
+import prisma from '../db/prisma'
+
+/**
+ * Cron job that runs every day at 8:00 AM
+ */
+export const dailyMorningJob = async (event: any) => {
+  try {
+    // Clean up old records (30 days)
+    const date = new Date()
+    date.setDate(date.getDate() - 30)
+
+    //TODO: API endpoint or Internal helper function to call to cleanup old records as is needed.
+
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: 'Daily morning job completed successfully',
+        deletedRecords: result.count,
+      }),
+    }
+  } catch (error) {
+    console.error('Error running daily job:', error)
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+    }
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+/**
+ * Documentation for cron job endpoints
+ */
+
+export const dailyMorningJobDocs = {
+  title: 'Daily Morning Job',
+  description: 'Cron job that runs every day at 8:00 AM to clean up old records',
+  method: 'GET',
+  path: '/cron/daily-morning',
+  schedule: 'cron(0 8 * * ? *)',
+  responses: {
+    200: {
+      description: 'Job completed successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          deletedRecords: { type: 'number' },
+        },
+      },
+    },
+    500: {
+      description: 'Server error',
+      schema: {
+        type: 'object',
+        properties: {
+          error: { type: 'string' },
+        },
+      },
+    },
+  },
+}

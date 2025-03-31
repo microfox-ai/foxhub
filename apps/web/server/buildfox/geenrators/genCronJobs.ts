@@ -19,49 +19,58 @@ export const genCronJobs = async (
     type: "thinking",
     content: "Writing cron jobs",
   });
-  // Generate Cron jobs based on the task requirements
-  for (const cronJob of taskInstanceMeta?.taskStructure?.cronJobs ?? []) {
-    const prompt = await codingFunctionPrompt({
-      type: "cron",
-      taskInstanceMeta,
-      cron: cronJob,
-      template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
-    });
-    console.log("generating cron job", cronJob.name);
-    const result = await generateText({
-      model: models.claude35Sonnet,
-      system: codingSystemPrompt("backend"),
-      prompt,
-      toolChoice: "auto",
-      maxSteps: 2,
-      maxTokens: 5000,
-      tools: {
-        write_to_file: writeToFile(props, clientRequest),
-        fetch_package_docs: fetchPackageDocs(props, clientRequest),
-      },
-      onStepFinish: (step) => {
-        console.log("step", step.usage);
-      },
-      //   onFinish: async (result) => {
-      //     console.log("result", result.usage);
-      //   },
-      //   onError: (error) => {
-      //     console.log("error", error);
-      //   },
-    });
-    TokenUsageAnalyticsTracker.trackUsage({
-      ...props.requestBody,
-      model: models.claude35Sonnet.modelId,
-      usage: result.usage,
-    });
+  try {
+    // Generate Cron jobs based on the task requirements
+    for (const cronJob of taskInstanceMeta?.taskStructure?.cronJobs ?? []) {
+      const prompt = await codingFunctionPrompt({
+        type: "cron",
+        taskInstanceMeta,
+        cron: cronJob,
+        template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
+      });
+      console.log("generating cron job", cronJob.name);
+      const result = await generateText({
+        model: models.claude35Sonnet,
+        system: codingSystemPrompt("backend"),
+        prompt,
+        toolChoice: "auto",
+        maxSteps: 2,
+        maxTokens: 5000,
+        tools: {
+          write_to_file: writeToFile(props, clientRequest),
+          fetch_package_docs: fetchPackageDocs(props, clientRequest),
+        },
+        onStepFinish: (step) => {
+          console.log("step", step.usage);
+        },
+        //   onFinish: async (result) => {
+        //     console.log("result", result.usage);
+        //   },
+        //   onError: (error) => {
+        //     console.log("error", error);
+        //   },
+      });
+      TokenUsageAnalyticsTracker.trackUsage({
+        ...props.requestBody,
+        model: models.claude35Sonnet.modelId,
+        usage: result.usage,
+      });
 
+      props.dataStream.writeMessageAnnotation({
+        type: "thinking",
+        content: "Finished - " + cronJob.name,
+      });
+
+      console.log("result", result.usage);
+    }
+
+    return taskInstanceMeta;
+  } catch (err) {
+    console.log("error", err);
     props.dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Finished - " + cronJob.name,
+      type: "error",
+      content: "Error generating cron jobs",
     });
-
-    console.log("result", result.usage);
+    return null;
   }
-
-  return taskInstanceMeta;
 };

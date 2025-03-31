@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import { createClientRequestPR } from "@/utils/services/db_functions/createClientRequestPR";
+import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   try {
@@ -10,7 +9,7 @@ export async function GET(req: Request) {
     if (!clientRequestId)
       return NextResponse.json(
         { error: "Missing clientRequestId" },
-        { status: 400 },
+        { status: 400 }
       );
 
     const clientRequest = await prisma.clientRequest.findUnique({
@@ -20,13 +19,13 @@ export async function GET(req: Request) {
     if (!clientRequest)
       return NextResponse.json(
         { error: "Client request not found" },
-        { status: 404 },
+        { status: 404 }
       );
 
     if (!clientRequest.chatUIMessages)
       return NextResponse.json(
         { error: "No chat messages found" },
-        { status: 404 },
+        { status: 404 }
       );
 
     return NextResponse.json(
@@ -34,13 +33,13 @@ export async function GET(req: Request) {
         chatUIMessages: clientRequest?.chatUIMessages,
         requestStatus: clientRequest?.requestStatus,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error updating client request:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

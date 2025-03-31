@@ -172,6 +172,7 @@ export const codingFunctionPrompt = async ({
 
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
+
             
             The code should be created in the src/functions directory.
             Make sure to use the necessary imports from the packages when needed.
@@ -181,6 +182,10 @@ export const codingFunctionPrompt = async ({
             Only use the packages that are listed above in the project.
             Make no assumption of utils, or outside files - Create complete functionality in a single file.
             Do not write any mock code, it should be production ready code.
+
+            Some instructions for docs
+            - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
+            - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.
             `;
 };
 

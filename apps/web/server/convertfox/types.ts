@@ -139,12 +139,6 @@ export const taskStructure = z.object({
   //     })
   //     .describe("The user screens/components that are needed for the task")
   // ),
-  setupInstructions: z
-    .string()
-    .describe(
-      "The instructions for the user to setup ( post the function is deployed if needed ) - include all the steps and details"
-    )
-    .optional(),
 });
 export type TaskStructure = z.infer<typeof taskStructure>;
 

@@ -1,8 +1,7 @@
 import { prisma } from "@/prisma/prisma";
-import { FUNCTIONTYPE, SECRETMODE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
-// Create ClientRequestFunction
+// Create ClientDeployment
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -14,9 +13,9 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
-    console.error("Error creating ClientRequestFunction:", error);
+    console.error("Error creating ClientDeployment:", error);
     return NextResponse.json(
-      { error: "Error creating ClientRequestFunction" },
+      { error: "Error creating ClientDeployment" },
       { status: 500 }
     );
   }

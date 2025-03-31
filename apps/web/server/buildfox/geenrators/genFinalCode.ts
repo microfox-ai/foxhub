@@ -77,7 +77,7 @@ export const genFinalCode = async (
     );
     const packageJsonContent = JSON.parse(packageJson);
     taskInstanceMeta.taskIntegrations?.platforms?.forEach((platform) => {
-      if (platform.package) {
+      if (platform.package && platform.package != "@microfox/null") {
         packageJsonContent.dependencies[platform.package] = "*";
       }
     });

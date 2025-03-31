@@ -71,6 +71,6 @@ export const genCronJobs = async (
       type: "error",
       content: "Error generating cron jobs",
     });
-    return null;
+    throw err;
   }
 };

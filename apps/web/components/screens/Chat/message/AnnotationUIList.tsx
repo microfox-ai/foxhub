@@ -28,6 +28,7 @@ import { APIKeyDialog } from "@/components/screens/Chat/message/APIKeyDialog";
 import useSWR from "swr";
 import { useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
+import { IN_DEV } from "@/utils/constants/appInfo";
 
 interface UIAnnotation {
   objectType: string;
@@ -107,12 +108,13 @@ const ActionButtons = (props: any) => {
               disabled:opacity-50 disabled:cursor-not-allowed
             `,
               button.type === "confirm" &&
-                "bg-black text-white hover:bg-black/80 hover:text-white"
+              "bg-black text-white hover:bg-black/80 hover:text-white"
             )}
             disabled={
-              props.areKeysRequired &&
-              !props.areKeysFilled &&
-              button.type === "confirm"
+              !IN_DEV && (
+                props.areKeysRequired &&
+                !props.areKeysFilled &&
+                button.type === "confirm")
             }
             onClick={() => {
               console.log("button", button);
@@ -329,8 +331,8 @@ const TaskIntegrations = ({
   // Get existing secret only if platform exists
   const existingSecret = platform
     ? secretsData?.clientSecrets?.find(
-        (secret) => secret.type.toLowerCase() === platform.name.toLowerCase()
-      )
+      (secret) => secret.type.toLowerCase() === platform.name.toLowerCase()
+    )
     : undefined;
 
   const handleOpenDialog = () => {
@@ -413,17 +415,17 @@ const TaskIntegrations = ({
                   {pkg.constructors.some(
                     (constructor: Constructor) => constructor.auth === "oauth"
                   ) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 px-3 text-xs font-medium"
-                      onClick={() => {
-                        console.log("Connect to", platform.name);
-                      }}
-                    >
-                      Connect
-                    </Button>
-                  )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 text-xs font-medium"
+                        onClick={() => {
+                          console.log("Connect to", platform.name);
+                        }}
+                      >
+                        Connect
+                      </Button>
+                    )}
                 </div>
               </div>
               <p className="text-sm text-gray-600 mt-1">{platform.reason}</p>
@@ -580,7 +582,7 @@ const EnvCollector = ({
         {uiAnnotation.text}
       </h3>
       <div className="flex flex-col gap-2">
-        {annotation?.envVariablesUsed?.map((env: any) => (
+        {annotation?.envVariablesCollect?.map((env: any) => (
           <span key={env}>{env}</span>
         ))}
       </div>

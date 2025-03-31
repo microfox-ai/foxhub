@@ -9,7 +9,7 @@ import {
   getOnlyPackageNames,
 } from "./getInternalPackages";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-import { fetchGithubJson, fetchPackageInfo } from "./fetchPackageInfo";
+import { fetchGithubJson, fetchPackageInfo } from "./gitFetchers";
 
 // IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
 export const createTaskIntegrations = async (

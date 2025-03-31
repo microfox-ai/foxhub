@@ -70,6 +70,12 @@ export const genLambdaCode = async (
       type: "error",
       content: "Error generating lambda function",
     });
-    return null;
+    throw err;
   }
+  // result.mergeIntoDataStream(props.dataStream, {
+  //   experimental_sendStart: false,
+  //   experimental_sendFinish: false,
+  // });
+
+  //await result.text;
 };

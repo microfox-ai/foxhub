@@ -187,7 +187,10 @@ export const extraEnvVariables = z.object({
   env: z.string().describe("The env variable name"),
   name: z.string().describe("A readable name for the env variable"),
   what: z.string().describe("What is this env variable used for"),
-  why: z.string().describe("Why is this env variable needed").optional(),
+  why: z
+    .string()
+    .describe("Why is this env variable needed in a single line")
+    .optional(),
   how: z.string().describe("How to get this env from the platform"),
   isSameAs: z
     .array(z.string())

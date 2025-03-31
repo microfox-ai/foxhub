@@ -172,6 +172,7 @@ export const buildFoxRouter: ServerStreamingFunction<
     envVariablesUsedUnique,
     taskInstanceMeta
   );
+  console.log("envVariablesShouldAsk", envVariables);
 
   const timeEnd = dayjs();
   const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
@@ -208,9 +209,9 @@ export const buildFoxRouter: ServerStreamingFunction<
     objectType: "envCollector",
     persona: "buildfox",
     text: `Need Some Minor Details !`,
-    envVariablesUsed: envVariablesUsedUnique as any[],
+    envVariablesAll: envVariablesUsedUnique as any[],
     packagesUsed: packagesUsedUnique as any[],
-    envVariables: envVariables as any[],
+    envVariablesCollect: envVariables as any[],
     buttons: [
       {
         action: "highlightInput",

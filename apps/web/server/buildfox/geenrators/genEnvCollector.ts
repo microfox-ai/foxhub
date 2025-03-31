@@ -49,6 +49,10 @@ export const genEnvCollector = async (
       default:
         break;
     }
+    console.log(
+      "rootEnvs Used",
+      envsJsonParsed.map((env) => env.key)
+    );
     envs = envs.filter(
       (env) => !envsJsonParsed.some((envJson: any) => envJson.key === env)
     );
@@ -75,6 +79,7 @@ export const genEnvCollector = async (
         content: "Thinking about what variables are needed",
       });
 
+      console.log("understanding envs", envs);
       const envExtraInfo = await generateObject({
         model: models.googleGeminiPro,
         schema: z.object({
@@ -85,7 +90,7 @@ export const genEnvCollector = async (
         In order to help build the user's service, you needed the following env variables:
         Env variables: 
         - ${envs.join(", ")}
-        
+
         Do not include variables that might be a duplicate for theese below:
         - ${coreEnvs?.join(", ")}
 
@@ -100,8 +105,9 @@ export const genEnvCollector = async (
         usage: envExtraInfo.usage,
       });
 
-      const envVariables = envExtraInfo.object.envVariables;
+      let envVariables = envExtraInfo.object.envVariables;
 
+      envVariables = envVariables.filter((env) => !coreEnvs?.includes(env.env));
       return envVariables;
     } catch (error) {
       console.error("Error generating env collector", error);

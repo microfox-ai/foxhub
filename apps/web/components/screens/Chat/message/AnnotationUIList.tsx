@@ -582,7 +582,7 @@ const EnvCollector = ({
         {uiAnnotation.text}
       </h3>
       <div className="flex flex-col gap-2">
-        {annotation?.envVariablesUsed?.map((env: any) => (
+        {annotation?.envVariables?.map((env: any) => (
           <span key={env}>{env}</span>
         ))}
       </div>

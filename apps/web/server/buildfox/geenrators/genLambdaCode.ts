@@ -62,8 +62,9 @@ export const genLambdaCode = async (
       });
 
       console.log("result", result.usage);
-      return taskInstanceMeta;
     }
+
+    return taskInstanceMeta;
   } catch (err) {
     console.log("error", err);
     props.dataStream.writeMessageAnnotation({

@@ -16,15 +16,19 @@ export const uploadToRepo = async (
     // gets commit's AND its tree's SHA
 
     const lastCommit = await getCurrentCommit(octo, org, repo, branch);
-    const currentCommit = await revertCommit(
-      octo,
-      org,
-      repo,
-      branch,
-      lastCommit.commitSha,
-      lastCommit.treeSha,
-      lastCommit.parentSha
-    );
+    const currentCommit = lastCommit.commitMessage.includes(
+      "clientRequest.json"
+    )
+      ? lastCommit
+      : await revertCommit(
+          octo,
+          org,
+          repo,
+          branch,
+          lastCommit.commitSha,
+          lastCommit.treeSha,
+          lastCommit.parentSha
+        );
     const filesPaths = await glob(coursePath);
     const filesBlobs = await Promise.all(
       filesPaths.map(createBlobForFile(octo, org, repo))
@@ -77,7 +81,7 @@ const revertCommit = async (
   const { data: newCommit } = await octo.rest.git.createCommit({
     owner: org,
     repo,
-    message: `Revert commit ${commitSha}`,
+    message: `nodeploy: Revert commit ${commitSha}`,
     parents: [commitSha],
     tree: parentCommit.tree.sha, // Use parent's tree instead of current tree
   });
@@ -115,6 +119,7 @@ const getCurrentCommit = async (
   });
   return {
     commitSha,
+    commitMessage: commitData.message,
     treeSha: commitData.tree.sha,
     parentSha: commitData.parents[0]?.sha,
   };

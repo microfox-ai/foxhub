@@ -47,8 +47,6 @@ function ChatWindow({
     input,
     setInput,
     handleInputChange,
-    isLastMessage,
-    setIsLastMessage,
     append,
     data,
   } = useMicrofox();
@@ -161,7 +159,7 @@ function ChatWindow({
         <SlashModal
           clientRequest={clientRequest}
           onSuccess={reloadClientData}
-          onClose={() => {}}
+          onClose={() => { }}
         />
       )}
 

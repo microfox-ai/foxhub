@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { APIKeyDialog } from "@/components/screens/Chat/message/APIKeyDialog";
 import useSWR from "swr";
 import { useParams } from "next/navigation";
@@ -290,55 +290,20 @@ const TaskIntegrations = ({
   uiAnnotation: UIAnnotation;
   idx: number;
 }) => {
-  const platforms = uiAnnotation.object.platforms as Platform[];
+  const platforms = uiAnnotation.object.platforms.slice(0, 1) as Platform[];
+  const params = useParams<{
+    project_id?: string;
+    request_id?: string;
+  }>();
+  const projectParamId = params?.project_id;
+  const requestParamId = params?.request_id;
 
   const { user } = useUser();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(
     null
   );
-  const [platformKeyStatus, setPlatformKeyStatus] = useState<
-    Record<string, boolean>
-  >({});
   const [connecting, setConnecting] = useState<Record<string, boolean>>({});
-  const params = useParams<{
-    project_id?: string;
-    request_id?: string;
-  }>();
-
-  /**
-   * TODO: how to handle multiple connections?
-   */
-
-  const [docIdCreatedOnConnect, setDocIdCreatedOnConnect] = useState<
-    string | null
-  >(localStorage.getItem("connect/google") ?? null);
-
-  const { data: docIdCreatedOnConnectData } = useSWR(
-    docIdCreatedOnConnect
-      ? `/api/client-secrets?id=${docIdCreatedOnConnect}`
-      : null,
-    async (url: string) => {
-      const res = await fetch(url);
-      return res.json();
-    },
-    {
-      revalidateOnFocus: true,
-    }
-  );
-
-  // console.log(docIdCreatedOnConnectData, "docIdCreatedOnConnectData");
-
-  // Check if all required keys have values
-  const hasAllRequiredKeys =
-    docIdCreatedOnConnectData?.clientSecrets[0]?.variables?.every(
-      (variable: any) => variable.value?.trim()
-    ) ?? false;
-
-  // console.log(hasAllRequiredKeys, "hasAllRequiredKeys");
-
-  const projectParamId = params?.project_id;
-  const requestParamId = params?.request_id;
 
   const { data: secretsData, mutate: mutateSecrets } = useSWR<{
     clientSecrets: ClientSecret[];
@@ -348,20 +313,59 @@ const TaskIntegrations = ({
       : null,
     async (url: string) => {
       const res = await fetch(url);
-
       if (!res.ok) throw new Error("Failed to fetch secrets");
       return res.json();
     }
   );
 
-  // Check for existing keys when component mounts or secrets data changes
-  useEffect(() => {
-    if (secretsData?.clientSecrets && platforms) {
-      const keyStatus: Record<string, boolean> = {};
-      platforms.forEach((platform) => {
-        // Find matching secret by checking if the secret type includes the platform name
-        // or matches the full constructor type
-        const existingSecret = secretsData.clientSecrets.find((secret) => {
+  const getOAuthCookies = () => {
+    const cookies = document.cookie
+      .split("; ")
+      .filter((row) => row.startsWith("connect/"))
+      .map((row) => row.split("=")[1])
+      .filter((value): value is string => value !== undefined);
+    return cookies;
+  };
+
+  const { data: oauthSecrets } = useSWR<ClientSecret[]>(
+    getOAuthCookies().length > 0
+      ? getOAuthCookies().map((id) => `/api/client-secrets?id=${id}`)
+      : null,
+    async (urls: string[]) => {
+      const responses = await Promise.all(
+        urls.map(async (url) => {
+          const res = await fetch(url);
+          const data = await res.json();
+          return data.clientSecrets;
+        })
+      );
+      return responses
+        .flat()
+        .filter(
+          (secret): secret is ClientSecret =>
+            secret !== null && secret !== undefined
+        );
+    },
+    {
+      revalidateOnFocus: true,
+    }
+  );
+
+  // Compute platform statuses using useMemo to avoid unnecessary recalculations
+  const { platformKeyStatus, oauthStatus } = useMemo(() => {
+    const keyStatus: Record<string, boolean> = {};
+    const authStatus: Record<string, boolean> = {};
+
+    platforms.forEach((platform) => {
+      // Set default status for non-optional platforms
+      if (!platform.optional) {
+        keyStatus[platform.name] = false;
+        authStatus[platform.name] = false;
+      }
+
+      // Check API Keys
+      if (platform.packageInfo?.constructors.some((c) => c.auth === "apiKey")) {
+        const existingSecret = secretsData?.clientSecrets?.find((secret) => {
           const platformNameMatch = secret.type
             .toLowerCase()
             .includes(platform.name.toLowerCase());
@@ -376,33 +380,88 @@ const TaskIntegrations = ({
         });
 
         if (existingSecret && platform.packageInfo?.constructors) {
-          // Find the matching constructor based on the secret type
           const constructor = platform.packageInfo.constructors.find(
             (c) => c.auth === "apiKey"
           );
 
           if (constructor && constructor.requiredKeys) {
-            const hasAllKeys = constructor.requiredKeys.every((keyInfo) =>
-              existingSecret.variables.some(
-                (variable) =>
-                  variable.key === keyInfo.key && variable.value?.trim()
-              )
+            keyStatus[platform.name] = constructor.requiredKeys.every(
+              (keyInfo) =>
+                existingSecret.variables.some(
+                  (variable) =>
+                    variable.key === keyInfo.key && variable.value?.trim()
+                )
             );
-            keyStatus[platform.name] = hasAllKeys;
-          } else {
-            keyStatus[platform.name] = false;
           }
-        } else {
-          keyStatus[platform.name] = false;
         }
-      });
-      setPlatformKeyStatus(keyStatus);
-    }
-  }, [secretsData, platforms]);
+      }
+
+      // Check OAuth
+      if (platform.packageInfo?.constructors.some((c) => c.auth === "oauth")) {
+        const oauthConstructor = platform.packageInfo.constructors.find(
+          (c) => c.auth === "oauth"
+        );
+        if (oauthConstructor && oauthSecrets) {
+          const oauthSecret = oauthSecrets.find(
+            (secret) =>
+              secret.type ===
+              `${platform.packageInfo.name}/${platform.packageInfo.constructors.find((c) => c.auth === "oauth")?.name}`
+          );
+          authStatus[platform.name] = oauthSecret
+            ? oauthSecret.variables.every(
+                (variable) => variable.value?.trim() !== ""
+              )
+            : false;
+        }
+      }
+    });
+
+    return { platformKeyStatus: keyStatus, oauthStatus: authStatus };
+  }, [platforms, secretsData?.clientSecrets, oauthSecrets]);
+
+  // Memoize the areKeysFilled check
+  const areKeysFilled = useMemo(() => {
+    return platforms.every((platform) => {
+      // If platform is optional, skip the check
+      if (platform.optional) return true;
+
+      const requiresApiKey = platform.packageInfo?.constructors.some(
+        (c) => c.auth === "apiKey"
+      );
+      const requiresOauth = platform.packageInfo?.constructors.some(
+        (c) => c.auth === "oauth"
+      );
+
+      // Check both API key and OAuth status if required
+      if (requiresApiKey && requiresOauth) {
+        return platformKeyStatus[platform.name] && oauthStatus[platform.name];
+      }
+      // Check only API key status if required
+      if (requiresApiKey) {
+        return platformKeyStatus[platform.name];
+      }
+      // Check only OAuth status if required
+      if (requiresOauth) {
+        const getMatchingOAuthSecret = oauthSecrets?.find(
+          (secret) =>
+            secret.type ===
+            `${platform.packageInfo.name}/${platform.packageInfo.constructors.find((c) => c.auth === "oauth")?.name}`
+        );
+        return getMatchingOAuthSecret?.variables.every(
+          (variable: any) => variable.value?.trim() !== ""
+        );
+      }
+      return true;
+    });
+  }, [platforms, platformKeyStatus, oauthStatus, oauthSecrets]);
 
   const handleConnect = async (platform: Platform, authEndpoint: string) => {
     try {
-      setConnecting((prev) => ({ ...prev, [platform.name]: true }));
+      setConnecting((prevState: Record<string, boolean>) => ({
+        ...prevState,
+        [platform.name]: true,
+      }));
+
       // Create empty DB client secret doc
       const response = await fetch("/api/client-secrets", {
         method: "POST",
@@ -419,27 +478,28 @@ const TaskIntegrations = ({
         }),
       });
 
-      const authStorageKeyName = authEndpoint.replace(/^\//, "");
-
       if (!response.ok) {
         throw new Error("Failed to create client secret");
       }
 
       const data = await response.json();
-      setDocIdCreatedOnConnect(data.id);
-      document.cookie = `${authStorageKeyName}=${data.id}; path=/; SameSite=Lax`; // TODO: change to the correct cookie name
-      localStorage.setItem(authStorageKeyName, data.id);
+      document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;
+      localStorage.setItem(authEndpoint.replace(/^\//, ""), data.id);
+
       const width = 500;
       const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
       const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
 
-      window.open(authEndpoint, "_blank", features); // TODO: change to the correct redirect url
+      window.open(authEndpoint, "_blank", features);
     } catch (error) {
       console.error("Error connecting:", error);
     } finally {
-      setConnecting((prev) => ({ ...prev, [platform.name]: false }));
+      setConnecting((prevState: Record<string, boolean>) => ({
+        ...prevState,
+        [platform.name]: false,
+      }));
     }
   };
 
@@ -467,7 +527,7 @@ const TaskIntegrations = ({
       </div>
 
       <div className="grid gap-4">
-        {platforms.map((platform) => {
+        {platforms.map((platform, index) => {
           const pkg = platform.packageInfo;
           const areKeysRequired = pkg?.constructors.some(
             (constructor: Constructor) => constructor.auth === "apiKey"
@@ -476,9 +536,23 @@ const TaskIntegrations = ({
             (constructor: Constructor) => constructor.auth === "oauth"
           );
 
-          const authEndpoint = pkg.authEndpoint;
+          const authEndpoint = "/connect/google";
 
-          const isConnected = docIdCreatedOnConnect && hasAllRequiredKeys;
+          // console.log(docIdCreatedOnConnectData, "docIdCreatedOnConnectData");
+          const getMatchingOAuthSecret =
+            oauthSecrets &&
+            oauthSecrets?.length > 0 &&
+            oauthSecrets?.find(
+              (secret) =>
+                secret.type ===
+                `${pkg.name}/${pkg.constructors.find((c) => c.auth === "oauth")?.name}`
+            );
+
+          const hasAllAuthRelatedKeys = getMatchingOAuthSecret
+            ? getMatchingOAuthSecret?.variables.every((variable: any) => {
+                return variable.value?.trim() !== "";
+              })
+            : false;
 
           return (
             <div
@@ -508,7 +582,7 @@ const TaskIntegrations = ({
                     </div>
                     <div className="flex items-center gap-2 rounded-lg border border-gray-200">
                       {areOAuthRequired ? (
-                        isConnected ? (
+                        hasAllAuthRelatedKeys ? (
                           <Button
                             variant="outline"
                             size="sm"
@@ -569,14 +643,11 @@ const TaskIntegrations = ({
         <APIKeyDialog
           mutateSecrets={mutateSecrets}
           isOpen={isDialogOpen}
-          onClose={(submitted) => {
+          onClose={async (submitted) => {
             setIsDialogOpen(false);
             setSelectedPlatform(null);
             if (submitted) {
-              setPlatformKeyStatus((prev) => ({
-                ...prev,
-                [selectedPlatform.name]: true,
-              }));
+              await mutateSecrets();
             }
           }}
           platformName={selectedPlatform.name}
@@ -610,16 +681,14 @@ const TaskIntegrations = ({
         areKeysRequired={platforms.some(
           (p) =>
             !p.optional &&
-            p.packageInfo?.constructors.some(
+            (p.packageInfo?.constructors.some(
               (c: Constructor) => c.auth === "apiKey"
-            )
+            ) ||
+              p.packageInfo?.constructors.some(
+                (c: Constructor) => c.auth === "oauth"
+              ))
         )}
-        areKeysFilled={Object.entries(platformKeyStatus).every(
-          ([platformName, status]) => {
-            const platform = platforms.find((p) => p.name === platformName);
-            return platform?.optional || status;
-          }
-        )}
+        areKeysFilled={areKeysFilled}
       />
     </motion.div>
   );
@@ -1127,3 +1196,4 @@ export const AnnotationUIList = ({
     }
   });
 };
+

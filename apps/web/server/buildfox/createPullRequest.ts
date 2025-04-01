@@ -19,11 +19,13 @@ export async function createPullRequest({
   description,
   title,
   dataStream,
+  requestSubdir,
 }: {
   clientRequestId: string;
   description: string;
   title?: string;
   dataStream?: DataStreamWriter;
+  requestSubdir?: string;
 }) {
   console.log("triggering Pull Request creation");
   const clientRequest = await prisma.clientRequest.findUnique({
@@ -47,6 +49,7 @@ export async function createPullRequest({
   let requestTitle = title;
   if (!requestTitle) {
     // 🔹 Use GenAI to generate a meaningful title for the request
+    // TODO: remove this generation
     const generatedTitle = await GenAiSdk.generateShortTitle(
       `client's request: "${description}"`
     );
@@ -84,8 +87,8 @@ export async function createPullRequest({
   //console.log("newBranchResult", newBranchResult);
 
   // Create README.md file on new branch with request description
-  const requestDir = `apps/${uniqueRequestTitle}`;
-  const readmeFilePath = `${requestDir}/README.md`;
+  const requestDir = `apps/${uniqueRequestTitle}/${requestSubdir}`;
+  const readmeFilePath = `apps/${uniqueRequestTitle}/README.md`;
   const readmeFileContent =
     await githubSdk.rest.repos.createOrUpdateFileContents({
       owner: TEMPLATE_REPO_OWNER,
@@ -129,6 +132,9 @@ export async function createPullRequest({
       prTargetBranch: pr.data.base.ref,
       metadata: {
         pr: pr.data,
+        uniqueRequestTitle: uniqueRequestTitle,
+        requestSubdir: requestSubdir,
+        requestFullDir: requestDir,
       },
       lastUpdatedAt: new Date(),
       updatedAt: new Date(),
@@ -138,7 +144,7 @@ export async function createPullRequest({
   //console.log("updatedClientRequest", updatedClientRequest);
 
   // Create clientRequest.json file on new branch
-  const clientRequestFilePath = `${requestDir}/clientRequest.json`;
+  const clientRequestFilePath = `apps/${uniqueRequestTitle}/clientRequest.json`;
   const clientRequestFile =
     await githubSdk.rest.repos.createOrUpdateFileContents({
       owner: TEMPLATE_REPO_OWNER,

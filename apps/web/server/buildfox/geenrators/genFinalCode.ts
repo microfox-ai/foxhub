@@ -40,17 +40,23 @@ export const genFinalCode = async (
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
       prompt: `You are requested to modify a serverless.yml file for the following requirement:
-            The following files are generated for the task:
-            ${allGenFilesList?.map((file: any) => file.fileName).join("\n - ")}
+            The following functions are generated for the task:
+            ${allGenFilesList
+              ?.filter((file: any) => file.filePath.includes("/functions"))
+              .map((file: any) => file.fileName)
+              .join("\n - ")}
 
             if for cron jobs, refer theses:
             ${taskInstanceMeta?.taskStructure?.cronJobs?.map((cron) => cron.name + " - " + cron.cronExpression).join("\n - ")}
 
-            The serverless.yml file is as follows:
+            The input serverless.yml file is as follows:
             ${serverlessYml}
 
             The following is the task summary:
             ${taskInstanceMeta?.taskInfo?.summary}
+
+            make sure to store the file at the root of the project.
+            make sure you skip the packagesUsed field in the tool call.
             `,
       tools: {
         write_to_file: writeToFile(props, clientRequest),

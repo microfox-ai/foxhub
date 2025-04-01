@@ -192,6 +192,36 @@ export async function createNewBotProject({
   return { ...botProject, clientRequests: [clientRequest] };
 }
 
+export async function createOrUpdateRepoVariable({
+  githubSdk,
+  repoName,
+  name,
+  value,
+  variables,
+}: {
+  githubSdk: Octokit;
+  repoName: string;
+  name: string;
+  value: string;
+  variables: { name: string; value: string }[];
+}) {
+  if (variables.find((variable) => variable.name === name)) {
+    await githubSdk.rest.actions.updateRepoVariable({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: repoName,
+      name: name,
+      value: value,
+    });
+  } else {
+    await githubSdk.rest.actions.createRepoVariable({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: repoName,
+      name: name,
+      value: value,
+    });
+  }
+}
+
 export async function addGithubSecretsToRepo({
   githubSdk,
   repoName,
@@ -212,7 +242,12 @@ export async function addGithubSecretsToRepo({
       auth: GITHUB_TOKEN,
     });
 
-  console.log("taskInstanceMeta", repoName, TEMPLATE_REPO_OWNER);
+  const alreadyListedVariables = await thisSdk.rest.actions.listRepoVariables({
+    owner: TEMPLATE_REPO_OWNER,
+    repo: repoName,
+  });
+
+  //console.log("taskInstanceMeta", repoName, TEMPLATE_REPO_OWNER);
   try {
     if (taskInstanceMeta?.taskStructure?.templateType === "upstash") {
       const upstashEnvsFile = await fs.readFile(
@@ -223,11 +258,12 @@ export async function addGithubSecretsToRepo({
       console.log("upstashEnvs", upstashEnvs);
       // PROD TODO: the envs only are for staging, production envs need to be added manually in env variables
       for (const env of upstashEnvs) {
-        await thisSdk.rest.actions.createRepoVariable({
-          owner: TEMPLATE_REPO_OWNER,
-          repo: repoName,
+        createOrUpdateRepoVariable({
+          githubSdk: thisSdk,
+          repoName: repoName,
           name: env.key,
           value: IN_DEV ? env.value : (process.env[env.key] ?? env.value),
+          variables: alreadyListedVariables.data.variables,
         });
       }
     }
@@ -238,29 +274,33 @@ export async function addGithubSecretsToRepo({
       awsDefaultRegion &&
       microfoxApiKey
     ) {
-      await thisSdk.rest.actions.createRepoVariable({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: repoName,
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
         name: "AWS_ACCESS_KEY_ID",
         value: awsAccessKeyId,
+        variables: alreadyListedVariables.data.variables,
       });
-      await thisSdk.rest.actions.createRepoVariable({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: repoName,
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
         name: "AWS_SECRET_ACCESS_KEY",
         value: awsSecretAccessKey,
+        variables: alreadyListedVariables.data.variables,
       });
-      await thisSdk.rest.actions.createRepoVariable({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: repoName,
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
         name: "AWS_DEFAULT_REGION",
         value: awsDefaultRegion,
+        variables: alreadyListedVariables.data.variables,
       });
-      await thisSdk.rest.actions.createRepoVariable({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: repoName,
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
         name: "MICROFOX_API_KEY",
         value: microfoxApiKey,
+        variables: alreadyListedVariables.data.variables,
       });
     }
   } catch (error) {

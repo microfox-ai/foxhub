@@ -1,0 +1,87 @@
+service: template-function
+
+# Configuration
+custom:
+  # Get environment from env or default to dev
+  stage: ${env:ENVIRONMENT, 'dev'}
+  # HTTP port for offline mode
+  serverless-offline:
+    httpPort: 4000
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${env:ENVIRONMENT, 'dev'}
+  environment:
+    STAGE: ${env:ENVIRONMENT, 'dev'}
+
+functions:
+  # External API Endpoints
+  getExternalData:
+    handler: dist/index.getExternalData
+    events:
+      - http:
+          path: /external
+          method: get
+          cors: true
+
+  postExternalData:
+    handler: dist/index.postExternalData
+    events:
+      - http:
+          path: /external
+          method: post
+          cors: true
+
+  # Cron Jobs
+  dailyMorningJob:
+    handler: dist/index.dailyMorningJob
+    events:
+      # HTTP endpoint for testing in all environments
+      - http:
+          path: /cron/daily-morning
+          method: post
+          cors: true
+      - schedule:
+          rate: cron(0 8 * * ? *)
+          input:
+            environment: ${env:ENVIRONMENT, 'dev'}
+            source: scheduled-job
+
+  sendDailyDigestToSlack:
+    handler: dist/index.sendDailyDigestToSlack
+    events:
+      # HTTP endpoint for testing in all environments
+      - http:
+          path: /cron/daily-digest-slack
+          method: post
+          cors: true
+      - schedule:
+          rate: cron(0 9 * * ? *)
+          input:
+            environment: ${env:ENVIRONMENT, 'dev'}
+            source: scheduled-job
+
+  # Documentation
+  getDocs:
+    handler: dist/index.getDocs
+    events:
+      - http:
+          path: /docs.json
+          method: get
+          cors: true
+
+# Resources for API Gateway
+resources:
+  Outputs:
+    ApiEndpoints:
+      Description: "API Endpoints"
+      Value:
+        Fn::Join:
+          - ""
+          - - "API: https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${env:ENVIRONMENT, 'dev'}"

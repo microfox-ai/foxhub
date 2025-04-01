@@ -33,7 +33,7 @@ export async function createNewBotProject({
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
-  if (!user) {
+  if (!user || !userId) {
     console.error("User not found");
     throw new Error("User not found");
   }
@@ -176,6 +176,7 @@ export async function createNewBotProject({
     branch: newBranch,
   });
   if (!botProjectFile) {
+    console.log("botProjectFile", botProjectFile);
     throw new Error("Failed to update botProject.json");
   }
   console.log("botProjectFile", botProjectFile);

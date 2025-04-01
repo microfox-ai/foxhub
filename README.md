@@ -19,7 +19,7 @@ Ideators Block -
 
 Wikipedia, RSS,
 
-## Using this example
+## Using the example
 
 Run the following command:
 

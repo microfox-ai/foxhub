@@ -149,4 +149,25 @@
   button {
     @apply cursor-pointer;
   }
+
+  .no-scrollbar {
+    @apply [&::-webkit-scrollbar]:!w-0;
+  }
+
+  /* Add transition classes for scrollbar */
+  .scrollbar-transition {
+    @apply transition-all duration-300;
+  }
+  .scrollbar-transition::-webkit-scrollbar {
+    @apply transition-all duration-300;
+  }
+}
+
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }

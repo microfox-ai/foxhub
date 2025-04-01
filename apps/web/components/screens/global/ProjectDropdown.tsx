@@ -36,7 +36,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import NewProjectCreation from "./NewProjectCreation";
 
-export const ProjectDropdown = () => {
+export const ProjectDropdown = ({ className }: { className?: string }) => {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const { user } = useUser();
   const router = useRouter();
@@ -81,14 +81,19 @@ export const ProjectDropdown = () => {
   }
   return (
     <Dialog>
-      <div className="flex items-center justify-between text-sm ml-4">
+      <div
+        className={cn(
+          "flex items-center justify-between text-sm w-[200px]",
+          className
+        )}
+      >
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-[200px] justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
+              className="w-full justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
             >
               {value
                 ? projects?.find((_project) => _project.id === value)?.name

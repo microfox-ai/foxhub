@@ -15,6 +15,14 @@ import {
   Link,
   CheckCircle,
   CheckCircle2,
+  Clock,
+  HelpCircle,
+  Info,
+  AlertCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+  Plus,
 } from "lucide-react";
 import {
   Tooltip,
@@ -23,12 +31,25 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { APIKeyDialog } from "@/components/screens/Chat/message/APIKeyDialog";
 import useSWR from "swr";
 import { useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { IN_DEV } from "@/utils/constants/appInfo";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Markdown } from "./markdown";
+import { useUser } from "@/utils/hooks/useUser";
+import { Input } from "@/components/ui/input";
+import { EnvVariablesDialog } from "./EnvVariablesDialog";
+import { toast } from "sonner";
 
 interface UIAnnotation {
   objectType: string;
@@ -73,6 +94,8 @@ interface Package {
   dependencies: string[];
   status: string;
   documentation: string;
+  authEndpoint: string;
+
   constructors: Constructor[];
 }
 
@@ -80,6 +103,7 @@ interface Platform {
   name: string;
   reason: string;
   packageInfo: Package;
+  optional: boolean;
 }
 
 const ActionButtons = (props: any) => {
@@ -108,13 +132,12 @@ const ActionButtons = (props: any) => {
               disabled:opacity-50 disabled:cursor-not-allowed
             `,
               button.type === "confirm" &&
-              "bg-black text-white hover:bg-black/80 hover:text-white"
+                "bg-black text-white hover:bg-black/80 hover:text-white"
             )}
             disabled={
-              !IN_DEV && (
-                props.areKeysRequired &&
-                !props.areKeysFilled &&
-                button.type === "confirm")
+              props.areKeysRequired &&
+              !props.areKeysFilled &&
+              button.type === "confirm"
             }
             onClick={() => {
               console.log("button", button);
@@ -190,11 +213,13 @@ const TaskInfo = ({
   const getIconForKey = (key: string) => {
     switch (key.toLowerCase()) {
       case "goal":
-        return <Target className="w-5 h-5 opacity-50 mt-1" />;
+        return <Target className="w-5 h-5 opacity-50 mt-1 text-blue-500" />;
       case "name":
-        return <TextQuote className="w-5 h-5 opacity-50 mt-1" />;
+        return (
+          <TextQuote className="w-5 h-5 opacity-50 mt-1 text-purple-500" />
+        );
       case "summary":
-        return <FileText className="w-5 h-5 opacity-50 mt-1" />;
+        return <FileText className="w-5 h-5 opacity-50 mt-1 text-green-500" />;
       default:
         return null;
     }
@@ -266,22 +291,55 @@ const TaskIntegrations = ({
 }) => {
   const platforms = uiAnnotation.object.platforms as Platform[];
 
-  // Since we're guaranteed to have only one platform and one package for now
-  const platform = platforms?.[0];
-  const pkg = platform?.packageInfo;
-
-  console.log("platform", platforms, platform, pkg);
-
+  const { user } = useUser();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [areKeysFilled, setAreKeysFilled] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(
+    null
+  );
+  const [platformKeyStatus, setPlatformKeyStatus] = useState<
+    Record<string, boolean>
+  >({});
+  const [connecting, setConnecting] = useState<Record<string, boolean>>({});
   const params = useParams<{
     project_id?: string;
     request_id?: string;
   }>();
 
+  /**
+   * TODO: how to handle multiple connections?
+   */
+
+  const [docIdCreatedOnConnect, setDocIdCreatedOnConnect] = useState<
+    string | null
+  >(localStorage.getItem("connect/google") ?? null);
+
+  const { data: docIdCreatedOnConnectData } = useSWR(
+    docIdCreatedOnConnect
+      ? `/api/client-secrets?id=${docIdCreatedOnConnect}`
+      : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      return res.json();
+    },
+    {
+      revalidateOnFocus: true,
+    }
+  );
+
+  // console.log(docIdCreatedOnConnectData, "docIdCreatedOnConnectData");
+
+  // Check if all required keys have values
+  const hasAllRequiredKeys =
+    docIdCreatedOnConnectData?.clientSecrets[0]?.variables?.every(
+      (variable: any) => variable.value?.trim()
+    ) ?? false;
+
+  // console.log(hasAllRequiredKeys, "hasAllRequiredKeys");
+
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
-  const { data: secretsData } = useSWR<{
+
+  const { data: secretsData, mutate: mutateSecrets } = useSWR<{
     clientSecrets: ClientSecret[];
   }>(
     requestParamId
@@ -289,6 +347,7 @@ const TaskIntegrations = ({
       : null,
     async (url: string) => {
       const res = await fetch(url);
+
       if (!res.ok) throw new Error("Failed to fetch secrets");
       return res.json();
     }
@@ -296,55 +355,97 @@ const TaskIntegrations = ({
 
   // Check for existing keys when component mounts or secrets data changes
   useEffect(() => {
-    if (secretsData?.clientSecrets && platform?.name) {
-      const existingSecret = secretsData.clientSecrets.find(
-        (secret) => secret.type.toLowerCase() === platform.name.toLowerCase()
-      );
-      // Check if all required keys are present in the existing secret
-      if (existingSecret && pkg?.constructors) {
-        const requiredKeys = pkg.constructors.flatMap(
-          (constructor: Constructor) => constructor.requiredKeys ?? []
-        );
-        const hasAllKeys = requiredKeys.every((keyInfo: RequiredKey) =>
-          existingSecret.variables.some(
-            (variable) => variable.key === keyInfo.key && variable.value.trim()
-          )
-        );
-        setAreKeysFilled(hasAllKeys);
-      }
-    }
-  }, [secretsData, platform?.name, pkg?.constructors]);
+    if (secretsData?.clientSecrets && platforms) {
+      const keyStatus: Record<string, boolean> = {};
+      platforms.forEach((platform) => {
+        // Find matching secret by checking if the secret type includes the platform name
+        // or matches the full constructor type
+        const existingSecret = secretsData.clientSecrets.find((secret) => {
+          const platformNameMatch = secret.type
+            .toLowerCase()
+            .includes(platform.name.toLowerCase());
+          const constructorTypeMatch = platform.packageInfo?.constructors.some(
+            (constructor) => {
+              const fullType =
+                `${platform.packageInfo.name}/${constructor.name}`.toLowerCase();
+              return secret.type.toLowerCase() === fullType;
+            }
+          );
+          return platformNameMatch || constructorTypeMatch;
+        });
 
-  // If no platform or package is available, don't render anything
-  if (!platform || !pkg) {
+        if (existingSecret && platform.packageInfo?.constructors) {
+          // Find the matching constructor based on the secret type
+          const constructor = platform.packageInfo.constructors.find(
+            (c) => c.auth === "apiKey"
+          );
+
+          if (constructor && constructor.requiredKeys) {
+            const hasAllKeys = constructor.requiredKeys.every((keyInfo) =>
+              existingSecret.variables.some(
+                (variable) =>
+                  variable.key === keyInfo.key && variable.value?.trim()
+              )
+            );
+            keyStatus[platform.name] = hasAllKeys;
+          } else {
+            keyStatus[platform.name] = false;
+          }
+        } else {
+          keyStatus[platform.name] = false;
+        }
+      });
+      setPlatformKeyStatus(keyStatus);
+    }
+  }, [secretsData, platforms]);
+
+  const handleConnect = async (platform: Platform, authEndpoint: string) => {
+    try {
+      setConnecting((prev) => ({ ...prev, [platform.name]: true }));
+      // Create empty DB client secret doc
+      const response = await fetch("/api/client-secrets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clientRequestId: requestParamId,
+          botProjectId: projectParamId,
+          name: platform.packageInfo?.title,
+          userId: user?.id,
+          type: `${platform.packageInfo?.name}/${platform.packageInfo?.constructors.filter((c) => c.auth === "oauth")[0]?.name}`,
+          variables: [],
+        }),
+      });
+
+      const authStorageKeyName = authEndpoint.replace(/^\//, "");
+
+      if (!response.ok) {
+        throw new Error("Failed to create client secret");
+      }
+
+      const data = await response.json();
+      setDocIdCreatedOnConnect(data.id);
+      document.cookie = `${authStorageKeyName}=${data.id}; path=/; SameSite=Lax`; // TODO: change to the correct cookie name
+      localStorage.setItem(authStorageKeyName, data.id);
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
+
+      window.open(authEndpoint, "_blank", features); // TODO: change to the correct redirect url
+    } catch (error) {
+      console.error("Error connecting:", error);
+    } finally {
+      setConnecting((prev) => ({ ...prev, [platform.name]: false }));
+    }
+  };
+
+  // If no platforms available, don't render anything
+  if (!platforms || platforms.length === 0) {
     return null;
   }
-
-  const areKeysRequired = pkg.constructors.some(
-    (constructor: Constructor) => constructor.auth === "apiKey"
-  );
-
-  const areOAuthRequired = pkg.constructors.some(
-    (constructor: Constructor) => constructor.auth === "oauth"
-  );
-
-  // Get existing secret only if platform exists
-  const existingSecret = platform
-    ? secretsData?.clientSecrets?.find(
-      (secret) => secret.type.toLowerCase() === platform.name.toLowerCase()
-    )
-    : undefined;
-
-  const handleOpenDialog = () => {
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = (submitted?: boolean) => {
-    setIsDialogOpen(false);
-    if (submitted) {
-      setAreKeysFilled(true);
-    }
-  };
 
   return (
     <motion.div
@@ -357,101 +458,167 @@ const TaskIntegrations = ({
     >
       <div className="">
         <h3 className="text-lg font-semibold text-gray-900">
-          {"Configure Integration Settings"}
+          Configure Integration Settings
         </h3>
-        {areKeysRequired && (
-          <p className="text-sm text-gray-500">
-            Please fill in the required API keys before confirming
-          </p>
-        )}
-        {areOAuthRequired && (
-          <p className="text-sm text-gray-500">
-            Please connect to {platform.name} to continue
-          </p>
-        )}
+        <p className="text-sm text-gray-500">
+          Please configure the required integrations to continue
+        </p>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex rounded-lg border p-4 flex-col gap-2">
-          <div className="flex items-start gap-3">
-            <img src={pkg.icon} alt={pkg.name} className="w-5 h-5 mt-2" />
-            <div className="flex-1">
-              <div className="flex gap-2 items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium w-fit text-gray-900">
-                    {platform.name}
-                  </span>
-                  {pkg.name && (
-                    <span className="text-xs flex-1 w-full bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                      {pkg.name}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {areOAuthRequired && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+      <div className="grid gap-4">
+        {platforms.map((platform) => {
+          const pkg = platform.packageInfo;
+          const areKeysRequired = pkg?.constructors.some(
+            (constructor: Constructor) => constructor.auth === "apiKey"
+          );
+          const areOAuthRequired = pkg?.constructors.some(
+            (constructor: Constructor) => constructor.auth === "oauth"
+          );
+
+          const authEndpoint = pkg.authEndpoint;
+
+          const isConnected = docIdCreatedOnConnect && hasAllRequiredKeys;
+
+          return (
+            <div
+              key={platform.name}
+              className="flex rounded-lg border p-4 flex-col gap-2"
+            >
+              <div className="flex items-start gap-3">
+                <img src={pkg?.icon} alt={pkg?.name} className="w-5 h-5 mt-2" />
+                <div className="flex-1">
+                  <div className="flex gap-2 items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-fit text-gray-900">
+                        {platform.name}
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip delayDuration={500}>
+                          <TooltipTrigger asChild>
+                            <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                              {pkg.name}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{pkg.name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-lg border border-gray-200">
+                      {areOAuthRequired ? (
+                        isConnected ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3 text-xs font-medium bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
+                            disabled={true}
+                          >
+                            Connected
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3 text-xs font-medium"
+                            onClick={() =>
+                              handleConnect(platform, authEndpoint)
+                            }
+                            disabled={connecting[platform.name]}
+                          >
+                            {connecting[platform.name]
+                              ? "Connecting..."
+                              : "Connect"}
+                          </Button>
+                        )
+                      ) : areKeysRequired ? (
+                        <div className="relative">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full border border-gray-200 relative"
-                            onClick={handleOpenDialog}
+                            className="p-0 hover:bg-gray-100 relative"
+                            onClick={() => {
+                              setSelectedPlatform(platform);
+                              setIsDialogOpen(true);
+                            }}
                           >
                             <Key className="h-4 w-4" />
-                            {!areKeysFilled ? (
-                              <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-yellow-400 animate-pulse" />
-                            ) : (
-                              <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-2.5 w-2.5 rounded-full text-green-500" />
-                            )}
+                            Add API Keys
                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">API Keys</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {pkg.constructors.some(
-                    (constructor: Constructor) => constructor.auth === "oauth"
-                  ) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-3 text-xs font-medium"
-                        onClick={() => {
-                          console.log("Connect to", platform.name);
-                        }}
-                      >
-                        Connect
-                      </Button>
-                    )}
+                          {!platformKeyStatus[platform.name] ? (
+                            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 animate-pulse" />
+                          ) : (
+                            <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-4 w-4 rounded-full text-green-500" />
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {platform.reason}
+                  </p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mt-1">{platform.reason}</p>
             </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
-      <APIKeyDialog
-        isOpen={isDialogOpen}
-        onClose={handleCloseDialog}
-        platform={{
-          name: platform.name,
-          requiredKeys: pkg.constructors.flatMap(
-            (constructor: Constructor) => constructor.requiredKeys ?? []
-          ),
-          packageDocumentation: pkg.documentation,
-        }}
-        existingSecret={existingSecret}
-        projectId={projectParamId}
-        requestId={requestParamId}
-      />
+      {selectedPlatform && (
+        <APIKeyDialog
+          mutateSecrets={mutateSecrets}
+          isOpen={isDialogOpen}
+          onClose={(submitted) => {
+            setIsDialogOpen(false);
+            setSelectedPlatform(null);
+            if (submitted) {
+              setPlatformKeyStatus((prev) => ({
+                ...prev,
+                [selectedPlatform.name]: true,
+              }));
+            }
+          }}
+          platformName={selectedPlatform.name}
+          pkg={{
+            name: selectedPlatform.packageInfo?.title ?? "",
+            type: `${selectedPlatform.packageInfo?.name}/${selectedPlatform.packageInfo?.constructors.find((c) => c.auth === "apiKey")?.name}`,
+            requiredKeys:
+              selectedPlatform.packageInfo?.constructors.find(
+                (c) => c.auth === "apiKey"
+              )?.requiredKeys ?? [],
+            packageDocumentation: selectedPlatform.packageInfo?.documentation,
+          }}
+          existingSecret={secretsData?.clientSecrets?.find((secret) => {
+            const platformNameMatch = secret.type
+              .toLowerCase()
+              .includes(selectedPlatform.name.toLowerCase());
+            const constructorTypeMatch =
+              selectedPlatform.packageInfo?.constructors.some((constructor) => {
+                const fullType =
+                  `${selectedPlatform.packageInfo.name}/${constructor.name}`.toLowerCase();
+                return secret.type.toLowerCase() === fullType;
+              });
+            return platformNameMatch || constructorTypeMatch;
+          })}
+          projectId={projectParamId}
+          requestId={requestParamId}
+        />
+      )}
       <ActionButtons
         buttons={uiAnnotation.buttons}
-        areKeysRequired={areKeysRequired}
-        areKeysFilled={areKeysFilled}
+        areKeysRequired={platforms.some(
+          (p) =>
+            !p.optional &&
+            p.packageInfo?.constructors.some(
+              (c: Constructor) => c.auth === "apiKey"
+            )
+        )}
+        areKeysFilled={Object.entries(platformKeyStatus).every(
+          ([platformName, status]) => {
+            const platform = platforms.find((p) => p.name === platformName);
+            return platform?.optional || status;
+          }
+        )}
       />
     </motion.div>
   );
@@ -465,100 +632,160 @@ const TaskStructure = ({
   idx: number;
 }) => {
   const object = uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
-  //console.log("object", object);
   return (
     <motion.div
       key={uiAnnotation.objectType + idx}
-      className="flex flex-col gap-2 p-0 px-4 bg-gray-100 rounded-lg"
+      className="flex flex-col gap-4 p-3 py-4 bg-white shadow-lg my-4 rounded-xl border border-gray-100"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
     >
-      <h3 className="text-lg font-bold">{uiAnnotation.text}</h3>
+      <div className="">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {uiAnnotation.text}
+        </h3>
+        <p className="text-sm text-gray-500">
+          Review and manage your task&apos;s components
+        </p>
+      </div>
+
       <Tabs defaultValue="lambdaFunctions" className="w-full">
-        <TabsList className="flex flex-wrap gap-2 justify-start items-center">
-          <TabsTrigger value="lambdaFunctions">Webhooks</TabsTrigger>
-          <TabsTrigger value="cronJobs">Scheduled-Jobs</TabsTrigger>
-          {/* <TabsTrigger value="interactions" className="">User Interactions</TabsTrigger> */}
-          <TabsTrigger value="schemas">Datatstore</TabsTrigger>
+        <TabsList className="grid grid-cols-3 gap-2 justify-start items-center bg-gray-50/50 p-1 rounded-lg">
+          <TabsTrigger
+            value="lambdaFunctions"
+            className="data-[state=active]:bg-white !px-2"
+          >
+            <Package className="w-4 h-4" />
+            Webhooks
+          </TabsTrigger>
+          <TabsTrigger
+            value="cronJobs"
+            className="data-[state=active]:bg-white !px-2"
+          >
+            <GitFork className="w-4 h-4" />
+            Scheduled-Jobs
+          </TabsTrigger>
+          <TabsTrigger
+            value="schemas"
+            className="data-[state=active]:bg-white !px-2"
+          >
+            <FileText className="w-4 h-4" />
+            Datatstore
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="schemas">
-          <div className="flex flex-col gap-2">
+
+        <TabsContent value="schemas" className="mt-4">
+          <div className="grid gap-4">
             {object?.dbSchemas?.map((schema) => (
-              <div key={schema.modelName} className="flex flex-col gap-1">
-                <span className="font-bold text-xs tracking-wide text-gray-500">
-                  {schema.modelName}
-                </span>
-                <pre className="text-xs bg-gray-50 p-2 rounded">
+              <div
+                key={schema.modelName}
+                className="bg-gray-50 rounded-lg p-4 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-sm text-gray-900">
+                    {schema.modelName}
+                  </span>
+                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                    Schema
+                  </span>
+                </div>
+                <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto">
                   {JSON.stringify(schema.jsonSchema, null, 2)}
                 </pre>
               </div>
             ))}
           </div>
         </TabsContent>
-        <TabsContent value="lambdaFunctions">
-          <div className="flex flex-col gap-4">
+
+        <TabsContent value="lambdaFunctions" className="mt-4">
+          <div className="grid gap-4">
             {object?.lambdaFunctions?.map((fn) => (
-              <div key={fn.name} className="flex flex-col gap-1">
-                <span className="font-bold text-sm tracking-wide text-black">
-                  {fn.name}
-                </span>
-                <span className="text-xs text-gray-800">
-                  {fn.method} {fn.path}
-                </span>
-                <ul className="list-disc pl-4 text-xs text-gray-500">
-                  <li>What it does: {fn.description}</li>
-                  <li>Result: {fn.endResult}</li>
-                </ul>
+              <div
+                key={fn.name}
+                className="bg-gray-50 rounded-lg p-4 space-y-3"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{fn.name}</span>
+                    <span
+                      className={cn(
+                        "text-xs px-2 py-1 rounded-full font-bold font-mono",
+                        fn.method === "GET" && "bg-blue-100 text-blue-700",
+                        fn.method === "POST" && "bg-green-100 text-green-700",
+                        fn.method === "PUT" && "bg-amber-100 text-amber-700",
+                        fn.method === "DELETE" && "bg-red-100 text-red-700"
+                      )}
+                    >
+                      {fn.method}
+                    </span>
+                  </div>
+                  <pre className="text-xs flex items-center text-gray-600 bg-gray-100 px-1 rounded-md border w-fit">
+                    {fn.path}
+                  </pre>
+                </div>
+                <Separator className="my-2" />
+                <div className="space-y-2">
+                  <div className="flex gap-2 items-start">
+                    <Target className="w-4 h-4 mt-1 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {fn.description}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <CheckCircle className="w-4 h-4 mt-1 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {fn.endResult}
+                    </span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </TabsContent>
-        <TabsContent value="cronJobs">
-          <div className="flex flex-col gap-2">
+
+        <TabsContent value="cronJobs" className="mt-4">
+          <div className="grid gap-4">
             {object?.cronJobs?.map((job) => (
-              <div key={job.name} className="flex flex-col gap-1">
-                <span className="font-bold text-xs tracking-wide text-gray-500">
-                  {job.name}
-                </span>
-                <span className="text-sm">{job.description}</span>
-                <span className="text-xs text-gray-500">
-                  Result: {job.endResult}
-                </span>
-                <span className="text-xs text-gray-500">
-                  Cron: {job.cronExpression}
-                </span>
+              <div
+                key={job.name}
+                className="bg-gray-50 rounded-lg p-4 space-y-3"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">
+                      {job.name}
+                    </span>
+                    <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                      Scheduled
+                    </span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Clock className="w-4 h-4 mr-2 opacity-50" />
+                    {job.cronExpression}
+                  </div>
+                </div>
+                <Separator className="my-2" />
+                <div className="space-y-2">
+                  <div className="flex gap-2 items-start">
+                    <div className="">
+                      <Target className="w-4 h-4 mt-1 text-gray-400" />
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {job.description}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <CheckCircle className="w-4 h-4 mt-1 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {job.endResult}
+                    </span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </TabsContent>
-        {/* <TabsContent value="endpoints">
-                    <div className="flex flex-col gap-2">
-                        {object?.endpoints?.map((endpoint) => (
-                            <div key={endpoint.path + endpoint.method} className="flex flex-col gap-1">
-                                <span className="font-bold text-xs tracking-wide text-gray-500">
-                                    {endpoint.method} {endpoint.path}
-                                </span>
-                                <span className="text-sm">{endpoint.description}</span>
-                            </div>
-                        ))}
-                    </div>
-                </TabsContent> */}
-        {/* <TabsContent value="interactions">
-                    <div className="flex flex-col gap-2">
-                        {object?.userInteractions?.map((interaction) => (
-                            <div key={interaction.name} className="flex flex-col gap-1">
-                                <span className="font-bold text-xs tracking-wide text-gray-500">{interaction.name}</span>
-                                <span className="text-sm">{interaction.description}</span>
-                                <span className="text-xs text-gray-500">Result: {interaction.endResult}</span>
-                                <div className="text-xs text-gray-500">
-                                    Endpoints: {interaction.endpointCall.join(", ")}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </TabsContent> */}
       </Tabs>
       <ActionButtons buttons={uiAnnotation.buttons} />
     </motion.div>
@@ -573,21 +800,273 @@ const EnvCollector = ({
   idx: number;
 }) => {
   const annotation = uiAnnotation as any;
+  const [showAddEnvModal, setShowAddEnvModal] = useState(false);
+  const [showDocDialog, setShowDocDialog] = useState(false);
+  const [selectedEnv, setSelectedEnv] = useState<any>(null);
+  const [envValues, setEnvValues] = useState<Record<string, string>>({});
+  const params = useParams();
+  const requestParamId = params?.request_id;
+  const projectParamId = params?.project_id;
+  const { user } = useUser();
+  const { data: secretsData, mutate: mutateSecrets } = useSWR<{
+    clientSecrets: ClientSecret[];
+  }>(
+    requestParamId
+      ? `/api/client-secrets?clientRequestId=${requestParamId}&type=custom`
+      : null,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch secrets");
+      return res.json();
+    }
+  );
+
+  // Populate form with existing values when secret is found
+  useEffect(() => {
+    if (secretsData?.clientSecrets?.[0]?.variables) {
+      const keyMap: Record<string, string> = {};
+      secretsData.clientSecrets[0].variables.forEach((variable) => {
+        keyMap[variable.key] = variable.value;
+      });
+      setEnvValues(keyMap);
+    }
+  }, [secretsData]);
+
+  const clientSecretKeys = secretsData?.clientSecrets[0]?.variables;
+  const envVariables = annotation.envVariablesCollect.filter((env: any) =>
+    clientSecretKeys?.some((key) => key.key !== env.env && !env.isSameAs)
+  );
+
+  const handleSaveEnv = async (values: Record<string, string>) => {
+    try {
+      const existingSecret = secretsData?.clientSecrets?.[0];
+      const endpoint = "/api/client-secrets";
+      const method = existingSecret ? "PUT" : "POST";
+
+      const body = existingSecret
+        ? {
+            id: existingSecret.id,
+            variables: Object.entries(values)
+              .filter(([_, value]) => value.trim())
+              .map(([key, value]) => ({
+                key,
+                value: value.trim(),
+                isOptional: false,
+              })),
+            clientRequestId: requestParamId,
+            botProjectId: projectParamId,
+            userId: user?.id,
+            name: "custom_keys",
+            type: "custom",
+          }
+        : {
+            clientRequestId: requestParamId,
+            botProjectId: projectParamId,
+            name: "custom_keys",
+            userId: user?.id,
+            type: "custom",
+            variables: Object.entries(values)
+              .filter(([_, value]) => value.trim())
+              .map(([key, value]) => ({
+                key,
+                value: value.trim(),
+                isOptional: false,
+              })),
+          };
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save environment variables");
+      }
+
+      await mutateSecrets();
+      toast.success(
+        existingSecret
+          ? "Environment variables updated successfully"
+          : "Environment variables saved successfully"
+      );
+    } catch (error) {
+      console.error("Error saving environment variables:", error);
+      toast.error("Failed to save environment variables. Please try again.");
+      throw error;
+    }
+  };
+
+  const hasAllRequiredKeys = envVariables.every((env: any) => {
+    // Only check if the key exists in backend data
+    return secretsData?.clientSecrets?.[0]?.variables?.some(
+      (variable) => variable.key === env.env && variable.value?.trim()
+    );
+  });
+
+  if (envVariables.length === 0) {
+    return null;
+  }
+
   return (
-    <motion.div
-      key={uiAnnotation.objectType + idx}
-      className="flex flex-col gap-2 p-4 bg-white shadow-lg my-4 rounded-xl border border-gray-100"
-    >
-      <h3 className="text-lg uppercase font-bold tracking-wider text-gray-700 border-b pb-2">
-        {uiAnnotation.text}
-      </h3>
-      <div className="flex flex-col gap-2">
-        {annotation?.envVariablesCollect?.map((env: any, idx: number) => (
-          <span key={env + idx}>{env.env}</span>
-        ))}
-      </div>
-      <ActionButtons buttons={uiAnnotation.buttons} />
-    </motion.div>
+    <>
+      <motion.div
+        key={uiAnnotation.objectType + idx}
+        className="flex flex-col gap-6 p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {uiAnnotation.text}
+          </h3>
+          <p className="text-sm text-gray-500">
+            Please provide the following information to continue
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <div className="relative">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddEnvModal(true)}
+              >
+                <Plus className="w-4 h-4 " />
+                {!hasAllRequiredKeys
+                  ? "Add the following keys"
+                  : "Update the following keys"}
+              </Button>
+              {!hasAllRequiredKeys ? (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 animate-pulse" />
+              ) : (
+                <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-5 w-5 rounded-full text-green-500" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          {envVariables?.map((env: any) => (
+            <div key={env.env} className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium text-gray-900">
+                      {env.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TooltipProvider delayDuration={3000}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="text-blue-500 hover:text-blue-600 transition-colors p-1 rounded-md border border-blue-100 bg-blue-50 hover:bg-blue-100"
+                            onClick={() => {
+                              setSelectedEnv(env);
+                              setShowDocDialog(true);
+                            }}
+                          >
+                            <HelpCircle className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="right"
+                          className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
+                          showArrow={false}
+                        >
+                          <p>Click for detailed documentation</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-2">
+                  <div className="flex gap-2 items-start">
+                    <FileText className="w-4 h-4 mt-1 text-gray-400" />
+                    <span className="text-sm text-gray-600">{env.what}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <ActionButtons
+          buttons={uiAnnotation.buttons}
+          areKeysRequired={envVariables.length > 0}
+          areKeysFilled={hasAllRequiredKeys}
+        />
+      </motion.div>
+
+      <EnvVariablesDialog
+        isOpen={showAddEnvModal}
+        onClose={() => setShowAddEnvModal(false)}
+        envVariables={envVariables}
+        onSave={handleSaveEnv}
+        initialValues={envValues}
+      />
+
+      <Dialog open={showDocDialog} onOpenChange={setShowDocDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+              <HelpCircle className="h-5 w-5" />
+              {selectedEnv?.name} Documentation
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
+              Detailed information about this environment variable
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-900">Description</h4>
+              <p className="text-sm text-gray-600">{selectedEnv?.what}</p>
+            </div>
+
+            {selectedEnv?.how && (
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-900">How to Set Up</h4>
+                <div className="space-y-3">
+                  {selectedEnv.how
+                    .split("\n")
+                    .map((line: string, i: number) => (
+                      <div key={i} className="flex gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-medium">
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 prose prose-sm max-w-none">
+                          <Markdown>{line}</Markdown>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {selectedEnv?.examples && (
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-900">Examples</h4>
+                <div className="space-y-2">
+                  {selectedEnv.examples.map((example: string, i: number) => (
+                    <div key={i} className="bg-gray-50 p-3 rounded-md">
+                      <Markdown>{example}</Markdown>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

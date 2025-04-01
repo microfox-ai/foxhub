@@ -38,8 +38,10 @@ export async function POST(req: NextRequest) {
     const { userId, botProjectId } = clientRequest;
 
     // Create the ClientDeployment
-    const clientFunction = await prisma.clientDeployment.create({
-      data: {
+    const clientFunction = await prisma.clientDeployment.upsert({
+      where: { id: originClientRequestId },
+      update: {
+        id: originClientRequestId,
         userId,
         botProjectId,
         originClientRequestId,
@@ -48,7 +50,21 @@ export async function POST(req: NextRequest) {
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
         metadata,
-        endpoints,
+        endpoints:
+          typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
+      },
+      create: {
+        id: originClientRequestId,
+        userId,
+        botProjectId,
+        originClientRequestId,
+        name,
+        baseUrl,
+        stage: stage as DEPLOY_STAGE,
+        type: type as FUNCTIONTYPE,
+        metadata,
+        endpoints:
+          typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
       },
     });
 

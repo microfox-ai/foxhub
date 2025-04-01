@@ -55,7 +55,12 @@ export const genFinalCode = async (
             The following is the task summary:
             ${taskInstanceMeta?.taskInfo?.summary}
 
-            make sure to store the file at the root of the project.
+            your workflow should be as follows:
+            1. read the serverless.yml file
+            2. remove all the old functions & cron jobs from the serverless.yml file.
+            3. add the new functions & cron jobs to the serverless.yml file.
+            4. store the file at the root of the project.
+
             make sure you skip the packagesUsed field in the tool call.
             `,
       tools: {

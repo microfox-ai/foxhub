@@ -186,6 +186,7 @@ export const codingFunctionPrompt = async ({
             Some instructions for docs
             - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
             - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.
+            - the docs should be a pure string, do not insert any $ characters in the docs setup instructions.
             `;
 };
 

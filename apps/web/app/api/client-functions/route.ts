@@ -6,8 +6,15 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { originClientRequestId, name, baseUrl, stage, type, metadata } =
-      body;
+    const {
+      originClientRequestId,
+      name,
+      baseUrl,
+      stage,
+      type,
+      metadata,
+      endpoints,
+    } = body;
 
     if (!originClientRequestId || !name || !baseUrl || !type || !stage) {
       return NextResponse.json(
@@ -41,6 +48,7 @@ export async function POST(req: NextRequest) {
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
         metadata,
+        endpoints,
       },
     });
 

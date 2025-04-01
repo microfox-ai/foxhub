@@ -223,7 +223,8 @@ export const writeToFile = (
         .array(z.string())
         .describe(
           "The packages used in the file - @microfox/core, @microfox/aws-ses etc.."
-        ),
+        )
+        .optional(),
     }),
     execute: async (
       { fileName, filePath, fileType, content, packagesUsed },
@@ -251,7 +252,7 @@ export const writeToFile = (
           clientRequest
         );
 
-        if (packagesUsed.length > 0) {
+        if (packagesUsed && packagesUsed?.length > 0) {
           const packageJson = await fs.readFile(
             path.join(
               process.cwd(),
@@ -261,7 +262,7 @@ export const writeToFile = (
             "utf8"
           );
           const packageJsonContent = JSON.parse(packageJson);
-          packagesUsed.forEach((pkg) => {
+          packagesUsed?.forEach((pkg) => {
             if (packageJsonContent.dependencies[pkg]) {
               packageJsonContent.dependencies[pkg] = "*";
             }

@@ -1,7 +1,10 @@
 // api/client-secrets/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import { TEMPLATE_REPO_OWNER, GITHUB_TOKEN } from "@/utils/constants/githubInfo";
+import {
+  TEMPLATE_REPO_OWNER,
+  GITHUB_TOKEN,
+} from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
 
 // Create ClientSecret
@@ -144,9 +147,10 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get("userId");
     const botProjectId = searchParams.get("botProjectId");
     const clientRequestId = searchParams.get("clientRequestId");
+    const type = searchParams.get("type");
     console.log(id, userId, clientRequestId);
 
-    if (clientRequestId) {
+    if (clientRequestId && !type) {
       const clientRequest = await prisma.clientRequest.findUnique({
         where: { id: clientRequestId },
       });
@@ -180,6 +184,12 @@ export async function GET(req: NextRequest) {
         { clientSecrets: mentionedClientSecrets },
         { status: 200 }
       );
+    }
+    if (type && clientRequestId) {
+      const clientSecrets = await prisma.clientSecret.findMany({
+        where: { type, clientRequestIds: { has: clientRequestId } },
+      });
+      return NextResponse.json({ clientSecrets }, { status: 200 });
     }
     if (botProjectId) {
       const clientSecrets = await prisma.clientSecret.findMany({

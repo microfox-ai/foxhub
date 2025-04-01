@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const apiKey = req.headers.get("microfox-api-key");
     const origin = req.nextUrl.origin;
 
-    console.log(origin);
+    console.log("lambda function triggers", origin, apiKey);
     // TODO: Need to enable checkers for internal requests & ybgpasss internal requests
     // Skip validation in dev mode or if request is from APP_DOMAIN
     // if (

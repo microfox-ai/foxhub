@@ -5,6 +5,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { TaskInstanceMetaType } from "../../convertfox/types";
 import {
+  fetchTemplateRoot,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
   writeToFileSystemAndUpdateSteps,
 } from "../tool/writeToFile";
@@ -21,7 +22,11 @@ export const genInitialCode = async (
 
   // TODO: Instead of hardcoding, fetch from the template repo.
   const packageJson = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "package.json"),
+    path.join(
+      process.cwd(),
+      fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+      "package.json"
+    ),
     "utf8"
   );
   const packageJsonContent = JSON.parse(packageJson);
@@ -42,7 +47,11 @@ export const genInitialCode = async (
   );
 
   const tsconfig = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "tsconfig.json"),
+    path.join(
+      process.cwd(),
+      fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+      "tsconfig.json"
+    ),
     "utf8"
   );
   writeToFileSystemAndUpdateSteps(
@@ -66,7 +75,11 @@ export const genInitialCode = async (
   // );
 
   const serverlessYml = await fs.readFile(
-    path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "serverless.yml"),
+    path.join(
+      process.cwd(),
+      fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+      "serverless.yml"
+    ),
     "utf8"
   );
   writeToFileSystemAndUpdateSteps(

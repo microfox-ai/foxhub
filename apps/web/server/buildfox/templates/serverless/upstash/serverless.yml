@@ -19,14 +19,6 @@ provider:
 plugins:
   - serverless-plugin-typescript
 
-provider:
-  name: aws
-  runtime: nodejs18.x
-  region: us-east-1
-  stage: ${env:ENVIRONMENT, 'dev'}
-  environment:
-    STAGE: ${env:ENVIRONMENT, 'dev'}
-
 functions:
   # External API Endpoints
   getExternalData:

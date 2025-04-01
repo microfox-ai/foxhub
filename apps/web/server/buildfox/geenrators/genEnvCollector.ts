@@ -11,6 +11,7 @@ import {
   INTERNAL_TEMPLATE_UPSTASH_ROOT,
   INTERNAL_TEMPLATE_MONGODB_ROOT,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
+  fetchTemplateRoot,
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -24,31 +25,11 @@ export const genEnvCollector = async (
   let envs = envVariablesUsed;
   let envsJsonParsed: any[] = [];
   try {
-    switch (templateType) {
-      case "upstash":
-        const envsUpstashJson = await readFile(
-          path.join(process.cwd(), INTERNAL_TEMPLATE_UPSTASH_ROOT, "envs.json"),
-          "utf8"
-        );
-        envsJsonParsed = JSON.parse(envsUpstashJson);
-        break;
-      case "mongodb":
-        const envsMongodbJson = await readFile(
-          path.join(process.cwd(), INTERNAL_TEMPLATE_MONGODB_ROOT, "envs.json"),
-          "utf8"
-        );
-        envsJsonParsed = JSON.parse(envsMongodbJson);
-        break;
-      case "plain":
-        const envsPlainJson = await readFile(
-          path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "envs.json"),
-          "utf8"
-        );
-        envsJsonParsed = JSON.parse(envsPlainJson);
-        break;
-      default:
-        break;
-    }
+    const envsJSON = await readFile(
+      path.join(process.cwd(), fetchTemplateRoot(templateType), "envs.json"),
+      "utf8"
+    );
+    envsJsonParsed = JSON.parse(envsJSON);
     console.log(
       "rootEnvs Used",
       envsJsonParsed.map((env) => env.key)

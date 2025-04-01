@@ -16,6 +16,7 @@ export const genDbCode = async (
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
+  throw new Error("Not implemented");
   props.dataStream.writeMessageAnnotation({
     type: "thinking",
     content: "Writing db schema",

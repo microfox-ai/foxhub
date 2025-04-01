@@ -77,6 +77,7 @@ export const taskStructure = z.object({
       z.object({
         modelName: z.string().describe("The name of the model"),
         jsonSchema: z.any().describe("The schema of the model"),
+        key: z.string().describe("The key in the database").optional(),
       })
     )
     .optional()
@@ -117,6 +118,12 @@ export const taskStructure = z.object({
         body: z.any().describe("The body of the end point"),
         headers: z.any().describe("The headers of the end point"),
       }),
+      isolated: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
+        ),
       cronExpression: z
         .string()
         .describe("The cron expression of the cron job"),

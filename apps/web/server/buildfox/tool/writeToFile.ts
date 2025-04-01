@@ -11,6 +11,21 @@ export const INTERNAL_TEMPLATE_PLAIN_ROOT = `server/buildfox/templates/serverles
 export const INTERNAL_TEMPLATE_UPSTASH_ROOT = `server/buildfox/templates/serverless/upstash`;
 export const INTERNAL_TEMPLATE_MONGODB_ROOT = `server/buildfox/templates/serverless/mongodb`;
 
+export const fetchTemplateRoot = (
+  templateType: "plain" | "upstash" | "mongodb" | undefined
+) => {
+  if (templateType === "plain") {
+    return INTERNAL_TEMPLATE_PLAIN_ROOT;
+  }
+  if (templateType === "upstash") {
+    return INTERNAL_TEMPLATE_UPSTASH_ROOT;
+  }
+  if (templateType === "mongodb") {
+    return INTERNAL_TEMPLATE_MONGODB_ROOT;
+  }
+  return INTERNAL_TEMPLATE_PLAIN_ROOT;
+};
+
 export const getRootDir = async (clientRequest: ClientRequest) => {
   if (!clientRequest.repoName || !clientRequest.requestDir) {
     throw new Error("Client request does not have a repo name or request dir");
@@ -204,7 +219,8 @@ export const updateSteps = async (
 /** Thinking tool */
 export const writeToFile = (
   props: StreamingFucntionProps<any, any>,
-  clientRequest: ClientRequest
+  clientRequest: ClientRequest,
+  templateType?: "plain" | "upstash" | "mongodb"
 ) => {
   return tool({
     description: "Write code to a specific file in the project",
@@ -256,7 +272,7 @@ export const writeToFile = (
           const packageJson = await fs.readFile(
             path.join(
               process.cwd(),
-              INTERNAL_TEMPLATE_PLAIN_ROOT,
+              fetchTemplateRoot(templateType),
               "package.json"
             ),
             "utf8"

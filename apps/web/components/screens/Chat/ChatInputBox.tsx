@@ -39,7 +39,7 @@ export default function ChatInputBox({
   const { handleSubmit } = useMicrofox();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
-    console.log("textareaRef", textareaRef.current);
+    //console.log("textareaRef", textareaRef.current);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"; // Reset height
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
@@ -113,7 +113,7 @@ export default function ChatInputBox({
           disabled={
             (
               lastMessage?.annotations?.[
-                lastMessage.annotations.length - 1
+              lastMessage.annotations.length - 1
               ] as any
             )?.type === "ui" ||
             messageStatus === "pending" ||
@@ -134,7 +134,7 @@ export default function ChatInputBox({
             disabled={
               (
                 lastMessage?.annotations?.[
-                  lastMessage.annotations.length - 1
+                lastMessage.annotations.length - 1
                 ] as any
               )?.type === "ui" ||
               (!input.trim() && attachedMedia.length === 0) ||

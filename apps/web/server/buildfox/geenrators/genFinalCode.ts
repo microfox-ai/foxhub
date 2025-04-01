@@ -39,7 +39,7 @@ export const genFinalCode = async (
     const result = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
-      prompt: `You are requested to modify a serverless.yml file for the following requirement:
+      prompt: dedent`You are requested to modify a serverless.yml file for the following requirement:
             The following functions are generated for the task:
             ${allGenFilesList
               ?.filter((file: any) => file.filePath.includes("/functions"))
@@ -54,6 +54,9 @@ export const genFinalCode = async (
 
             The following is the task summary:
             ${taskInstanceMeta?.taskInfo?.summary}
+
+            The service name should be:
+            service: ${clientRequest?.repoName + "-" + clientRequest?.requestDir}
 
             your workflow should be as follows:
             1. read the serverless.yml file
@@ -125,7 +128,7 @@ export const genFinalCode = async (
     const result2 = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
-      prompt: `You are requested to create an index.ts file for the following requirement & example:
+      prompt: dedent`You are requested to create an index.ts file for the following requirement & example:
 
             The following files are already generated for the task:
             ${allFilesRelativeToRoot?.map((file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`).join("\n - ")}
@@ -133,6 +136,9 @@ export const genFinalCode = async (
             The example index.ts file is as follows:
             ${indexTs}
             
+            make sure the imports follow the '.js' extension like this:
+            import { getExternalData } from './functions/getExternalData.js'
+
             make sure that all the functions are imported and re-exported in the index.ts file.
             make sure that the docs are properly setup in the index.ts file.
             make sure you rewrite the entire file instead of any diffs.

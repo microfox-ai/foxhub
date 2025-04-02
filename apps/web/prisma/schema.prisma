@@ -111,6 +111,7 @@ model TaskInstanceMeta {
   taskRequiredInfo    Json?
   taskStructure       Json?  // this should be in seperate model in future
   buildingStep        Json?
+  deployStep          Json?
   minionType          String?
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt       

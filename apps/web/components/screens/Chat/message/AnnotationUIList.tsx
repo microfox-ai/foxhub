@@ -290,7 +290,7 @@ const TaskIntegrations = ({
   uiAnnotation: UIAnnotation;
   idx: number;
 }) => {
-  const platforms = uiAnnotation.object.platforms.slice(0, 1) as Platform[];
+  const platforms = uiAnnotation.object.platforms as Platform[];
   const params = useParams<{
     project_id?: string;
     request_id?: string;
@@ -409,8 +409,8 @@ const TaskIntegrations = ({
           );
           authStatus[platform.name] = oauthSecret
             ? oauthSecret.variables.every(
-                (variable) => variable.value?.trim() !== ""
-              )
+              (variable) => variable.value?.trim() !== ""
+            )
             : false;
         }
       }
@@ -550,8 +550,8 @@ const TaskIntegrations = ({
 
           const hasAllAuthRelatedKeys = getMatchingOAuthSecret
             ? getMatchingOAuthSecret?.variables.every((variable: any) => {
-                return variable.value?.trim() !== "";
-              })
+              return variable.value?.trim() !== "";
+            })
             : false;
 
           return (

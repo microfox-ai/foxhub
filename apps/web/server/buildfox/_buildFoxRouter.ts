@@ -240,7 +240,7 @@ export const buildFoxRouter: ServerStreamingFunction<
         type: "confirm",
         text: "Test Automation !",
         className: "bg-green-500 text-white hover:bg-green-600",
-        value: "testfox",
+        value: "deployfox",
       },
     ],
   });
@@ -263,7 +263,7 @@ export const buildFoxRouter: ServerStreamingFunction<
         text: "Test Automation !",
         type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
-        value: "testfox",
+        value: "deployfox",
       },
     ],
   });

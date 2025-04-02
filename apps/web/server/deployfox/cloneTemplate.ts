@@ -72,23 +72,45 @@ export const cloneTemplate = async ({
           });
 
           if (!Array.isArray(fileContent) && "content" in fileContent) {
+            const targetFilePath = item.path;
+
+            // Try to get the SHA of existing file if it exists
+            let sha: string | undefined;
+            try {
+              const { data: existingFile } =
+                await octokit.rest.repos.getContent({
+                  owner: TEMPLATE_REPO_OWNER,
+                  repo: targetRepo,
+                  path: targetFilePath,
+                  ref: targetBranch,
+                });
+
+              if (!Array.isArray(existingFile)) {
+                sha = existingFile.sha;
+              }
+            } catch (error) {
+              // File doesn't exist yet, which is fine
+            }
+
             // Create or update the file in the target repository
             await octokit.rest.repos.createOrUpdateFileContents({
               owner: TEMPLATE_REPO_OWNER,
               repo: targetRepo,
-              path: `${targetPath}/${item.path}`,
-              message: `Clone template: ${item.path}`,
+              path: targetFilePath,
+              message: `nodeploy: Clone template: ${item.path}`,
               content: fileContent.content,
               branch: targetBranch,
+              ...(sha ? { sha } : {}),
             });
           }
         } else if (item.type === "dir") {
+          console.log("Cloning directory:", item.path);
           // Recursively process subdirectories
           await cloneTemplate({
             sourceRepo,
             targetRepo,
             sourcePath: item.path,
-            targetPath: `${targetPath}/${item.path}`,
+            targetPath: item.path,
             sourceBranch,
             targetBranch,
           });
@@ -96,13 +118,33 @@ export const cloneTemplate = async ({
       }
     } else if ("content" in contents) {
       // If it's a single file
+      const targetFilePath = targetPath || contents.path;
+
+      // Try to get the SHA of existing file if it exists
+      let sha: string | undefined;
+      try {
+        const { data: existingFile } = await octokit.rest.repos.getContent({
+          owner: TEMPLATE_REPO_OWNER,
+          repo: targetRepo,
+          path: targetFilePath,
+          ref: targetBranch,
+        });
+
+        if (!Array.isArray(existingFile)) {
+          sha = existingFile.sha;
+        }
+      } catch (error) {
+        // File doesn't exist yet, which is fine
+      }
+
       await octokit.rest.repos.createOrUpdateFileContents({
         owner: TEMPLATE_REPO_OWNER,
         repo: targetRepo,
-        path: targetPath || contents.path,
+        path: targetFilePath,
         message: `nodeploy: Clone template: ${contents.path}`,
         content: contents.content,
         branch: targetBranch,
+        ...(sha ? { sha } : {}),
       });
     }
 

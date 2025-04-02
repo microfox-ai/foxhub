@@ -15,7 +15,7 @@ import {
 import { Octokit } from "octokit";
 import { TaskInstanceMetaType } from "../convertfox/types";
 import dayjs from "dayjs";
-export const pushToGit = async (
+export const deployViaGit = async (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
   taskInstanceMeta: TaskInstanceMetaType

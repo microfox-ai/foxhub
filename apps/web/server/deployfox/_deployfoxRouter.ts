@@ -19,6 +19,11 @@ import {
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
+import { deployViaGit } from "./deployGit";
+import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { prisma } from "@/prisma/prisma";
+import { fetchLogs } from "./fetchLogs";
+import { TaskInstanceMetaType } from "../convertfox/types";
 
 export const deployFoxRouter: ServerStreamingFunction<
   any,
@@ -30,27 +35,6 @@ export const deployFoxRouter: ServerStreamingFunction<
     requestBody.messages,
     (m: any) => m.role === "user"
   );
-
-  // Classify the user's query
-  const { object: classification, usage } = await generateObject({
-    model: models.googleGeminiFlash,
-    schema: z.object({
-      reasoning: z.string(),
-      intent: z.enum(["monitor", "fix", "status", "retry"]),
-    }),
-    messages: [lastUserMessage],
-    system: `Classify the user's message regarding deployment monitoring and fixes.
-    
-    Determine:
-    1. User intent (monitor - watch deployment, fix - attempt to fix issues, status - check current status, retry - retry deployment)
-    2. Brief reasoning for classification`,
-  });
-
-  TokenUsageAnalyticsTracker.trackUsage({
-    ...requestBody,
-    model: models.googleGeminiFlash.modelId,
-    usage,
-  });
 
   const { clientRequestId } = requestBody;
   let clientRequest = await getClientRequest(clientRequestId);
@@ -68,60 +52,34 @@ export const deployFoxRouter: ServerStreamingFunction<
     value: "deployfox",
   });
 
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    value: "Deploying Automation",
+  });
+
+  await updateTaskInstanceMeta({
+    clientRequestId,
+    otherData: {
+      deployStep: {
+        startTime: new Date().toISOString(),
+        status: "pending",
+      },
+    },
+  });
   // Monitor workflow runs
-  try {
-    const workflowRuns = await octokitSdk.rest.actions.listWorkflowRunsForRepo({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: clientRequest.repoName ?? "",
-      branch: clientRequest.prBranch ?? "",
-    });
+  await deployViaGit(props, clientRequest, taskInstanceMeta);
 
-    const latestRun = workflowRuns.data.workflow_runs[0];
-
-    if (
-      latestRun?.status === "completed" &&
-      latestRun?.conclusion === "failure"
-    ) {
-      // Get workflow run logs
-      const logs = await octokitSdk.rest.actions.downloadWorkflowRunLogs({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: clientRequest.repoName ?? "",
-        run_id: latestRun?.id ?? 0,
-      });
-
-      // TODO: Implement log analysis and automatic fix generation
-      // This would involve:
-      // 1. Parsing the logs to identify common failure patterns
-      // 2. Generating fixes based on the identified issues
-      // 3. Creating a new commit with the fixes
-      // 4. Triggering a new workflow run
-
-      // Notify about the failure and attempted fix
-      await slackBotSdk.sendMessage({
-        text: `DeployFox detected issues in deployment for ${clientRequest.title} 🔍`,
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "plain_text",
-              text: `Deployment issues detected for ${clientRequest.title}`,
-            },
-          },
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `Workflow run failed. Analyzing logs and attempting fixes...`,
-            },
-          },
-        ],
-        icon_url: MICROFOX_LOGO,
-        username: "Microfox",
-        channel: MySlackChannels.microfox_updates,
-      });
+  while (true) {
+    taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
+    if (taskInstanceMeta?.deployStep?.status === "success") {
+      break;
     }
-  } catch (error) {
-    console.error("Error monitoring workflow runs:", error);
+    await fetchLogs(
+      props,
+      clientRequest,
+      taskInstanceMeta as TaskInstanceMetaType
+    );
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 
   return {

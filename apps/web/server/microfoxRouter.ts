@@ -8,6 +8,7 @@ import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { createMessage } from "@/utils/services/db_functions/messages";
 import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
 import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
+import { deployFoxRouter } from "./deployfox/_deployfoxRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -58,6 +59,7 @@ const createMessageRouter: ServerStreamingFunction<
 microfoxRouter.addPath("hellofox", hellofoxRouter);
 microfoxRouter.addPath("convertfox", convertfoxRouter);
 microfoxRouter.addPath("buildfox", buildFoxRouter);
+microfoxRouter.addPath("deployfox", deployFoxRouter);
 microfoxRouter.addPath("usageTracker", usageTrackerRouter);
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
@@ -73,6 +75,8 @@ microfoxRouter.setRouting((requestBody: any) => {
     return ["usageTracker", "convertfox"];
   } else if (minionType === "buildfox") {
     return ["usageTracker", "buildfox"];
+  } else if (minionType === "deployfox") {
+    return ["usageTracker", "deployfox"];
   }
   return ["usageTracker"];
 });

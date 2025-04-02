@@ -53,7 +53,7 @@ export const pushToGit = async (
     TEMPLATE_REPO_OWNER,
     clientRequest.repoName,
     clientRequest.prBranch,
-    "feat: " +
+    "nodeploy: " +
       taskInstanceMeta.taskInfo?.name +
       " -  by Microfox on " +
       dayjs().format(`YYYY-MM-DD HH:mm`)

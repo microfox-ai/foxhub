@@ -154,10 +154,10 @@ export const RequestPage = () => {
         <ResizablePanel
           ref={leftPanelRef}
           defaultSize={16}
-          minSize={0}
+          minSize={4}
           maxSize={16}
           collapsible={true}
-          collapsedSize={0}
+          collapsedSize={4}
           onCollapse={() => setIsLeftCollapsed(true)}
           onExpand={() => setIsLeftCollapsed(false)}
           className={cn(
@@ -223,10 +223,14 @@ export const RequestPage = () => {
           onCollapse={() => setIsRightCollapsed(true)}
           onExpand={() => setIsRightCollapsed(false)}
           className={cn(
-            isRightTransitioning && "transition-all duration-300 ease-in-out"
+            isRightTransitioning && "transition-all  duration-300 ease-in-out"
           )}
         >
-          <PreviewWindow />
+          <div className="h-full py-4 px-2  ">
+            <div className="h-full bg-zinc-100 rounded-xl">
+              <PreviewWindow />
+            </div>
+          </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </ClientSecretProvider>

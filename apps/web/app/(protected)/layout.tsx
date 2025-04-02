@@ -9,7 +9,7 @@ import { FileUploadProvider } from "@/components/screens/providers/FileUploadPro
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const isPlayground = pathname.includes("playground");
-  const isProject = pathname.includes("project");
+  const isProject = pathname.includes("request");
   return (
     <BotTemplateProvider>
       <FileUploadProvider>

@@ -1141,6 +1141,43 @@ const EnvCollector = ({
   );
 };
 
+const DeploymentsInfo = ({
+  uiAnnotation,
+  idx,
+}: {
+  uiAnnotation: UIAnnotation;
+  idx: number;
+}) => {
+  const annotation = uiAnnotation as any;
+  const deployStep = annotation.deployStep;
+  const clientDeployment = annotation.clientDeployment;
+
+  return (
+    <motion.div
+      key={uiAnnotation.objectType + idx}
+      className="flex flex-col gap-6 p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg"
+    >
+      <h3 className="text-lg font-semibold text-gray-900">
+        {uiAnnotation.text}
+      </h3>
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-gray-500">
+          {deployStep.status}
+        </p>
+        <p className="text-sm text-gray-500">
+          {JSON.stringify(deployStep)}
+        </p>
+        <p className="text-sm text-gray-500">
+          DEPLOYMENT
+        </p>
+        <p className="text-sm text-gray-500">
+          {JSON.stringify(clientDeployment)}
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
 export const AnnotationUIList = ({
   uiAnnotations,
   lastMessage,
@@ -1188,6 +1225,15 @@ export const AnnotationUIList = ({
     if (uiAnnotation.objectType === "envCollector") {
       return (
         <EnvCollector
+          key={uiAnnotation.objectType + idx}
+          uiAnnotation={uiAnnotation}
+          idx={idx}
+        />
+      );
+    }
+    if (uiAnnotation.objectType === "deploymentsInfo") {
+      return (
+        <DeploymentsInfo
           key={uiAnnotation.objectType + idx}
           uiAnnotation={uiAnnotation}
           idx={idx}

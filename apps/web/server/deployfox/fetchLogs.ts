@@ -1,11 +1,16 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "../convertfox/types";
+import { DeployStep, TaskInstanceMetaType } from "../convertfox/types";
 import {
   GITHUB_TOKEN,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { ClientRequest } from "@prisma/client";
+import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { MySlackChannels } from "@/utils/services/slackBotSdk";
+import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
+import { slackBotSdk } from "@/utils/services/slackBotSdk";
+import dedent from "dedent";
 
 export const fetchLogs = async (
   props: StreamingFucntionProps<any, any>,
@@ -27,60 +32,151 @@ export const fetchLogs = async (
       owner: TEMPLATE_REPO_OWNER,
       repo: clientRequest.repoName ?? "",
       branch: clientRequest.prBranch ?? "",
-      limit: 2,
+      per_page: 5,
     });
 
     const latestRun = workflowRuns.data.workflow_runs[0];
+    const cleanedMetadata = { ...latestRun };
+    delete cleanedMetadata.head_repository;
+    delete cleanedMetadata.repository;
+    delete cleanedMetadata.triggering_actor;
+    delete cleanedMetadata.actor;
+
+    console.log(
+      "latestRun",
+      latestRun?.workflow_id,
+      latestRun?.conclusion
+      //latestRun
+    );
 
     if (
       latestRun?.status === "completed" &&
       latestRun?.conclusion === "failure"
     ) {
-      // Get workflow run logs
-      // TODO: Implement log analysis and automatic fix generation
-      // This would involve:
-      // 1. Parsing the logs to identify common failure patterns
-      // 2. Generating fixes based on the identified issues
-      // 3. Creating a new commit with the fixes
-      // 4. Triggering a new workflow run
-      // Notify about the failure and attempted fix
-      //   await slackBotSdk.sendMessage({
-      //     text: `DeployFox detected issues in deployment for ${clientRequest.title} 🔍`,
-      //     blocks: [
-      //       {
-      //         type: "section",
-      //         text: {
-      //           type: "plain_text",
-      //           text: `Deployment issues detected for ${clientRequest.title}`,
-      //         },
-      //       },
-      //       {
-      //         type: "section",
-      //         text: {
-      //           type: "mrkdwn",
-      //           text: `Workflow run failed. Analyzing logs and attempting fixes...`,
-      //         },
-      //       },
-      //     ],
-      //     icon_url: MICROFOX_LOGO,
-      //     username: "Microfox",
-      //     channel: MySlackChannels.microfox_updates,
-      //   });
-    }
-    const logs = await octokitSdk.rest.actions.downloadWorkflowRunLogs({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: clientRequest.repoName ?? "",
-      run_id: latestRun?.id ?? 0,
-    });
-    if (logs.data) {
       dataStream.writeMessageAnnotation({
-        type: "ui",
-        objectType: "text",
-        persona: "deployfox",
-        text: `Logs fetched`,
-        data: JSON.stringify(logs.data),
+        type: "thinking",
+        value: "Workflow run failed. Analyzing logs and attempting fixes...",
       });
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
+        clientRequestId: taskInstanceMeta.originClientRequestId,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            metadata: cleanedMetadata,
+            status: "failed",
+          } as DeployStep,
+        },
+      });
+      await slackBotSdk.sendMessage({
+        text: `DeployFox is struck. deployment failed - ${clientRequest.title} 🔍`,
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: dedent`Workflow run failed for ${clientRequest.title}. 
+              # Stats
+              - Workflow ID: ${latestRun.workflow_id}
+              - Conclusion: ${latestRun.conclusion}
+              - Run ID: ${latestRun.id}
+              - Run Started At: ${latestRun.run_started_at}
+              - Run Updated At: ${latestRun.updated_at}
+              
+              # Logs
+              Logs can be seen at ${latestRun.html_url}`,
+            },
+          },
+        ],
+        icon_url: MICROFOX_LOGO,
+        username: "Microfox",
+        channel: MySlackChannels.microfox_updates,
+      });
+      return {
+        shouldBreak: true,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
+    } else if (
+      latestRun?.status === "completed" &&
+      latestRun?.conclusion === "success"
+    ) {
+      dataStream.writeMessageAnnotation({
+        type: "thinking",
+        value: "Workflow run succeeded. Fetching logs...",
+      });
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
+        clientRequestId: taskInstanceMeta.originClientRequestId,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            endTime: latestRun?.updated_at,
+            metadata: cleanedMetadata,
+            status: "success",
+          } as DeployStep,
+        },
+      });
+      return {
+        shouldBreak: true,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
+    } else if (latestRun?.status === "queued") {
+      dataStream.writeMessageAnnotation({
+        type: "thinking",
+        value: "Workflow run is currently in queue",
+      });
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
+        clientRequestId: taskInstanceMeta.originClientRequestId,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            metadata: cleanedMetadata,
+            status: "pending",
+          } as DeployStep,
+        },
+      });
+      return {
+        shouldBreak: false,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
+    } else {
+      dataStream.writeMessageAnnotation({
+        type: "thinking",
+        value: "Workflow run is pending. Fetching logs...",
+      });
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
+        clientRequestId: taskInstanceMeta.originClientRequestId,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            endTime: latestRun?.updated_at,
+            metadata: cleanedMetadata,
+            status: "success",
+          } as DeployStep,
+        },
+      });
+      return {
+        shouldBreak: false,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
     }
+    // const logs = await octokitSdk.rest.actions.downloadWorkflowRunLogs({
+    //   owner: TEMPLATE_REPO_OWNER,
+    //   repo: clientRequest.repoName ?? "",
+    //   run_id: latestRun?.id ?? 0,
+    // });
+    // console.log("logs", logs.data, latestRun?.id, clientRequest.repoName);
+    // if (logs.data) {
+    //   dataStream.writeMessageAnnotation({
+    //     type: "ui",
+    //     objectType: "text",
+    //     persona: "deployfox",
+    //     text: `Logs fetched`,
+    //     data: JSON.stringify(logs.data),
+    //   });
+    // }
   } catch (error) {
     console.error("Error monitoring workflow runs:", error);
   }

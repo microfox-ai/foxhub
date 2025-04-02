@@ -1,40 +1,27 @@
+import { findLastElementWith } from "@/utils/helpers/array";
+import {
+  getClientRequest,
+  getTaskInstanceMeta,
+  getClientDeployment,
+} from "@/utils/services/db_functions/getClientRequest";
+import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import {
   ServerStreamingFunction,
   defaultCallbackResultBody,
 } from "@repo/ai-utils/router";
-import { findLastElementWith } from "@/utils/helpers/array";
-import { generateObject, streamText } from "ai";
-import { z } from "zod";
-import { models } from "../models";
-import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-import { getMicrofoxCharacter } from "../hellofox/default";
-import {
-  getClientRequest,
-  getTaskInstanceMeta,
-} from "@/utils/services/db_functions/getClientRequest";
-import { octokitSdk } from "../buildfox/helper/gitHelpers";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
-import {
-  MICROFOX_LOGO,
-  MySlackChannels,
-  slackBotSdk,
-} from "@/utils/services/slackBotSdk";
 import { deployViaGit } from "./deployGit";
-import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import { prisma } from "@/prisma/prisma";
+import {
+  DeployStep,
+  deployStep,
+  TaskInstanceMetaType,
+} from "../convertfox/types";
 import { fetchLogs } from "./fetchLogs";
-import { TaskInstanceMetaType } from "../convertfox/types";
-
+import { ClientDeployment } from "@prisma/client";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
-
-  const lastUserMessage = findLastElementWith(
-    requestBody.messages,
-    (m: any) => m.role === "user"
-  );
 
   const { clientRequestId } = requestBody;
   let clientRequest = await getClientRequest(clientRequestId);
@@ -69,19 +56,69 @@ export const deployFoxRouter: ServerStreamingFunction<
   // Monitor workflow runs
   await deployViaGit(props, clientRequest, taskInstanceMeta);
 
+  const MAX_ATTEMPTS = 30; // 5 minutes total (30 * 10 seconds)
+  let attempts = 0;
+
   while (true) {
     taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
+
+    // Handle success case
     if (taskInstanceMeta?.deployStep?.status === "success") {
       break;
     }
-    await fetchLogs(
+
+    // Handle failure cases
+    if (taskInstanceMeta?.deployStep?.status === "failed") {
+      throw new Error("Deployment failed");
+    }
+
+    // Handle timeout
+    if (attempts >= MAX_ATTEMPTS) {
+      throw new Error("Deployment timed out after 5 minutes");
+    }
+
+    const conditions = await fetchLogs(
       props,
       clientRequest,
       taskInstanceMeta as TaskInstanceMetaType
     );
+
+    if (conditions?.taskInstanceMeta) {
+      taskInstanceMeta = conditions?.taskInstanceMeta as any;
+    }
+    if (conditions?.shouldBreak) {
+      break;
+    }
+
+    attempts++;
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 
+  const clientDeployment = await getClientDeployment(clientRequestId);
+  dataStream.writeMessageAnnotation({
+    type: "ui",
+    objectType: "deploymentsInfo",
+    persona: "deployfox",
+    text: `Deployments Completed !`,
+    deployStep: taskInstanceMeta?.deployStep as DeployStep,
+    clientDeployment: clientDeployment as any,
+    buttons: [
+      {
+        action: "highlightInput",
+        text: "Make changes",
+        type: "deny",
+        className: "bg-neutral-200 text-black hover:bg-neutral-300",
+      },
+      {
+        action: "shiftMinion",
+        actionText: "Deploy to Production !",
+        type: "confirm",
+        text: "Deploy to Production !",
+        className: "bg-green-500 text-white hover:bg-green-600",
+        value: "publishfox",
+      },
+    ],
+  });
   return {
     responseBody: { ...responseBody },
     appendRequestBody: { ...requestBody },

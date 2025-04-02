@@ -28,3 +28,12 @@ export async function getTaskInstanceMeta(clientRequestId: string) {
     return null;
   }
 }
+
+export async function getClientDeployment(clientRequestId: string) {
+  const clientDeployment = await prisma.clientDeployment.findUnique({
+    where: {
+      id: clientRequestId,
+    },
+  });
+  return clientDeployment;
+}

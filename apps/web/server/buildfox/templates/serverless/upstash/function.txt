@@ -1,7 +1,11 @@
-import { Redis } from "@upstash/redis";
-import dotenv from 'dotenv'
+import dotenv from "dotenv";
+import {
+  getPaginationState,
+  incrementPaginationState,
+  getExternalDataRedisKey,
+} from "./helpers/redis.js";
 
-dotenv.config()
+dotenv.config();
 
 /**
  * GET endpoint to fetch data from an external API
@@ -9,31 +13,22 @@ dotenv.config()
 export const getExternalData = async (event: any) => {
   try {
     // Initialize Redis client
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    })
-
-    // Get current call count for this endpoint
-    const callKey = 'external_api_calls'
-    const currentCalls = Number(await redis.get(callKey)) || 0
-    const newCallCount = currentCalls + 1
-
-    // Update call count
-    await redis.set(callKey, newCallCount)
+    const paginationState = await getPaginationState(getExternalDataRedisKey);
 
     // Determine pagination based on call count
-    const page = newCallCount % 3 // Will be 1 for second call, 2 for third call
-    const perPage = 5
-    const shouldPaginate = page > 0 // True for second and third calls
+    const page = paginationState.page;
+    const perPage = paginationState.limit;
+    const shouldPaginate = page > 0;
 
     // Fetch data with pagination when needed
     const apiUrl = shouldPaginate
       ? `https://jsonplaceholder.typicode.com/posts?_page=${page}&_limit=${perPage}`
-      : 'https://jsonplaceholder.typicode.com/posts/1'
+      : "https://jsonplaceholder.typicode.com/posts/1";
 
-    const response = await fetch(apiUrl)
-    const data = await response.json()
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    await incrementPaginationState(getExternalDataRedisKey);
 
     return {
       statusCode: 200,
@@ -41,58 +36,61 @@ export const getExternalData = async (event: any) => {
         data,
         page: shouldPaginate ? page : null,
         perPage: shouldPaginate ? perPage : null,
-        callCount: newCallCount,
+        callCount: paginationState.page,
       }),
-    }
+    };
   } catch (error) {
-    console.error('Error fetching external data:', error)
+    console.error("Error fetching external data:", error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-    }
+      body: JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
+    };
   }
-}
+};
 
 /**
  * Documentation for external API endpoints
  */
 export const getExternalDataDocs = {
-  title: 'Get External Data',
-  description: 'Retrieve data from an external API with pagination on 2nd and 3rd calls',
-  method: 'GET',
-  path: '/external',
+  title: "Get External Data",
+  description:
+    "Retrieve data from an external API with pagination on 2nd and 3rd calls",
+  method: "GET",
+  path: "/external",
   responses: {
     200: {
-      description: 'External data retrieved successfully',
+      description: "External data retrieved successfully",
       schema: {
-        type: 'object',
+        type: "object",
         properties: {
           data: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
-                userId: { type: 'number' },
-                id: { type: 'number' },
-                title: { type: 'string' },
-                body: { type: 'string' },
+                userId: { type: "number" },
+                id: { type: "number" },
+                title: { type: "string" },
+                body: { type: "string" },
               },
             },
           },
-          page: { type: ['number', 'null'] },
-          perPage: { type: ['number', 'null'] },
-          callCount: { type: 'number' },
+          page: { type: ["number", "null"] },
+          perPage: { type: ["number", "null"] },
+          callCount: { type: "number" },
         },
       },
     },
     500: {
-      description: 'Server error',
+      description: "Server error",
       schema: {
-        type: 'object',
+        type: "object",
         properties: {
-          error: { type: 'string' },
+          error: { type: "string" },
         },
       },
     },
   },
-}
+};

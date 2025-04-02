@@ -131,13 +131,7 @@ export const buildFoxRouter: ServerStreamingFunction<
 
   await genInitialCode(props, taskInstanceMeta, clientRequest);
 
-  if (
-    taskInstanceMeta?.taskStructure?.dbSchemas?.length &&
-    taskInstanceMeta?.taskStructure?.dbSchemas?.length > 0
-  ) {
-    // write/modify schema files for prisma
-    await genDbCode(props, taskInstanceMeta, clientRequest);
-  }
+  await genDbCode(props, taskInstanceMeta, clientRequest);
 
   // write/modify lambda functions
   await genLambdaCode(props, taskInstanceMeta, clientRequest);

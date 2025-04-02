@@ -34,7 +34,11 @@ export const genFinalCode = async (
 
     // modify the serverless.yml file to support all the functions & cron jobs
     const serverlessYml = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "serverless.yml"),
+      path.join(
+        process.cwd(),
+        fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+        "serverless.yml"
+      ),
       "utf8"
     );
     const result = await generateText({
@@ -138,14 +142,27 @@ export const genFinalCode = async (
         };
       })
     );
-    console.log("allFilesRelativeToRoot", allFilesRelativeToRoot);
+    console.log(
+      "allFilesRelativeToRoot",
+      allFilesRelativeToRoot,
+      allGenFilesList,
+      allFilesRelativeToRoot
+        ?.filter((file: any) => file.filePath?.includes("functions"))
+        ?.map((file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`)
+        .join("\n - ")
+    );
     const result2 = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
       prompt: dedent`You are requested to create an index.ts file for the following requirement & example:
 
             The following files are already generated for the task:
-            ${allFilesRelativeToRoot?.map((file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`).join("\n - ")}
+            ${allFilesRelativeToRoot
+              ?.filter((file: any) => file.filePath?.includes("functions"))
+              ?.map(
+                (file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`
+              )
+              .join("\n - ")}
 
             The example index.ts file is as follows:
             ${indexTs}

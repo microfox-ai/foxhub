@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { ButtonSCN } from "@/components/elements/Button";
 import {
   FilePlus,
@@ -101,7 +102,7 @@ export default function ChatInputBox({
         <textarea
           ref={textareaRef}
           placeholder="Ask anything"
-          className="flex-1 overflow-hidden bg-transparent px-2 py-2 text-gray-800 placeholder-gray-500 outline-none resize-none min-h-[56px]"
+          className="flex-1 overflow-hidden bg-transparent px-2 py-2 text-gray-800 placeholder-gray-500 outline-none resize-none min-h-[42px]"
           value={input}
           rows={1}
           onChange={handleCustomInputChange}

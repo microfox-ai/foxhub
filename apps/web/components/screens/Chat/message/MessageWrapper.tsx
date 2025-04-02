@@ -163,10 +163,11 @@ export const MessageWrapper = ({
 
                     const content =
                       latestAnnotation.type === "thinking"
-                        ? latestAnnotation.contents || latestAnnotation.content
-                        : latestAnnotation.text ||
-                          latestAnnotation.content ||
-                          latestAnnotation.contents;
+                        ? (latestAnnotation.contents ??
+                          latestAnnotation.content)
+                        : (latestAnnotation.text ??
+                          latestAnnotation.content ??
+                          latestAnnotation.contents);
 
                     return (
                       <AnimatePresence mode="wait">
@@ -187,8 +188,8 @@ export const MessageWrapper = ({
               )}
             {IN_DEV && (
               <div className="text-xs bg-red-800">
-                {message.annotations?.map((a: any) => (
-                  <div className="text-xs text-white bg-red-500 my-2">
+                {message.annotations?.map((a: any, idx: number) => (
+                  <div key={idx} className="text-xs text-white bg-red-500 my-2">
                     {a.type} - {a.value} - {a.content} - {a.text} - {a.contents}
                   </div>
                 ))}

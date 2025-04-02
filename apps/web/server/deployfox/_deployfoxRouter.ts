@@ -17,6 +17,7 @@ import {
 } from "../convertfox/types";
 import { fetchLogs } from "./fetchLogs";
 import { ClientDeployment } from "@prisma/client";
+import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -53,14 +54,24 @@ export const deployFoxRouter: ServerStreamingFunction<
       },
     },
   });
+
+  //clone template in dev mode
+  // await recloneTemplateStuffToClientRequest(props, clientRequest);
+
   // Monitor workflow runs
-  //await deployViaGit(props, clientRequest, taskInstanceMeta);
+  await deployViaGit(props, clientRequest, taskInstanceMeta);
 
   const MAX_ATTEMPTS = 30; // 5 minutes total (30 * 10 seconds)
   let attempts = 0;
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   while (true) {
-    taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
+    const conditions = await fetchLogs(
+      props,
+      clientRequest,
+      taskInstanceMeta as TaskInstanceMetaType
+    );
+    taskInstanceMeta = conditions?.taskInstanceMeta as any;
 
     // Handle success case
     if (taskInstanceMeta?.deployStep?.status === "success") {
@@ -77,13 +88,10 @@ export const deployFoxRouter: ServerStreamingFunction<
       throw new Error("Deployment timed out after 5 minutes");
     }
 
-    const shouldBreak = await fetchLogs(
-      props,
-      clientRequest,
-      taskInstanceMeta as TaskInstanceMetaType
-    );
-
-    if (shouldBreak) {
+    if (conditions?.taskInstanceMeta) {
+      taskInstanceMeta = conditions?.taskInstanceMeta as any;
+    }
+    if (conditions?.shouldBreak) {
       break;
     }
 
@@ -91,14 +99,13 @@ export const deployFoxRouter: ServerStreamingFunction<
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 
-  const taskInstanceMetaUpdated = await getTaskInstanceMeta(clientRequestId);
   const clientDeployment = await getClientDeployment(clientRequestId);
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "deploymentsInfo",
     persona: "deployfox",
     text: `Deployments Completed !`,
-    deployStep: taskInstanceMetaUpdated?.deployStep as DeployStep,
+    deployStep: taskInstanceMeta?.deployStep as DeployStep,
     clientDeployment: clientDeployment as any,
     buttons: [
       {

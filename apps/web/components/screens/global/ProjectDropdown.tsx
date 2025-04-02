@@ -35,8 +35,20 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import NewProjectCreation from "./NewProjectCreation";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-export const ProjectDropdown = () => {
+export const ProjectDropdown = ({
+  className,
+  isCollapsed,
+}: {
+  className?: string;
+  isCollapsed?: boolean;
+}) => {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const { user } = useUser();
   const router = useRouter();
@@ -81,22 +93,50 @@ export const ProjectDropdown = () => {
   }
   return (
     <Dialog>
-      <div className="flex items-center justify-between text-sm ml-4">
+      <div
+        className={cn(
+          "flex items-center justify-between text-sm w-[200px]",
+          className
+        )}
+      >
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-[200px] justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
-            >
-              {value
-                ? projects?.find((_project) => _project.id === value)?.name
-                : "Select project..."}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
+          <PopoverTrigger className="w-full">
+            {!isCollapsed ? (
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
+              >
+                {value
+                  ? projects?.find((_project) => _project.id === value)?.name
+                  : "Select project..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button variant="outline" className="w-fit">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="bg-white !text-black border border-gray-300 text-xs rounded-full"
+                  sideOffset={10}
+                  showArrow={false}
+                >
+                  <p>Select Project</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-1">
+          <PopoverContent
+            className="w-[200px] p-1"
+            side={isCollapsed ? "right" : "bottom"}
+            sideOffset={isCollapsed ? 16 : 0}
+            align={isCollapsed ? "end" : "start"}
+          >
             <Command>
               <CommandInput
                 // value={search}

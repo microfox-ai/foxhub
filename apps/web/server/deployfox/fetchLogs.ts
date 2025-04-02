@@ -45,8 +45,8 @@ export const fetchLogs = async (
     console.log(
       "latestRun",
       latestRun?.workflow_id,
-      latestRun?.conclusion,
-      latestRun
+      latestRun?.conclusion
+      //latestRun
     );
 
     if (
@@ -57,14 +57,16 @@ export const fetchLogs = async (
         type: "thinking",
         value: "Workflow run failed. Analyzing logs and attempting fixes...",
       });
-      await updateTaskInstanceMeta({
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
         clientRequestId: taskInstanceMeta.originClientRequestId,
-        deployStep: {
-          ...taskInstanceMeta.deployStep,
-          startTime: latestRun?.run_started_at,
-          metadata: cleanedMetadata,
-          status: "failed",
-        } as DeployStep,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            metadata: cleanedMetadata,
+            status: "failed",
+          } as DeployStep,
+        },
       });
       await slackBotSdk.sendMessage({
         text: `DeployFox is struck. deployment failed - ${clientRequest.title} 🔍`,
@@ -90,7 +92,10 @@ export const fetchLogs = async (
         username: "Microfox",
         channel: MySlackChannels.microfox_updates,
       });
-      return true;
+      return {
+        shouldBreak: true,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
     } else if (
       latestRun?.status === "completed" &&
       latestRun?.conclusion === "success"
@@ -99,48 +104,63 @@ export const fetchLogs = async (
         type: "thinking",
         value: "Workflow run succeeded. Fetching logs...",
       });
-      await updateTaskInstanceMeta({
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
         clientRequestId: taskInstanceMeta.originClientRequestId,
-        deployStep: {
-          ...taskInstanceMeta.deployStep,
-          startTime: latestRun?.run_started_at,
-          endTime: latestRun?.updated_at,
-          metadata: cleanedMetadata,
-          status: "success",
-        } as DeployStep,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            endTime: latestRun?.updated_at,
+            metadata: cleanedMetadata,
+            status: "success",
+          } as DeployStep,
+        },
       });
-      return true;
+      return {
+        shouldBreak: true,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
     } else if (latestRun?.status === "queued") {
       dataStream.writeMessageAnnotation({
         type: "thinking",
         value: "Workflow run is currently in queue",
       });
-      await updateTaskInstanceMeta({
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
         clientRequestId: taskInstanceMeta.originClientRequestId,
-        deployStep: {
-          ...taskInstanceMeta.deployStep,
-          startTime: latestRun?.run_started_at,
-          metadata: cleanedMetadata,
-          status: "pending",
-        } as DeployStep,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            metadata: cleanedMetadata,
+            status: "pending",
+          } as DeployStep,
+        },
       });
-      return false;
+      return {
+        shouldBreak: false,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
     } else {
       dataStream.writeMessageAnnotation({
         type: "thinking",
         value: "Workflow run is pending. Fetching logs...",
       });
-      await updateTaskInstanceMeta({
+      const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
         clientRequestId: taskInstanceMeta.originClientRequestId,
-        deployStep: {
-          ...taskInstanceMeta.deployStep,
-          startTime: latestRun?.run_started_at,
-          endTime: latestRun?.updated_at,
-          metadata: cleanedMetadata,
-          status: "success",
-        } as DeployStep,
+        otherData: {
+          deployStep: {
+            ...taskInstanceMeta.deployStep,
+            startTime: latestRun?.run_started_at,
+            endTime: latestRun?.updated_at,
+            metadata: cleanedMetadata,
+            status: "success",
+          } as DeployStep,
+        },
       });
-      return false;
+      return {
+        shouldBreak: false,
+        taskInstanceMeta: taskInstanceMetaUpdated,
+      };
     }
     // const logs = await octokitSdk.rest.actions.downloadWorkflowRunLogs({
     //   owner: TEMPLATE_REPO_OWNER,

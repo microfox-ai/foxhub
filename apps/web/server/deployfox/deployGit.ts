@@ -62,7 +62,7 @@ export const deployViaGit = async (
         owner: TEMPLATE_REPO_OWNER,
         repo: clientRequest.repoName,
         path: changelogPath,
-        branch: clientRequest.prBranch,
+        ref: clientRequest.prBranch,
       });
 
       if ("sha" in fileData) {
@@ -70,6 +70,8 @@ export const deployViaGit = async (
       }
     } catch (error) {
       // If file doesn't exist, that's okay - we'll create it
+      console.log("error", error);
+
       console.log("File does not exist yet, will create new file");
     }
 

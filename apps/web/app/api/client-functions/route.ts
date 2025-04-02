@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     const { userId, botProjectId } = clientRequest;
 
     // Create the ClientDeployment
+    // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),
     const clientFunction = await prisma.clientDeployment.upsert({
       where: { id: originClientRequestId },
       update: {
@@ -82,8 +83,11 @@ export async function POST(req: NextRequest) {
         otherData: {
           deployStep: {
             ...(taskInstanceMeta?.deployStep as DeployStep),
-            startTime: new Date().toISOString(),
-            status: "success",
+            deployment: {
+              stage,
+              type,
+              id: originClientRequestId,
+            },
           } as DeployStep,
         },
       });

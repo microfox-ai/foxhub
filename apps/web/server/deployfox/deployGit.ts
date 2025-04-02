@@ -39,12 +39,41 @@ export const deployViaGit = async (
     auth: GITHUB_TOKEN,
   });
 
-  octo.rest.actions.createWorkflowDispatch({
-    owner: TEMPLATE_REPO_OWNER,
-    repo: clientRequest.repoName,
-    workflow_id: "deploy.yml",
-    ref: clientRequest.prBranch,
-  });
+  try {
+    console.log(
+      "Creating clientRequest.json update to trigger deployment",
+      clientRequest.repoName,
+      clientRequest.prBranch
+    );
+
+    const uniqueRequestTitle = (clientRequest.metadata as any)
+      ?.uniqueRequestTitle;
+
+    if (!uniqueRequestTitle) {
+      throw new Error("Unique request title is required");
+    }
+
+    // Create a commit with timestamp update in clientRequest.json
+    await octo.rest.repos.createOrUpdateFileContents({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: clientRequest.repoName,
+      path: `apps/${uniqueRequestTitle}/CHANGELOG.md`,
+      message: "deployfox: Update CHANGELOG.md to trigger deployment",
+      content: Buffer.from(
+        `# Deployment Log\n\n` +
+          `## Latest Deployment\n` +
+          `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
+          `- Status: ${taskInstanceMeta.deployStep?.status || "unknown"}\n` +
+          `- Details:\n` +
+          `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
+      ).toString("base64"),
+      branch: clientRequest.prBranch,
+    });
+
+    console.log("Created deployment trigger commit");
+  } catch (error) {
+    console.log("error", error);
+  }
 
   // TODO: push to git file by file (if above doesn't work)
 };

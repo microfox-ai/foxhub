@@ -17,6 +17,7 @@ import {
 } from "../convertfox/types";
 import { fetchLogs } from "./fetchLogs";
 import { ClientDeployment } from "@prisma/client";
+import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -53,14 +54,18 @@ export const deployFoxRouter: ServerStreamingFunction<
       },
     },
   });
+
+  //clone template in dev mode
+  await recloneTemplateStuffToClientRequest(props, clientRequest);
+
   // Monitor workflow runs
   await deployViaGit(props, clientRequest, taskInstanceMeta);
 
   const MAX_ATTEMPTS = 30; // 5 minutes total (30 * 10 seconds)
   let attempts = 0;
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   while (true) {
-    await new Promise((resolve) => setTimeout(resolve, 3000));
     taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
 
     // Handle success case
@@ -92,6 +97,7 @@ export const deployFoxRouter: ServerStreamingFunction<
     }
 
     attempts++;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 
   const clientDeployment = await getClientDeployment(clientRequestId);

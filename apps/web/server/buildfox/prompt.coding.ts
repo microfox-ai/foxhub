@@ -129,16 +129,20 @@ export const codingFunctionPrompt = async ({
   );
 
   // TODO: for redis, create a standard pattern just like prisma
-  let writtenFunctionFiles: string | null = null;
-  if (clientRequest && template_type != "plain" && !_cron?.isolated) {
+  let writtenHelperFilesContent: string | null = null;
+  if (clientRequest && template_type != "plain") {
     const files = await readAllGenFilesList(clientRequest);
-    const functionFiles = files.filter((file) =>
-      file.filePath.includes("/functions")
+    const redisFile = files.filter((file) =>
+      file.filePath.includes("/helpers/redis")
     );
-    if (functionFiles.length > 0) {
-      writtenFunctionFiles = functionFiles
-        .map((file) => file.fileName)
-        .join("\n - ");
+    if (redisFile.length > 0) {
+      const redisFilePath = redisFile[0]?.filePath;
+      if (redisFilePath) {
+        writtenHelperFilesContent = await fs.readFile(
+          path.join(process.cwd(), redisFilePath),
+          "utf8"
+        );
+      }
     }
   }
 
@@ -171,9 +175,9 @@ export const codingFunctionPrompt = async ({
             - dotenv
 
             ${
-              writtenFunctionFiles
-                ? `The following lambda functions are already written inside the src/functions folder, to give you an idea of the overreaching project structure:
-            ${writtenFunctionFiles}
+              writtenHelperFilesContent
+                ? `The following redis helper functions are exported from helpers/redis.js, make use of them if needed:
+            ${writtenHelperFilesContent}
             `
                 : ""
             }

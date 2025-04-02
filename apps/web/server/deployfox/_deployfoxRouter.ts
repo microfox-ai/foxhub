@@ -60,6 +60,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   let attempts = 0;
 
   while (true) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
 
     // Handle success case
@@ -91,7 +92,6 @@ export const deployFoxRouter: ServerStreamingFunction<
     }
 
     attempts++;
-    await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 
   const clientDeployment = await getClientDeployment(clientRequestId);

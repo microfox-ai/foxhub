@@ -1,10 +1,9 @@
-import { Redis } from "@upstash/redis";
-
-// Initialize Redis client
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+import dotenv from "dotenv";
+import {
+  getPaginationState,
+  incrementPaginationState,
+  getExternalDataRedisKey,
+} from "./helpers/redis.js";
 
 /**
  * Cron job that runs every day at 8:00 AM
@@ -12,29 +11,15 @@ const redis = new Redis({
 export const dailyMorningJob = async (event: any) => {
   try {
     // Clean up old records (30 days)
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
+    const paginationState = await getPaginationState(getExternalDataRedisKey);
 
-    // Example: Get all keys older than 30 days and delete them
-    const keys = await redis.keys("*");
-    let deletedCount = 0;
-
-    for (const key of keys) {
-      // Example: Get the timestamp of the key
-      const timestamp = await redis.get(`${key}:timestamp`);
-      if (timestamp && new Date(timestamp) < date) {
-        // Example: Delete the key and the timestamp
-        await redis.del(key);
-        await redis.del(`${key}:timestamp`);
-        deletedCount++;
-      }
-    }
-
+    await incrementPaginationState(getExternalDataRedisKey);
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: "Daily morning job completed successfully",
-        deletedRecords: deletedCount,
+        message:
+          "Daily morning job completed successfully - incrementing the page by 1",
+        currentPage: paginationState.page,
       }),
     };
   } catch (error) {
@@ -67,7 +52,7 @@ export const dailyMorningJobDocs = {
         type: "object",
         properties: {
           message: { type: "string" },
-          deletedRecords: { type: "number" },
+          currentPage: { type: "number" },
         },
       },
     },

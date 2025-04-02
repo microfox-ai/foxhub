@@ -65,7 +65,12 @@ export async function createPullRequest({
     auth: GITHUB_TOKEN,
   });
 
-  const uniqueRequestTitle = `${requestTitle?.toLowerCase().replace(/ /g, "-").substring(0, 20)}-${Date.now()}`;
+  const uniqueRequestTitle = `${requestTitle
+    ?.toLowerCase()
+    .replace(/ /g, "-")
+    // make requestTitle aa good acceptable git branch name
+    .replace(/[^a-z0-9-]/g, "-")
+    .substring(0, 20)}-${Date.now()}`;
 
   // Create new branch on GitHub
   const newBranch = `request/${uniqueRequestTitle}`;

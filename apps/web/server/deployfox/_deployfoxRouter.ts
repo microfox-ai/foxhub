@@ -61,9 +61,25 @@ export const deployFoxRouter: ServerStreamingFunction<
   // Monitor workflow runs
   await deployViaGit(props, clientRequest, taskInstanceMeta);
 
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    value: "Triggered the deployment, waiting 20 seconds ",
+  });
+
   const MAX_ATTEMPTS = 30; // 5 minutes total (30 * 10 seconds)
   let attempts = 0;
-  await new Promise((resolve) => setTimeout(resolve, 20000));
+
+  // Wait for 20 seconds before starting to check logs
+  await new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(undefined);
+    }, 20000);
+  });
+
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    value: "Checking logs",
+  });
 
   while (true) {
     const conditions = await fetchLogs(

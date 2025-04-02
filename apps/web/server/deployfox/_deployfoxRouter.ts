@@ -73,7 +73,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   await new Promise((resolve) => {
     setTimeout(() => {
       resolve(undefined);
-    }, 20000);
+    }, 60000);
   });
 
   dataStream.writeMessageAnnotation({

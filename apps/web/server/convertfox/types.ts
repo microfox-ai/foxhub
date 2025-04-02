@@ -173,9 +173,17 @@ export type BuildingStep = z.infer<typeof buildingStep>;
 export const deployStep = z.object({
   startTime: z.string(),
   endTime: z.string(),
-  status: z.enum(["pending", "success", "failed"]),
+  status: z.enum(["pending", "success", "failed"]).optional(),
   message: z.string().optional(),
   logs: z.any().optional(),
+  metadata: z.any().optional(),
+  deployment: z
+    .object({
+      stage: z.string(),
+      type: z.string(),
+      id: z.string(),
+    })
+    .optional(),
 });
 export type DeployStep = z.infer<typeof deployStep>;
 

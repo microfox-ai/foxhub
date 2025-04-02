@@ -145,7 +145,11 @@ export const genFinalCode = async (
     console.log(
       "allFilesRelativeToRoot",
       allFilesRelativeToRoot,
-      allGenFilesList
+      allGenFilesList,
+      allFilesRelativeToRoot
+        ?.filter((file: any) => file.filePath?.includes("functions"))
+        ?.map((file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`)
+        .join("\n - ")
     );
     const result2 = await generateText({
       model: models.claude35Sonnet,

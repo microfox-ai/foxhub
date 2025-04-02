@@ -142,88 +142,97 @@ export const RequestPage = () => {
     );
   }
 
+  console.log(selectedProject, "selectedProject");
+
   return (
     <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
-      <div className="relative h-[92vh] w-full">
-        <ResizablePanelGroup direction="horizontal" autoSaveId="request-page">
-          <ResizablePanel
-            ref={leftPanelRef}
-            defaultSize={16}
-            minSize={0}
-            maxSize={16}
-            collapsible={true}
-            collapsedSize={0}
-            onCollapse={() => setIsLeftCollapsed(true)}
-            onExpand={() => setIsLeftCollapsed(false)}
-            className={cn(
-              isLeftTransitioning && "transition-all duration-300 ease-in-out"
-            )}
-          >
-            <div className="flex h-full flex-col">
-              <Sidebar
-                selectedProject={selectedProject}
-                onSelectRequest={(request) => {
-                  setSelectedRequest(request);
-                  router.push(
-                    `/project/${selectedProject?.id}/request/${request?.id}`
+      <ResizablePanelGroup
+        direction="horizontal"
+        autoSaveId="request-page"
+        className="!h-screen"
+      >
+        <ResizablePanel
+          ref={leftPanelRef}
+          defaultSize={16}
+          minSize={4}
+          maxSize={16}
+          collapsible={true}
+          collapsedSize={4}
+          onCollapse={() => setIsLeftCollapsed(true)}
+          onExpand={() => setIsLeftCollapsed(false)}
+          className={cn(
+            isLeftTransitioning && "transition-all duration-300 ease-in-out"
+          )}
+        >
+          <div className="flex h-full flex-col">
+            <Sidebar
+              selectedProject={selectedProject}
+              onSelectRequest={(request) => {
+                setSelectedRequest(request);
+                router.push(
+                  `/project/${selectedProject?.id}/request/${request?.id}`
+                );
+              }}
+              onNewRequest={(project) => {
+                const openRequests = project?.clientRequests?.filter(
+                  (request) =>
+                    request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
+                    request?.requestStatus !== REQUESTSTATUS.CLOSED
+                );
+                if (openRequests?.length < 5) {
+                  createNewEmptyRequest();
+                } else {
+                  toast.warning(
+                    "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
                   );
-                }}
-                onNewRequest={(project) => {
-                  const openRequests = project?.clientRequests?.filter(
-                    (request) =>
-                      request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
-                      request?.requestStatus !== REQUESTSTATUS.CLOSED
-                  );
-                  if (openRequests?.length < 5) {
-                    createNewEmptyRequest();
-                  } else {
-                    toast.warning(
-                      "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
-                    );
-                  }
-                }}
-                onOpenConfig={(project: any) => {}}
-                isCollapsed={isLeftCollapsed}
-                onCollapse={handleLeftCollapse}
-              />
+                }
+              }}
+              onOpenConfig={(project: any) => {}}
+              isCollapsed={isLeftCollapsed}
+              onCollapse={handleLeftCollapse}
+            />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle
+          className="cursor-pointer"
+          onClick={handleLeftResizeHandleClick}
+        />
+        <ResizablePanel>
+          <div className="h-full">
+            <ChatWindow
+              onCollapse={handleLeftCollapse}
+              isCollapsed={isLeftCollapsed}
+              userId={user.id}
+              clientRequest={selectedRequest}
+              projectTitle={selectedProject?.name}
+            />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle
+          withHandle
+          className="cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-300"
+          onClick={handleRightResizeHandleClick}
+        />
+        <ResizablePanel
+          ref={rightPanelRef}
+          defaultSize={30}
+          minSize={0}
+          maxSize={30}
+          collapsible={true}
+          collapsedSize={0}
+          onCollapse={() => setIsRightCollapsed(true)}
+          onExpand={() => setIsRightCollapsed(false)}
+          className={cn(
+            isRightTransitioning && "transition-all  duration-300 ease-in-out"
+          )}
+        >
+          <div className="h-full py-4 px-2  ">
+            <div className="h-full bg-zinc-100 rounded-xl">
+              <PreviewWindow />
             </div>
-          </ResizablePanel>
-          <ResizableHandle
-            className="cursor-pointer"
-            onClick={handleLeftResizeHandleClick}
-          />
-          <ResizablePanel>
-            <div className="h-full p-4">
-              <ChatWindow
-                onCollapse={handleLeftCollapse}
-                isCollapsed={isLeftCollapsed}
-                userId={user.id}
-                clientRequest={selectedRequest}
-              />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle
-            withHandle
-            className="cursor-pointer"
-            onClick={handleRightResizeHandleClick}
-          />
-          <ResizablePanel
-            ref={rightPanelRef}
-            defaultSize={30}
-            minSize={0}
-            maxSize={30}
-            collapsible={true}
-            collapsedSize={0}
-            onCollapse={() => setIsRightCollapsed(true)}
-            onExpand={() => setIsRightCollapsed(false)}
-            className={cn(
-              isRightTransitioning && "transition-all duration-300 ease-in-out"
-            )}
-          >
-            <PreviewWindow />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </ClientSecretProvider>
   );
 };

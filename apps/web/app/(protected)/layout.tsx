@@ -9,13 +9,14 @@ import { FileUploadProvider } from "@/components/screens/providers/FileUploadPro
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const isPlayground = pathname.includes("playground");
+  const isProject = pathname.includes("request");
   return (
     <BotTemplateProvider>
       <FileUploadProvider>
         <main className="relative flex h-screen flex-col bg-background">
-          {!isPlayground && <CustomBotsHeader />}
+          {!isPlayground && !isProject && <CustomBotsHeader />}
           <Toaster position="top-right" richColors duration={3000} />
-          <div className="h-16" />
+          {!isProject && <div className="h-16" />}
           <div className="flex-1">{children}</div>
         </main>
       </FileUploadProvider>

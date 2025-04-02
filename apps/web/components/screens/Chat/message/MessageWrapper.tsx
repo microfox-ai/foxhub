@@ -163,10 +163,11 @@ export const MessageWrapper = ({
 
                     const content =
                       latestAnnotation.type === "thinking"
-                        ? latestAnnotation.contents || latestAnnotation.content
-                        : latestAnnotation.text ||
-                        latestAnnotation.content ||
-                        latestAnnotation.contents;
+                        ? (latestAnnotation.contents ??
+                          latestAnnotation.content)
+                        : (latestAnnotation.text ??
+                          latestAnnotation.content ??
+                          latestAnnotation.contents);
 
                     return (
                       <AnimatePresence mode="wait">
@@ -187,8 +188,8 @@ export const MessageWrapper = ({
               )}
             {IN_DEV && (
               <div className="text-xs bg-red-800">
-                {message.annotations?.map((a: any) => (
-                  <div className="text-xs text-white bg-red-500 my-2">
+                {message.annotations?.map((a: any, idx: number) => (
+                  <div key={idx} className="text-xs text-white bg-red-500 my-2">
                     {a.type} - {a.value} - {a.content} - {a.text} - {a.contents}
                   </div>
                 ))}
@@ -204,8 +205,9 @@ export const MessageWrapper = ({
               <div className="w-[400px] p-0 bg-transparent">
                 <div className="flex gap-1 mb-3 bg-transparent">
                   <ChevronLeft
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab > 0 ? "opacity-100" : "opacity-50"
-                      }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
+                      activeTab > 0 ? "opacity-100" : "opacity-50"
+                    }`}
                     onClick={() => setActiveTab(activeTab - 1)}
                   />
                   <div
@@ -214,10 +216,11 @@ export const MessageWrapper = ({
                     Step {activeTab + 1}
                   </div>
                   <ChevronRight
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab < displayParts?.length - 1
-                      ? "opacity-100"
-                      : "opacity-50"
-                      }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
+                      activeTab < displayParts?.length - 1
+                        ? "opacity-100"
+                        : "opacity-50"
+                    }`}
                     onClick={() => setActiveTab(activeTab + 1)}
                   />
                 </div>

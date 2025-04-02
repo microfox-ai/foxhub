@@ -73,7 +73,7 @@ interface PathParam {
 
 const PreviewWindow = () => {
   const [selectedEndpoint, setSelectedEndpoint] = useState<string>(
-    endpoints?.[0] ?? "",
+    endpoints?.[0] ?? ""
   );
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +88,7 @@ const PreviewWindow = () => {
     .map((endpoint) => endpoint.method);
 
   const [selectedMethod, setSelectedMethod] = useState<string>(
-    availableMethods?.[0] ?? "",
+    availableMethods?.[0] ?? ""
   );
 
   // Update selected method when endpoint changes
@@ -101,7 +101,7 @@ const PreviewWindow = () => {
   // Get the current endpoint data
   const currentEndpoint = API_DOC.endpoints.find(
     (endpoint) =>
-      endpoint.path === selectedEndpoint && endpoint.method === selectedMethod,
+      endpoint.path === selectedEndpoint && endpoint.method === selectedMethod
   );
 
   // Function to extract path parameters from the endpoint
@@ -148,7 +148,7 @@ const PreviewWindow = () => {
     // Add query parameters
     if (currentEndpoint.requestQuery) {
       Object.entries(
-        currentEndpoint.requestQuery as Record<string, RequestQueryParam>,
+        currentEndpoint.requestQuery as Record<string, RequestQueryParam>
       ).forEach(([key, value]) => {
         const isRequired = value?.isRequired === true;
         const schema = z.string();
@@ -161,7 +161,7 @@ const PreviewWindow = () => {
     // Add body parameters if it's not a GET request
     if (currentEndpoint.requestBody && selectedMethod !== "GET") {
       Object.entries(
-        currentEndpoint.requestBody.schema as Record<string, RequestBodySchema>,
+        currentEndpoint.requestBody.schema as Record<string, RequestBodySchema>
       ).forEach(([key, value]) => {
         const isRequired = value.isRequired === true;
         const schema = z.string();
@@ -201,7 +201,7 @@ const PreviewWindow = () => {
       pathParams.forEach((param) => {
         path = path.replace(
           `:${param.name}`,
-          data[param.name] || param.example || "",
+          data[param.name] || param.example || ""
         );
       });
 
@@ -226,14 +226,14 @@ const PreviewWindow = () => {
       const requestBody =
         currentEndpoint.requestBody && selectedMethod !== "GET"
           ? JSON.stringify(
-            Object.fromEntries(
-              Object.entries(data).filter(
-                ([key]) =>
-                  currentEndpoint.requestBody?.schema &&
-                  key in currentEndpoint.requestBody.schema,
-              ),
-            ),
-          )
+              Object.fromEntries(
+                Object.entries(data).filter(
+                  ([key]) =>
+                    currentEndpoint.requestBody?.schema &&
+                    key in currentEndpoint.requestBody.schema
+                )
+              )
+            )
           : undefined;
 
       // Convert request headers to proper format
@@ -243,7 +243,7 @@ const PreviewWindow = () => {
 
       if (currentEndpoint.requestHeaders) {
         Object.entries(
-          currentEndpoint.requestHeaders as Record<string, RequestHeader>,
+          currentEndpoint.requestHeaders as Record<string, RequestHeader>
         ).forEach(([key, value]) => {
           headers[key] = value.example;
         });
@@ -333,7 +333,7 @@ const PreviewWindow = () => {
               "rounded-full px-2 py-1 text-sm",
               status >= 200 && status < 300
                 ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800",
+                : "bg-red-100 text-red-800"
             )}
           >
             Status: {status}
@@ -400,13 +400,13 @@ const PreviewWindow = () => {
     const exampleBody =
       currentEndpoint.requestBody && selectedMethod !== "GET"
         ? Object.fromEntries(
-          Object.entries(
-            currentEndpoint.requestBody.schema as Record<
-              string,
-              RequestBodySchema
-            >,
-          ).map(([key, value]) => [key, value.example]),
-        )
+            Object.entries(
+              currentEndpoint.requestBody.schema as Record<
+                string,
+                RequestBodySchema
+              >
+            ).map(([key, value]) => [key, value.example])
+          )
         : null;
 
     // Create example path parameters
@@ -414,7 +414,7 @@ const PreviewWindow = () => {
       pathParams.map((param) => [
         param.name,
         param.example || `example_${param.name}`,
-      ]),
+      ])
     );
 
     // Construct example URL with path parameters
@@ -425,7 +425,7 @@ const PreviewWindow = () => {
     // Add example query parameters if they exist
     if (currentEndpoint.requestQuery) {
       Object.entries(
-        currentEndpoint.requestQuery as Record<string, RequestQueryParam>,
+        currentEndpoint.requestQuery as Record<string, RequestQueryParam>
       ).forEach(([key, value]) => {
         const exampleValue =
           value.example || (value.type === "number" ? "123" : "example_value");
@@ -490,7 +490,7 @@ const PreviewWindow = () => {
                       <span
                         className={cn(
                           "h-fit rounded px-2 py-0.5 text-xs font-bold",
-                          getMethodColor(selectedMethod),
+                          getMethodColor(selectedMethod)
                         )}
                       >
                         {selectedMethod}
@@ -515,7 +515,7 @@ const PreviewWindow = () => {
                         <span
                           className={cn(
                             "h-fit rounded px-2 py-0.5 font-medium",
-                            getStatusColor(status),
+                            getStatusColor(status)
                           )}
                         >
                           {status}
@@ -525,7 +525,7 @@ const PreviewWindow = () => {
                         </span>
                       </p>
                     </div>
-                  ),
+                  )
                 )}
               </div>
             </div>
@@ -565,7 +565,7 @@ const PreviewWindow = () => {
           <div
             className={cn(
               "relative",
-              isLoading && "pointer-events-none opacity-50",
+              isLoading && "pointer-events-none opacity-50"
             )}
           >
             <Tabs
@@ -594,7 +594,7 @@ const PreviewWindow = () => {
           >
             Show Doc
           </Button>
-          <Button
+          {/* <Button
             variant={isLoading ? "destructive" : "default"}
             className="flex items-center gap-1 rounded-full shadow-none"
             onClick={handleTrigger}
@@ -610,7 +610,7 @@ const PreviewWindow = () => {
                 Trigger
               </>
             )}
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -638,8 +638,8 @@ const PreviewWindow = () => {
                                 <FormLabel
                                   className={cn(
                                     showValidation &&
-                                    form.formState.errors[param.name] &&
-                                    "text-destructive",
+                                      form.formState.errors[param.name] &&
+                                      "text-destructive"
                                   )}
                                 >
                                   {param.name}{" "}
@@ -651,8 +651,8 @@ const PreviewWindow = () => {
                                     placeholder={param.example}
                                     className={cn(
                                       showValidation &&
-                                      form.formState.errors[param.name] &&
-                                      "border-destructive focus-visible:ring-destructive",
+                                        form.formState.errors[param.name] &&
+                                        "border-destructive focus-visible:ring-destructive"
                                     )}
                                   />
                                 </FormControl>
@@ -667,7 +667,7 @@ const PreviewWindow = () => {
                     {/* Query Parameters */}
                     {currentEndpoint.requestQuery &&
                       Object.entries(currentEndpoint.requestQuery).length >
-                      0 && (
+                        0 && (
                         <div className="space-y-2">
                           <h3 className="text-sm font-medium">
                             Query Parameters
@@ -676,7 +676,7 @@ const PreviewWindow = () => {
                             currentEndpoint.requestQuery as Record<
                               string,
                               RequestQueryParam
-                            >,
+                            >
                           ).map(([key, value]) => {
                             const isRequired = value?.isRequired === true;
                             return (
@@ -689,8 +689,8 @@ const PreviewWindow = () => {
                                     <FormLabel
                                       className={cn(
                                         showValidation &&
-                                        form.formState.errors[key] &&
-                                        "text-destructive",
+                                          form.formState.errors[key] &&
+                                          "text-destructive"
                                       )}
                                     >
                                       {key}{" "}
@@ -706,8 +706,8 @@ const PreviewWindow = () => {
                                         placeholder={value.example}
                                         className={cn(
                                           showValidation &&
-                                          form.formState.errors[key] &&
-                                          "border-destructive focus-visible:ring-destructive",
+                                            form.formState.errors[key] &&
+                                            "border-destructive focus-visible:ring-destructive"
                                         )}
                                       />
                                     </FormControl>
@@ -729,7 +729,7 @@ const PreviewWindow = () => {
                             currentEndpoint.requestBody.schema as Record<
                               string,
                               RequestBodySchema
-                            >,
+                            >
                           ).map(([key, value]) => {
                             const isRequired = value.isRequired === true;
                             return (
@@ -742,8 +742,8 @@ const PreviewWindow = () => {
                                     <FormLabel
                                       className={cn(
                                         showValidation &&
-                                        form.formState.errors[key] &&
-                                        "text-destructive",
+                                          form.formState.errors[key] &&
+                                          "text-destructive"
                                       )}
                                     >
                                       {key}{" "}
@@ -759,8 +759,8 @@ const PreviewWindow = () => {
                                         placeholder={value.example}
                                         className={cn(
                                           showValidation &&
-                                          form.formState.errors[key] &&
-                                          "border-destructive focus-visible:ring-destructive",
+                                            form.formState.errors[key] &&
+                                            "border-destructive focus-visible:ring-destructive"
                                         )}
                                       />
                                     </FormControl>

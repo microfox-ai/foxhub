@@ -3,6 +3,7 @@ import { TaskInstanceMetaType } from "../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { generateText, streamText } from "ai";
 import {
+  fetchTemplateRoot,
   getFilePath,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
   readAllGenFilesList,
@@ -39,21 +40,40 @@ export const genFinalCode = async (
     const result = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
-      prompt: `You are requested to modify a serverless.yml file for the following requirement:
-            The following files are generated for the task:
-            ${allGenFilesList?.map((file: any) => file.fileName).join("\n - ")}
+      prompt: dedent`You are requested to modify a serverless.yml file for the following requirement:
+            The following functions are generated for the task:
+            ${allGenFilesList
+              ?.filter((file: any) => file.filePath.includes("/functions"))
+              .map((file: any) => file.fileName)
+              .join("\n - ")}
 
             if for cron jobs, refer theses:
             ${taskInstanceMeta?.taskStructure?.cronJobs?.map((cron) => cron.name + " - " + cron.cronExpression).join("\n - ")}
 
-            The serverless.yml file is as follows:
+            The input serverless.yml file is as follows:
             ${serverlessYml}
 
             The following is the task summary:
             ${taskInstanceMeta?.taskInfo?.summary}
+
+            The service name should be:
+            service: ${taskInstanceMeta?.taskStructure?.templateType.substring(0, 1)}-${clientRequest?.requestDir?.split("-").pop()?.replaceAll("/", "-")}
+
+            your workflow should be as follows:
+            1. read the serverless.yml file
+            2. remove all the old functions & cron jobs from the serverless.yml file.
+            3. add the new functions & cron jobs to the serverless.yml file.
+            4. store the file at the root of the project.
+
+            make sure you skip the packagesUsed field in the tool call.
+            make sure you must include the getDocs function, it is very important - it is available at dist/index.getDocs
             `,
       tools: {
-        write_to_file: writeToFile(props, clientRequest),
+        write_to_file: writeToFile(
+          props,
+          clientRequest,
+          taskInstanceMeta?.taskStructure?.templateType
+        ),
       },
       toolChoice: "required",
       maxSteps: 1,
@@ -72,7 +92,11 @@ export const genFinalCode = async (
     // modify the package.json file to support all the functions & cron jobs
 
     const packageJson = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "package.json"),
+      path.join(
+        process.cwd(),
+        fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+        "package.json"
+      ),
       "utf8"
     );
     const packageJsonContent = JSON.parse(packageJson);
@@ -93,7 +117,11 @@ export const genFinalCode = async (
 
     // modify the index.ts file to support all the functions & cron jobs
     const indexTs = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "index.txt"),
+      path.join(
+        process.cwd(),
+        fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+        "index.txt"
+      ),
       "utf8"
     );
     const allFilesRelativeToRoot = await Promise.all(
@@ -114,7 +142,7 @@ export const genFinalCode = async (
     const result2 = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
-      prompt: `You are requested to create an index.ts file for the following requirement & example:
+      prompt: dedent`You are requested to create an index.ts file for the following requirement & example:
 
             The following files are already generated for the task:
             ${allFilesRelativeToRoot?.map((file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`).join("\n - ")}
@@ -122,6 +150,9 @@ export const genFinalCode = async (
             The example index.ts file is as follows:
             ${indexTs}
             
+            make sure the imports follow the '.js' extension like this:
+            import { getExternalData } from './functions/getExternalData.js'
+
             make sure that all the functions are imported and re-exported in the index.ts file.
             make sure that the docs are properly setup in the index.ts file.
             make sure you rewrite the entire file instead of any diffs.

@@ -1,4 +1,6 @@
 import { prisma } from "@/prisma/prisma";
+import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
+import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import { FUNCTIONTYPE, DEPLOY_STAGE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -6,8 +8,15 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { originClientRequestId, name, baseUrl, stage, type, metadata } =
-      body;
+    const {
+      originClientRequestId,
+      name,
+      baseUrl,
+      stage,
+      type,
+      metadata,
+      endpoints,
+    } = body;
 
     if (!originClientRequestId || !name || !baseUrl || !type || !stage) {
       return NextResponse.json(
@@ -31,8 +40,10 @@ export async function POST(req: NextRequest) {
     const { userId, botProjectId } = clientRequest;
 
     // Create the ClientDeployment
-    const clientFunction = await prisma.clientDeployment.create({
-      data: {
+    const clientFunction = await prisma.clientDeployment.upsert({
+      where: { id: originClientRequestId },
+      update: {
+        id: originClientRequestId,
         userId,
         botProjectId,
         originClientRequestId,
@@ -41,8 +52,42 @@ export async function POST(req: NextRequest) {
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
         metadata,
+        endpoints:
+          typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
+      },
+      create: {
+        id: originClientRequestId,
+        userId,
+        botProjectId,
+        originClientRequestId,
+        name,
+        baseUrl,
+        stage: stage as DEPLOY_STAGE,
+        type: type as FUNCTIONTYPE,
+        metadata,
+        endpoints:
+          typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
       },
     });
+
+    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+      where: {
+        id: originClientRequestId,
+      },
+    });
+
+    if (taskInstanceMeta) {
+      await updateTaskInstanceMeta({
+        clientRequestId: originClientRequestId,
+        otherData: {
+          deployStep: {
+            ...(taskInstanceMeta?.deployStep as DeployStep),
+            startTime: new Date().toISOString(),
+            status: "success",
+          } as DeployStep,
+        },
+      });
+    }
 
     // Add notification in chat if needed
     // TODO: VISHWAJEET - send not only a message, but also an email to the user.
@@ -73,13 +118,11 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    const mode = searchParams.get("mode");
-    const name = searchParams.get("name");
     const userId = searchParams.get("userId");
     const botProjectId = searchParams.get("botProjectId");
     const clientRequestId = searchParams.get("clientRequestId");
 
-    if (!id && !userId && !botProjectId && !clientRequestId && !name) {
+    if (!id && !userId && !botProjectId && !clientRequestId) {
       return NextResponse.json(
         {
           error:
@@ -92,7 +135,6 @@ export async function GET(req: NextRequest) {
     const clientFunctions = await prisma.clientDeployment.findMany({
       where: {
         ...(id && { id }),
-        ...(name && { name }),
         ...(userId && { userId }),
         ...(botProjectId && { botProjectId }),
         ...(clientRequestId && { originClientRequestId: clientRequestId }),

@@ -31,6 +31,7 @@ import { generateStatsReport } from "./helper/generateStatsReport";
 import { octokitSdk } from "./helper/gitHelpers";
 import { pushToGit } from "./helper/pushToGit";
 import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
+import { addGithubSecretsToRepo } from "@/utils/services/db_functions/createNewBotProject";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -146,6 +147,19 @@ export const buildFoxRouter: ServerStreamingFunction<
   // write/modify root files - index.ts, package.json, serverless.yml, etc.
   await genFinalCode(props, taskInstanceMeta, clientRequest);
 
+  // re-add core env variables, for they might have been changed
+  await addGithubSecretsToRepo({
+    repoName: clientRequest.repoName ?? "",
+    taskInstanceMeta,
+  });
+
+  //if function requires mongodb, & if request does not have mongodb already, then add it
+  // await createClientMongoDB({
+  //     userId: botProject.userId,
+  //     botProjectId: botProject.id,
+  //     name: repoResult.data.name,
+  // });
+
   // push to git
   await pushToGit(props, clientRequest, taskInstanceMeta);
 
@@ -226,7 +240,7 @@ export const buildFoxRouter: ServerStreamingFunction<
         type: "confirm",
         text: "Test Automation !",
         className: "bg-green-500 text-white hover:bg-green-600",
-        value: "testfox",
+        value: "deployfox",
       },
     ],
   });
@@ -249,7 +263,7 @@ export const buildFoxRouter: ServerStreamingFunction<
         text: "Test Automation !",
         type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
-        value: "testfox",
+        value: "deployfox",
       },
     ],
   });

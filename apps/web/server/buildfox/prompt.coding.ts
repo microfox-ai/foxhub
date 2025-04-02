@@ -6,8 +6,10 @@ import {
   INTERNAL_TEMPLATE_PLAIN_ROOT,
   INTERNAL_TEMPLATE_UPSTASH_ROOT,
   INTERNAL_TEMPLATE_MONGODB_ROOT,
+  readAllGenFilesList,
 } from "./tool/writeToFile";
 import fs from "fs/promises";
+import { ClientRequest } from "@prisma/client";
 
 export const codingSystemPrompt = (
   step: "backend" | "frontend",
@@ -101,12 +103,14 @@ export const codingFunctionPrompt = async ({
   function: _function,
   cron: _cron,
   template_type,
+  clientRequest,
 }: {
   type: "lambda" | "cron";
   taskInstanceMeta: TaskInstanceMetaType;
   function?: TaskStructure["lambdaFunctions"][0];
   cron?: TaskStructure["cronJobs"][0];
   template_type: "plain" | "upstash" | "mongodb";
+  clientRequest?: ClientRequest;
 }) => {
   const rootDir =
     template_type === "plain"
@@ -123,9 +127,20 @@ export const codingFunctionPrompt = async ({
     path.join(process.cwd(), rootDir, "cron.txt"),
     "utf8"
   );
-  const isDbsetup =
-    taskInstanceMeta?.taskStructure?.dbSchemas?.length &&
-    taskInstanceMeta?.taskStructure?.dbSchemas?.length > 0;
+
+  // TODO: for redis, create a standard pattern just like prisma
+  let writtenFunctionFiles: string | null = null;
+  if (clientRequest && template_type != "plain" && !_cron?.isolated) {
+    const files = await readAllGenFilesList(clientRequest);
+    const functionFiles = files.filter((file) =>
+      file.filePath.includes("/functions")
+    );
+    if (functionFiles.length > 0) {
+      writtenFunctionFiles = functionFiles
+        .map((file) => file.fileName)
+        .join("\n - ");
+    }
+  }
 
   return dedent`You are requested to write a serverless function for the following requirement:
             Task Summary: ${taskInstanceMeta?.taskInfo?.summary}
@@ -154,7 +169,15 @@ export const codingFunctionPrompt = async ({
                   : ""
             }
             - dotenv
-            
+
+            ${
+              writtenFunctionFiles
+                ? `The following lambda functions are already written inside the src/functions folder, to give you an idea of the overreaching project structure:
+            ${writtenFunctionFiles}
+            `
+                : ""
+            }
+
             Requirements:
             - Use TypeScript
             - Implement proper error handling
@@ -186,6 +209,7 @@ export const codingFunctionPrompt = async ({
             Some instructions for docs
             - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
             - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.
+            - the docs should be a pure string, do not insert any $ characters in the docs setup instructions.
             `;
 };
 

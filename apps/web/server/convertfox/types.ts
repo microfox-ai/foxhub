@@ -77,6 +77,7 @@ export const taskStructure = z.object({
       z.object({
         modelName: z.string().describe("The name of the model"),
         jsonSchema: z.any().describe("The schema of the model"),
+        key: z.string().describe("The key in the database").optional(),
       })
     )
     .optional()
@@ -117,6 +118,12 @@ export const taskStructure = z.object({
         body: z.any().describe("The body of the end point"),
         headers: z.any().describe("The headers of the end point"),
       }),
+      isolated: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
+        ),
       cronExpression: z
         .string()
         .describe("The cron expression of the cron job"),
@@ -163,6 +170,15 @@ export const buildingStep = z.object({
 });
 export type BuildingStep = z.infer<typeof buildingStep>;
 
+export const deployStep = z.object({
+  startTime: z.string(),
+  endTime: z.string(),
+  status: z.enum(["pending", "success", "failed"]),
+  message: z.string().optional(),
+  logs: z.any().optional(),
+});
+export type DeployStep = z.infer<typeof deployStep>;
+
 // step3
 export const taskInstance = z.object({
   initialSummary: z
@@ -178,6 +194,7 @@ export const taskInstance = z.object({
   taskRequiredInfo: taskRequiredInfo.optional(),
   taskStructure: taskStructure.optional(),
   buildingStep: buildingStep.optional(),
+  deployStep: deployStep.optional(),
 });
 
 export type TaskInstanceMetaType = z.infer<typeof taskInstance>;

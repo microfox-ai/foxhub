@@ -13,6 +13,11 @@ import { TEMPLATE_REPO } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { createEmptyClientRequest } from "./createEmptyClientRequest";
 import { createClientMongoDB } from "./createClientMongoDB";
+import { TaskInstanceMeta } from "@prisma/client";
+import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import path from "path";
+import fs from "fs/promises";
+import { INTERNAL_TEMPLATE_UPSTASH_ROOT } from "@/server/buildfox/tool/writeToFile";
 
 export async function createNewBotProject({
   userId,
@@ -30,7 +35,7 @@ export async function createNewBotProject({
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
-  if (!user) {
+  if (!user || !userId) {
     console.error("User not found");
     throw new Error("User not found");
   }
@@ -151,46 +156,10 @@ export async function createNewBotProject({
   //     name: repoResult.data.name,
   // });
 
-  const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-  const awsDefaultRegion = process.env.AWS_REGION;
-  const microfoxApiKey = process.env.MICROFOX_API_KEY;
-
-  if (
-    awsAccessKeyId &&
-    awsSecretAccessKey &&
-    awsDefaultRegion &&
-    microfoxApiKey
-  ) {
-    await githubSdk.rest.actions.createEnvironmentVariable({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: repoResult.data.name,
-      environment_name: "production",
-      name: "AWS_ACCESS_KEY_ID",
-      value: awsAccessKeyId,
-    });
-    await githubSdk.rest.actions.createEnvironmentVariable({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: repoResult.data.name,
-      environment_name: "production",
-      name: "AWS_SECRET_ACCESS_KEY",
-      value: awsSecretAccessKey,
-    });
-    await githubSdk.rest.actions.createEnvironmentVariable({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: repoResult.data.name,
-      environment_name: "production",
-      name: "AWS_DEFAULT_REGION",
-      value: awsDefaultRegion,
-    });
-    await githubSdk.rest.actions.createEnvironmentVariable({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: repoResult.data.name,
-      environment_name: "production",
-      name: "MICROFOX_API_KEY",
-      value: microfoxApiKey,
-    });
-  }
+  await addGithubSecretsToRepo({
+    githubSdk,
+    repoName: repoResult.data.name,
+  });
 
   // Create botProject.json file
   const botProjectData = {
@@ -209,6 +178,7 @@ export async function createNewBotProject({
     branch: newBranch,
   });
   if (!botProjectFile) {
+    console.log("botProjectFile", botProjectFile);
     throw new Error("Failed to update botProject.json");
   }
   console.log("botProjectFile", botProjectFile);
@@ -220,4 +190,124 @@ export async function createNewBotProject({
   });
 
   return { ...botProject, clientRequests: [clientRequest] };
+}
+
+export async function createOrUpdateRepoVariable({
+  githubSdk,
+  repoName,
+  name,
+  value,
+  variables,
+}: {
+  githubSdk: Octokit;
+  repoName: string;
+  name: string;
+  value: string;
+  variables: { name: string; value: string }[];
+}) {
+  if (variables.find((variable) => variable.name === name)) {
+    await githubSdk.rest.actions.updateRepoVariable({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: repoName,
+      name: name,
+      value: value,
+    });
+  } else {
+    await githubSdk.rest.actions.createRepoVariable({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: repoName,
+      name: name,
+      value: value,
+    });
+  }
+}
+
+export async function addGithubSecretsToRepo({
+  githubSdk,
+  repoName,
+  taskInstanceMeta,
+}: {
+  githubSdk?: Octokit;
+  repoName: string;
+  taskInstanceMeta?: TaskInstanceMetaType;
+}) {
+  const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const awsDefaultRegion = process.env.AWS_REGION;
+  const microfoxApiKey = process.env.MICROFOX_API_KEY;
+
+  const thisSdk =
+    githubSdk ??
+    new Octokit({
+      auth: GITHUB_TOKEN,
+    });
+
+  const alreadyListedVariables = await thisSdk.rest.actions.listRepoVariables({
+    owner: TEMPLATE_REPO_OWNER,
+    repo: repoName,
+  });
+
+  //console.log("taskInstanceMeta", repoName, TEMPLATE_REPO_OWNER);
+  try {
+    if (taskInstanceMeta?.taskStructure?.templateType === "upstash") {
+      const upstashEnvsFile = await fs.readFile(
+        path.join(process.cwd(), INTERNAL_TEMPLATE_UPSTASH_ROOT, "/envs.json"),
+        "utf8"
+      );
+      const upstashEnvs = JSON.parse(upstashEnvsFile);
+      console.log("upstashEnvs", upstashEnvs);
+      // PROD TODO: the envs only are for staging, production envs need to be added manually in env variables
+      for (const env of upstashEnvs) {
+        createOrUpdateRepoVariable({
+          githubSdk: thisSdk,
+          repoName: repoName,
+          name: env.key,
+          value: IN_DEV ? env.value : (process.env[env.key] ?? env.value),
+          variables: alreadyListedVariables.data.variables,
+        });
+      }
+    }
+
+    if (
+      awsAccessKeyId &&
+      awsSecretAccessKey &&
+      awsDefaultRegion &&
+      microfoxApiKey
+    ) {
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
+        name: "AWS_ACCESS_KEY_ID",
+        value: awsAccessKeyId,
+        variables: alreadyListedVariables.data.variables,
+      });
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
+        name: "AWS_SECRET_ACCESS_KEY",
+        value: awsSecretAccessKey,
+        variables: alreadyListedVariables.data.variables,
+      });
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
+        name: "AWS_DEFAULT_REGION",
+        value: awsDefaultRegion,
+        variables: alreadyListedVariables.data.variables,
+      });
+      createOrUpdateRepoVariable({
+        githubSdk: thisSdk,
+        repoName: repoName,
+        name: "MICROFOX_API_KEY",
+        value: microfoxApiKey,
+        variables: alreadyListedVariables.data.variables,
+      });
+    }
+  } catch (error) {
+    console.error(
+      "Error adding github secrets to repo",
+      JSON.stringify((error as any)?.response)
+    );
+    throw new Error("Error adding github secrets to repo");
+  }
 }

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const apiKey = req.headers.get("microfox-api-key");
     const origin = req.nextUrl.origin;
 
-    console.log(origin);
+    //console.log("lambda function triggers", origin, apiKey);
     // TODO: Need to enable checkers for internal requests & ybgpasss internal requests
     // Skip validation in dev mode or if request is from APP_DOMAIN
     // if (
@@ -24,9 +24,9 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const clientRequestId = searchParams.get("clientRequestId");
-    const mode = searchParams.get("mode");
+    const stage = searchParams.get("stage");
 
-    if (!clientRequestId || !mode) {
+    if (!clientRequestId || !stage) {
       return NextResponse.json(
         { error: "Missing clientRequestId or mode parameter" },
         { status: 400 }
@@ -56,13 +56,20 @@ export async function GET(req: NextRequest) {
     const variables = clientSecrets
       .filter((bot) => bot !== null)
       .flatMap((bot) => {
-        return (bot?.variables as any[])
+        let _botVariables =
+          typeof bot.variables === "string"
+            ? JSON.parse(bot.variables)
+            : bot.variables;
+        return (
+          _botVariables as {
+            stage: string;
+            key: string;
+            value: string;
+            isOptional: boolean;
+          }[]
+        )
           .filter((variable) => {
-            return (
-              variable.mode &&
-              Array.isArray(variable.mode) &&
-              variable.mode.includes(mode)
-            );
+            return variable.stage === stage || !variable.stage;
           })
           .map((variable) => ({
             key: variable.key,

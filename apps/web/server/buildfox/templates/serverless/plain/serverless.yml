@@ -1,20 +1,22 @@
-service: template-function
-
+service: template-function-plain
+package:
+  exclude:
+    - venv/**
+    - src/**
 # Configuration
 custom:
   # Get environment from env or default to dev
   stage: ${env:ENVIRONMENT, 'dev'}
-  # HTTP port for offline mode
-  serverless-offline:
-    httpPort: 4000
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: us-east-1
   stage: ${env:ENVIRONMENT, 'dev'}
-  environment:
-    STAGE: ${env:ENVIRONMENT, 'dev'}
+  environment: ${file(env.json)}
+
+plugins:
+  - serverless-plugin-typescript
 
 functions:
   # External API Endpoints

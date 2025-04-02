@@ -1,15 +1,15 @@
 // Re-export external API functions
-import { getExternalDataDocs } from './functions/getExternalData'
-import { postExternalDataDocs } from './functions/postExternalData'
-export { getExternalData } from './functions/getExternalData'
-export { postExternalData } from './functions/postExternalData'
+import { getExternalDataDocs } from './functions/getExternalData.js'
+import { postExternalDataDocs } from './functions/postExternalData.js'
+export { getExternalData } from './functions/getExternalData.js'
+export { postExternalData } from './functions/postExternalData.js'
 
 /**
  * Complete API documentation
  */
 const apiDocs = {
   title: 'Serverless Lambda API',
-  description: 'Complete documentation for the serverless lambda functions',
+  description: 'Complete documentation for this service',
   version: '1.0.0',
   sections: {
     external: {

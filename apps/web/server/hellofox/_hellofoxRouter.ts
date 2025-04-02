@@ -90,7 +90,8 @@ export const hellofoxRouter: ServerStreamingFunction<
     4. Task Clarity (clear, ambiguous, clueless)
       a. clear - intent is clear with platforms mentioned
       b. ambiguous - intent is clear but platforms are not mentioned
-      c. clueless - intent itself is not clear`,
+      c. clueless - intent itself is not clear
+    `,
   }); // 4. Query type (query, modification, answer, confirmation)
 
   //console.log("classification", classification);
@@ -171,6 +172,7 @@ export const hellofoxRouter: ServerStreamingFunction<
       toolUsage = `
       - analyseUserIntent: Analyse the user's intent.
       - confirmSpecifics: Confirm the specific details of the task.
+      - isTaskBuildable: Check if the user's task is buildable & then confirm the task. (make sure to pass in the platforms & requirements)
       `;
     } else {
       // call guideUserToDoableGoal tool
@@ -208,6 +210,8 @@ export const hellofoxRouter: ServerStreamingFunction<
        - do you wish to integrate you web app / backend with another service ?
        - do you want to integrate with slack/whatsapp/etc ?
 
+      In place of asking for any specific details, you can call tool - isTaskBuildable
+
       DO NOT CALL ANY OTHER TOOL further, if isTaskBuildable is called.
       `,
       messages: lastFewMessages,
@@ -223,6 +227,7 @@ export const hellofoxRouter: ServerStreamingFunction<
             ? {
                 analyseUserIntent: analyseUserIntent(props),
                 confirmSpecifics: confirmSpecifics(props),
+                isTaskBuildable: isTaskBuildable(props),
               }
             : {
                 analyseUserIntent: analyseUserIntent(props),
@@ -259,7 +264,8 @@ export const hellofoxRouter: ServerStreamingFunction<
         ___
         Info About Microfox:
         ${
-          classification.complexity === "complex"
+          classification.complexity === "complex" ||
+          classification.taskClarity === "ambiguous"
             ? `${aboutMicrofoxInfo()}\n\n${getMicrofoxCapabilities()}`
             : aboutMicrofoxInfo()
         }

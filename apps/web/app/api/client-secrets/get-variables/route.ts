@@ -56,13 +56,20 @@ export async function GET(req: NextRequest) {
     const variables = clientSecrets
       .filter((bot) => bot !== null)
       .flatMap((bot) => {
-        return (bot?.variables as any[])
+        let _botVariables =
+          typeof bot.variables === "string"
+            ? JSON.parse(bot.variables)
+            : bot.variables;
+        return (
+          _botVariables as {
+            stage: string;
+            key: string;
+            value: string;
+            isOptional: boolean;
+          }[]
+        )
           .filter((variable) => {
-            return (
-              variable.stage &&
-              Array.isArray(variable.stage) &&
-              variable.stage.includes(stage)
-            );
+            return variable.stage === stage || !variable.stage;
           })
           .map((variable) => ({
             key: variable.key,

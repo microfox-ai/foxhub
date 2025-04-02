@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const repoName = clientRequest?.prUrl?.split("/")[4];
+      const repoName = clientRequest?.repoName;
 
       if (!repoName) {
         console.error("No repo name found");

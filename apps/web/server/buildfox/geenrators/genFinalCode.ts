@@ -3,6 +3,7 @@ import { TaskInstanceMetaType } from "../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { generateText, streamText } from "ai";
 import {
+  fetchTemplateRoot,
   getFilePath,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
   readAllGenFilesList,
@@ -56,7 +57,7 @@ export const genFinalCode = async (
             ${taskInstanceMeta?.taskInfo?.summary}
 
             The service name should be:
-            service: ${clientRequest?.repoName + "-" + clientRequest?.requestDir}
+            service: ${taskInstanceMeta?.taskStructure?.templateType.substring(0, 1)}-${clientRequest?.requestDir?.split("-").pop()?.replaceAll("/", "-")}
 
             your workflow should be as follows:
             1. read the serverless.yml file
@@ -65,9 +66,14 @@ export const genFinalCode = async (
             4. store the file at the root of the project.
 
             make sure you skip the packagesUsed field in the tool call.
+            make sure you must include the getDocs function, it is very important - it is available at dist/index.getDocs
             `,
       tools: {
-        write_to_file: writeToFile(props, clientRequest),
+        write_to_file: writeToFile(
+          props,
+          clientRequest,
+          taskInstanceMeta?.taskStructure?.templateType
+        ),
       },
       toolChoice: "required",
       maxSteps: 1,
@@ -86,7 +92,11 @@ export const genFinalCode = async (
     // modify the package.json file to support all the functions & cron jobs
 
     const packageJson = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "package.json"),
+      path.join(
+        process.cwd(),
+        fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+        "package.json"
+      ),
       "utf8"
     );
     const packageJsonContent = JSON.parse(packageJson);
@@ -107,7 +117,11 @@ export const genFinalCode = async (
 
     // modify the index.ts file to support all the functions & cron jobs
     const indexTs = await fs.readFile(
-      path.join(process.cwd(), INTERNAL_TEMPLATE_PLAIN_ROOT, "index.txt"),
+      path.join(
+        process.cwd(),
+        fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+        "index.txt"
+      ),
       "utf8"
     );
     const allFilesRelativeToRoot = await Promise.all(

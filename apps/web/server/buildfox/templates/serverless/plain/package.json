@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Template function with various API endpoints",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "deploy": "npm run build && serverless deploy --stage dev",

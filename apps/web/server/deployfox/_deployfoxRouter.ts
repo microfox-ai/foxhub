@@ -63,7 +63,7 @@ export const deployFoxRouter: ServerStreamingFunction<
 
   const MAX_ATTEMPTS = 30; // 5 minutes total (30 * 10 seconds)
   let attempts = 0;
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 20000));
 
   while (true) {
     const conditions = await fetchLogs(

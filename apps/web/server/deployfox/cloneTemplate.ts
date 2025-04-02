@@ -26,8 +26,8 @@ export const recloneTemplateStuffToClientRequest = async (
   await cloneTemplate({
     sourceRepo: "shard-template",
     targetRepo: clientRequest.repoName,
-    sourcePath: "src/functions",
-    targetPath: "src/functions",
+    sourcePath: "",
+    targetPath: "",
     sourceBranch: "main",
     targetBranch: clientRequest.prBranch,
   });

@@ -100,7 +100,7 @@ export const ProjectDropdown = ({
         )}
       >
         <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger>
+          <PopoverTrigger className="w-full">
             {!isCollapsed ? (
               <Button
                 variant="outline"

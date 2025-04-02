@@ -1,5 +1,6 @@
 import { ButtonSCN } from "@/components/elements/Button";
-import { ClientRequest } from "@prisma/client";
+import { ChatUIMessage, ClientRequest } from "@prisma/client";
+import { UIMessage } from "ai";
 import {
   MessageSquare,
   RefreshCw,
@@ -47,6 +48,7 @@ interface IChatHeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   projectTitle?: string;
+  messages: UIMessage[];
 }
 
 const tabList = [
@@ -67,6 +69,7 @@ const tabList = [
   },
 ];
 const ChatHeader = ({
+  messages,
   clientRequest,
   mutate,
   isLoading,
@@ -116,43 +119,45 @@ const ChatHeader = ({
       </div>
 
       <div className="col-span-6 flex justify-center">
-        <TabsList className="relative flex bg-gray-100 p-[3px] h-11 rounded-lg">
-          {tabList.map((tab) => (
-            <TabsTrigger
-              key={`tab-${tab.value}`}
-              value={tab.value}
-              className="relative duration-300 !shadow-none h-9 data-[state=active]:bg-transparent data-[state=active]:shadow-none z-10 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 rounded-lg transition-all"
-            >
-              <motion.div
-                animate={{
-                  x: activeTab === tab.value ? -4 : 0,
-                }}
-                className="flex items-center gap-2"
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        {messages.length > 0 && (
+          <TabsList className="relative flex bg-gray-100 p-[3px] h-11 rounded-lg">
+            {tabList.map((tab) => (
+              <TabsTrigger
+                key={`tab-${tab.value}`}
+                value={tab.value}
+                className="relative duration-300 !shadow-none h-9 data-[state=active]:bg-transparent data-[state=active]:shadow-none z-10 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 rounded-lg transition-all"
               >
-                {tab.icon}
-                {activeTab === tab.value && (
-                  <motion.span
-                    key={`label-${tab.value}`}
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: "auto", opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    className="overflow-hidden whitespace-nowrap"
-                  >
-                    {tab.label}
-                  </motion.span>
-                )}
-              </motion.div>
-              {activeTab === tab.value && (
                 <motion.div
-                  layoutId="activeTab"
-                  className="absolute -z-[1] inset-0 bg-white rounded-lg"
+                  animate={{
+                    x: activeTab === tab.value ? -4 : 0,
+                  }}
+                  className="flex items-center gap-2"
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                />
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+                >
+                  {tab.icon}
+                  {activeTab === tab.value && (
+                    <motion.span
+                      key={`label-${tab.value}`}
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      className="overflow-hidden whitespace-nowrap"
+                    >
+                      {tab.label}
+                    </motion.span>
+                  )}
+                </motion.div>
+                {activeTab === tab.value && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute -z-[1] inset-0 bg-white rounded-lg"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        )}
       </div>
 
       <div className="col-span-3 flex justify-end">

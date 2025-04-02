@@ -119,6 +119,7 @@ function ChatWindow({
             </ButtonSCN>
           )}
           <ChatHeader
+            messages={messages}
             projectTitle={projectTitle}
             clientRequest={clientRequest}
             mutate={mutate}

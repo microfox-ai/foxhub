@@ -35,4 +35,5 @@ export async function getClientDeployment(clientRequestId: string) {
       id: clientRequestId,
     },
   });
+  return clientDeployment;
 }

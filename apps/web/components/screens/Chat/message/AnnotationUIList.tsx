@@ -1151,6 +1151,7 @@ const DeploymentsInfo = ({
   const annotation = uiAnnotation as any;
   const deployStep = annotation.deployStep;
   const clientDeployment = annotation.clientDeployment;
+
   return (
     <motion.div
       key={uiAnnotation.objectType + idx}
@@ -1165,6 +1166,9 @@ const DeploymentsInfo = ({
         </p>
         <p className="text-sm text-gray-500">
           {JSON.stringify(deployStep)}
+        </p>
+        <p className="text-sm text-gray-500">
+          DEPLOYMENT
         </p>
         <p className="text-sm text-gray-500">
           {JSON.stringify(clientDeployment)}

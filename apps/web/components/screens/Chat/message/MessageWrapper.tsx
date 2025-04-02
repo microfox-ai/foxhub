@@ -165,8 +165,8 @@ export const MessageWrapper = ({
                       latestAnnotation.type === "thinking"
                         ? latestAnnotation.contents || latestAnnotation.content
                         : latestAnnotation.text ||
-                          latestAnnotation.content ||
-                          latestAnnotation.contents;
+                        latestAnnotation.content ||
+                        latestAnnotation.contents;
 
                     return (
                       <AnimatePresence mode="wait">
@@ -204,9 +204,8 @@ export const MessageWrapper = ({
               <div className="w-[400px] p-0 bg-transparent">
                 <div className="flex gap-1 mb-3 bg-transparent">
                   <ChevronLeft
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
-                      activeTab > 0 ? "opacity-100" : "opacity-50"
-                    }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab > 0 ? "opacity-100" : "opacity-50"
+                      }`}
                     onClick={() => setActiveTab(activeTab - 1)}
                   />
                   <div
@@ -215,11 +214,10 @@ export const MessageWrapper = ({
                     Step {activeTab + 1}
                   </div>
                   <ChevronRight
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
-                      activeTab < displayParts?.length - 1
-                        ? "opacity-100"
-                        : "opacity-50"
-                    }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab < displayParts?.length - 1
+                      ? "opacity-100"
+                      : "opacity-50"
+                      }`}
                     onClick={() => setActiveTab(activeTab + 1)}
                   />
                 </div>

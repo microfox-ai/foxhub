@@ -66,7 +66,12 @@ export const deployFoxRouter: ServerStreamingFunction<
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
   while (true) {
-    taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
+    const conditions = await fetchLogs(
+      props,
+      clientRequest,
+      taskInstanceMeta as TaskInstanceMetaType
+    );
+    taskInstanceMeta = conditions?.taskInstanceMeta as any;
 
     // Handle success case
     if (taskInstanceMeta?.deployStep?.status === "success") {
@@ -82,12 +87,6 @@ export const deployFoxRouter: ServerStreamingFunction<
     if (attempts >= MAX_ATTEMPTS) {
       throw new Error("Deployment timed out after 5 minutes");
     }
-
-    const conditions = await fetchLogs(
-      props,
-      clientRequest,
-      taskInstanceMeta as TaskInstanceMetaType
-    );
 
     if (conditions?.taskInstanceMeta) {
       taskInstanceMeta = conditions?.taskInstanceMeta as any;

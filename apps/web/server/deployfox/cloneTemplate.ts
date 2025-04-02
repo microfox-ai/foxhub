@@ -23,6 +23,10 @@ export const recloneTemplateStuffToClientRequest = async (
   if (!clientRequest.repoName || !clientRequest.prBranch) {
     throw new Error("Client request repo name or branch is not set");
   }
+  dataStream.writeMessageAnnotation({
+    type: "success",
+    value: "Template stuff cloning..",
+  });
   await cloneTemplate({
     sourceRepo: "shard-template",
     targetRepo: clientRequest.repoName,

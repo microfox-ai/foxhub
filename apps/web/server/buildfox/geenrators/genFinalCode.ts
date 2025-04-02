@@ -142,7 +142,11 @@ export const genFinalCode = async (
         };
       })
     );
-    console.log("allFilesRelativeToRoot", allFilesRelativeToRoot);
+    console.log(
+      "allFilesRelativeToRoot",
+      allFilesRelativeToRoot,
+      allGenFilesList
+    );
     const result2 = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
@@ -150,7 +154,7 @@ export const genFinalCode = async (
 
             The following files are already generated for the task:
             ${allFilesRelativeToRoot
-              ?.filter((file: any) => file.filePath?.includes("/functions"))
+              ?.filter((file: any) => file.filePath?.includes("functions"))
               ?.map(
                 (file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`
               )

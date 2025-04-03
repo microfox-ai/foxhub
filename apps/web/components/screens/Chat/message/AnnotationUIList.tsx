@@ -62,6 +62,7 @@ import duration from "dayjs/plugin/duration";
 import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 import Cube from "@/components/ui/spinners/cube";
 import { useLayout } from "../../providers/LayoutProvider";
+import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
 
 dayjs.extend(duration);
 
@@ -1181,7 +1182,7 @@ const DeploymentsInfo = ({
   const requestParamId = params?.request_id;
 
   const { isRightCollapsed, handleRightCollapse } = useLayout();
-
+  const { setDeploymentInfo } = useTaskInstanceMetaContext();
   const {
     data: DeploymentData,
     isLoading,
@@ -1199,7 +1200,9 @@ const DeploymentsInfo = ({
   const deployStep = finalData?.deployStep;
   useEffect(() => {
     if (DeploymentData) {
+      console.log(DeploymentData, "DeploymentData");
       setFinalData(DeploymentData);
+      setDeploymentInfo(DeploymentData.clientDeployment);
     }
   }, [DeploymentData]);
 
@@ -1223,9 +1226,6 @@ const DeploymentsInfo = ({
           <span className="font-medium text-transparent">{stage}</span>{" "}
           environment...
         </p>
-        <pre className="text-xs text-gray-500">
-          {JSON.stringify(finalData, null, 2)}
-        </pre>
       </motion.div>
     );
   }
@@ -1334,7 +1334,10 @@ const DeploymentsInfo = ({
               Deploy to Production
             </Button>
             <Button
-              onClick={() => handleRightCollapse(!isRightCollapsed)}
+              onClick={() => {
+                setDeploymentInfo(finalData.clientDeployment);
+                handleRightCollapse(!isRightCollapsed);
+              }}
               variant="default"
               className="group/button flex items-center gap-2"
             >

@@ -1223,6 +1223,9 @@ const DeploymentsInfo = ({
           <span className="font-medium text-transparent">{stage}</span>{" "}
           environment...
         </p>
+        <pre className="text-xs text-gray-500">
+          {JSON.stringify(finalData, null, 2)}
+        </pre>
       </motion.div>
     );
   }
@@ -1316,30 +1319,30 @@ const DeploymentsInfo = ({
       </div>
 
       {stage === "STAGING" && deployStep.status === "success" && (
-        <div className="text-xs text-gray-500">
-          <span className="font-medium text-gray-900">Staging </span>
-          environment is ready to be promoted to{" "}
-          <span className="font-medium text-gray-900">Production</span>
-        </div>
-      )}
-      {stage === "STAGING" && (
-        <div className="flex gap-2 mt-4">
-          <Button
-            variant="outline"
-            className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-          >
-            <Rocket className="w-4 h-4" />
-            Deploy to Production
-          </Button>
-          <Button
-            onClick={() => handleRightCollapse(!isRightCollapsed)}
-            variant="default"
-            className="group/button flex items-center gap-2"
-          >
-            Test Endpoints
-            <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
-          </Button>
-        </div>
+        <>
+          <div className="text-xs text-gray-500">
+            <span className="font-medium text-gray-900">Staging </span>
+            environment is ready to be promoted to{" "}
+            <span className="font-medium text-gray-900">Production</span>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+            >
+              <Rocket className="w-4 h-4" />
+              Deploy to Production
+            </Button>
+            <Button
+              onClick={() => handleRightCollapse(!isRightCollapsed)}
+              variant="default"
+              className="group/button flex items-center gap-2"
+            >
+              Test Endpoints
+              <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );

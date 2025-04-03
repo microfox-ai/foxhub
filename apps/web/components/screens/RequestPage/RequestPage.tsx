@@ -192,17 +192,7 @@ export const RequestPage = () => {
             )}
           >
             <div className="h-full py-4 px-2  ">
-              <div className="h-full bg-zinc-100 rounded-xl relative">
-                <div className="p-4 pb-2 flex gap-4 items-center">
-                  <X
-                    className="cursor-pointer h-4 w-4 text-gray-500 hover:text-gray-700"
-                    onClick={() => handleRightCollapse(!isRightCollapsed)}
-                  />
-                  <div className="flex gap-2 items-center">
-                    <p className="text-base font-medium">Preview</p>
-                    <Monitor className="h-4 w-4 " />
-                  </div>
-                </div>
+              <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
                 <PreviewWindow />
               </div>
             </div>

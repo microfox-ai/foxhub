@@ -120,7 +120,7 @@ export const triggerDeployment = async (
     }
 
     // Create a commit with timestamp update in clientRequest.json
-    await octo.rest.repos.createOrUpdateFileContents({
+    const { data } = await octo.rest.repos.createOrUpdateFileContents({
       owner: TEMPLATE_REPO_OWNER,
       repo: clientRequest.repoName,
       path: changelogPath,

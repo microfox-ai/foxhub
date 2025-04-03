@@ -156,7 +156,7 @@ export const genFinalCode = async (
       system: codingSystemPrompt("backend"),
       prompt: dedent`You are requested to create an index.ts file for the following requirement & example:
 
-            The following files are already generated for the task:
+            The following function files are already generated for the task:
             ${allFilesRelativeToRoot
               ?.filter((file: any) => file.filePath?.includes("functions"))
               ?.map(
@@ -170,10 +170,16 @@ export const genFinalCode = async (
             make sure the imports follow the '.js' extension like this:
             import { getExternalData } from './functions/getExternalData.js'
 
+
+            your workflow should be as follows:
+            1. read the example index.ts file & keep it as a reference for how to write code.
+            2. remove all the old functions & cron jobs & imports & exports from the index.ts file
+            3. add the new imports & exports for the new functions.
+            4. store the index.ts file is writen in "src/" folder.
+
             make sure that all the functions are imported and re-exported in the index.ts file.
-            make sure that the docs are properly setup in the index.ts file.
+            make sure that the docs are properly setup in the index.ts file based on docs imported from the function files.
             make sure you rewrite the entire file instead of any diffs.
-            make sure that index.ts file is writen in "src/" folder.
             `,
       tools: {
         write_to_file: writeToFile(props, clientRequest),

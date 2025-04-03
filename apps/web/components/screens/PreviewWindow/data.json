@@ -1,186 +1,77 @@
 {
-  "info": {
-    "title": "My API Documentation",
-    "version": "1.0.1",
-    "description": "Documentation for endpoints with methods, headers, body schema, query parameters, and responses."
-  },
-  "endpoints": [
-    {
-      "path": "/",
-      "method": "GET",
-      "description": "Fetch a random anime quote",
-      "requestHeaders": {},
-      "requestQuery": {},
-      "responses": {
-        "200": {
-          "description": "Successful response with a random quote",
-          "schema": {
+  "title": "Serverless Lambda API",
+  "description": "Complete documentation for this service",
+  "version": "1.0.0",
+  "sections": {
+    "github": {
+      "title": "GitHub Webhook Handler",
+      "description": "Endpoint for handling GitHub webhooks",
+      "endpoints": {
+        "handleGithubWebhook": {
+          "title": "Handle GitHub Webhook",
+          "description": "Handles the webhook event from Github when a PR is approved and sends a notification to Slack",
+          "method": "POST",
+          "path": "/github-webhook",
+          "requestBody": {
+            "description": "GitHub webhook payload",
+            "required": true,
             "content": {
-              "type": "string"
-            },
-            "anime": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "number",
-                  "isRequired": true,
-                  "description": "The ID of the anime",
-                  "example": 1
-                },
-                "name": {
-                  "type": "string",
-                  "isRequired": true,
-                  "description": "The name of the anime",
-                  "example": "Naruto"
-                },
-                "altName": {
-                  "type": "string",
-                  "isRequired": true,
-                  "description": "The alternative name of the anime",
-                  "example": "Naruto: Shippuden"
-                }
-              }
-            },
-            "character": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "number",
-                  "isRequired": true,
-                  "description": "The ID of the character",
-                  "example": 1
-                },
-                "name": {
-                  "type": "string",
-                  "isRequired": true,
-                  "description": "The name of the character",
-                  "example": "Naruto"
-                },
-                "altName": {
-                  "type": "string",
-                  "isRequired": true,
-                  "description": "The alternative name of the character",
-                  "example": "Naruto: Shippuden"
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "type": "string"
+                    },
+                    "review": {
+                      "type": "object"
+                    },
+                    "pull_request": {
+                      "type": "object"
+                    },
+                    "repository": {
+                      "type": "object"
+                    }
+                  }
                 }
               }
             }
-          }
-        },
-        "500": {
-          "description": "Error response",
-          "schema": {
-            "error": {
-              "type": "string"
-            },
-            "message": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    {
-      "path": "/users/:id",
-      "method": "GET",
-      "description": "Fetch a user by ID",
-      "requestHeaders": {},
-      "requestQuery": {},
-      "responses": {
-        "200": {
-          "description": "Successful response with user data",
-          "schema": {
-            "id": {
-              "type": "string",
-              "isRequired": true,
-              "description": "The ID of the user",
-              "example": "1"
-            },
-            "name": {
-              "type": "string",
-              "isRequired": true,
-              "description": "The name of the user",
-              "example": "John Doe"
-            },
-            "email": {
-              "type": "string",
-              "isRequired": true,
-              "description": "The email of the user",
-              "example": "john@example.com"
-            }
-          }
-        },
-        "404": {
-          "description": "User not found",
-          "schema": {
-            "error": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    {
-      "path": "/users",
-      "method": "POST",
-      "description": "Create a new user",
-      "requestHeaders": {
-        "Content-Type": {
-          "type": "string",
-          "description": "MIME type of the body",
-          "example": "application/json"
-        }
-      },
-      "requestBody": {
-        "description": "User data for creation",
-        "schema": {
-          "name": {
-            "type": "string",
-            "isRequired": true,
-            "description": "The name of the user",
-            "example": "John Doe"
           },
-          "email": {
-            "type": "string",
-            "isRequired": true,
-            "description": "The email of the user",
-            "example": "john@example.com"
-          }
-        }
-      },
-      "requestQuery": {},
-      "responses": {
-        "201": {
-          "description": "User successfully created",
-          "schema": {
-            "id": {
-              "type": "string",
-              "isRequired": true,
-              "description": "The ID of the user",
-              "example": "1"
+          "responses": {
+            "200": {
+              "description": "Webhook processed successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
             },
-            "name": {
-              "type": "string",
-              "isRequired": true,
-              "description": "The name of the user",
-              "example": "John Doe"
-            },
-            "email": {
-              "type": "string",
-              "isRequired": true,
-              "description": "The email of the user",
-              "example": "john@example.com"
+            "500": {
+              "description": "Server error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "error": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
             }
-          }
-        },
-        "400": {
-          "description": "Invalid input data",
-          "schema": {
-            "error": {
-              "type": "string"
-            }
-          }
+          },
+          "setupInstructions": "\nTo set up this webhook in GitHub:\n\n1. Go to your GitHub repository\n2. Click on \"Settings\" > \"Webhooks\" > \"Add webhook\"\n3. Set the Payload URL to your deployed function's URL (e.g., https://your-api-gateway-url/prod/github-webhook)\n4. Set the Content type to \"application/json\"\n5. Select \"Let me select individual events\"\n6. Check \"Pull request reviews\"\n7. Ensure \"Active\" is checked\n8. Click \"Add webhook\"\n\nMake sure to set the following environment variables:\n- GITHUB_TOKEN: Your GitHub personal access token\n- SLACK_BOT_TOKEN: Your Slack bot token\n- SLACK_CHANNEL_ID: The ID of the Slack channel to send notifications to\n\nNote: Ensure your Slack bot has the necessary permissions to post messages in the specified channel.\n  "
         }
       }
     }
-  ]
+  }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, TaskInstanceMeta } from "@prisma/client";
 import { useEffect, useRef, useState } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { AddClientSecretModal } from "./AddClientSecretModal";
@@ -14,6 +14,8 @@ import { ButtonSCN } from "@/components/elements/Button";
 import { PanelRightIcon } from "lucide-react";
 import ConfigureTab from "./ConfigureTab";
 import { motion, AnimatePresence } from "framer-motion";
+import useSWR from "swr";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export type AttachedMedia = {
   file: File;
@@ -55,7 +57,7 @@ function ChatWindow({
 
   const getSlideDirection = (tabValue: string) => {
     if (!previousTab || previousTab === tabValue) return 0;
-    const tabOrder = ["chat", "history", "configure"];
+    const tabOrder = ["chat", "history", "dashboard"];
     const prevIndex = tabOrder.indexOf(previousTab);
     const currentIndex = tabOrder.indexOf(tabValue);
     return prevIndex < currentIndex ? 100 : -100;
@@ -93,7 +95,7 @@ function ChatWindow({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, activeTab]);
 
   // Scroll to the bottom of the chat window
   const scrollToBottom = () => {
@@ -167,10 +169,10 @@ function ChatWindow({
                   </motion.div>
                 )}
 
-                {activeTab === "configure" && (
+                {activeTab === "dashboard" && (
                   <motion.div
-                    key="configure"
-                    initial={{ x: getSlideDirection("configure") }}
+                    key="dashboard"
+                    initial={{ x: getSlideDirection("dashboard") }}
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{
@@ -271,4 +273,3 @@ export default function ChatWindowWithProvider({
     </MicrofoxProvider>
   );
 }
-

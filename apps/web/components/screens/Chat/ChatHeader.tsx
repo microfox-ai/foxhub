@@ -8,6 +8,8 @@ import {
   Settings,
   LogOut,
   Slash,
+  Home,
+  LayoutDashboard,
 } from "lucide-react";
 import { useMicrofox } from "../providers/MicrofoxProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
@@ -63,9 +65,9 @@ const tabList = [
     icon: <History />,
   },
   {
-    label: "Configure",
-    value: "configure",
-    icon: <Settings />,
+    label: "Dashboard ",
+    value: "dashboard",
+    icon: <LayoutDashboard />,
   },
 ];
 const ChatHeader = ({

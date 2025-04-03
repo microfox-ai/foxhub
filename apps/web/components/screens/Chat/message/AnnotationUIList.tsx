@@ -23,6 +23,13 @@ import {
   Eye,
   EyeOff,
   Plus,
+  Container,
+  Boxes,
+  Package2,
+  PackageOpen,
+  GitPullRequest,
+  Rocket,
+  ArrowRight,
 } from "lucide-react";
 import {
   Tooltip,
@@ -54,6 +61,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 import Cube from "@/components/ui/spinners/cube";
+import { useLayout } from "../../providers/LayoutProvider";
 
 dayjs.extend(duration);
 
@@ -1172,6 +1180,8 @@ const DeploymentsInfo = ({
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
 
+  const { isRightCollapsed, handleRightCollapse } = useLayout();
+
   const {
     data: DeploymentData,
     isLoading,
@@ -1199,6 +1209,7 @@ const DeploymentsInfo = ({
 
   if (!finalData?.shouldBreak) {
     return (
+      // TODO: Add status of the deployment
       <motion.div
         className="flex items-center  gap-3  p-4 bg-white rounded-xl border border-gray-100 shadow-sm"
         initial={{ opacity: 0, y: 10 }}
@@ -1207,9 +1218,9 @@ const DeploymentsInfo = ({
         transition={{ duration: 0.3 }}
       >
         <Cube size={14} color="#2b7fff" />
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 loading-text">
           Deploying to{" "}
-          <span className="font-medium text-gray-900">{stage}</span>{" "}
+          <span className="font-medium text-transparent">{stage}</span>{" "}
           environment...
         </p>
       </motion.div>
@@ -1217,13 +1228,7 @@ const DeploymentsInfo = ({
   }
 
   return (
-    <motion.div
-      className="flex flex-col gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="flex flex-col gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
       {/* Header with Status */}
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center space-x-3">
@@ -1255,21 +1260,88 @@ const DeploymentsInfo = ({
         </span>
       </div>
 
-      {/* Simplified Info Grid */}
+      {/* Title and PR Info */}
+      <div className="p-3 bg-gray-50 rounded-lg text-sm flex items-start gap-2">
+        <GitPullRequest className="w-4 h-4 text-gray-500 mt-px" />
+        <div className="flex flex-col gap-1">
+          <div className="font-medium text-gray-900">
+            {deployStep.metadata.display_title}
+          </div>
+          <div className="text-gray-500 mt-1">
+            PR #{deployStep.metadata.pull_requests[0].number}
+          </div>
+        </div>
+      </div>
+
+      {/* Info Grid */}
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <div className="text-gray-500 mb-1">Environment</div>
-          <div className="font-medium text-gray-900">{deployStep.stage}</div>
+          <div className="flex items-center gap-2">
+            <Package size={14} color="#2b7fff" />
+            <div className="text-gray-500">Environment</div>
+          </div>
+          <div className="font-medium text-gray-900 mt-1">
+            {deployStep.stage}
+          </div>
         </div>
 
         <div>
-          <div className="text-gray-500 mb-1">Duration</div>
-          <div className="font-medium text-gray-900">
+          <div className="flex items-center gap-2">
+            <Clock size={14} color="#2b7fff" />
+            <div className="text-gray-500">Duration</div>
+          </div>
+          <div className="font-medium text-gray-900 mt-1">
             {prettyPrintDuration(deployStep.startTime, deployStep.endTime)}
           </div>
         </div>
       </div>
-    </motion.div>
+
+      {/* Quick Actions */}
+      <div className="flex gap-2 mt-2">
+        <a
+          href={deployStep.metadata.logs_url}
+          className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <FileText className="w-3 h-3" />
+          View Logs
+        </a>
+      </div>
+
+      {/* Run Info */}
+      <div className="text-xs text-gray-500">
+        Attempt {deployStep.metadata.run_attempt} of deployment #
+        {deployStep.metadata.run_number}
+      </div>
+
+      {stage === "STAGING" && deployStep.status === "success" && (
+        <div className="text-xs text-gray-500">
+          <span className="font-medium text-gray-900">Staging </span>
+          environment is ready to be promoted to{" "}
+          <span className="font-medium text-gray-900">Production</span>
+        </div>
+      )}
+      {stage === "STAGING" && (
+        <div className="flex gap-2 mt-4">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+          >
+            <Rocket className="w-4 h-4" />
+            Deploy to Production
+          </Button>
+          <Button
+            onClick={() => handleRightCollapse(!isRightCollapsed)}
+            variant="default"
+            className="group/button flex items-center gap-2"
+          >
+            Test Endpoints
+            <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
 

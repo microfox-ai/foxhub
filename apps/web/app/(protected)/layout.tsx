@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { BotTemplateProvider } from "@/components/screens/providers/BotTemplateProvider";
 import { FileUploadProvider } from "@/components/screens/providers/FileUploadProvider";
 import { ClientProjectProvider } from "@/components/screens/providers/ClientProjectProvider";
+import { LayoutProvider } from "@/components/screens/providers/LayoutProvider";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -15,12 +16,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <BotTemplateProvider>
       <FileUploadProvider>
         <ClientProjectProvider>
-          <main className="relative flex h-screen flex-col bg-background">
-            {!isPlayground && !isProject && <CustomBotsHeader />}
-            <Toaster position="top-right" richColors duration={3000} />
-            {!isProject && <div className="h-16" />}
-            <div className="flex-1">{children}</div>
-          </main>
+          <LayoutProvider>
+            <main className="relative flex h-screen flex-col bg-background">
+              {!isPlayground && !isProject && <CustomBotsHeader />}
+              <Toaster position="top-right" richColors duration={3000} />
+              {!isProject && <div className="h-16" />}
+              <div className="flex-1">{children}</div>
+            </main>
+          </LayoutProvider>
         </ClientProjectProvider>
       </FileUploadProvider>
     </BotTemplateProvider>

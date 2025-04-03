@@ -4,7 +4,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { Skeleton } from "@mui/material";
 import { REQUESTSTATUS } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import ChatWindow from "../Chat/ChatWindow";
@@ -18,30 +18,40 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import * as ResizablePrimitive from "react-resizable-panels";
 import { Button } from "@/components/ui/button";
 import {
+  Cross,
   PanelLeftIcon,
   PanelRightIcon,
   PlusCircle,
   Settings,
+  X,
+  Info,
+  Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
+import { useLayout } from "../providers/LayoutProvider";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
-  const [isRightCollapsed, setIsRightCollapsed] = useState(true);
-  const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
-  const [isRightTransitioning, setIsRightTransitioning] = useState(false);
-  const leftPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle>(null);
-  const rightPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle>(null);
+  const [tab, setTab] = useState("requests");
   const { user } = useUser();
   const router = useRouter();
+  const {
+    isLeftCollapsed,
+    isRightCollapsed,
+    isLeftTransitioning,
+    isRightTransitioning,
+    leftPanelRef,
+    rightPanelRef,
+    handleLeftCollapse,
+    handleRightCollapse,
+    handleLeftResizeHandleClick,
+    handleRightResizeHandleClick,
+  } = useLayout();
 
-  const [tab, setTab] = useState("requests");
   const params = useParams<{
     project_id?: string;
     request_id?: string;
@@ -95,42 +105,6 @@ export const RequestPage = () => {
     router.push(`/project/${selectedProject.id}/request/${newRequest.id}`);
   };
 
-  const handleLeftCollapse = (collapsed: boolean) => {
-    setIsLeftTransitioning(true);
-    if (leftPanelRef.current) {
-      if (collapsed) {
-        leftPanelRef.current.collapse();
-      } else {
-        leftPanelRef.current.expand();
-      }
-    }
-    setIsLeftCollapsed(collapsed);
-    // Remove transition after animation completes
-    setTimeout(() => setIsLeftTransitioning(false), 300);
-  };
-
-  const handleRightCollapse = (collapsed: boolean) => {
-    setIsRightTransitioning(true);
-    if (rightPanelRef.current) {
-      if (collapsed) {
-        rightPanelRef.current.collapse();
-      } else {
-        rightPanelRef.current.expand();
-      }
-    }
-    setIsRightCollapsed(collapsed);
-    // Remove transition after animation completes
-    setTimeout(() => setIsRightTransitioning(false), 300);
-  };
-
-  const handleLeftResizeHandleClick = () => {
-    handleLeftCollapse(!isLeftCollapsed);
-  };
-
-  const handleRightResizeHandleClick = () => {
-    handleRightCollapse(!isRightCollapsed);
-  };
-
   if (!user || !selectedProject || !selectedRequest || isLoading) {
     return (
       <div className="flex h-screen flex-col items-center justify-center p-8">
@@ -159,8 +133,8 @@ export const RequestPage = () => {
           maxSize={16}
           collapsible={true}
           collapsedSize={4}
-          onCollapse={() => setIsLeftCollapsed(true)}
-          onExpand={() => setIsLeftCollapsed(false)}
+          onCollapse={() => handleLeftCollapse(true)}
+          onExpand={() => handleLeftCollapse(false)}
           className={cn(
             isLeftTransitioning && "transition-all duration-300 ease-in-out"
           )}
@@ -222,14 +196,24 @@ export const RequestPage = () => {
             maxSize={30}
             collapsible={true}
             collapsedSize={0}
-            onCollapse={() => setIsRightCollapsed(true)}
-            onExpand={() => setIsRightCollapsed(false)}
+            onCollapse={() => handleRightCollapse(true)}
+            onExpand={() => handleRightCollapse(false)}
             className={cn(
               isRightTransitioning && "transition-all  duration-300 ease-in-out"
             )}
           >
             <div className="h-full py-4 px-2  ">
-              <div className="h-full bg-zinc-100 rounded-xl">
+              <div className="h-full bg-zinc-100 rounded-xl relative">
+                <div className="p-4 pb-2 flex gap-4 items-center">
+                  <X
+                    className="cursor-pointer h-4 w-4 text-gray-500 hover:text-gray-700"
+                    onClick={() => handleRightCollapse(!isRightCollapsed)}
+                  />
+                  <div className="flex gap-2 items-center">
+                    <p className="text-base font-medium">Preview</p>
+                    <Monitor className="h-4 w-4 " />
+                  </div>
+                </div>
                 <PreviewWindow />
               </div>
             </div>

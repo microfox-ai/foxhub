@@ -41,6 +41,7 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import dayjs from "dayjs";
 import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 
 interface ClientSecret {
   id: string;
@@ -148,9 +149,10 @@ const DeployStatus = ({
 
   const startTime = dayjs(deployStep.startTime);
   const endTime = deployStep.endTime ? dayjs(deployStep.endTime) : null;
-  const duration = endTime
-    ? Math.round(endTime.diff(startTime, "second"))
-    : null;
+  const duration = prettyPrintDuration(
+    deployStep.startTime,
+    deployStep.endTime
+  );
 
   const status = deployStep.status?.toLowerCase();
   const statusColors = getStatusColor(status || "");
@@ -179,9 +181,7 @@ const DeployStatus = ({
                 {status === "in_progress" && "Deployment Pending"}
               </h3>
               {status === "success" && duration && (
-                <p className="text-sm text-gray-500">
-                  Completed in {duration}s
-                </p>
+                <p className="text-sm text-gray-500">Completed in {duration}</p>
               )}
             </div>
           </div>
@@ -204,26 +204,26 @@ const DeployStatus = ({
 
         {/* Timeline Section */}
         <div className="space-y-4">
-          <div className="flex items-start space-x-4">
+          <div className="flex items-center space-x-4">
             <div className="min-w-[120px] text-sm font-medium text-gray-500">
               Start Time
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-900">
+              <pre className="text-gray-900 text-xs">
                 {startTime.format("MMMM D, YYYY, h:mm:ss A")}
-              </p>
+              </pre>
             </div>
           </div>
 
           {endTime && (
-            <div className="flex items-start space-x-4">
+            <div className="flex items-center space-x-4">
               <div className="min-w-[120px] text-sm font-medium text-gray-500">
                 End Time
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-900">
+                <pre className="text-gray-900 text-xs">
                   {endTime.format("MMMM D, YYYY, h:mm:ss A")}
-                </p>
+                </pre>
               </div>
             </div>
           )}

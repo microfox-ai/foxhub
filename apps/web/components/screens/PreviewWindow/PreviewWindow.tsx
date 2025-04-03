@@ -541,9 +541,9 @@ const PreviewWindow = () => {
       <div className="flex w-full items-center justify-between rounded-lg p-2">
         {/* Left Grouping */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled={isLoading}>
+          {/* <Button variant="ghost" size="icon" disabled={isLoading}>
             <X className="h-5 w-5" />
-          </Button>
+          </Button> */}
 
           <Select
             value={selectedEndpoint}

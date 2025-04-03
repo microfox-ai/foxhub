@@ -149,6 +149,10 @@
     @apply bg-background text-foreground;
   }
 
+  .loading-text {
+    @apply relative bg-repeat !text-transparent bg-clip-text first-letter:uppercase  overflow-hidden animate-shimmer bg-gradient-to-r from-gray-400 via-gray-800 to-gray-400 bg-[length:200%_100%];
+  }
+
   .thin-scrollbar {
     @apply [&::-webkit-scrollbar]:!w-2
     [&::-webkit-scrollbar-track]:!rounded-full

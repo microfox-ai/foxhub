@@ -15,8 +15,8 @@ import {
   deployStep,
   TaskInstanceMetaType,
 } from "../convertfox/types";
-import { fetchLogs } from "./fetchLogs";
-import { ClientDeployment } from "@prisma/client";
+import { fetchLogs, getLatestRunForClientRequest } from "./fetchLogs";
+import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
 import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
@@ -56,7 +56,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   });
 
   //clone template in dev mode
-  // await recloneTemplateStuffToClientRequest(props, clientRequest);
+  await recloneTemplateStuffToClientRequest(props, clientRequest);
 
   // Monitor workflow runs
   await deployViaGit(props, clientRequest, taskInstanceMeta);
@@ -66,79 +66,76 @@ export const deployFoxRouter: ServerStreamingFunction<
     value: "Triggered the deployment, waiting 20 seconds ",
   });
 
-  const MAX_ATTEMPTS = 30; // 5 minutes total (30 * 10 seconds)
-  let attempts = 0;
-
   // Wait for 20 seconds before starting to check logs
   await new Promise((resolve) => {
     setTimeout(() => {
       resolve(undefined);
-    }, 60000);
+    }, 35000);
   });
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    value: "Checking logs",
+  const runId = await getLatestRunForClientRequest(
+    clientRequest,
+    DEPLOY_STAGE.STAGING
+  );
+
+  await updateTaskInstanceMeta({
+    clientRequestId,
+    otherData: {
+      deployStep: {
+        runId,
+        stage: DEPLOY_STAGE.STAGING,
+        status: "pending",
+      },
+    },
   });
+  // dataStream.writeMessageAnnotation({
+  //   type: "thinking",
+  //   value: "Checking logs",
+  // });
 
-  while (true) {
-    const conditions = await fetchLogs(
-      props,
-      clientRequest,
-      taskInstanceMeta as TaskInstanceMetaType
-    );
-    taskInstanceMeta = conditions?.taskInstanceMeta as any;
+  // while (true) {
+  //   const conditions = await fetchLogs(
+  //     props,
+  //     clientRequest,
+  //     taskInstanceMeta as TaskInstanceMetaType
+  //   );
+  //   taskInstanceMeta = conditions?.taskInstanceMeta as any;
 
-    // Handle success case
-    if (taskInstanceMeta?.deployStep?.status === "success") {
-      break;
-    }
+  //   // Handle success case
+  //   if (taskInstanceMeta?.deployStep?.status === "success") {
+  //     break;
+  //   }
 
-    // Handle failure cases
-    if (taskInstanceMeta?.deployStep?.status === "failed") {
-      throw new Error("Deployment failed");
-    }
+  //   // Handle failure cases
+  //   if (taskInstanceMeta?.deployStep?.status === "failed") {
+  //     break;
+  //   }
 
-    // Handle timeout
-    if (attempts >= MAX_ATTEMPTS) {
-      throw new Error("Deployment timed out after 5 minutes");
-    }
+  //   // Handle timeout
+  //   if (attempts >= MAX_ATTEMPTS) {
+  //     throw new Error("Deployment timed out after 5 minutes");
+  //   }
 
-    if (conditions?.taskInstanceMeta) {
-      taskInstanceMeta = conditions?.taskInstanceMeta as any;
-    }
-    if (conditions?.shouldBreak) {
-      break;
-    }
+  //   if (conditions?.taskInstanceMeta) {
+  //     taskInstanceMeta = conditions?.taskInstanceMeta as any;
+  //   }
+  //   if (conditions?.shouldBreak) {
+  //     break;
+  //   }
 
-    attempts++;
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-  }
+  //   attempts++;
+  //   await new Promise((resolve) => setTimeout(resolve, 3000));
+  // }
 
-  const clientDeployment = await getClientDeployment(clientRequestId);
+  // const clientDeployment = await getClientDeployment(clientRequestId);
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "deploymentsInfo",
     persona: "deployfox",
     text: `Deployments Completed !`,
-    deployStep: taskInstanceMeta?.deployStep as DeployStep,
-    clientDeployment: clientDeployment as any,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Make changes",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
-      },
-      {
-        action: "shiftMinion",
-        actionText: "Deploy to Production !",
-        type: "confirm",
-        text: "Deploy to Production !",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "publishfox",
-      },
-    ],
+    pingerInterval: 5000,
+    stage: DEPLOY_STAGE.STAGING,
+    ...(runId && { runId }),
   });
   return {
     responseBody: { ...responseBody },

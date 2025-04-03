@@ -5,7 +5,7 @@
 //     branchName: clientRequest.prBranch,
 //     repoName: clientRequest.repoName,
 //   });
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { uploadToRepo } from "../buildfox/helper/uploadToGit";
 import {
@@ -35,9 +35,53 @@ export const deployViaGit = async (
     value: "Deploying a test version of automation",
   });
 
+  await triggerDeployment(
+    clientRequest,
+    taskInstanceMeta,
+    DEPLOY_STAGE.STAGING
+  );
+
+  // TODO: push to git file by file (if above doesn't work)
+};
+
+export const triggerDeployment = async (
+  clientRequest: ClientRequest,
+  taskInstanceMeta: TaskInstanceMetaType,
+  stage: DEPLOY_STAGE
+) => {
+  if (
+    !clientRequest.repoName ||
+    !clientRequest.requestDir ||
+    !clientRequest.prBranch
+  ) {
+    throw new Error("Repo name or request dir or pr branch is required");
+  }
+
   const octo = new Octokit({
     auth: GITHUB_TOKEN,
   });
+
+  if (stage === DEPLOY_STAGE.PROD) {
+    try {
+      if (!clientRequest.prNumber) {
+        throw new Error("Pull request number is required");
+      }
+      // Merge the pull request
+      await octo.rest.pulls.merge({
+        owner: TEMPLATE_REPO_OWNER,
+        repo: clientRequest.repoName,
+        pull_number: clientRequest.prNumber,
+        merge_method: "merge",
+      });
+
+      console.log(
+        `Successfully merged pull request #${clientRequest.prNumber}`
+      );
+    } catch (error) {
+      console.error("Error merging pull request:", error);
+      throw error;
+    }
+  }
 
   try {
     console.log(
@@ -85,7 +129,6 @@ export const deployViaGit = async (
         `# Deployment Log\n\n` +
           `## Latest Deployment\n` +
           `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
-          `- Status: ${taskInstanceMeta.deployStep?.status || "unknown"}\n` +
           `- Details:\n` +
           `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
       ).toString("base64"),
@@ -97,6 +140,4 @@ export const deployViaGit = async (
   } catch (error) {
     console.log("error", error);
   }
-
-  // TODO: push to git file by file (if above doesn't work)
 };

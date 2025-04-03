@@ -17,6 +17,7 @@ import {
 } from "@/utils/services/db_functions/getClientRequest";
 import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { createPullRequest } from "../buildfox/createPullRequest";
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
 // 3. BUILD ->
@@ -100,6 +101,21 @@ export const convertfoxRouter: ServerStreamingFunction<
     model: models.googleGeminiFlash.modelId,
     usage: usage,
   });
+
+  if (taskInstanceMeta.taskInfo) {
+    const clientRequest = await getClientRequest(requestBody.clientRequestId);
+    if (clientRequest && !clientRequest.prUrl) {
+      dataStream.writeMessageAnnotation({
+        type: "thinking",
+        content: "Creating the pull request if not yet created",
+      });
+      await createPullRequest({
+        clientRequestId: requestBody.clientRequestId,
+        description: taskInstanceMeta.taskInfo?.summary,
+        title: taskInstanceMeta.taskInfo?.name,
+      });
+    }
+  }
 
   dataStream.writeMessageAnnotation({
     type: "loading",

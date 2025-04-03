@@ -5,7 +5,7 @@ import {
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import { MySlackChannels } from "@/utils/services/slackBotSdk";
 import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
@@ -19,33 +19,73 @@ export const fetchLogs = async (
 ) => {
   const { dataStream } = props;
 
-  const octokitSdk = new Octokit({
-    auth: GITHUB_TOKEN,
-  });
-
   dataStream.writeMessageAnnotation({
     type: "thinking",
     value: "Re-Fetching logs",
   });
+
+  const runId = await getLatestRunForClientRequest(
+    clientRequest,
+    DEPLOY_STAGE.STAGING
+  );
+
+  return {
+    run_id: runId,
+  };
+};
+
+export const getLatestRunForClientRequest = async (
+  clientRequest: ClientRequest,
+  stage: DEPLOY_STAGE
+) => {
+  const octokitSdk = new Octokit({
+    auth: GITHUB_TOKEN,
+  });
+
+  const workflowRuns = await octokitSdk.rest.actions.listWorkflowRunsForRepo({
+    owner: TEMPLATE_REPO_OWNER,
+    repo: clientRequest.repoName ?? "",
+    branch:
+      stage === DEPLOY_STAGE.STAGING
+        ? (clientRequest.prBranch ?? "")
+        : "project/master",
+    per_page: 5,
+  });
+
+  return workflowRuns.data.workflow_runs[0]?.id;
+};
+
+export const fetchWorkflowActionRun = async (
+  clientRequest: ClientRequest,
+  taskInstanceMeta: TaskInstanceMetaType,
+  stage: DEPLOY_STAGE,
+  runId: number,
+  props?: StreamingFucntionProps<any, any>
+) => {
+  const octokitSdk = new Octokit({
+    auth: GITHUB_TOKEN,
+  });
+
   try {
-    const workflowRuns = await octokitSdk.rest.actions.listWorkflowRunsForRepo({
+    const { data: latestRun } = await octokitSdk.rest.actions.getWorkflowRun({
       owner: TEMPLATE_REPO_OWNER,
       repo: clientRequest.repoName ?? "",
-      branch: clientRequest.prBranch ?? "",
-      per_page: 5,
+      run_id: runId,
     });
 
-    const latestRun = workflowRuns.data.workflow_runs[0];
-    const cleanedMetadata = { ...latestRun };
-    delete cleanedMetadata.head_repository;
-    delete cleanedMetadata.repository;
-    delete cleanedMetadata.triggering_actor;
-    delete cleanedMetadata.actor;
+    const cleanedMetadata = {
+      ...latestRun,
+      head_repository: undefined,
+      repository: undefined,
+      triggering_actor: undefined,
+      actor: undefined,
+    };
 
     console.log(
       "latestRun",
-      latestRun?.workflow_id,
-      latestRun?.conclusion
+      cleanedMetadata?.workflow_id,
+      cleanedMetadata?.conclusion,
+      cleanedMetadata?.head_sha
       //latestRun
     );
 
@@ -53,7 +93,7 @@ export const fetchLogs = async (
       latestRun?.status === "completed" &&
       latestRun?.conclusion === "failure"
     ) {
-      dataStream.writeMessageAnnotation({
+      props?.dataStream?.writeMessageAnnotation({
         type: "thinking",
         value: "Workflow run failed. Analyzing logs and attempting fixes...",
       });
@@ -65,6 +105,7 @@ export const fetchLogs = async (
             startTime: latestRun?.run_started_at,
             metadata: cleanedMetadata,
             status: "failed",
+            shouldBreak: true,
           } as DeployStep,
         },
       });
@@ -100,7 +141,7 @@ export const fetchLogs = async (
       latestRun?.status === "completed" &&
       latestRun?.conclusion === "success"
     ) {
-      dataStream.writeMessageAnnotation({
+      props?.dataStream?.writeMessageAnnotation({
         type: "thinking",
         value: "Workflow run succeeded. Fetching logs...",
       });
@@ -113,6 +154,7 @@ export const fetchLogs = async (
             endTime: latestRun?.updated_at,
             metadata: cleanedMetadata,
             status: "success",
+            shouldBreak: true,
           } as DeployStep,
         },
       });
@@ -121,7 +163,7 @@ export const fetchLogs = async (
         taskInstanceMeta: taskInstanceMetaUpdated,
       };
     } else if (latestRun?.status === "queued") {
-      dataStream.writeMessageAnnotation({
+      props?.dataStream?.writeMessageAnnotation({
         type: "thinking",
         value: "Workflow run is currently in queue",
       });
@@ -133,6 +175,7 @@ export const fetchLogs = async (
             startTime: latestRun?.run_started_at,
             metadata: cleanedMetadata,
             status: "pending",
+            shouldBreak: false,
           } as DeployStep,
         },
       });
@@ -141,7 +184,7 @@ export const fetchLogs = async (
         taskInstanceMeta: taskInstanceMetaUpdated,
       };
     } else {
-      dataStream.writeMessageAnnotation({
+      props?.dataStream?.writeMessageAnnotation({
         type: "thinking",
         value: "Workflow run is pending. Fetching logs...",
       });
@@ -153,7 +196,8 @@ export const fetchLogs = async (
             startTime: latestRun?.run_started_at,
             endTime: latestRun?.updated_at,
             metadata: cleanedMetadata,
-            status: "success",
+            status: "pending",
+            shouldBreak: false,
           } as DeployStep,
         },
       });

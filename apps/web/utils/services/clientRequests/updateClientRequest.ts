@@ -137,25 +137,25 @@ export const updateClientRequest = async (
       );
     });
     if (newEvents.length > 0) {
-      await prisma.chatUIMessage.createMany({
-        data: newEvents.map((event: any) => ({
-          originClientRequestId: clientRequest.id,
-          userId: clientRequest.userId,
-          content: eventMessage(event),
-          context: "server",
-          role: "git",
-          minion: "gitsync",
-          metadata: {
-            isGitComment: event.event === "commented",
-            isGitStatus: event.event === "status",
-            gitHubUrl: event.html_url,
-            gitMeta: event,
-          },
-          createdAt: new Date(
-            event?.author?.date || event?.updated_at || event?.created_at
-          ),
-        })),
-      });
+      // await prisma.chatUIMessage.createMany({
+      //   data: newEvents.map((event: any) => ({
+      //     originClientRequestId: clientRequest.id,
+      //     userId: clientRequest.userId,
+      //     content: eventMessage(event),
+      //     context: "server",
+      //     role: "git",
+      //     minion: "gitsync",
+      //     metadata: {
+      //       isGitComment: event.event === "commented",
+      //       isGitStatus: event.event === "status",
+      //       gitHubUrl: event.html_url,
+      //       gitMeta: event,
+      //     },
+      //     createdAt: new Date(
+      //       event?.author?.date || event?.updated_at || event?.created_at
+      //     ),
+      //   })),
+      // });
 
       // if any event is merged then remove every event after that
       const mergedIndex = events.findIndex(

@@ -119,16 +119,16 @@ ${modeMapString}`;
         .map((variable: any) => variable.key)
         .join(", ");
 
-      await prisma.chatUIMessage.create({
-        data: {
-          originClientRequestId: clientRequest.id,
-          userId,
-          content: `${name} bot has been added to your request with the following variables: ${variablesKeyString}.`,
-          context: "chat",
-          role: "sysUpdate",
-          minionType: "other",
-        },
-      });
+      // await prisma.chatUIMessage.create({
+      //   data: {
+      //     originClientRequestId: clientRequest.id,
+      //     userId,
+      //     content: `${name} bot has been added to your request with the following variables: ${variablesKeyString}.`,
+      //     context: "chat",
+      //     role: "sysUpdate",
+      //     minionType: "other",
+      //   },
+      // });
     }
     return NextResponse.json(clientSecret, { status: 201 });
   } catch (error) {
@@ -349,16 +349,16 @@ ${modeMapString}`;
           .map((variable: any) => variable.key)
           .join(", ");
 
-        await prisma.chatUIMessage.create({
-          data: {
-            originClientRequestId: clientRequest.id,
-            userId: clientSecret.userId,
-            content: `${clientSecret.name} bot has been added to this request with the following variables: ${variablesKeyString}.`,
-            context: "chat",
-            role: "sysUpdate",
-            minionType: "other",
-          },
-        });
+        // await prisma.chatUIMessage.create({
+        //   data: {
+        //     originClientRequestId: clientRequest.id,
+        //     userId: clientSecret.userId,
+        //     content: `${clientSecret.name} bot has been added to this request with the following variables: ${variablesKeyString}.`,
+        //     context: "chat",
+        //     role: "sysUpdate",
+        //     minionType: "other",
+        //   },
+        // });
       }
     } else {
       // Just update variables if clientRequestId not provided or already exists
@@ -432,16 +432,16 @@ export async function DELETE(req: NextRequest) {
         });
 
         // Add a message to notify that the key was removed
-        await prisma.chatUIMessage.create({
-          data: {
-            originClientRequestId: clientRequestId,
-            userId: clientSecret.userId,
-            content: `${clientSecret.name} with keys ${clientSecret.variables.map((variable: any) => variable.key).join(", ")} has been removed from this request.`,
-            context: "chat",
-            role: "sysUpdate",
-            minionType: "other",
-          },
-        });
+        // await prisma.chatUIMessage.create({
+        //   data: {
+        //     originClientRequestId: clientRequestId,
+        //     userId: clientSecret.userId,
+        //     content: `${clientSecret.name} with keys ${clientSecret.variables.map((variable: any) => variable.key).join(", ")} has been removed from this request.`,
+        //     context: "chat",
+        //     role: "sysUpdate",
+        //     minionType: "other",
+        //   },
+        // });
 
         // Add a comment to GitHub PR if available
         const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;

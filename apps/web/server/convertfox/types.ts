@@ -171,12 +171,13 @@ export const buildingStep = z.object({
 export type BuildingStep = z.infer<typeof buildingStep>;
 
 export const deployStep = z.object({
-  startTime: z.string(),
-  endTime: z.string(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
   status: z.enum(["pending", "success", "failed"]).optional(),
   message: z.string().optional(),
   logs: z.any().optional(),
   metadata: z.any().optional(),
+  shouldBreak: z.boolean().optional(),
   deployment: z
     .object({
       stage: z.string(),
@@ -184,6 +185,7 @@ export const deployStep = z.object({
       id: z.string(),
     })
     .optional(),
+  runId: z.number().optional(),
 });
 export type DeployStep = z.infer<typeof deployStep>;
 

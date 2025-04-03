@@ -50,6 +50,12 @@ import { useUser } from "@/utils/hooks/useUser";
 import { Input } from "@/components/ui/input";
 import { EnvVariablesDialog } from "./EnvVariablesDialog";
 import { toast } from "sonner";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
+import Cube from "@/components/ui/spinners/cube";
+
+dayjs.extend(duration);
 
 interface UIAnnotation {
   objectType: string;
@@ -132,7 +138,7 @@ const ActionButtons = (props: any) => {
               disabled:opacity-50 disabled:cursor-not-allowed
             `,
               button.type === "confirm" &&
-              "bg-black text-white hover:bg-black/80 hover:text-white"
+                "bg-black text-white hover:bg-black/80 hover:text-white"
             )}
             disabled={
               !IN_DEV &&
@@ -409,8 +415,8 @@ const TaskIntegrations = ({
           );
           authStatus[platform.name] = oauthSecret
             ? oauthSecret.variables.every(
-              (variable) => variable.value?.trim() !== ""
-            )
+                (variable) => variable.value?.trim() !== ""
+              )
             : false;
         }
       }
@@ -550,8 +556,8 @@ const TaskIntegrations = ({
 
           const hasAllAuthRelatedKeys = getMatchingOAuthSecret
             ? getMatchingOAuthSecret?.variables.every((variable: any) => {
-              return variable.value?.trim() !== "";
-            })
+                return variable.value?.trim() !== "";
+              })
             : false;
 
           return (
@@ -571,11 +577,11 @@ const TaskIntegrations = ({
                         <Tooltip delayDuration={500}>
                           <TooltipTrigger asChild>
                             <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                              {pkg.name}
+                              {pkg?.name}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{pkg.name}</p>
+                            <p>{pkg?.name}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -903,7 +909,7 @@ const EnvCollector = ({
   }, [secretsData]);
 
   const clientSecretKeys = secretsData?.clientSecrets[0]?.variables;
-  const envVariables = annotation.envVariablesCollect
+  const envVariables = annotation.envVariablesCollect;
   // .filter((env: any) =>
   //   clientSecretKeys?.some((key) => key.key !== env.env && !env.isSameAs)
   // );
@@ -916,34 +922,34 @@ const EnvCollector = ({
 
       const body = existingSecret
         ? {
-          id: existingSecret.id,
-          variables: Object.entries(values)
-            .filter(([_, value]) => value.trim())
-            .map(([key, value]) => ({
-              key,
-              value: value.trim(),
-              isOptional: false,
-            })),
-          clientRequestId: requestParamId,
-          botProjectId: projectParamId,
-          userId: user?.id,
-          name: "custom_keys",
-          type: "custom",
-        }
+            id: existingSecret.id,
+            variables: Object.entries(values)
+              .filter(([_, value]) => value.trim())
+              .map(([key, value]) => ({
+                key,
+                value: value.trim(),
+                isOptional: false,
+              })),
+            clientRequestId: requestParamId,
+            botProjectId: projectParamId,
+            userId: user?.id,
+            name: "custom_keys",
+            type: "custom",
+          }
         : {
-          clientRequestId: requestParamId,
-          botProjectId: projectParamId,
-          name: "custom_keys",
-          userId: user?.id,
-          type: "custom",
-          variables: Object.entries(values)
-            .filter(([_, value]) => value.trim())
-            .map(([key, value]) => ({
-              key,
-              value: value.trim(),
-              isOptional: false,
-            })),
-        };
+            clientRequestId: requestParamId,
+            botProjectId: projectParamId,
+            name: "custom_keys",
+            userId: user?.id,
+            type: "custom",
+            variables: Object.entries(values)
+              .filter(([_, value]) => value.trim())
+              .map(([key, value]) => ({
+                key,
+                value: value.trim(),
+                isOptional: false,
+              })),
+          };
 
       const response = await fetch(endpoint, {
         method,
@@ -1023,7 +1029,10 @@ const EnvCollector = ({
 
         <div className="grid gap-4">
           {envVariables?.map((env: any) => (
-            <div key={env.env + env.name} className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div
+              key={env.env + env.name}
+              className="bg-gray-50 rounded-lg p-4 space-y-3"
+            >
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1058,12 +1067,12 @@ const EnvCollector = ({
                     </TooltipProvider>
                   </div>
                 </div>
-                <div className="space-y-2 mt-2">
+                {/* <div className="space-y-2 mt-2">
                   <div className="flex gap-2 items-start">
                     <FileText className="w-4 h-4 mt-1 text-gray-400" />
                     <span className="text-sm text-gray-600">{env.what}</span>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           ))}
@@ -1127,7 +1136,10 @@ const EnvCollector = ({
                 <h4 className="font-medium text-gray-900">Examples</h4>
                 <div className="space-y-2">
                   {selectedEnv.examples.map((example: string, i: number) => (
-                    <div key={example + i} className="bg-gray-50 p-3 rounded-md">
+                    <div
+                      key={example + i}
+                      className="bg-gray-50 p-3 rounded-md"
+                    >
                       <Markdown>{example}</Markdown>
                     </div>
                   ))}
@@ -1160,41 +1172,102 @@ const DeploymentsInfo = ({
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
 
-  const { data: DeploymentData, isLoading, isValidating } = useSWR(finalData?.shouldBreak
-    ? null
-    : `/api/client-functions/deployer?stage=${stage}&runId=${runId}&clientRequestId=${requestParamId}`,
-    (url: string) => fetch(url).then(res => res.json()),
+  const {
+    data: DeploymentData,
+    isLoading,
+    isValidating,
+  } = useSWR(
+    finalData?.shouldBreak
+      ? null
+      : `/api/client-functions/deployer?stage=${stage}&runId=${runId}&clientRequestId=${requestParamId}`,
+    (url: string) => fetch(url).then((res) => res.json()),
     {
       refreshInterval: pingerInterval,
     }
   );
 
   const deployStep = finalData?.deployStep;
-  const clientDeployment = finalData?.clientDeployment;
   useEffect(() => {
     if (DeploymentData) {
       setFinalData(DeploymentData);
     }
   }, [DeploymentData]);
 
+  if (!finalData) {
+    return null;
+  }
+
+  if (!finalData?.shouldBreak) {
+    return (
+      <motion.div
+        className="flex items-center  gap-3  p-4 bg-white rounded-xl border border-gray-100 shadow-sm"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Cube size={14} color="#2b7fff" />
+        <p className="text-sm text-gray-600">
+          Deploying to{" "}
+          <span className="font-medium text-gray-900">{stage}</span>{" "}
+          environment...
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
-      key={uiAnnotation.objectType + idx}
-      className="flex flex-col gap-6 p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg"
+      className="flex flex-col gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
     >
-      <h3 className="text-lg font-semibold text-gray-900">
-        {uiAnnotation.text}
-      </h3>
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-gray-500">
-          Pinging every {pingerInterval}ms
-          for stage {stage}
-          and runId {runId}
-        </p>
-        <p className="text-sm text-gray-500">
-          {isLoading ? "Loading..." : isValidating ? "Validating..." : JSON.stringify(finalData ?? "{}")}
-        </p>
+      {/* Header with Status */}
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center space-x-3">
+          <div
+            className={cn(
+              "w-2 h-2 rounded-full",
+              deployStep.status === "failed"
+                ? "bg-red-500 animate-pulse"
+                : deployStep.status === "success"
+                  ? "bg-green-500"
+                  : "bg-yellow-500 animate-pulse"
+            )}
+          />
+          <h2 className="text-xl font-medium text-gray-900">
+            Deployment Status
+          </h2>
+        </div>
+        <span
+          className={cn(
+            "text-xs font-medium px-2.5 py-1 rounded-full",
+            deployStep.status === "failed"
+              ? "bg-red-50 text-red-700"
+              : deployStep.status === "success"
+                ? "bg-green-50 text-green-700"
+                : "bg-yellow-50 text-yellow-700"
+          )}
+        >
+          {deployStep.status.toUpperCase()}
+        </span>
+      </div>
+
+      {/* Simplified Info Grid */}
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <div className="text-gray-500 mb-1">Environment</div>
+          <div className="font-medium text-gray-900">{deployStep.stage}</div>
+        </div>
+
+        <div>
+          <div className="text-gray-500 mb-1">Duration</div>
+          <div className="font-medium text-gray-900">
+            {prettyPrintDuration(deployStep.startTime, deployStep.endTime)}
+          </div>
+        </div>
       </div>
     </motion.div>
   );

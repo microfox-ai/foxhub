@@ -27,6 +27,7 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 
 export const RequestPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
@@ -197,41 +198,43 @@ export const RequestPage = () => {
           className="cursor-pointer"
           onClick={handleLeftResizeHandleClick}
         />
-        <ResizablePanel>
-          <div className="h-full">
-            <ChatWindow
-              onCollapse={handleLeftCollapse}
-              isCollapsed={isLeftCollapsed}
-              userId={user.id}
-              clientRequest={selectedRequest}
-              projectTitle={selectedProject?.name}
-            />
-          </div>
-        </ResizablePanel>
-        <ResizableHandle
-          withHandle
-          className="cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-300"
-          onClick={handleRightResizeHandleClick}
-        />
-        <ResizablePanel
-          ref={rightPanelRef}
-          defaultSize={30}
-          minSize={0}
-          maxSize={30}
-          collapsible={true}
-          collapsedSize={0}
-          onCollapse={() => setIsRightCollapsed(true)}
-          onExpand={() => setIsRightCollapsed(false)}
-          className={cn(
-            isRightTransitioning && "transition-all  duration-300 ease-in-out"
-          )}
-        >
-          <div className="h-full py-4 px-2  ">
-            <div className="h-full bg-zinc-100 rounded-xl">
-              <PreviewWindow />
+        <TaskInstanceMetaProvider clientRequestId={requestParamId!}>
+          <ResizablePanel>
+            <div className="h-full">
+              <ChatWindow
+                onCollapse={handleLeftCollapse}
+                isCollapsed={isLeftCollapsed}
+                userId={user.id}
+                clientRequest={selectedRequest}
+                projectTitle={selectedProject?.name}
+              />
             </div>
-          </div>
-        </ResizablePanel>
+          </ResizablePanel>
+          <ResizableHandle
+            withHandle
+            className="cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-300"
+            onClick={handleRightResizeHandleClick}
+          />
+          <ResizablePanel
+            ref={rightPanelRef}
+            defaultSize={30}
+            minSize={0}
+            maxSize={30}
+            collapsible={true}
+            collapsedSize={0}
+            onCollapse={() => setIsRightCollapsed(true)}
+            onExpand={() => setIsRightCollapsed(false)}
+            className={cn(
+              isRightTransitioning && "transition-all  duration-300 ease-in-out"
+            )}
+          >
+            <div className="h-full py-4 px-2  ">
+              <div className="h-full bg-zinc-100 rounded-xl">
+                <PreviewWindow />
+              </div>
+            </div>
+          </ResizablePanel>
+        </TaskInstanceMetaProvider>
       </ResizablePanelGroup>
     </ClientSecretProvider>
   );

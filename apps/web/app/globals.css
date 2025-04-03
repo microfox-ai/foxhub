@@ -8,6 +8,19 @@
 
 @theme {
   --animate-shimmer: shimmer 2s infinite linear;
+  --animate-cube: cube 1.3s infinite ease;
+
+  @keyframes cube {
+    0% {
+      transform: rotate(45deg) rotateX(-25deg) rotateY(25deg);
+    }
+    50% {
+      transform: rotate(45deg) rotateX(-385deg) rotateY(25deg);
+    }
+    100% {
+      transform: rotate(45deg) rotateX(-385deg) rotateY(385deg);
+    }
+  }
 
   @keyframes shimmer {
     0% {

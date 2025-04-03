@@ -1,4 +1,3 @@
-
 import ProtectedPage from "@/components/auth/ProtectedPage";
 import { ProjectPage } from "@/components/screens/ProjectPage/ProjectPage";
 

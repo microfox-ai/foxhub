@@ -140,3 +140,17 @@ export const getTimeInFormat = () => {
   const minutes = date.getMinutes();
   return `${hours}:${minutes} ${date.getHours() >= 12 ? "PM" : "AM"}`;
 };
+
+export const prettyPrintDuration = (startTime: string, endTime: string) => {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const diff = end.getTime() - start.getTime();
+
+  const hours = Math.floor(diff / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${seconds}s`;
+};

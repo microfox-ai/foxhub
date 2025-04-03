@@ -1,6 +1,6 @@
 import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import useSWR from "swr";
 
 interface UseTaskInstanceMetaProps {
@@ -10,6 +10,7 @@ interface UseTaskInstanceMetaProps {
 export const useTaskInstanceMeta = ({
   clientRequestId,
 }: UseTaskInstanceMetaProps) => {
+  const [deploymentInfo, setDeploymentInfo] = useState<any | null>(null);
   const { data, error, mutate, isLoading, isValidating } =
     useSWR<TaskInstanceMetaType>(
       clientRequestId
@@ -30,18 +31,13 @@ export const useTaskInstanceMeta = ({
     isLoading: isLoading || isValidating,
     isError: error,
     mutate,
+    deploymentInfo,
+    setDeploymentInfo,
   };
 };
 
-interface TaskInstanceMetaContextValue {
-  taskInstanceMeta: TaskInstanceMetaType | undefined;
-  isLoading: boolean;
-  isError: Error | null;
-  mutate: () => Promise<any>;
-}
-
 const TaskInstanceMetaContext = createContext<
-  TaskInstanceMetaContextValue | undefined
+  ReturnType<typeof useTaskInstanceMeta> | undefined
 >(undefined);
 
 interface TaskInstanceMetaProviderProps {

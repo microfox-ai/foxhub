@@ -7,10 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Play, X, Monitor } from "lucide-react";
-import API_DOC from "./data.json";
+import { Copy, Play, X, Monitor, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -26,9 +24,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { useLayout } from "../providers/LayoutProvider";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
-const BASE_URL =
-  "https://a1n6ih708c.execute-api.ap-southeast-2.amazonaws.com/latest";
+// Available HTTP methods
+const HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"] as const;
+type HttpMethod = (typeof HTTP_METHODS)[number];
+
+// Type for form values
+type FormValues = Record<string, string>;
 
 // Type definitions for API documentation
 interface ApiEndpoint {
@@ -62,6 +66,8 @@ interface ApiEndpoint {
     };
   };
   setupInstructions?: string;
+  schedule?: string;
+  setup?: string;
 }
 
 interface ApiSection {
@@ -81,30 +87,9 @@ interface ApiDoc {
   };
 }
 
-// Get all endpoints from sections
-const endpoints = Object.entries((API_DOC as ApiDoc).sections).flatMap(
-  ([sectionKey, section]) =>
-    Object.entries(section.endpoints).map(([endpointKey, endpoint]) => ({
-      path: endpoint.path,
-      method: endpoint.method,
-      title: endpoint.title,
-      sectionKey: sectionKey as keyof typeof API_DOC.sections,
-      endpointKey:
-        endpointKey as keyof (typeof API_DOC.sections)[keyof typeof API_DOC.sections]["endpoints"],
-    }))
-);
-
-// Type for form values
-type FormValues = Record<string, string>;
-
-// Available HTTP methods
-const HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"] as const;
-type HttpMethod = (typeof HTTP_METHODS)[number];
-
 const PreviewWindow = () => {
-  const [selectedEndpoint, setSelectedEndpoint] = useState<string>(
-    endpoints?.[0]?.path ?? ""
-  );
+  const { deploymentInfo } = useTaskInstanceMetaContext();
+  const [apiDoc, setApiDoc] = useState<ApiDoc | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<HttpMethod>("POST");
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -114,16 +99,50 @@ const PreviewWindow = () => {
     useState<AbortController | null>(null);
   const { copied, copyToClipboard: copyText } = useCopyToClipboard();
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
-
   const { isRightCollapsed, handleRightCollapse } = useLayout();
+
+  const BASE_URL = deploymentInfo?.baseUrl;
+
+  const endpoints = apiDoc
+    ? Object.entries(apiDoc.sections).flatMap(
+        ([sectionKey, section]: [string, ApiSection]) =>
+          Object.entries(section.endpoints || {}).map(
+            ([endpointKey, endpoint]: [string, ApiEndpoint]) => ({
+              path: endpoint.path,
+              method: endpoint.method,
+              title: endpoint.title,
+              sectionKey: sectionKey,
+              endpointKey: endpointKey,
+            })
+          )
+      )
+    : [];
+
+  const [selectedEndpoint, setSelectedEndpoint] = useState<string>("");
+
+  useEffect(() => {
+    if (apiDoc && endpoints.length > 0) {
+      setSelectedEndpoint(endpoints[0]?.path ?? "");
+    }
+  }, [apiDoc, endpoints]);
+
+  useEffect(() => {
+    (async () => {
+      if (!deploymentInfo?.baseUrl) return;
+      const response = await PortalSdk.getData(
+        `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
+        {}
+      );
+      setApiDoc(response);
+    })();
+  }, [deploymentInfo]);
 
   // Get the current endpoint data
   const currentEndpoint = endpoints.find((e) => e.path === selectedEndpoint);
   const currentEndpointData = currentEndpoint
-    ? ((API_DOC as ApiDoc).sections[currentEndpoint.sectionKey as string]
-        ?.endpoints?.[currentEndpoint.endpointKey as string] as
-        | ApiEndpoint
-        | undefined)
+    ? (apiDoc?.sections[currentEndpoint.sectionKey]?.endpoints?.[
+        currentEndpoint.endpointKey
+      ] as ApiEndpoint | undefined)
     : null;
 
   // Update method when endpoint changes
@@ -179,11 +198,8 @@ const PreviewWindow = () => {
 
     try {
       // Construct URL
-      const baseUrlWithoutPath = BASE_URL.split("/latest")[0];
-      const url = new URL(
-        `/latest${currentEndpointData.path}`,
-        baseUrlWithoutPath
-      );
+      const url = `${BASE_URL}${currentEndpointData.path}`;
+      console.log(url, "url");
 
       // Prepare request body for POST/PUT/PATCH requests
       const requestBody = ["POST", "PUT", "PATCH"].includes(
@@ -277,47 +293,6 @@ const PreviewWindow = () => {
     );
   };
 
-  const renderResponse = () => {
-    if (!response) return null;
-
-    const { data, contentType, status } = response;
-
-    return (
-      <div className="space-y-2 p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Response</h3>
-          <span
-            className={cn(
-              "rounded-full px-2 py-1 text-sm",
-              status >= 200 && status < 300
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            )}
-          >
-            Status: {status}
-          </span>
-        </div>
-        <div className="rounded-lg border p-4">
-          {contentType.includes("application/json") ? (
-            <pre className="whitespace-pre-wrap break-words text-sm">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          ) : contentType.includes("image/") ? (
-            <img
-              src={URL.createObjectURL(data)}
-              alt="Response"
-              className="max-w-full rounded-lg"
-            />
-          ) : (
-            <pre className="whitespace-pre-wrap break-words text-sm">
-              {String(data)}
-            </pre>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   const getMethodColor = (method: string) => {
     switch (method.toUpperCase()) {
       case "GET":
@@ -349,129 +324,6 @@ const PreviewWindow = () => {
     return "bg-gray-100 text-gray-700"; // Default
   };
 
-  const renderDocs = () => {
-    if (!currentEndpointData) return null;
-
-    // Create example request body
-    const exampleBody = currentEndpointData.requestBody?.content?.[
-      "application/json"
-    ]?.schema?.properties
-      ? Object.fromEntries(
-          Object.entries(
-            currentEndpointData.requestBody.content["application/json"].schema
-              .properties
-          ).map(([key, value]) => [
-            key,
-            (value as any).example || "example_value",
-          ])
-        )
-      : null;
-
-    // Construct example URL
-    const baseUrlWithoutPath = BASE_URL.split("/latest")[0];
-    const exampleUrl = new URL(
-      `/latest${currentEndpointData.path}`,
-      baseUrlWithoutPath
-    );
-
-    return (
-      <div className="space-y-4 p-4">
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">Endpoint Documentation</h3>
-          <div className="space-y-4 rounded-lg border p-4">
-            {/* Description */}
-            <div className="rounded-lg bg-muted p-4">
-              <p className="text-sm text-muted-foreground">
-                {currentEndpointData.description}
-              </p>
-            </div>
-
-            {/* Example Request */}
-            <div>
-              <h4 className="text-sm font-medium">Example Request</h4>
-              <div className="mt-2 space-y-2">
-                {exampleBody && (
-                  <div className="relative overflow-hidden rounded-lg bg-muted p-4 text-sm">
-                    <div className="absolute right-2 top-2 bg-muted">
-                      {renderCopyToClipboard(
-                        JSON.stringify(exampleBody, null, 2),
-                        "request-body"
-                      )}
-                    </div>
-                    <pre className="mt-2 whitespace-pre-wrap break-words leading-loose tracking-wider !text-blue-900">
-                      {JSON.stringify(exampleBody, null, 2)}
-                    </pre>
-                  </div>
-                )}
-                <div>
-                  <div className="relative overflow-hidden rounded-lg bg-muted p-4 text-sm">
-                    <div className="absolute right-2 top-2 bg-muted">
-                      {renderCopyToClipboard(
-                        exampleUrl.toString(),
-                        "request-url"
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <span
-                        className={cn(
-                          "h-fit rounded px-2 py-0.5 text-xs font-bold",
-                          getMethodColor(currentEndpointData.method)
-                        )}
-                      >
-                        {currentEndpointData.method}
-                      </span>
-                      <pre className="text-wrap text-[0.85rem] font-light tracking-wider text-neutral-600">
-                        {exampleUrl.toString()}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Response Section */}
-            <div>
-              <h4 className="mb-4 text-sm font-medium">Responses</h4>
-              <div className="space-y-2">
-                {Object.entries(currentEndpointData.responses).map(
-                  ([status, response]) => (
-                    <div key={status} className="ml-4">
-                      <p className="flex gap-2 text-sm">
-                        <span
-                          className={cn(
-                            "h-fit rounded px-2 py-0.5 font-medium",
-                            getStatusColor(status)
-                          )}
-                        >
-                          {status}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {(response as any).description}
-                        </span>
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Setup Instructions */}
-            {currentEndpointData.setupInstructions && (
-              <div>
-                <h4 className="mb-2 text-sm font-medium">Setup Instructions</h4>
-                <div className="rounded-lg bg-muted p-4">
-                  <pre className="whitespace-pre-wrap text-sm text-muted-foreground">
-                    {currentEndpointData.setupInstructions}
-                  </pre>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       {/* Header - Fixed */}
@@ -485,83 +337,159 @@ const PreviewWindow = () => {
             <p className="text-base font-medium">Preview</p>
             <Monitor className="h-4 w-4 " />
           </div>
-          <Button
-            variant={showDocs ? "default" : "outline"}
-            size="sm"
-            className="ml-auto h-8 gap-2 rounded-md px-3 text-xs"
-            onClick={() => setShowDocs(!showDocs)}
-            disabled={isLoading}
-          >
-            {showDocs ? "Hide Docs" : "Show Docs"}
-          </Button>
+          {endpoints.length > 0 && (
+            <Button
+              variant={showDocs ? "default" : "outline"}
+              size="sm"
+              className="ml-auto h-8 gap-2 rounded-md px-3 text-xs"
+              onClick={() => setShowDocs(!showDocs)}
+              disabled={isLoading}
+            >
+              {showDocs ? "Hide Docs" : "Show Docs"}
+            </Button>
+          )}
         </div>
-        <div className=" px-3 py-2 ">
-          <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
-            <Select
-              value={selectedMethod}
-              onValueChange={(value) => setSelectedMethod(value as HttpMethod)}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="h-7 w-fit border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
-                <SelectValue placeholder="Method" />
-              </SelectTrigger>
-              <SelectContent>
-                {HTTP_METHODS.map((method) => (
-                  <SelectItem key={method} value={method} className="text-xs">
-                    <span
-                      className={cn(
-                        "inline-flex h-5 items-center rounded px-1.5 font-medium",
-                        getMethodColor(method)
-                      )}
-                    >
-                      {method}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="px-3 py-2">
+          {endpoints.length > 0 ? (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
+              <Select
+                value={selectedMethod}
+                onValueChange={(value) =>
+                  setSelectedMethod(value as HttpMethod)
+                }
+                disabled={isLoading}
+              >
+                <SelectTrigger className="h-7 w-fit border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
+                  <SelectValue placeholder="Method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {HTTP_METHODS.map((method) => (
+                    <SelectItem key={method} value={method} className="text-xs">
+                      <span
+                        className={cn(
+                          "inline-flex h-5 items-center rounded px-1.5 font-medium",
+                          getMethodColor(method)
+                        )}
+                      >
+                        {method}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <Select
-              value={selectedEndpoint}
-              onValueChange={setSelectedEndpoint}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="h-7 w-full border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
-                <SelectValue placeholder="Select Endpoint" />
-              </SelectTrigger>
-              <SelectContent>
-                {endpoints.map((endpoint) => (
-                  <SelectItem
-                    key={endpoint.path}
-                    value={endpoint.path}
-                    className="text-xs"
-                    disabled={endpoint.method !== selectedMethod}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{endpoint.path}</span>
-                      {endpoint.method !== selectedMethod && (
-                        <span
-                          className={cn(
-                            "ml-auto inline-flex h-5 items-center rounded px-1.5 text-[10px] font-medium",
-                            getMethodColor(endpoint.method)
-                          )}
-                        >
-                          {endpoint.method}
-                        </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <Select
+                value={selectedEndpoint}
+                onValueChange={setSelectedEndpoint}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="h-7 w-full border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
+                  <SelectValue placeholder="Select Endpoint" />
+                </SelectTrigger>
+                <SelectContent>
+                  {endpoints.map((endpoint) => (
+                    <SelectItem
+                      key={endpoint.path}
+                      value={endpoint.path}
+                      className="text-xs"
+                      disabled={endpoint.method !== selectedMethod}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{endpoint.path}</span>
+                        {endpoint.method !== selectedMethod && (
+                          <span
+                            className={cn(
+                              "ml-auto inline-flex h-5 items-center rounded px-1.5 text-[10px] font-medium",
+                              getMethodColor(endpoint.method)
+                            )}
+                          >
+                            {endpoint.method}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-md bg-blue-100 p-1">
+                  <Clock className="h-4 w-4 text-blue-700" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-neutral-700">
+                    Automated Service
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    This API operates as an automated service (e.g., cron job)
+                    and doesn&apos;t expose any interactive endpoints. Please
+                    refer to the documentation for setup instructions and
+                    configuration details.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Scrollable Content Area */}
       <div className="min-h-0 pb-4 flex-1 overflow-y-auto thin-scrollbar">
-        {currentEndpointData &&
-        selectedMethod === currentEndpointData.method ? (
+        {!endpoints.length && apiDoc ? (
+          <div className="p-4">
+            {Object.entries(apiDoc.sections).map(([sectionKey, section]) => (
+              <div key={sectionKey} className="space-y-4">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <h3 className="mb-2 text-sm font-medium">{section.title}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {section.description}
+                  </p>
+                </div>
+                {Object.entries(section.endpoints).map(
+                  ([endpointKey, endpoint]) => (
+                    <div
+                      key={endpointKey}
+                      className="space-y-4 rounded-lg border bg-white p-4"
+                    >
+                      <div>
+                        <h4 className="text-sm font-medium">
+                          {endpoint.title}
+                        </h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {endpoint.description}
+                        </p>
+                      </div>
+                      {endpoint.schedule && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">Schedule</p>
+                          <div className="rounded-md bg-muted p-2">
+                            <code className="text-xs">{endpoint.schedule}</code>
+                          </div>
+                        </div>
+                      )}
+                      {endpoint.setup && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">
+                            Setup Instructions
+                          </p>
+                          <div className="rounded-lg border bg-muted/30 p-3">
+                            <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
+                              {endpoint.setup}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            ))}
+          </div>
+        ) : endpoints.length > 0 &&
+          currentEndpointData &&
+          selectedMethod === currentEndpointData.method ? (
           <div className="pb-safe">
             {showDocs ? (
               <div className="space-y-4 p-4">

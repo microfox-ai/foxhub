@@ -1,5 +1,4 @@
 "use client";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useUser } from "@/utils/hooks/useUser";
 import { Skeleton } from "@mui/material";
 import { REQUESTSTATUS } from "@prisma/client";
@@ -18,17 +17,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { Button } from "@/components/ui/button";
-import {
-  Cross,
-  PanelLeftIcon,
-  PanelRightIcon,
-  PlusCircle,
-  Settings,
-  X,
-  Info,
-  Monitor,
-} from "lucide-react";
+import { X, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 import { useLayout } from "../providers/LayoutProvider";

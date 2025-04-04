@@ -180,9 +180,14 @@ jobs:
             APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${PR_NUMBER}"
             
             cd "$APP_PATH"
+            cd apps/web
 
             export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
             export PORT=${{ steps.calculate-port.outputs.port }}
+
+            echo "APP_PATH: $APP_PATH"
+            echo "PORT: $PORT"
+            echo "PR_NUMBER: $PR_NUMBER"
 
             if pm2 list | grep -q "foxhub-${PR_NUMBER}" ; then
               if ! pm2 restart "foxhub-${PR_NUMBER}" --update-env ; then

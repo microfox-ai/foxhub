@@ -140,6 +140,7 @@ jobs:
         if: ${{steps.build.outputs.build-status == 1 }}
         run: |
           shopt -s dotglob
+          mkdir -p build/preview/${{ github.event.pull_request.number }}
           cp -r apps/web/.next/standalone/* build/preview/${{ github.event.pull_request.number }}
           mkdir -p build/preview/${{ github.event.pull_request.number }}/apps/web/.next/static
           cp -r apps/web/.next/static/* build/preview/${{ github.event.pull_request.number }}/apps/web/.next/static

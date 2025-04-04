@@ -37,7 +37,7 @@ jobs:
             pm2 delete "foxhub-${{ github.event.pull_request.number }}" || true
             
             # Remove deployment directory
-            cd /home/${{ secrets.DROPLET_USER }}/foxhub/apps/builds/preview/
+            cd /home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/
             rm -rf ${{ github.event.pull_request.number }}
             
             echo "Cleaned up PR #${{ github.event.pull_request.number }}"

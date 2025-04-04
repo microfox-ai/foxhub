@@ -152,7 +152,7 @@ jobs:
         with:
           switches: "-av --delete --partial --bwlimit=5000"
           path: "build/preview/${{ github.event.pull_request.number }}/"
-          remote_path: "/home/${{ secrets.DROPLET_USER }}/foxhub/apps/builds/preview/${{ github.event.pull_request.number }}"
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${{ github.event.pull_request.number }}"
           remote_host: ${{ secrets.DROPLET_IP }}
           remote_user: ${{ secrets.DROPLET_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -174,7 +174,7 @@ jobs:
             nvm use 20
             
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/apps/builds/preview/${PR_NUMBER}"
+            APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${PR_NUMBER}"
             
             cd "$APP_PATH"
             

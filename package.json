@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "build:ci": "turbo run build:ci",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
@@ -26,6 +27,7 @@
   ],
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "dotenv-cli": "^8.0.0"
   }
 }

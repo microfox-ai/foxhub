@@ -32,7 +32,7 @@ jobs:
           if [[ "$BASE_BRANCH" == "main" && "$HEAD_BRANCH" == "staging/shards" ]]; then
             PORT=8001
             PREVIEW_URL="https://staging.microfox.app"
-            PM2_NAME="foxhub-staging"
+            PM2_NAME="foxhub-${PR_NUMBER}-staging"
           else
             PORT_RANGE=500
             PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))

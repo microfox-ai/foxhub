@@ -53,10 +53,10 @@ export const pushToGit = async (
     TEMPLATE_REPO_OWNER,
     clientRequest.repoName,
     clientRequest.prBranch,
-    "nodeploy: " +
-      taskInstanceMeta.taskInfo?.name +
-      " -  by Microfox on " +
-      dayjs().format(`YYYY-MM-DD HH:mm`)
+    "nodeploy: microcode: " +
+    taskInstanceMeta.taskInfo?.name +
+    " -  by Microfox on " +
+    dayjs().format(`YYYY-MM-DD HH:mm`)
   );
 
   // TODO: push to git file by file (if above doesn't work)

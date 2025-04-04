@@ -26,19 +26,10 @@ jobs:
         id: preview-configs
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          BASE_BRANCH=${{ github.base_ref }}
-          HEAD_BRANCH=${{ github.head_ref }}
-          
-          if [[ "$BASE_BRANCH" == "main" && "$HEAD_BRANCH" == "staging/shards" ]]; then
-            PORT=8001
-            PREVIEW_URL="https://staging.microfox.app"
-            PM2_NAME="foxhub-${PR_NUMBER}-staging"
-          else
-            PORT_RANGE=500
-            PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
-            PREVIEW_URL="https://preview-${PORT}.microfox.app"
-            PM2_NAME="foxhub-${PR_NUMBER}"
-          fi
+          PORT_RANGE=500
+          PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
+          PREVIEW_URL="https://preview-${PORT}.microfox.app"
+          PM2_NAME="foxhub-${PR_NUMBER}"
           
           echo "port=$PORT" >> $GITHUB_OUTPUT
           echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT

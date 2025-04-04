@@ -1,0 +1,44 @@
+name: Cleanup PR Preview Environments
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.repository }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup_on_pr_close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for 5 minutes
+        run: sleep 300
+
+      - name: Set up SSH (secured)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
+
+      - name: Cleanup Deployments
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'EOF'
+            # Ensure profile is loaded (fix for PM2 in non-interactive shells)
+            source ~/.bashrc || true
+            source ~/.profile || true
+            source ~/.nvm/nvm.sh || true
+
+            # Stop and remove PM2 process
+            pm2 delete "foxhub-${{ github.event.pull_request.number }}" || true
+            
+            # Remove deployment directory
+            cd /home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/
+            rm -rf ${{ github.event.pull_request.number }}
+            
+            echo "Cleaned up PR #${{ github.event.pull_request.number }}"
+          EOF

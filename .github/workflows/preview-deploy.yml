@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_and_deploy:
+  preview-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,13 +22,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Calculate preview port
-        id: calculate-port
+      - name: Determine Preview Port and URL
+        id: preview-configs
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          PORT_RANGE=500
-          PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
+          BASE_BRANCH=${{ github.base_ref }}
+          
+          if [[ "$BASE_BRANCH" == "staging/shards" ]]; then
+            PORT=8001
+            PREVIEW_URL="staging.microfox.app"
+          else
+            PORT_RANGE=500
+            PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
+            PREVIEW_URL="preview-${PORT}.microfox.app"
+          fi
+          
           echo "port=$PORT" >> $GITHUB_OUTPUT
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
@@ -183,7 +193,7 @@ jobs:
             cd apps/web
 
             export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
-            export PORT=${{ steps.calculate-port.outputs.port }}
+            export PORT=${{ steps.preview-configs.outputs.port }}
 
             echo "APP_PATH: $APP_PATH"
             echo "PORT: $PORT"
@@ -228,7 +238,7 @@ jobs:
             const buildStatus = '${{ steps.build.outputs.build-status }}';
             const deployStatus = '${{ steps.deploy.outcome }}';
             const logsUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
-            const previewUrl = `https://preview-${prNumber}-${{ steps.calculate-port.outputs.port }}.microfox.app`;
+            const previewUrl = '${{ steps.preview-configs.outputs.preview_url }}';
 
             // Find existing preview status comment
             const { data: comments } = await github.rest.issues.listComments({

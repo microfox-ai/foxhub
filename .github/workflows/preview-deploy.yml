@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 concurrency:
   group: ${{ github.repository }}-pr-${{ github.event.pull_request.number }}
@@ -144,7 +145,8 @@ jobs:
           cp -r apps/web/.next/standalone/* build/preview/${{ github.event.pull_request.number }}
           cp -r apps/web/.next/static/* build/preview/${{ github.event.pull_request.number }}/.next/static
           cp -r apps/web/public/* build/preview/${{ github.event.pull_request.number }}/public
-          cp apps/web/.env.vault build/preview/${{ github.event.pull_request.number }}/.env.vault
+          cp .env.vault build/preview/${{ github.event.pull_request.number }}/.env.vault
+          cp .env.vault build/preview/${{ github.event.pull_request.number }}/apps/web/.env.vault
 
       - name: Upload using rsync
         if: ${{steps.build.outputs.build-status == 1 }}
@@ -177,6 +179,7 @@ jobs:
             APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${PR_NUMBER}"
             
             cd "$APP_PATH"
+            cd apps/web
             
             export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
             export PORT=${{ steps.calculate-port.outputs.port }}

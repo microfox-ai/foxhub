@@ -70,7 +70,8 @@ jobs:
           cp -r apps/web/.next/standalone/* build/prod/main-copy
           cp -r apps/web/.next/static/* build/prod/main-copy/.next/static
           cp -r apps/web/public/* build/prod/main-copy/public
-          cp apps/web/.env.vault build/prod/main-copy/.env.vault
+          cp .env.vault build/prod/main-copy/.env.vault
+          cp .env.vault build/prod/main-copy/apps/web/.env.vault
 
       - name: Upload using rsync
         if: ${{steps.build.outputs.build-status == 1 }}
@@ -115,6 +116,7 @@ jobs:
             cp -r "$COPY_PATH" "$MAIN_PATH"
             
             cd "$MAIN_PATH"
+            cd apps/web
             
             export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
             export PORT=8000
@@ -128,7 +130,7 @@ jobs:
               fi
             else
               # First time deployment
-              if ! pm2 start npm --name "foxhub-main" -- run start:prod ; then
+              if ! pm2 start npm --name "foxhub-main" -- run start:ci ; then
                 echo "Failed to start PM2 process"
                 exit 1
               fi

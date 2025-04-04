@@ -35,11 +35,13 @@ export const deployViaGit = async (
     value: "Deploying a test version of automation",
   });
 
-  await triggerDeployment(
+  const { sha } = await triggerDeployment(
     clientRequest,
     taskInstanceMeta,
     DEPLOY_STAGE.STAGING
   );
+
+  return { sha };
 
   // TODO: push to git file by file (if above doesn't work)
 };
@@ -67,7 +69,7 @@ export const triggerDeployment = async (
         throw new Error("Pull request number is required");
       }
       // Merge the pull request
-      await octo.rest.pulls.merge({
+      const { data } = await octo.rest.pulls.merge({
         owner: TEMPLATE_REPO_OWNER,
         repo: clientRequest.repoName,
         pull_number: clientRequest.prNumber,
@@ -77,6 +79,8 @@ export const triggerDeployment = async (
       console.log(
         `Successfully merged pull request #${clientRequest.prNumber}`
       );
+
+      return { sha: data.sha };
     } catch (error) {
       console.error("Error merging pull request:", error);
       throw error;
@@ -127,17 +131,19 @@ export const triggerDeployment = async (
       message: "deployfox: Update CHANGELOG.md to trigger deployment",
       content: Buffer.from(
         `# Deployment Log\n\n` +
-          `## Latest Deployment\n` +
-          `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
-          `- Details:\n` +
-          `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
+        `## Latest Deployment\n` +
+        `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
+        `- Details:\n` +
+        `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
       ).toString("base64"),
       branch: clientRequest.prBranch,
       ...(sha ? { sha } : {}),
     });
 
     console.log("Created deployment trigger commit");
+    return { sha: data.commit.sha };
   } catch (error) {
     console.log("error", error);
+    return { sha: undefined };
   }
 };

@@ -30,33 +30,74 @@ export const dailyMorningJob = async (event: any) => {
 
 /**
  * Documentation for cron job endpoints
+ * Write down this apiDocs on the basis of open api 3.0.1 in JSON format
  */
-
 export const dailyMorningJobDocs = {
-  title: 'Daily Morning Job',
-  description: 'Cron job that runs every day at 8:00 AM to clean up old records',
-  method: 'GET',
-  path: '/cron/daily-morning',
-  schedule: 'cron(0 8 * * ? *)',
+  summary: "Run the GitHub issue monitoring job",
+  description:
+    "This cron job checks for open high-priority GitHub issues and sends Slack notifications if they remain unresolved after a specified number of days.",
+  instructions: `
+To set up the monitorGitHubIssues cron job:
+
+1. Ensure the following environment variables are set:
+   - GITHUB_TOKEN: Personal access token for GitHub API
+   - SLACK_BOT_TOKEN: Bot token for Slack API
+   - UPSTASH_REDIS_REST_URL: Upstash Redis REST URL
+   - UPSTASH_REDIS_REST_TOKEN: Upstash Redis REST token
+   - GITHUB_OWNER: GitHub repository owner
+   - GITHUB_REPO: GitHub repository name
+   - HIGH_PRIORITY_LABEL: Label for high-priority issues (default: 'high-priority')
+   - DAYS_THRESHOLD: Number of days before sending a notification (default: 3)
+   - SLACK_CHANNEL: Slack channel to send notifications to
+
+2. Deploy the function to your serverless platform (e.g., AWS Lambda, Google Cloud Functions).
+
+3. Set up a cron job to run daily at midnight (UTC) using the cron expression: 0 0 * * *
+
+4. Configure the cron job to trigger this function.
+
+This cron job will run daily, check for high-priority GitHub issues that have been open for longer than the specified threshold, and send Slack notifications for issues that haven't been previously notified about.
+`,
   responses: {
-    200: {
-      description: 'Job completed successfully',
-      schema: {
-        type: 'object',
-        properties: {
-          message: { type: 'string' },
-          deletedRecords: { type: 'number' },
+    "200": {
+      description: "Successful operation",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              message: {
+                type: "string",
+                example: "GitHub issue monitoring job completed successfully",
+              },
+              notificationsSent: {
+                type: "array",
+                items: {
+                  type: "number",
+                },
+                description:
+                  "List of issue numbers for which notifications were sent",
+              },
+            },
+          },
         },
       },
     },
-    500: {
-      description: 'Server error',
-      schema: {
-        type: 'object',
-        properties: {
-          error: { type: 'string' },
+    "500": {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              error: {
+                type: "string",
+                example: "Error message",
+              },
+            },
+          },
         },
       },
     },
   },
-}
+};

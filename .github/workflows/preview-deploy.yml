@@ -27,8 +27,9 @@ jobs:
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           BASE_BRANCH=${{ github.base_ref }}
+          HEAD_BRANCH=${{ github.head_ref }}
           
-          if [[ "$BASE_BRANCH" == "staging/shards" ]]; then
+          if [[ "$BASE_BRANCH" == "main" && "$HEAD_BRANCH" == "staging/shards" ]]; then
             PORT=8001
             PREVIEW_URL="staging.microfox.app"
           else

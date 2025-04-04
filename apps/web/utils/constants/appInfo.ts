@@ -14,9 +14,7 @@ export enum LOCAL_STORAGE {
 }
 export const IN_DEV = process.env.NODE_ENV === "development";
 export const APP_BASE_FOR_SITES = "https://www.microfox.app";
-export const APP_BASE_URL = IN_DEV
-  ? "http://localhost:3000"
-  : process.env.NEXT_PUBLIC_APP_BASE_URL || "http://localhost:3000";
+export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_BASE_URL || "http://localhost:3000";
 export const IS_TESTNET = process.env.NEXT_PUBLIC_IS_TESTNET === "true";
 export const SERVER_SECRET_API_KEY = process.env
   .NEXT_PUBLIC_SERVER_SECRET_API_KEY as string;

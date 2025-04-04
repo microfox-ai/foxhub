@@ -116,7 +116,7 @@ jobs:
             rm -rf "$MAIN_PATH"
             cp -r "$COPY_PATH" "$MAIN_PATH"
             
-            cd "$MAIN_PATH/apps/web"
+            cd "$MAIN_PATH"
             
             export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
             export PORT=8000

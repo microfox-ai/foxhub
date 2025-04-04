@@ -146,6 +146,7 @@ jobs:
           cp -r apps/web/.next/static/* build/preview/${{ github.event.pull_request.number }}/apps/web/.next/static
           mkdir -p build/preview/${{ github.event.pull_request.number }}/apps/web/public
           cp -r apps/web/public/* build/preview/${{ github.event.pull_request.number }}/apps/web/public
+          cp .env.vault build/preview/${{ github.event.pull_request.number }}/.env.vault
           cp .env.vault build/preview/${{ github.event.pull_request.number }}/apps/web/.env.vault
 
       - name: Upload using rsync
@@ -189,7 +190,6 @@ jobs:
                 exit 1
               fi
             else
-              cd apps/web
               if ! pm2 start npm --name "foxhub-${PR_NUMBER}" -- run start:ci ; then
                 echo "Failed to start PM2 process"
                 exit 1

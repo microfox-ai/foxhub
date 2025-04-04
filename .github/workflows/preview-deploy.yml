@@ -31,11 +31,11 @@ jobs:
           
           if [[ "$BASE_BRANCH" == "main" && "$HEAD_BRANCH" == "staging/shards" ]]; then
             PORT=8001
-            PREVIEW_URL="staging.microfox.app"
+            PREVIEW_URL="https://staging.microfox.app"
           else
             PORT_RANGE=500
             PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
-            PREVIEW_URL="preview-${PORT}.microfox.app"
+            PREVIEW_URL="https://preview-${PORT}.microfox.app"
           fi
           
           echo "port=$PORT" >> $GITHUB_OUTPUT

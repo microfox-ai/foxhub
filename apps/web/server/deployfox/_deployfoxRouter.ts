@@ -15,7 +15,7 @@ import {
   deployStep,
   TaskInstanceMetaType,
 } from "../convertfox/types";
-import { fetchLogs, getLatestRunForClientRequest } from "./fetchLogs";
+import { fetchLogs, getLatestRunForClientRequest, getRunforClientRequestbySha } from "./fetchLogs";
 import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
 import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
 export const deployFoxRouter: ServerStreamingFunction<
@@ -59,7 +59,11 @@ export const deployFoxRouter: ServerStreamingFunction<
   await recloneTemplateStuffToClientRequest(props, clientRequest);
 
   // Monitor workflow runs
-  await deployViaGit(props, clientRequest, taskInstanceMeta);
+  const { sha } = await deployViaGit(props, clientRequest, taskInstanceMeta);
+  console.log("sha", sha);
+  if (!sha) {
+    throw new Error("Sha is undefined");
+  }
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
@@ -73,10 +77,12 @@ export const deployFoxRouter: ServerStreamingFunction<
     }, 35000);
   });
 
-  const runId = await getLatestRunForClientRequest(
+  const runId = await getRunforClientRequestbySha({
+    head_sha: sha,
     clientRequest,
-    DEPLOY_STAGE.STAGING
-  );
+    stage: DEPLOY_STAGE.STAGING,
+  });
+  console.log("runId", runId);
 
   await updateTaskInstanceMeta({
     clientRequestId,

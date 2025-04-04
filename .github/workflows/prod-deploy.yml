@@ -98,7 +98,7 @@ jobs:
           set -e
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
             source ~/.nvm/nvm.sh
-            nvm use 20
+            nvm use 23
             
             BASE_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/prod"
             MAIN_PATH="$BASE_PATH/main"
@@ -115,8 +115,7 @@ jobs:
             rm -rf "$MAIN_PATH"
             cp -r "$COPY_PATH" "$MAIN_PATH"
             
-            cd "$MAIN_PATH"
-            cd apps/web
+            cd "$MAIN_PATH/apps/web"
             
             export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
             export PORT=8000

@@ -173,14 +173,15 @@ jobs:
           set -e
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
             source ~/.nvm/nvm.sh
-            nvm use 20
+            nvm use 23
             
             PR_NUMBER="${{ github.event.pull_request.number }}"
             APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${PR_NUMBER}"
             
-            cd "$APP_PATH"
-            cd apps/web
-            
+            cd "$APP_PATH/apps/web"  
+            ls -la
+            echo "APP_PATH: $APP_PATH"
+
             export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
             export PORT=${{ steps.calculate-port.outputs.port }}
 

@@ -1023,7 +1023,7 @@ const EnvCollector = ({
 
         <div className="grid gap-4">
           {envVariables?.map((env: any) => (
-            <div key={env.env} className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div key={env.env + env.name} className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1109,7 +1109,7 @@ const EnvCollector = ({
                   {selectedEnv.how
                     .split("\n")
                     .map((line: string, i: number) => (
-                      <div key={i} className="flex gap-3">
+                      <div key={line + i} className="flex gap-3">
                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-medium">
                           {i + 1}
                         </span>
@@ -1127,7 +1127,7 @@ const EnvCollector = ({
                 <h4 className="font-medium text-gray-900">Examples</h4>
                 <div className="space-y-2">
                   {selectedEnv.examples.map((example: string, i: number) => (
-                    <div key={i} className="bg-gray-50 p-3 rounded-md">
+                    <div key={example + i} className="bg-gray-50 p-3 rounded-md">
                       <Markdown>{example}</Markdown>
                     </div>
                   ))}
@@ -1149,8 +1149,34 @@ const DeploymentsInfo = ({
   idx: number;
 }) => {
   const annotation = uiAnnotation as any;
-  const deployStep = annotation.deployStep;
-  const clientDeployment = annotation.clientDeployment;
+  const pingerInterval = annotation.pingerInterval;
+  const stage = annotation.stage;
+  const runId = annotation.runId;
+  const [finalData, setFinalData] = useState<any>(null);
+  const params = useParams<{
+    project_id?: string;
+    request_id?: string;
+  }>();
+  const projectParamId = params?.project_id;
+  const requestParamId = params?.request_id;
+
+  const { data: DeploymentData, isLoading, isValidating } = useSWR(finalData?.shouldBreak
+    ? null
+    : `/api/client-functions/deployer?stage=${stage}&runId=${runId}&clientRequestId=${requestParamId}`,
+    (url: string) => fetch(url).then(res => res.json()),
+    {
+      refreshInterval: pingerInterval,
+    }
+  );
+
+  const deployStep = finalData?.deployStep;
+  const clientDeployment = finalData?.clientDeployment;
+  useEffect(() => {
+    if (DeploymentData) {
+      setFinalData(DeploymentData);
+    }
+  }, [DeploymentData]);
+
 
   return (
     <motion.div
@@ -1162,16 +1188,12 @@ const DeploymentsInfo = ({
       </h3>
       <div className="flex flex-col gap-2">
         <p className="text-sm text-gray-500">
-          {deployStep.status}
+          Pinging every {pingerInterval}ms
+          for stage {stage}
+          and runId {runId}
         </p>
         <p className="text-sm text-gray-500">
-          {JSON.stringify(deployStep)}
-        </p>
-        <p className="text-sm text-gray-500">
-          DEPLOYMENT
-        </p>
-        <p className="text-sm text-gray-500">
-          {JSON.stringify(clientDeployment)}
+          {isLoading ? "Loading..." : isValidating ? "Validating..." : JSON.stringify(finalData ?? "{}")}
         </p>
       </div>
     </motion.div>

@@ -20,7 +20,8 @@ export const uploadToRepo = async (
       "clientRequest.json"
     )
       ? lastCommit
-      : await revertCommit(
+      : lastCommit.commitMessage.includes("microcode")
+        ? await revertCommit(
           octo,
           org,
           repo,
@@ -28,7 +29,8 @@ export const uploadToRepo = async (
           lastCommit.commitSha,
           lastCommit.treeSha,
           lastCommit.parentSha
-        );
+        ) : lastCommit;
+
     const filesPaths = await glob(coursePath);
     const filesBlobs = await Promise.all(
       filesPaths.map(createBlobForFile(octo, org, repo))

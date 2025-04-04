@@ -89,6 +89,13 @@ export async function createPullRequest({
   if (!newBranchResult) {
     throw new Error("Failed to create new branch");
   }
+
+  if (!requestSubdir) {
+    // TODO: remove this randomization & set requestDIr at a different step when templateType is known.
+    requestSubdir = ["alpha", "beta", "gamma", "delta", "omega", "sigma"][
+      Math.floor(Math.random() * 6)
+    ];
+  }
   //console.log("newBranchResult", newBranchResult);
 
   // Create README.md file on new branch with request description

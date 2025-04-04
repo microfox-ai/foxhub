@@ -1,0 +1,17 @@
+# --------------- CI Labels ---------------
+# Add 'workflow' to any changes within '.github' folder
+workflow:
+  - .github/*
+  - .github/workflows/**/*
+
+# --------------- Package.json labels ---------------
+# Add 'dependencies' to any changes within any 'package.json' file in the repository
+dependencies:
+  - '**/package.json'
+  - '**/package-lock.json'
+
+# --------------- Documentation labels ---------------
+# Add 'documentation' to any changes within README files
+documentation:
+  - '**/README.md'
+

@@ -4,6 +4,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "build:ci": "dotenv -- turbo run build",
+    "start:ci": "node -r dotenv/config apps/web/server.js",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
@@ -26,6 +28,7 @@
   ],
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "dotenv-cli": "^8.0.0"
   }
 }

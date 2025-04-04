@@ -65,11 +65,11 @@ jobs:
         if: ${{steps.build.outputs.build-status == 1 }}
         run: |
           shopt -s dotglob
-          mkdir -p build/prod/main-copy/.next/static
-          mkdir -p build/prod/main-copy/public
           cp -r apps/web/.next/standalone/* build/prod/main-copy
-          cp -r apps/web/.next/static/* build/prod/main-copy/.next/static
-          cp -r apps/web/public/* build/prod/main-copy/public
+          mkdir -p build/prod/main-copy/apps/web/.next/static
+          cp -r apps/web/.next/static/* build/prod/main-copy/apps/web/.next/static
+          mkdir -p build/prod/main-copy/apps/web/public
+          cp -r apps/web/public/* build/prod/main-copy/apps/web/public
           cp .env.vault build/prod/main-copy/.env.vault
           cp .env.vault build/prod/main-copy/apps/web/.env.vault
 

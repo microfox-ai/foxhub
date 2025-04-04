@@ -140,12 +140,11 @@ jobs:
         if: ${{steps.build.outputs.build-status == 1 }}
         run: |
           shopt -s dotglob
-          mkdir -p build/preview/${{ github.event.pull_request.number }}/.next/static
-          mkdir -p build/preview/${{ github.event.pull_request.number }}/public
           cp -r apps/web/.next/standalone/* build/preview/${{ github.event.pull_request.number }}
-          cp -r apps/web/.next/static/* build/preview/${{ github.event.pull_request.number }}/.next/static
-          cp -r apps/web/public/* build/preview/${{ github.event.pull_request.number }}/public
-          cp .env.vault build/preview/${{ github.event.pull_request.number }}/.env.vault
+          mkdir -p build/preview/${{ github.event.pull_request.number }}/apps/web/.next/static
+          cp -r apps/web/.next/static/* build/preview/${{ github.event.pull_request.number }}/apps/web/.next/static
+          mkdir -p build/preview/${{ github.event.pull_request.number }}/apps/web/public
+          cp -r apps/web/public/* build/preview/${{ github.event.pull_request.number }}/apps/web/public
           cp .env.vault build/preview/${{ github.event.pull_request.number }}/apps/web/.env.vault
 
       - name: Upload using rsync
@@ -178,9 +177,7 @@ jobs:
             PR_NUMBER="${{ github.event.pull_request.number }}"
             APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${PR_NUMBER}"
             
-            cd "$APP_PATH/apps/web"  
-            ls -la
-            echo "APP_PATH: $APP_PATH"
+            cd "$APP_PATH"
 
             export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
             export PORT=${{ steps.calculate-port.outputs.port }}
@@ -191,6 +188,7 @@ jobs:
                 exit 1
               fi
             else
+              cd apps/web
               if ! pm2 start npm --name "foxhub-${PR_NUMBER}" -- run start:ci ; then
                 echo "Failed to start PM2 process"
                 exit 1
@@ -201,6 +199,14 @@ jobs:
               echo "Failed to start/restart PM2 process"
               exit 1
             fi
+
+            # Check PM2 process status
+            PM2_STATUS=$(pm2 show "foxhub-${PR_NUMBER}" | grep "status" | awk '{print $4}')
+            if [ "$PM2_STATUS" = "errored" ]; then
+              echo "PM2 process is in error state"
+              exit 1
+            fi
+
             echo "Successfully deployed preview for PR #${PR_NUMBER}"
           ENDSSH
           if [ $? -ne 0 ]; then

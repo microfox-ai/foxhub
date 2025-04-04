@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         {
           shouldBreak: taskInstanceMeta.deployStep?.shouldBreak,
-          clientDeployment: taskInstanceMeta.deployStep?.deployment,
+          clientDeployment: clientDeployment,
           deployStep: taskInstanceMeta.deployStep,
           taskInstanceMeta: taskInstanceMeta,
         },

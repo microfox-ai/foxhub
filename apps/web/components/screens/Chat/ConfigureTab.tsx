@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,11 @@ import {
   Eye,
   EyeOff,
   Edit,
+  LayoutDashboard,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
@@ -31,6 +36,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ClientDeployment, TaskInstanceMeta } from "@prisma/client";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import dayjs from "dayjs";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import { useClientProject } from "../providers/ClientProjectProvider";
+import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 
 interface ClientSecret {
   id: string;
@@ -50,10 +61,199 @@ interface ActionButtonProps {
   className?: string;
 }
 
+interface DeployStep {
+  status: string;
+  metadata: {
+    [key: string]: string;
+  };
+  startTime: string;
+  endTime: string;
+}
+
+const getStatusColor = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case "success":
+      return {
+        bg: "bg-green-50",
+        border: "border-green-100",
+        text: "text-green-700",
+        badge: "bg-green-50 text-green-700 border-green-100",
+        icon: "text-green-500",
+      };
+    case "failed":
+      return {
+        bg: "bg-red-50",
+        border: "border-red-100",
+        text: "text-red-700",
+        badge: "bg-red-50 text-red-700 border-red-100",
+        icon: "text-red-500",
+      };
+    case "in_progress":
+      return {
+        bg: "bg-blue-50",
+        border: "border-blue-100",
+        text: "text-blue-700",
+        badge: "bg-blue-50 text-blue-700 border-blue-100",
+        icon: "text-blue-500",
+      };
+    default:
+      return {
+        bg: "bg-gray-50",
+        border: "border-gray-100",
+        text: "text-gray-700",
+        badge: "bg-gray-50 text-gray-700 border-gray-100",
+        icon: "text-gray-500",
+      };
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case "success":
+      return <CheckCircle className="w-5 h-5" />;
+    case "failed":
+      return <XCircle className="w-5 h-5" />;
+    case "in_progress":
+      return <Loader2 className="w-5 h-5 animate-spin" />;
+    default:
+      return <Clock className="w-5 h-5 " />;
+  }
+};
+
+const DeployStatus = ({
+  deployStep,
+  clientDeployment,
+}: {
+  deployStep: DeployStep | null;
+  clientDeployment: ClientDeployment | null;
+}) => {
+  if (!deployStep)
+    return (
+      <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
+        <div className="flex flex-col space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 border border-gray-100">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Deployment Pending
+                </h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
+  const startTime = dayjs(deployStep.startTime);
+  const endTime = deployStep.endTime ? dayjs(deployStep.endTime) : null;
+  const duration = prettyPrintDuration(
+    deployStep.startTime,
+    deployStep.endTime
+  );
+
+  const status = deployStep.status?.toLowerCase();
+  const statusColors = getStatusColor(status || "");
+  const StatusIcon = () => getStatusIcon(status || "");
+  console.log(clientDeployment, "clientDeployment");
+  return (
+    <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
+      <div className="flex flex-col space-y-6">
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-3">
+            <div
+              className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                statusColors.bg
+              )}
+            >
+              <div className={statusColors.icon}>
+                <StatusIcon />
+              </div>
+            </div>
+            <div className={cn(status !== "success" && "self-center")}>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {status === "failed" && "Deployment Failed"}
+                {status === "success" && "Successfully Deployed 🎉"}
+                {status === "in_progress" && "Deployment Pending"}
+              </h3>
+              {status === "success" && duration && (
+                <p className="text-sm text-gray-500">Completed in {duration}</p>
+              )}
+            </div>
+          </div>
+          {/* <div className="flex items-center gap-2">
+            <div
+              className={cn(
+                "px-3 py-1.5 rounded-full text-sm font-medium capitalize",
+                statusColors.badge
+              )}
+            >
+              {status}
+            </div>
+          </div> */}
+          {clientDeployment?.stage && (
+            <div className="px-3 w-fit py-1 first-letter:capitalize self-start  rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+              {clientDeployment.stage}
+            </div>
+          )}
+        </div>
+
+        {/* Timeline Section */}
+        <div className="space-y-4">
+          <div className="flex items-center space-x-4">
+            <div className="min-w-[120px] text-sm font-medium text-gray-500">
+              Start Time
+            </div>
+            <div className="flex-1">
+              <pre className="text-gray-900 text-xs">
+                {startTime.format("MMMM D, YYYY, h:mm:ss A")}
+              </pre>
+            </div>
+          </div>
+
+          {endTime && (
+            <div className="flex items-center space-x-4">
+              <div className="min-w-[120px] text-sm font-medium text-gray-500">
+                End Time
+              </div>
+              <div className="flex-1">
+                <pre className="text-gray-900 text-xs">
+                  {endTime.format("MMMM D, YYYY, h:mm:ss A")}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* {deployStep.metadata &&
+            Object.keys(deployStep.metadata).length > 0 && (
+              <div className="flex items-start space-x-4">
+                <div className="min-w-[120px] text-sm font-medium text-gray-500">
+                  Details
+                </div>
+                <div className="flex-1 space-y-2">
+                  {Object.entries(deployStep.metadata).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-gray-700 capitalize">
+                        {key}:
+                      </span>
+                      <span className="text-gray-600">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )} */}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ConfigureTab = () => {
-  const params = useParams();
-  const requestParamId = (params?.["request_id"] as string) || "";
-  const projectParamId = (params?.["project_id"] as string) || "";
+  const { clientRequestId, projectId } = useClientProject();
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<ClientSecret | null>(
     null
@@ -63,12 +263,18 @@ const ConfigureTab = () => {
   const [secretToDelete, setSecretToDelete] = useState<ClientSecret | null>(
     null
   );
+  const { taskInstanceMeta, mutate: mutateTaskInstanceMeta } =
+    useTaskInstanceMetaContext();
+
+  useEffect(() => {
+    mutateTaskInstanceMeta();
+  }, []);
 
   const { data: allSecrets, mutate: mutateSecrets } = useSWR<{
     clientSecrets: ClientSecret[];
   }>(
-    requestParamId
-      ? `/api/client-secrets?clientRequestId=${requestParamId}`
+    clientRequestId
+      ? `/api/client-secrets?clientRequestId=${clientRequestId}`
       : null,
     async (url: string) => {
       const res = await fetch(url);
@@ -80,8 +286,8 @@ const ConfigureTab = () => {
   const { data: customSecrets } = useSWR<{
     clientSecrets: ClientSecret[];
   }>(
-    requestParamId
-      ? `/api/client-secrets?clientRequestId=${requestParamId}&type=custom`
+    clientRequestId
+      ? `/api/client-secrets?clientRequestId=${clientRequestId}&type=custom`
       : null,
     async (url: string) => {
       const res = await fetch(url);
@@ -94,6 +300,16 @@ const ConfigureTab = () => {
     allSecrets?.clientSecrets?.filter((secret) => secret.type !== "custom") ||
     [];
 
+  const { data: clientDeployment } = useSWR<ClientDeployment[]>(
+    `/api/client-functions?id=${clientRequestId}`,
+    async (url: string) => {
+      const response = await PortalSdk.getData(url, {});
+      return response.clientFunctions;
+    }
+  );
+
+  const clientDeploymentData = clientDeployment?.[0] || null;
+
   const toggleSecretVisibility = (secretId: string) => {
     setShowSecrets((prev) => ({
       ...prev,
@@ -104,7 +320,7 @@ const ConfigureTab = () => {
   const handleDeleteSecret = async (secret: ClientSecret) => {
     try {
       const response = await fetch(
-        `/api/client-secrets?id=${secret.id}&clientRequestId=${requestParamId}&removeOnly=true`,
+        `/api/client-secrets?id=${secret.id}&clientRequestId=${clientRequestId}&removeOnly=true`,
         {
           method: "DELETE",
         }
@@ -124,9 +340,15 @@ const ConfigureTab = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-8">
-        Configure API Keys & Secrets
-      </h2>
+      <div className="flex items-center gap-2 mb-8">
+        <LayoutDashboard className="w-5 h-5" />
+        <h2 className="text-2xl font-semibold text-gray-900">Dashboard</h2>
+      </div>
+
+      <DeployStatus
+        deployStep={taskInstanceMeta?.deployStep as DeployStep}
+        clientDeployment={clientDeploymentData}
+      />
 
       <Tabs defaultValue="platform" className="w-full">
         <TabsList className="w-full max-w-md mb-8 p-1 bg-gray-100/80 rounded-lg">
@@ -196,7 +418,6 @@ const ConfigureTab = () => {
           ))}
         </TabsContent>
       </Tabs>
-
       <EnvVariablesDialog
         isOpen={!!showAddEnvModal}
         onClose={() => setShowAddEnvModal(false)}
@@ -207,7 +428,6 @@ const ConfigureTab = () => {
         }}
         initialValues={{}}
       />
-
       {selectedPlatform && (
         <APIKeyDialog
           mutateSecrets={mutateSecrets}
@@ -230,11 +450,10 @@ const ConfigureTab = () => {
             })),
           }}
           existingSecret={selectedPlatform}
-          projectId={projectParamId}
-          requestId={requestParamId}
+          projectId={projectId || undefined}
+          requestId={clientRequestId || undefined}
         />
       )}
-
       {secretToDelete && (
         <DeleteConfirmationDialog
           secretToDelete={secretToDelete}

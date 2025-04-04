@@ -173,7 +173,7 @@ export const MessageWrapper = ({
                       <AnimatePresence mode="wait">
                         <motion.div
                           key={content}
-                          className=" relative bg-repeat text-transparent bg-clip-text first-letter:uppercase  overflow-hidden animate-shimmer bg-gradient-to-r from-gray-400 via-gray-800 to-gray-400 bg-[length:200%_100%]"
+                          className="loading-text"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -6,10 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Play, X } from "lucide-react";
-import API_DOC from "./data.json";
+import { Copy, Play, X, Monitor, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -23,147 +22,150 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
+import { useLayout } from "../providers/LayoutProvider";
+import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 
-const BASE_URL =
-  "https://a1n6ih708c.execute-api.ap-southeast-2.amazonaws.com/latest";
-
-// Get unique endpoints from API_DOC
-const endpoints = API_DOC.endpoints.map((endpoint) => endpoint.path);
+// Available HTTP methods
+const HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"] as const;
+type HttpMethod = (typeof HTTP_METHODS)[number];
 
 // Type for form values
 type FormValues = Record<string, string>;
 
-interface RequestQueryParam {
-  type: string;
-  description?: string;
-  isRequired?: boolean;
-  example?: string;
-}
-
-interface RequestBodySchema {
-  type: string;
-  isRequired: boolean;
+// Type definitions for API documentation
+interface ApiEndpoint {
+  title: string;
   description: string;
-  example: string;
+  method: string;
+  path: string;
+  requestBody?: {
+    description: string;
+    required: boolean;
+    content: {
+      "application/json": {
+        schema: {
+          type: string;
+          properties: Record<string, unknown>;
+        };
+      };
+    };
+  };
+  responses: {
+    [key: string]: {
+      description: string;
+      content: {
+        "application/json": {
+          schema: {
+            type: string;
+            properties: Record<string, unknown>;
+          };
+        };
+      };
+    };
+  };
+  setupInstructions?: string;
+  schedule?: string;
+  setup?: string;
 }
 
-interface RequestBodyField {
-  type: string;
-  description?: string;
-  required?: boolean;
-  example?: string;
-}
-
-interface RequestHeader {
-  type: string;
+interface ApiSection {
+  title: string;
   description: string;
-  example: string;
+  endpoints: {
+    [key: string]: ApiEndpoint;
+  };
 }
 
-interface ResponseData {
-  data: any;
-  contentType: string;
-  status: number;
-}
-
-interface PathParam {
-  name: string;
-  example?: string;
+interface ApiDoc {
+  title: string;
+  description: string;
+  version: string;
+  sections: {
+    [key: string]: ApiSection;
+  };
 }
 
 const PreviewWindow = () => {
-  const [selectedEndpoint, setSelectedEndpoint] = useState<string>(
-    endpoints?.[0] ?? ""
-  );
+  const { deploymentInfo } = useTaskInstanceMetaContext();
+  const [apiDoc, setApiDoc] = useState<ApiDoc | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<HttpMethod>("POST");
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [response, setResponse] = useState<ResponseData | null>(null);
+  const [response, setResponse] = useState<any | null>(null);
   const [showDocs, setShowDocs] = useState(false);
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
+  const { copied, copyToClipboard: copyText } = useCopyToClipboard();
+  const [lastCopiedId, setLastCopiedId] = useState<string>("");
+  const { isRightCollapsed, handleRightCollapse } = useLayout();
 
-  // Get available methods for the selected endpoint
-  const availableMethods = API_DOC.endpoints
-    .filter((endpoint) => endpoint.path === selectedEndpoint)
-    .map((endpoint) => endpoint.method);
+  const BASE_URL = deploymentInfo?.baseUrl;
 
-  const [selectedMethod, setSelectedMethod] = useState<string>(
-    availableMethods?.[0] ?? ""
-  );
+  const endpoints = apiDoc
+    ? Object.entries(apiDoc.sections).flatMap(
+        ([sectionKey, section]: [string, ApiSection]) =>
+          Object.entries(section.endpoints || {}).map(
+            ([endpointKey, endpoint]: [string, ApiEndpoint]) => ({
+              path: endpoint.path,
+              method: endpoint.method,
+              title: endpoint.title,
+              sectionKey: sectionKey,
+              endpointKey: endpointKey,
+            })
+          )
+      )
+    : [];
 
-  // Update selected method when endpoint changes
+  const [selectedEndpoint, setSelectedEndpoint] = useState<string>("");
+
   useEffect(() => {
-    setSelectedMethod(availableMethods?.[0] ?? "");
-    setShowValidation(false);
-    setResponse(null);
-  }, [selectedEndpoint]);
+    if (apiDoc && endpoints.length > 0) {
+      setSelectedEndpoint(endpoints[0]?.path ?? "");
+    }
+  }, [apiDoc, endpoints]);
+
+  useEffect(() => {
+    (async () => {
+      if (!deploymentInfo?.baseUrl) return;
+      const response = await PortalSdk.getData(
+        `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
+        {}
+      );
+      setApiDoc(response);
+    })();
+  }, [deploymentInfo]);
 
   // Get the current endpoint data
-  const currentEndpoint = API_DOC.endpoints.find(
-    (endpoint) =>
-      endpoint.path === selectedEndpoint && endpoint.method === selectedMethod
-  );
+  const currentEndpoint = endpoints.find((e) => e.path === selectedEndpoint);
+  const currentEndpointData = currentEndpoint
+    ? (apiDoc?.sections[currentEndpoint.sectionKey]?.endpoints?.[
+        currentEndpoint.endpointKey
+      ] as ApiEndpoint | undefined)
+    : null;
 
-  // Function to extract path parameters from the endpoint
-  const getPathParams = (path: string): PathParam[] => {
-    const params: PathParam[] = [];
-    const matches = path.match(/:[a-zA-Z]+/g);
-
-    if (matches) {
-      matches.forEach((match) => {
-        const name = match.substring(1); // Remove the : prefix
-        params.push({
-          name,
-          example: `example_${name}`, // Default example value
-        });
-      });
+  // Update method when endpoint changes
+  useEffect(() => {
+    if (currentEndpointData) {
+      setSelectedMethod(currentEndpointData.method as HttpMethod);
     }
-
-    return params;
-  };
-
-  // Function to replace path parameters with actual values
-  const replacePath = (path: string, values: Record<string, string>) => {
-    let newPath = path;
-    Object.entries(values).forEach(([key, value]) => {
-      newPath = newPath.replace(`:${key}`, value);
-    });
-    return newPath;
-  };
+  }, [currentEndpointData]);
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
-    if (!currentEndpoint) return z.object({});
+    if (!currentEndpointData) return z.object({});
 
     const schemaFields: Record<string, z.ZodType<any>> = {};
 
-    // Add path parameters
-    const pathParams = getPathParams(currentEndpoint.path);
-    pathParams.forEach((param) => {
-      schemaFields[param.name] = z
-        .string()
-        .min(1, { message: "This field is required" });
-    });
-
-    // Add query parameters
-    if (currentEndpoint.requestQuery) {
-      Object.entries(
-        currentEndpoint.requestQuery as Record<string, RequestQueryParam>
-      ).forEach(([key, value]) => {
-        const isRequired = value?.isRequired === true;
-        const schema = z.string();
-        schemaFields[key] = isRequired
-          ? schema.min(1, { message: "This field is required" })
-          : schema.optional();
-      });
-    }
-
-    // Add body parameters if it's not a GET request
-    if (currentEndpoint.requestBody && selectedMethod !== "GET") {
-      Object.entries(
-        currentEndpoint.requestBody.schema as Record<string, RequestBodySchema>
-      ).forEach(([key, value]) => {
-        const isRequired = value.isRequired === true;
+    // Add body parameters if it's a POST/PUT/PATCH request
+    const properties =
+      currentEndpointData.requestBody?.content?.["application/json"]?.schema
+        ?.properties;
+    if (properties) {
+      Object.entries(properties).forEach(([key, value]) => {
+        const required = currentEndpointData.requestBody?.required;
+        const isRequired = Array.isArray(required) && required.includes(key);
         const schema = z.string();
         schemaFields[key] = isRequired
           ? schema.min(1, { message: "This field is required" })
@@ -179,15 +181,15 @@ const PreviewWindow = () => {
     mode: "onChange",
   });
 
-  // Reset form when endpoint or method changes
+  // Reset form when endpoint changes
   useEffect(() => {
     form.reset();
     setShowValidation(false);
     setResponse(null);
-  }, [selectedEndpoint, selectedMethod, form]);
+  }, [selectedEndpoint, form]);
 
   const makeApiCall = async (data: FormValues) => {
-    if (!currentEndpoint) return;
+    if (!currentEndpointData) return;
 
     // Create new abort controller
     const controller = new AbortController();
@@ -195,62 +197,24 @@ const PreviewWindow = () => {
     setIsLoading(true);
 
     try {
-      // Get path parameters and replace them in the URL
-      const pathParams = getPathParams(currentEndpoint.path);
-      let path = currentEndpoint.path;
-      pathParams.forEach((param) => {
-        path = path.replace(
-          `:${param.name}`,
-          data[param.name] || param.example || ""
-        );
-      });
+      // Construct URL
+      const url = `${BASE_URL}${currentEndpointData.path}`;
+      console.log(url, "url");
 
-      // Construct URL with query parameters
-      const baseUrlWithoutPath = BASE_URL.split("/latest")[0];
-      const url = new URL(`/latest${path}`, baseUrlWithoutPath);
-
-      // Add query parameters
-      if (currentEndpoint.requestQuery) {
-        Object.entries(data).forEach(([key, value]) => {
-          if (
-            currentEndpoint.requestQuery &&
-            key in currentEndpoint.requestQuery &&
-            !pathParams.find((p) => p.name === key) // Exclude path parameters
-          ) {
-            url.searchParams.append(key, value);
-          }
-        });
-      }
-
-      // Prepare request body
-      const requestBody =
-        currentEndpoint.requestBody && selectedMethod !== "GET"
-          ? JSON.stringify(
-              Object.fromEntries(
-                Object.entries(data).filter(
-                  ([key]) =>
-                    currentEndpoint.requestBody?.schema &&
-                    key in currentEndpoint.requestBody.schema
-                )
-              )
-            )
-          : undefined;
+      // Prepare request body for POST/PUT/PATCH requests
+      const requestBody = ["POST", "PUT", "PATCH"].includes(
+        currentEndpointData.method
+      )
+        ? JSON.stringify(data)
+        : undefined;
 
       // Convert request headers to proper format
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
 
-      if (currentEndpoint.requestHeaders) {
-        Object.entries(
-          currentEndpoint.requestHeaders as Record<string, RequestHeader>
-        ).forEach(([key, value]) => {
-          headers[key] = value.example;
-        });
-      }
-
       const response = await fetch(url.toString(), {
-        method: selectedMethod,
+        method: currentEndpointData.method,
         headers,
         body: requestBody,
         signal: controller.signal,
@@ -305,56 +269,25 @@ const PreviewWindow = () => {
     }
   };
 
-  const renderCopyToClipboard = () => {
+  const renderCopyToClipboard = (text: string, identifier: string) => {
+    const handleCopy = async () => {
+      await copyText(text);
+      setLastCopiedId(identifier);
+    };
+
     return (
       <div
         aria-label="button"
         className="group mb-1 flex w-full cursor-pointer justify-end rounded-sm p-[2px] px-[6px] hover:bg-neutral-200"
+        onClick={handleCopy}
       >
         <div className="flex items-center gap-2 text-xs font-medium text-neutral-400 transition duration-200 group-hover:text-neutral-500">
-          <span>Copy to clipboard</span>
-          <Copy size={14} />
-        </div>
-      </div>
-    );
-  };
-
-  const renderResponse = () => {
-    if (!response) return null;
-
-    const { data, contentType, status } = response;
-
-    return (
-      <div className="space-y-2 p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Response</h3>
-          <span
-            className={cn(
-              "rounded-full px-2 py-1 text-sm",
-              status >= 200 && status < 300
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            )}
-          >
-            Status: {status}
+          <span>
+            {copied && lastCopiedId === identifier
+              ? "Copied!"
+              : "Copy to clipboard"}
           </span>
-        </div>
-        <div className="rounded-lg border p-4">
-          {contentType.includes("application/json") ? (
-            <pre className="whitespace-pre-wrap break-words text-sm">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          ) : contentType.includes("image/") ? (
-            <img
-              src={URL.createObjectURL(data)}
-              alt="Response"
-              className="max-w-full rounded-lg"
-            />
-          ) : (
-            <pre className="whitespace-pre-wrap break-words text-sm">
-              {String(data)}
-            </pre>
-          )}
+          <Copy size={14} />
         </div>
       </div>
     );
@@ -391,420 +324,440 @@ const PreviewWindow = () => {
     return "bg-gray-100 text-gray-700"; // Default
   };
 
-  const renderDocs = () => {
-    if (!currentEndpoint) return null;
-
-    const pathParams = getPathParams(currentEndpoint.path);
-
-    // Create example request body if it's not a GET request
-    const exampleBody =
-      currentEndpoint.requestBody && selectedMethod !== "GET"
-        ? Object.fromEntries(
-            Object.entries(
-              currentEndpoint.requestBody.schema as Record<
-                string,
-                RequestBodySchema
+  return (
+    <div className="flex h-full flex-col overflow-hidden bg-background">
+      {/* Header - Fixed */}
+      <div className="sticky top-0 z-10 flex flex-col border-b bg-white shadow-sm">
+        <div className="flex mb-2 gap-4 items-center bg-zinc-100 px-3 py-2">
+          <X
+            className="cursor-pointer h-4 w-4 text-gray-500 hover:text-gray-700"
+            onClick={() => handleRightCollapse(!isRightCollapsed)}
+          />
+          <div className="flex gap-2 items-center">
+            <p className="text-base font-medium">Preview</p>
+            <Monitor className="h-4 w-4 " />
+          </div>
+          {endpoints.length > 0 && (
+            <Button
+              variant={showDocs ? "default" : "outline"}
+              size="sm"
+              className="ml-auto h-8 gap-2 rounded-md px-3 text-xs"
+              onClick={() => setShowDocs(!showDocs)}
+              disabled={isLoading}
+            >
+              {showDocs ? "Hide Docs" : "Show Docs"}
+            </Button>
+          )}
+        </div>
+        <div className="px-3 py-2">
+          {endpoints.length > 0 ? (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
+              <Select
+                value={selectedMethod}
+                onValueChange={(value) =>
+                  setSelectedMethod(value as HttpMethod)
+                }
+                disabled={isLoading}
               >
-            ).map(([key, value]) => [key, value.example])
-          )
-        : null;
-
-    // Create example path parameters
-    const examplePathParams = Object.fromEntries(
-      pathParams.map((param) => [
-        param.name,
-        param.example || `example_${param.name}`,
-      ])
-    );
-
-    // Construct example URL with path parameters
-    const baseUrlWithoutPath = BASE_URL.split("/latest")[0];
-    const examplePath = replacePath(currentEndpoint.path, examplePathParams);
-    const exampleUrl = new URL(`/latest${examplePath}`, baseUrlWithoutPath);
-
-    // Add example query parameters if they exist
-    if (currentEndpoint.requestQuery) {
-      Object.entries(
-        currentEndpoint.requestQuery as Record<string, RequestQueryParam>
-      ).forEach(([key, value]) => {
-        const exampleValue =
-          value.example || (value.type === "number" ? "123" : "example_value");
-        exampleUrl.searchParams.append(key, exampleValue);
-      });
-    }
-
-    return (
-      <div className="space-y-4 p-4">
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium">Endpoint Documentation</h3>
-          <div className="space-y-4 rounded-lg border p-4">
-            {/* Description at the top */}
-            <div className="rounded-lg bg-muted p-4">
-              <p className="text-sm text-muted-foreground">
-                {currentEndpoint.description}
-              </p>
-            </div>
-
-            {/* Path Parameters Section */}
-            {pathParams.length > 0 && (
-              <div>
-                <h4 className="mb-2 text-sm font-medium">Path Parameters</h4>
-                <div className="space-y-2">
-                  {pathParams.map((param) => (
-                    <div key={param.name} className="ml-4">
-                      <p className="flex items-center gap-2 text-sm">
-                        <span className="font-medium text-blue-600">
-                          {param.name}
-                        </span>
-                        <span className="text-destructive">*</span>
-                        <span className="text-muted-foreground">
-                          (example: {param.example})
-                        </span>
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Example Request */}
-            <div>
-              <h4 className="text-sm font-medium">Example Request</h4>
-              <div className="mt-2 space-y-2">
-                {exampleBody && (
-                  <div className="relative overflow-hidden rounded-lg bg-muted p-4 text-sm">
-                    <div className="absolute right-2 top-2 bg-muted">
-                      {renderCopyToClipboard()}
-                    </div>
-                    <pre className="mt-2 whitespace-pre-wrap break-words leading-loose tracking-wider text-blue-900">
-                      {JSON.stringify(exampleBody, null, 2)}
-                    </pre>
-                  </div>
-                )}
-                <div>
-                  <div className="relative overflow-hidden rounded-lg bg-muted p-4 text-sm">
-                    <div className="absolute right-2 top-2 bg-muted">
-                      {renderCopyToClipboard()}
-                    </div>
-                    <div className="flex gap-2">
+                <SelectTrigger className="h-7 w-fit border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
+                  <SelectValue placeholder="Method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {HTTP_METHODS.map((method) => (
+                    <SelectItem key={method} value={method} className="text-xs">
                       <span
                         className={cn(
-                          "h-fit rounded px-2 py-0.5 text-xs font-bold",
-                          getMethodColor(selectedMethod)
+                          "inline-flex h-5 items-center rounded px-1.5 font-medium",
+                          getMethodColor(method)
                         )}
                       >
-                        {selectedMethod}
+                        {method}
                       </span>
-                      <pre className="text-wrap text-[0.85rem] font-light tracking-wider text-neutral-600">
-                        {exampleUrl.toString()}
-                      </pre>
-                    </div>
-                  </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={selectedEndpoint}
+                onValueChange={setSelectedEndpoint}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="h-7 w-full border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
+                  <SelectValue placeholder="Select Endpoint" />
+                </SelectTrigger>
+                <SelectContent>
+                  {endpoints.map((endpoint) => (
+                    <SelectItem
+                      key={endpoint.path}
+                      value={endpoint.path}
+                      className="text-xs"
+                      disabled={endpoint.method !== selectedMethod}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="truncate">{endpoint.path}</span>
+                        {endpoint.method !== selectedMethod && (
+                          <span
+                            className={cn(
+                              "ml-auto inline-flex h-5 items-center rounded px-1.5 text-[10px] font-medium",
+                              getMethodColor(endpoint.method)
+                            )}
+                          >
+                            {endpoint.method}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-md bg-blue-100 p-1">
+                  <Clock className="h-4 w-4 text-blue-700" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-neutral-700">
+                    Automated Service
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    This API operates as an automated service (e.g., cron job)
+                    and doesn&apos;t expose any interactive endpoints. Please
+                    refer to the documentation for setup instructions and
+                    configuration details.
+                  </p>
                 </div>
               </div>
             </div>
+          )}
+        </div>
+      </div>
 
-            {/* Response Section */}
-            <div>
-              <h4 className="mb-4 text-sm font-medium">Responses</h4>
-              <div className="space-y-2">
-                {Object.entries(currentEndpoint.responses).map(
-                  ([status, response]) => (
-                    <div key={status} className="ml-4">
-                      <p className="flex gap-2 text-sm">
-                        <span
-                          className={cn(
-                            "h-fit rounded px-2 py-0.5 font-medium",
-                            getStatusColor(status)
-                          )}
-                        >
-                          {status}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {response.description}
-                        </span>
-                      </p>
+      {/* Scrollable Content Area */}
+      <div className="min-h-0 pb-4 flex-1 overflow-y-auto thin-scrollbar">
+        {!endpoints.length && apiDoc ? (
+          <div className="p-4">
+            {Object.entries(apiDoc.sections).map(([sectionKey, section]) => (
+              <div key={sectionKey} className="space-y-4">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <h3 className="mb-2 text-sm font-medium">{section.title}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {section.description}
+                  </p>
+                </div>
+                {Object.entries(section.endpoints).map(
+                  ([endpointKey, endpoint]) => (
+                    <div
+                      key={endpointKey}
+                      className="space-y-4 rounded-lg border bg-white p-4"
+                    >
+                      <div>
+                        <h4 className="text-sm font-medium">
+                          {endpoint.title}
+                        </h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {endpoint.description}
+                        </p>
+                      </div>
+                      {endpoint.schedule && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">Schedule</p>
+                          <div className="rounded-md bg-muted p-2">
+                            <code className="text-xs">{endpoint.schedule}</code>
+                          </div>
+                        </div>
+                      )}
+                      {endpoint.setup && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">
+                            Setup Instructions
+                          </p>
+                          <div className="rounded-lg border bg-muted/30 p-3">
+                            <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
+                              {endpoint.setup}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 )}
               </div>
-            </div>
+            ))}
           </div>
-        </div>
-      </div>
-    );
-  };
+        ) : endpoints.length > 0 &&
+          currentEndpointData &&
+          selectedMethod === currentEndpointData.method ? (
+          <div className="pb-safe">
+            {showDocs ? (
+              <div className="space-y-4 p-4">
+                {/* Description */}
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {currentEndpointData.description}
+                  </p>
+                </div>
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex w-full items-center justify-between rounded-lg p-2">
-        {/* Left Grouping */}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled={isLoading}>
-            <X className="h-5 w-5" />
-          </Button>
-
-          <Select
-            value={selectedEndpoint}
-            onValueChange={setSelectedEndpoint}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select Endpoint" />
-            </SelectTrigger>
-            <SelectContent>
-              {endpoints.map((endpoint) => (
-                <SelectItem key={endpoint} value={endpoint}>
-                  {endpoint}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div
-            className={cn(
-              "relative",
-              isLoading && "pointer-events-none opacity-50"
-            )}
-          >
-            <Tabs
-              value={selectedMethod}
-              onValueChange={setSelectedMethod}
-              defaultValue={availableMethods[0]}
-            >
-              <TabsList>
-                {availableMethods.map((method) => (
-                  <TabsTrigger key={method} value={method}>
-                    {method}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
-
-        {/* Right Grouping */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showDocs ? "default" : "outline"}
-            className="rounded-full text-sm shadow-none"
-            onClick={() => setShowDocs(!showDocs)}
-            disabled={isLoading}
-          >
-            Show Doc
-          </Button>
-          {/* <Button
-            variant={isLoading ? "destructive" : "default"}
-            className="flex items-center gap-1 rounded-full shadow-none"
-            onClick={handleTrigger}
-          >
-            {isLoading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4" />
-                Trigger
-              </>
-            )}
-          </Button> */}
-        </div>
-      </div>
-
-      {/* Content Area */}
-      {currentEndpoint && (
-        <>
-          {showDocs ? (
-            renderDocs()
-          ) : (
-            <>
-              {!response && (
-                <Form {...form}>
-                  <form className="space-y-4 p-4">
-                    {/* Path Parameters */}
-                    {getPathParams(currentEndpoint.path).length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-medium">Path Parameters</h3>
-                        {getPathParams(currentEndpoint.path).map((param) => (
-                          <FormField
-                            key={param.name}
-                            control={form.control}
-                            name={param.name}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel
-                                  className={cn(
-                                    showValidation &&
-                                      form.formState.errors[param.name] &&
-                                      "text-destructive"
-                                  )}
-                                >
-                                  {param.name}{" "}
-                                  <span className="text-destructive">*</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder={param.example}
-                                    className={cn(
-                                      showValidation &&
-                                        form.formState.errors[param.name] &&
-                                        "border-destructive focus-visible:ring-destructive"
-                                    )}
-                                  />
-                                </FormControl>
-                                {showValidation && <FormMessage />}
-                              </FormItem>
+                {/* Example Request */}
+                <div>
+                  <h3 className="mb-2 text-xs font-medium">Example Request</h3>
+                  <div className="space-y-2">
+                    {currentEndpointData.requestBody?.content?.[
+                      "application/json"
+                    ]?.schema?.properties && (
+                      <div className="relative overflow-hidden rounded-lg border bg-white">
+                        <div className="absolute right-2 top-2 z-10">
+                          {renderCopyToClipboard(
+                            JSON.stringify(
+                              Object.fromEntries(
+                                Object.entries(
+                                  currentEndpointData.requestBody.content[
+                                    "application/json"
+                                  ].schema.properties
+                                ).map(([key]) => [key, "example_value"])
+                              ),
+                              null,
+                              2
+                            ),
+                            "request-body"
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <pre className="text-xs text-neutral-800">
+                            {JSON.stringify(
+                              Object.fromEntries(
+                                Object.entries(
+                                  currentEndpointData.requestBody.content[
+                                    "application/json"
+                                  ].schema.properties
+                                ).map(([key]) => [key, "example_value"])
+                              ),
+                              null,
+                              2
                             )}
-                          />
-                        ))}
+                          </pre>
+                        </div>
                       </div>
                     )}
 
-                    {/* Query Parameters */}
-                    {currentEndpoint.requestQuery &&
-                      Object.entries(currentEndpoint.requestQuery).length >
-                        0 && (
-                        <div className="space-y-2">
-                          <h3 className="text-sm font-medium">
-                            Query Parameters
-                          </h3>
-                          {Object.entries(
-                            currentEndpoint.requestQuery as Record<
-                              string,
-                              RequestQueryParam
-                            >
-                          ).map(([key, value]) => {
-                            const isRequired = value?.isRequired === true;
-                            return (
-                              <FormField
-                                key={key}
-                                control={form.control}
-                                name={key}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel
-                                      className={cn(
-                                        showValidation &&
-                                          form.formState.errors[key] &&
-                                          "text-destructive"
-                                      )}
-                                    >
-                                      {key}{" "}
-                                      {isRequired && (
-                                        <span className="text-destructive">
-                                          *
-                                        </span>
-                                      )}
-                                    </FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        {...field}
-                                        placeholder={value.example}
-                                        className={cn(
-                                          showValidation &&
-                                            form.formState.errors[key] &&
-                                            "border-destructive focus-visible:ring-destructive"
-                                        )}
-                                      />
-                                    </FormControl>
-                                    {showValidation && <FormMessage />}
-                                  </FormItem>
-                                )}
-                              />
-                            );
-                          })}
-                        </div>
-                      )}
-
-                    {/* Request Body */}
-                    {currentEndpoint.requestBody &&
-                      selectedMethod !== "GET" && (
-                        <div className="space-y-2">
-                          <h3 className="text-sm font-medium">Request Body</h3>
-                          {Object.entries(
-                            currentEndpoint.requestBody.schema as Record<
-                              string,
-                              RequestBodySchema
-                            >
-                          ).map(([key, value]) => {
-                            const isRequired = value.isRequired === true;
-                            return (
-                              <FormField
-                                key={key}
-                                control={form.control}
-                                name={key}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel
-                                      className={cn(
-                                        showValidation &&
-                                          form.formState.errors[key] &&
-                                          "text-destructive"
-                                      )}
-                                    >
-                                      {key}{" "}
-                                      {isRequired && (
-                                        <span className="text-destructive">
-                                          *
-                                        </span>
-                                      )}
-                                    </FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        {...field}
-                                        placeholder={value.example}
-                                        className={cn(
-                                          showValidation &&
-                                            form.formState.errors[key] &&
-                                            "border-destructive focus-visible:ring-destructive"
-                                        )}
-                                      />
-                                    </FormControl>
-                                    {showValidation && <FormMessage />}
-                                  </FormItem>
-                                )}
-                              />
-                            );
-                          })}
-                        </div>
-                      )}
-
-                    {/* Submit Button */}
-                    <div className="flex justify-end pt-4">
-                      <Button
-                        type="button"
-                        variant={isLoading ? "destructive" : "default"}
-                        className="flex items-center gap-2 rounded-full px-6 shadow-none"
-                        onClick={handleTrigger}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            <span>Stop</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4" />
-                            <span>Submit</span>
-                          </>
+                    <div className="group relative overflow-hidden rounded-lg border bg-white">
+                      <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+                        {renderCopyToClipboard(
+                          BASE_URL + currentEndpointData.path,
+                          "request-url"
                         )}
-                      </Button>
+                      </div>
+                      <div className="p-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium",
+                              getMethodColor(currentEndpointData.method)
+                            )}
+                          >
+                            {currentEndpointData.method}
+                          </span>
+                          <span className="truncate text-xs text-muted-foreground">
+                            {BASE_URL + currentEndpointData.path}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </form>
-                </Form>
-              )}
-              {response && renderResponse()}
-            </>
-          )}
-        </>
-      )}
+                  </div>
+                </div>
+
+                {/* Responses */}
+                <div>
+                  <h3 className="mb-2 text-xs font-medium">Responses</h3>
+                  <div className="space-y-2">
+                    {Object.entries(currentEndpointData.responses).map(
+                      ([status, response]) => (
+                        <div
+                          key={status}
+                          className="flex items-center gap-2 rounded-lg border bg-white p-2"
+                        >
+                          <span
+                            className={cn(
+                              "inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium shrink-0",
+                              getStatusColor(status)
+                            )}
+                          >
+                            {status}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {(response as any).description}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                {/* Setup Instructions */}
+                {currentEndpointData.setupInstructions && (
+                  <div>
+                    <h3 className="mb-2 text-xs font-medium">
+                      Setup Instructions
+                    </h3>
+                    <div className="rounded-lg border bg-white p-3">
+                      <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
+                        {currentEndpointData.setupInstructions}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {!response ? (
+                  <Form {...form}>
+                    <form className="space-y-4 p-4">
+                      {/* Request Body */}
+                      {(() => {
+                        const properties =
+                          currentEndpointData?.requestBody?.content?.[
+                            "application/json"
+                          ]?.schema?.properties;
+                        if (!properties) return null;
+
+                        return (
+                          <div>
+                            <h3 className="mb-2 text-xs font-medium">
+                              Request Body
+                            </h3>
+                            <div className="space-y-3">
+                              {Object.entries(properties).map(
+                                ([key, value]) => {
+                                  const required =
+                                    currentEndpointData?.requestBody?.required;
+                                  const isRequired =
+                                    Array.isArray(required) &&
+                                    required.includes(key);
+                                  return (
+                                    <FormField
+                                      key={key}
+                                      control={form.control}
+                                      name={key}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-xs text-neutral-700">
+                                            {key}
+                                            {isRequired && (
+                                              <span className="ml-1 text-red-500">
+                                                *
+                                              </span>
+                                            )}
+                                          </FormLabel>
+                                          <FormControl>
+                                            <Input
+                                              {...field}
+                                              className="h-8 text-sm"
+                                              placeholder={
+                                                (value as any).example ||
+                                                `Enter ${key}`
+                                              }
+                                            />
+                                          </FormControl>
+                                          {showValidation && (
+                                            <FormMessage className="text-xs" />
+                                          )}
+                                        </FormItem>
+                                      )}
+                                    />
+                                  );
+                                }
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Submit Button */}
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          type="button"
+                          variant={isLoading ? "destructive" : "default"}
+                          className="h-8 gap-2 rounded-md px-4 text-xs"
+                          onClick={handleTrigger}
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <>
+                              <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              <span>Cancel</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-3 w-3" />
+                              <span>Submit</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                ) : (
+                  <div className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xs font-medium">Response</h3>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium",
+                              response.status >= 200 && response.status < 300
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            )}
+                          >
+                            Status: {response.status}
+                          </span>
+                          <button
+                            onClick={() => setResponse(null)}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                          >
+                            <X className="h-3 w-3 text-neutral-500" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="overflow-hidden rounded-lg border bg-white">
+                        <div className="p-3">
+                          {response.contentType.includes("application/json") ? (
+                            <pre className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
+                              {JSON.stringify(response.data, null, 2)}
+                            </pre>
+                          ) : response.contentType.includes("image/") ? (
+                            <img
+                              src={URL.createObjectURL(response.data)}
+                              alt="Response"
+                              className="max-h-[60vh] w-full rounded object-contain"
+                            />
+                          ) : (
+                            <pre className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
+                              {String(response.data)}
+                            </pre>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-muted-foreground">
+              No endpoint available for {selectedMethod} {selectedEndpoint}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default PreviewWindow;
+

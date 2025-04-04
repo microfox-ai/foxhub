@@ -1,0 +1,310 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: ${{ github.repository }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Preview Port and URL
+        id: preview-configs
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          BASE_BRANCH=${{ github.base_ref }}
+          HEAD_BRANCH=${{ github.head_ref }}
+          
+          if [[ "$BASE_BRANCH" == "main" && "$HEAD_BRANCH" == "staging/shards" ]]; then
+            PORT=8001
+            PREVIEW_URL="staging.microfox.app"
+          else
+            PORT_RANGE=500
+            PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
+            PREVIEW_URL="preview-${PORT}.microfox.app"
+          fi
+          
+          echo "port=$PORT" >> $GITHUB_OUTPUT
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache dependencies and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/web/.next/cache
+          key: ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        id: install
+        run: |
+          if ! npm install; then
+            echo "install-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "install-status=1" >> $GITHUB_OUTPUT
+
+      - name: Build project
+        id: build
+        run: |
+          if ${{steps.install.outputs.install-status == 0}} ; then
+            echo "npm install failed"
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
+
+          if ! npm run build:ci; then
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "build-status=1" >> $GITHUB_OUTPUT
+
+      - name: Update build status comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            const buildStatus = '${{ steps.build.outputs.build-status }}';
+            const logsUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+
+            // Find existing preview status comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const previewComment = comments.find(comment => 
+              comment.body.includes('## Preview Deployment Status')
+            );
+
+            const statusEmoji = buildStatus === '1' ? '✅' : '❌';
+            const statusText = buildStatus === '1' ? 'Build Successful' : 'Build Failed';
+
+            const commentBody = `## Preview Deployment Status\n\n` +
+              `### Build Status\n` +
+              `${statusEmoji} ${statusText}\n\n` +
+              `### Preview URL\n` +
+              `🔄 Building...\n\n` +
+              `### Logs\n` +
+              `[View Build Logs](${logsUrl})`;
+
+            if (previewComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: previewComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+            }
+
+      - name: Add Build Status Label
+        if: success() || failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const buildFailed = ${{ steps.build.outputs.build-status }} === '0';
+
+            if (buildFailed) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['build-failed']
+              });
+            }
+
+      - name: Prepare deployment files
+        if: ${{steps.build.outputs.build-status == 1 }}
+        run: |
+          shopt -s dotglob
+          mkdir -p build/preview/${{ github.event.pull_request.number }}
+          cp -r apps/web/.next/standalone/* build/preview/${{ github.event.pull_request.number }}
+          mkdir -p build/preview/${{ github.event.pull_request.number }}/apps/web/.next/static
+          cp -r apps/web/.next/static/* build/preview/${{ github.event.pull_request.number }}/apps/web/.next/static
+          mkdir -p build/preview/${{ github.event.pull_request.number }}/apps/web/public
+          cp -r apps/web/public/* build/preview/${{ github.event.pull_request.number }}/apps/web/public
+          cp .env.vault build/preview/${{ github.event.pull_request.number }}/.env.vault
+          cp .env.vault build/preview/${{ github.event.pull_request.number }}/apps/web/.env.vault
+
+      - name: Upload using rsync
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: "-av --delete --partial --bwlimit=5000"
+          path: "build/preview/${{ github.event.pull_request.number }}/"
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${{ github.event.pull_request.number }}"
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up SSH (secured)
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
+
+      - name: Deploy on DigitalOcean
+        if: ${{steps.build.outputs.build-status == 1 }}
+        id: deploy
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+            source ~/.nvm/nvm.sh
+            nvm use 23
+            
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${PR_NUMBER}"
+            
+            cd "$APP_PATH"
+            cd apps/web
+
+            export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
+            export PORT=${{ steps.preview-configs.outputs.port }}
+
+            echo "APP_PATH: $APP_PATH"
+            echo "PORT: $PORT"
+            echo "PR_NUMBER: $PR_NUMBER"
+
+            if pm2 list | grep -q "foxhub-${PR_NUMBER}" ; then
+              if ! pm2 restart "foxhub-${PR_NUMBER}" --update-env ; then
+                echo "Failed to restart PM2 process"
+                exit 1
+              fi
+            else
+              if ! pm2 start npm --name "foxhub-${PR_NUMBER}" -- run start:ci ; then
+                echo "Failed to start PM2 process"
+                exit 1
+              fi
+            fi
+            
+            if ! pm2 show "foxhub-${PR_NUMBER}" > /dev/null 2>&1; then
+              echo "Failed to start/restart PM2 process"
+              exit 1
+            fi
+
+            # Check PM2 process status
+            PM2_STATUS=$(pm2 show "foxhub-${PR_NUMBER}" | grep "status" | awk '{print $4}')
+            if [ "$PM2_STATUS" = "errored" ]; then
+              echo "PM2 process is in error state"
+              exit 1
+            fi
+
+            echo "Successfully deployed preview for PR #${PR_NUMBER}"
+          ENDSSH
+          if [ $? -ne 0 ]; then
+            echo "Deployment step failed for PR #${{ github.event.pull_request.number }}"
+            exit 1
+          fi
+
+      - name: Update deployment status comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            const buildStatus = '${{ steps.build.outputs.build-status }}';
+            const deployStatus = '${{ steps.deploy.outcome }}';
+            const logsUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            const previewUrl = '${{ steps.preview-configs.outputs.preview_url }}';
+
+            // Find existing preview status comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const previewComment = comments.find(comment => 
+              comment.body.includes('## Preview Deployment Status')
+            );
+
+            const buildEmoji = buildStatus === '1' ? '✅' : '❌';
+            const buildText = buildStatus === '1' ? 'Build Successful' : 'Build Failed';
+            const deployEmoji = deployStatus === 'success' ? '🚀' : '❌';
+            const deployText = deployStatus === 'success' ? 'Preview Deployed!' : 'Preview Failed!';
+
+            const commentBody = `## Preview Deployment Status\n\n` +
+              `### Build Status\n` +
+              `${buildEmoji} ${buildText}\n\n` +
+              `### Preview URL\n` +
+              `${deployEmoji} ${deployText}\n` +
+              `[View Preview](${previewUrl})\n\n` +
+              `### Logs\n` +
+              `[View Build Logs](${logsUrl})`;
+
+            if (previewComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: previewComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+            }
+
+      - name: Add Deployment Status Label
+        if: ${{ steps.build.outputs.build-status == 1 }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            try {
+              let deploymentFailed = false;
+
+              if (`${{ steps.deploy.outcome }}` === 'failure') {
+                deploymentFailed = true;
+              }
+              
+              const newLabel = deploymentFailed ? 'preview-failed' : 'preview-deployed';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [newLabel]
+              });
+            } catch (e) {
+              console.error('Failed to update deployment status:', e);
+              core.setFailed(`Failed to update deployment status: ${e.message}`);
+            }

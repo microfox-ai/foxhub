@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Play, X, Monitor, Clock } from "lucide-react";
+import { Copy, Play, X, Monitor, Clock, Square } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   Form,
@@ -18,6 +18,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,70 +28,25 @@ import { useLayout } from "../providers/LayoutProvider";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
 import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-
-// Available HTTP methods
-const HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"] as const;
-type HttpMethod = (typeof HTTP_METHODS)[number];
-
-// Type for form values
-type FormValues = Record<string, string>;
-
-// Type definitions for API documentation
-interface ApiEndpoint {
-  title: string;
-  description: string;
-  method: string;
-  path: string;
-  requestBody?: {
-    description: string;
-    required: boolean;
-    content: {
-      "application/json": {
-        schema: {
-          type: string;
-          properties: Record<string, unknown>;
-        };
-      };
-    };
-  };
-  responses: {
-    [key: string]: {
-      description: string;
-      content: {
-        "application/json": {
-          schema: {
-            type: string;
-            properties: Record<string, unknown>;
-          };
-        };
-      };
-    };
-  };
-  setupInstructions?: string;
-  schedule?: string;
-  setup?: string;
-}
-
-interface ApiSection {
-  title: string;
-  description: string;
-  endpoints: {
-    [key: string]: ApiEndpoint;
-  };
-}
-
-interface ApiDoc {
-  title: string;
-  description: string;
-  version: string;
-  sections: {
-    [key: string]: ApiSection;
-  };
-}
+import {
+  getMethodColor,
+  getStatusColor,
+  buildExampleUrl,
+  getPlaceholder,
+} from "./utils";
+import {
+  HTTP_METHODS,
+  HttpMethod,
+  FormValues,
+  OpenAPISchema,
+  OpenAPIOperation,
+  OpenAPIPath,
+  OpenAPIDoc,
+} from "./types";
 
 const PreviewWindow = () => {
   const { deploymentInfo } = useTaskInstanceMetaContext();
-  const [apiDoc, setApiDoc] = useState<ApiDoc | null>(null);
+  const [apiDoc, setApiDoc] = useState<OpenAPIDoc | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<HttpMethod>("POST");
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,56 +58,67 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
 
-  const BASE_URL = deploymentInfo?.baseUrl;
+  const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
 
-  const endpoints = apiDoc
-    ? Object.entries(apiDoc.sections).flatMap(
-        ([sectionKey, section]: [string, ApiSection]) =>
-          Object.entries(section.endpoints || {}).map(
-            ([endpointKey, endpoint]: [string, ApiEndpoint]) => ({
-              path: endpoint.path,
-              method: endpoint.method,
-              title: endpoint.title,
-              sectionKey: sectionKey,
-              endpointKey: endpointKey,
-            })
-          )
-      )
-    : [];
+  const endpoints =
+    apiDoc && apiDoc.paths
+      ? Object.entries(apiDoc.paths).flatMap(
+          ([path, pathData]: [string, OpenAPIPath]) =>
+            Object.entries(pathData).map(
+              ([method, operation]: [string, OpenAPIOperation]) => ({
+                path: path,
+                method: method.toUpperCase() as HttpMethod,
+                title: operation.summary || "",
+                operationId: operation.operationId,
+              })
+            )
+        )
+      : [];
 
   const [selectedEndpoint, setSelectedEndpoint] = useState<string>("");
 
   useEffect(() => {
-    if (apiDoc && endpoints.length > 0) {
-      setSelectedEndpoint(endpoints[0]?.path ?? "");
+    if (apiDoc && apiDoc.paths && endpoints.length > 0 && !selectedEndpoint) {
+      const firstEndpoint = endpoints[0];
+      if (firstEndpoint) {
+        setSelectedEndpoint(firstEndpoint.path);
+        setSelectedMethod(firstEndpoint.method);
+      }
     }
   }, [apiDoc, endpoints]);
 
   useEffect(() => {
-    (async () => {
+    const initializeState = async () => {
       if (!deploymentInfo?.baseUrl) return;
-      const response = await PortalSdk.getData(
-        `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
-        {}
-      );
-      setApiDoc(response);
-    })();
+
+      try {
+        const response = await PortalSdk.getData(
+          `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
+          {}
+        );
+        setApiDoc(response);
+      } catch (error) {
+        console.error("Failed to fetch API docs:", error);
+      }
+    };
+
+    initializeState();
   }, [deploymentInfo]);
 
   // Get the current endpoint data
-  const currentEndpoint = endpoints.find((e) => e.path === selectedEndpoint);
-  const currentEndpointData = currentEndpoint
-    ? (apiDoc?.sections[currentEndpoint.sectionKey]?.endpoints?.[
-        currentEndpoint.endpointKey
-      ] as ApiEndpoint | undefined)
-    : null;
-
-  // Update method when endpoint changes
-  useEffect(() => {
-    if (currentEndpointData) {
-      setSelectedMethod(currentEndpointData.method as HttpMethod);
-    }
-  }, [currentEndpointData]);
+  const currentEndpoint = endpoints.find(
+    (e) => e.path === selectedEndpoint && e.method === selectedMethod
+  );
+  const currentEndpointData =
+    selectedEndpoint && selectedMethod
+      ? {
+          ...(apiDoc?.paths[selectedEndpoint]?.[
+            selectedMethod.toLowerCase()
+          ] as OpenAPIOperation),
+          method: selectedMethod,
+          path: selectedEndpoint,
+        }
+      : null;
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
@@ -158,22 +126,165 @@ const PreviewWindow = () => {
 
     const schemaFields: Record<string, z.ZodType<any>> = {};
 
+    // Add query parameters and path parameters
+    if (currentEndpointData.parameters) {
+      currentEndpointData.parameters.forEach((param) => {
+        const schema = param.schema;
+        const isRequired = param.required || false;
+        const paramName = param.name;
+
+        let zodSchema: z.ZodType<any>;
+
+        switch (schema.type) {
+          case "string":
+            zodSchema = z.string();
+            if (schema.format === "email") {
+              zodSchema = z.string().email();
+            } else if (schema.format === "uri") {
+              zodSchema = z.string().url();
+            } else if (schema.format === "date-time") {
+              zodSchema = z.string().datetime();
+            }
+            break;
+          case "number":
+            zodSchema = z.string().transform((val) => Number(val));
+            break;
+          case "integer":
+            zodSchema = z.string().transform((val) => parseInt(val));
+            break;
+          case "boolean":
+            zodSchema = z.string().transform((val) => val === "true");
+            break;
+          case "array":
+            zodSchema = z.string().transform((val) => {
+              try {
+                return JSON.parse(val);
+              } catch (e) {
+                return [];
+              }
+            });
+            break;
+          case "object":
+            zodSchema = z.string().transform((val) => {
+              try {
+                return JSON.parse(val);
+              } catch (e) {
+                return {};
+              }
+            });
+            break;
+          default:
+            zodSchema = z.string();
+        }
+
+        // Add the parameter to the schema with a prefix to distinguish its type
+        const fieldName = `${param.in}_${paramName}`;
+        schemaFields[fieldName] = isRequired ? zodSchema : zodSchema.optional();
+      });
+    }
+
     // Add body parameters if it's a POST/PUT/PATCH request
     const properties =
       currentEndpointData.requestBody?.content?.["application/json"]?.schema
         ?.properties;
     if (properties) {
       Object.entries(properties).forEach(([key, value]) => {
-        const required = currentEndpointData.requestBody?.required;
-        const isRequired = Array.isArray(required) && required.includes(key);
-        const schema = z.string();
-        schemaFields[key] = isRequired
-          ? schema.min(1, { message: "This field is required" })
-          : schema.optional();
+        const schema = value as OpenAPISchema;
+        const isRequired =
+          currentEndpointData.requestBody?.required ||
+          (schema.required && schema.required.includes(key));
+
+        let zodSchema: z.ZodType<any>;
+
+        switch (schema.type) {
+          case "string":
+            zodSchema = z.string();
+            if (schema.format === "email") {
+              zodSchema = z.string().email();
+            } else if (schema.format === "uri") {
+              zodSchema = z.string().url();
+            } else if (schema.format === "date-time") {
+              zodSchema = z.string().datetime();
+            }
+            break;
+          case "number":
+            zodSchema = z.string().transform((val) => Number(val));
+            break;
+          case "integer":
+            zodSchema = z.string().transform((val) => parseInt(val));
+            break;
+          case "boolean":
+            zodSchema = z.string().transform((val) => val === "true");
+            break;
+          case "array":
+            zodSchema = z.string().transform((val) => {
+              try {
+                return JSON.parse(val);
+              } catch (e) {
+                return [];
+              }
+            });
+            break;
+          case "object":
+            zodSchema = z.string().transform((val) => {
+              try {
+                return JSON.parse(val);
+              } catch (e) {
+                return {};
+              }
+            });
+            break;
+          default:
+            zodSchema = z.string();
+        }
+
+        schemaFields[key] = isRequired ? zodSchema : zodSchema.optional();
       });
     }
 
     return z.object(schemaFields);
+  };
+
+  // Helper function to create Zod schema from OpenAPI schema
+  const createZodSchemaFromOpenAPI = (
+    schema: OpenAPISchema
+  ): z.ZodType<any> => {
+    switch (schema.type) {
+      case "string":
+        let stringSchema = z.string();
+        if (schema.format === "email") {
+          stringSchema = z.string().email();
+        } else if (schema.format === "uri") {
+          stringSchema = z.string().url();
+        } else if (schema.format === "date-time") {
+          stringSchema = z.string().datetime();
+        }
+        return stringSchema;
+      case "number":
+        return z.number();
+      case "integer":
+        return z.number().int();
+      case "boolean":
+        return z.boolean();
+      case "array":
+        if (schema.items) {
+          return z.array(createZodSchemaFromOpenAPI(schema.items));
+        }
+        return z.array(z.any());
+      case "object":
+        if (schema.properties) {
+          const objectSchema: Record<string, z.ZodType<any>> = {};
+          Object.entries(schema.properties).forEach(([key, value]) => {
+            objectSchema[key] = createZodSchemaFromOpenAPI(
+              value as OpenAPISchema
+            );
+          });
+          return z.object(objectSchema);
+        }
+        return z.record(z.any());
+      default:
+        return z.any();
+    }
   };
 
   const form = useForm<FormValues>({
@@ -183,9 +294,13 @@ const PreviewWindow = () => {
 
   // Reset form when endpoint changes
   useEffect(() => {
-    form.reset();
-    setShowValidation(false);
-    setResponse(null);
+    const resetForm = () => {
+      form.reset();
+      setShowValidation(false);
+      setResponse(null);
+    };
+
+    resetForm();
   }, [selectedEndpoint, form]);
 
   const makeApiCall = async (data: FormValues) => {
@@ -197,23 +312,107 @@ const PreviewWindow = () => {
     setIsLoading(true);
 
     try {
-      // Construct URL
-      const url = `${BASE_URL}${currentEndpointData.path}`;
-      console.log(url, "url");
+      // Process path parameters
+      let path = currentEndpointData.path || "";
+      if (currentEndpointData.parameters) {
+        const pathParams = currentEndpointData.parameters.filter(
+          (param) => param.in === "path"
+        );
 
-      // Prepare request body for POST/PUT/PATCH requests
-      const requestBody = ["POST", "PUT", "PATCH"].includes(
-        currentEndpointData.method
-      )
-        ? JSON.stringify(data)
-        : undefined;
+        pathParams.forEach((param) => {
+          const paramValue = data[`path_${param.name}`];
+          if (paramValue !== undefined) {
+            path = path.replace(
+              `{${param.name}}`,
+              encodeURIComponent(String(paramValue))
+            );
+          }
+        });
+      }
+      let url = `${BASE_URL}${path}`;
+      // Process query parameters
 
-      // Convert request headers to proper format
+      if (currentEndpointData.parameters) {
+        const queryParams = currentEndpointData.parameters.filter(
+          (param) => param.in === "query"
+        );
+
+        if (queryParams.length > 0) {
+          const queryString = queryParams
+            .map((param) => {
+              const paramValue = data[`query_${param.name}`];
+              if (paramValue !== undefined) {
+                return `${encodeURIComponent(param.name)}=${encodeURIComponent(String(paramValue))}`;
+              }
+              return null;
+            })
+            .filter(Boolean)
+            .join("&");
+
+          if (queryString) {
+            url += `?${queryString}`;
+          }
+        }
+      }
+
+      // Process header parameters
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
 
-      const response = await fetch(url.toString(), {
+      if (currentEndpointData.parameters) {
+        const headerParams = currentEndpointData.parameters.filter(
+          (param) => param.in === "header"
+        );
+
+        headerParams.forEach((param) => {
+          const paramValue = data[`header_${param.name}`];
+          if (paramValue !== undefined) {
+            headers[param.name] = String(paramValue);
+          }
+        });
+      }
+
+      // Prepare request body for POST/PUT/PATCH requests
+      let requestBody: any = undefined;
+      if (
+        currentEndpointData.method &&
+        ["POST", "PUT", "PATCH"].includes(currentEndpointData.method)
+      ) {
+        const bodyData: Record<string, any> = {};
+        const properties =
+          currentEndpointData.requestBody?.content?.["application/json"]?.schema
+            ?.properties;
+
+        if (properties) {
+          Object.entries(properties).forEach(([key, schema]) => {
+            const value = data[key];
+            if (value !== undefined) {
+              try {
+                // Try to parse as JSON if it's an array or object
+                if (schema.type === "array" || schema.type === "object") {
+                  bodyData[key] = JSON.parse(value);
+                } else if (
+                  schema.type === "number" ||
+                  schema.type === "integer"
+                ) {
+                  bodyData[key] = Number(value);
+                } else if (schema.type === "boolean") {
+                  bodyData[key] = value === "true";
+                } else {
+                  bodyData[key] = value;
+                }
+              } catch (e) {
+                // If parsing fails, use the raw value
+                bodyData[key] = value;
+              }
+            }
+          });
+        }
+        requestBody = JSON.stringify(bodyData);
+      }
+
+      const response = await fetch(url, {
         method: currentEndpointData.method,
         headers,
         body: requestBody,
@@ -293,35 +492,345 @@ const PreviewWindow = () => {
     );
   };
 
-  const getMethodColor = (method: string) => {
-    switch (method.toUpperCase()) {
-      case "GET":
-        return "bg-green-100 text-green-700";
-      case "POST":
-        return "bg-blue-100 text-blue-700";
-      case "PUT":
-        return "bg-yellow-100 text-yellow-700";
-      case "DELETE":
-        return "bg-red-100 text-red-700";
-      case "PATCH":
-        return "bg-purple-100 text-purple-700";
+  const renderFormField = (
+    key: string,
+    schema: OpenAPISchema,
+    isRequired: boolean,
+    description?: string
+  ) => {
+    // Common label and description rendering
+    const renderLabelAndDescription = () => (
+      <>
+        <FormLabel className="text-xs text-neutral-700">
+          {key.replace(/^(path|query|header)_/, "")}
+          {isRequired && <span className="ml-1 text-red-500">*</span>}
+        </FormLabel>
+        {(description || schema.description) && (
+          <p className="text-xs text-neutral-500 mb-1">
+            {description || schema.description}
+          </p>
+        )}
+      </>
+    );
+
+    switch (schema.type) {
+      case "string":
+        if (schema.format === "date-time") {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="datetime-local"
+                      className="h-8 text-sm"
+                      placeholder={getPlaceholder(
+                        key,
+                        "string",
+                        currentEndpointData?.method === "GET",
+                        schema.example
+                      )}
+                    />
+                  </FormControl>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
+        if (schema.format === "email") {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      className="h-8 text-sm"
+                      placeholder="Enter email address"
+                    />
+                  </FormControl>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
+        if (schema.format === "uri") {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="url"
+                      className="h-8 text-sm"
+                      placeholder="Enter URL"
+                    />
+                  </FormControl>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
+        // For long text strings, use textarea
+        if (
+          schema.description?.toLowerCase().includes("long") ||
+          schema.description?.toLowerCase().includes("description")
+        ) {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      className="min-h-[100px] text-sm"
+                      placeholder={getPlaceholder(
+                        key,
+                        "string",
+                        currentEndpointData?.method === "GET",
+                        schema.example
+                      )}
+                    />
+                  </FormControl>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
+        return (
+          <FormField
+            key={key}
+            control={form.control}
+            name={key}
+            render={({ field }) => (
+              <FormItem>
+                {renderLabelAndDescription()}
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="h-8 text-sm"
+                    placeholder={getPlaceholder(
+                      key,
+                      "string",
+                      currentEndpointData?.method === "GET",
+                      schema.example
+                    )}
+                  />
+                </FormControl>
+                {showValidation && <FormMessage className="text-xs" />}
+              </FormItem>
+            )}
+          />
+        );
+      case "number":
+      case "integer":
+        return (
+          <FormField
+            key={key}
+            control={form.control}
+            name={key}
+            render={({ field }) => (
+              <FormItem>
+                {renderLabelAndDescription()}
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="number"
+                    className="h-8 text-sm"
+                    placeholder={getPlaceholder(
+                      key,
+                      "number",
+                      currentEndpointData?.method === "GET",
+                      schema.example
+                    )}
+                  />
+                </FormControl>
+                {showValidation && <FormMessage className="text-xs" />}
+              </FormItem>
+            )}
+          />
+        );
+      case "boolean":
+        return (
+          <FormField
+            key={key}
+            control={form.control}
+            name={key}
+            render={({ field }) => (
+              <FormItem className="flex flex-col space-y-2">
+                <div className="flex flex-row items-start space-x-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={
+                        typeof field.value === "boolean"
+                          ? field.value
+                          : field.value === "true"
+                      }
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    {renderLabelAndDescription()}
+                  </div>
+                </div>
+                {showValidation && <FormMessage className="text-xs" />}
+              </FormItem>
+            )}
+          />
+        );
+      case "array":
+        return (
+          <FormField
+            key={key}
+            control={form.control}
+            name={key}
+            render={({ field }) => (
+              <FormItem>
+                {renderLabelAndDescription()}
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    className="min-h-[100px] font-mono text-sm"
+                    placeholder={getPlaceholder(
+                      key,
+                      "array",
+                      currentEndpointData?.method === "GET",
+                      schema.example
+                    )}
+                  />
+                </FormControl>
+                {showValidation && <FormMessage className="text-xs" />}
+              </FormItem>
+            )}
+          />
+        );
+      case "object":
+        return (
+          <FormField
+            key={key}
+            control={form.control}
+            name={key}
+            render={({ field }) => (
+              <FormItem>
+                {renderLabelAndDescription()}
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    className="min-h-[100px] font-mono text-sm"
+                    placeholder={getPlaceholder(
+                      key,
+                      "object",
+                      currentEndpointData?.method === "GET",
+                      schema.example
+                    )}
+                  />
+                </FormControl>
+                {showValidation && <FormMessage className="text-xs" />}
+              </FormItem>
+            )}
+          />
+        );
       default:
-        return "bg-gray-100 text-gray-700";
+        return null;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const statusNum = parseInt(status);
-    if (statusNum >= 200 && statusNum < 300) {
-      return "bg-green-100 text-green-700"; // Success
-    } else if (statusNum >= 300 && statusNum < 400) {
-      return "bg-blue-100 text-blue-700"; // Redirection
-    } else if (statusNum >= 400 && statusNum < 500) {
-      return "bg-yellow-100 text-yellow-700"; // Client Error
-    } else if (statusNum >= 500) {
-      return "bg-red-100 text-red-700"; // Server Error
-    }
-    return "bg-gray-100 text-gray-700"; // Default
+  const renderParameters = () => {
+    if (!currentEndpointData?.parameters) return null;
+
+    const pathParams = currentEndpointData.parameters.filter(
+      (param) => param.in === "path"
+    );
+    const queryParams = currentEndpointData.parameters.filter(
+      (param) => param.in === "query"
+    );
+    const headerParams = currentEndpointData.parameters.filter(
+      (param) => param.in === "header"
+    );
+
+    return (
+      <div className="space-y-4">
+        {pathParams.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-neutral-700">
+              Path Parameters
+            </h4>
+            <div className="grid gap-2">
+              {pathParams.map((param) => {
+                const key = `path_${param.name}`;
+                return renderFormField(
+                  key,
+                  param.schema,
+                  param.required || false,
+                  param.description
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {queryParams.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-neutral-700">
+              Query Parameters
+            </h4>
+            <div className="grid gap-2">
+              {queryParams.map((param) => {
+                const key = `query_${param.name}`;
+                return renderFormField(
+                  key,
+                  param.schema,
+                  param.required || false,
+                  param.description
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {headerParams.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-neutral-700">
+              Header Parameters
+            </h4>
+            <div className="grid gap-2">
+              {headerParams.map((param) => {
+                const key = `header_${param.name}`;
+                return renderFormField(
+                  key,
+                  param.schema,
+                  param.required || false,
+                  param.description
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -354,65 +863,86 @@ const PreviewWindow = () => {
             <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
               <Select
                 value={selectedMethod}
-                onValueChange={(value) =>
-                  setSelectedMethod(value as HttpMethod)
-                }
+                onValueChange={(value) => {
+                  setSelectedMethod(value as HttpMethod);
+                }}
                 disabled={isLoading}
               >
                 <SelectTrigger className="h-7 w-fit border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
                   <SelectValue placeholder="Method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {HTTP_METHODS.map((method) => (
-                    <SelectItem key={method} value={method} className="text-xs">
-                      <span
-                        className={cn(
-                          "inline-flex h-5 items-center rounded px-1.5 font-medium",
-                          getMethodColor(method)
-                        )}
-                      >
-                        {method}
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {selectedEndpoint
+                    ? endpoints
+                        .filter((e) => e.path === selectedEndpoint)
+                        .map((endpoint) => (
+                          <SelectItem
+                            key={`${endpoint.path}-${endpoint.method}`}
+                            value={endpoint.method}
+                            className="text-xs"
+                          >
+                            <span
+                              className={cn(
+                                "inline-flex h-5 items-center rounded px-1.5 font-medium",
+                                getMethodColor(endpoint.method)
+                              )}
+                            >
+                              {endpoint.method}
+                            </span>
+                          </SelectItem>
+                        ))
+                    : HTTP_METHODS.map((method) => (
+                        <SelectItem
+                          key={method}
+                          value={method}
+                          className="text-xs"
+                        >
+                          <span
+                            className={cn(
+                              "inline-flex h-5 items-center rounded px-1.5 font-medium",
+                              getMethodColor(method)
+                            )}
+                          >
+                            {method}
+                          </span>
+                        </SelectItem>
+                      ))}
                 </SelectContent>
               </Select>
 
               <Select
                 value={selectedEndpoint}
-                onValueChange={setSelectedEndpoint}
+                onValueChange={(value) => {
+                  setSelectedEndpoint(value);
+                  // Get available methods for this endpoint
+                  const endpointMethods = endpoints
+                    .filter((e) => e.path === value)
+                    .map((e) => e.method);
+                  // Set the first available method
+                  if (endpointMethods.length > 0) {
+                    setSelectedMethod(endpointMethods[0] as HttpMethod);
+                  }
+                }}
                 disabled={isLoading}
               >
                 <SelectTrigger className="h-7 w-full border-0 bg-transparent text-xs hover:bg-white focus:ring-0">
-                  <SelectValue placeholder="Select Endpoint" />
+                  <SelectValue
+                    className="truncate max-w-[200px]"
+                    placeholder="Select Endpoint"
+                  />
                 </SelectTrigger>
-                <SelectContent>
-                  {endpoints.map((endpoint) => (
-                    <SelectItem
-                      key={endpoint.path}
-                      value={endpoint.path}
-                      className="text-xs"
-                      disabled={endpoint.method !== selectedMethod}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="truncate">{endpoint.path}</span>
-                        {endpoint.method !== selectedMethod && (
-                          <span
-                            className={cn(
-                              "ml-auto inline-flex h-5 items-center rounded px-1.5 text-[10px] font-medium",
-                              getMethodColor(endpoint.method)
-                            )}
-                          >
-                            {endpoint.method}
-                          </span>
-                        )}
+                <SelectContent className="max-w-[300px]">
+                  {[...new Set(endpoints.map((e) => e.path))].map((path) => (
+                    <SelectItem key={path} value={path} className="text-xs">
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="truncate">{path}</span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          ) : (
+          ) : apiDoc ? (
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 rounded-md bg-blue-100 p-1">
@@ -431,65 +961,60 @@ const PreviewWindow = () => {
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="text-xs text-neutral-500">
+                No API documentation available
+              </p>
+            </div>
           )}
         </div>
       </div>
 
       {/* Scrollable Content Area */}
       <div className="min-h-0 pb-4 flex-1 overflow-y-auto thin-scrollbar">
-        {!endpoints.length && apiDoc ? (
+        {!endpoints.length && apiDoc && apiDoc.paths ? (
           <div className="p-4">
-            {Object.entries(apiDoc.sections).map(([sectionKey, section]) => (
-              <div key={sectionKey} className="space-y-4">
+            {Object.entries(apiDoc.paths).map(([path, pathData]) => (
+              <div key={`path-${path}`} className="space-y-4">
                 <div className="rounded-lg bg-muted/50 p-3">
-                  <h3 className="mb-2 text-sm font-medium">{section.title}</h3>
+                  <h3 className="mb-2 text-sm font-medium">{path}</h3>
                   <p className="text-xs text-muted-foreground">
-                    {section.description}
+                    {pathData[selectedMethod?.toLowerCase() ?? ""]
+                      ?.description || "No description available"}
                   </p>
                 </div>
-                {Object.entries(section.endpoints).map(
-                  ([endpointKey, endpoint]) => (
-                    <div
-                      key={endpointKey}
-                      className="space-y-4 rounded-lg border bg-white p-4"
-                    >
-                      <div>
-                        <h4 className="text-sm font-medium">
-                          {endpoint.title}
-                        </h4>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {endpoint.description}
-                        </p>
-                      </div>
-                      {endpoint.schedule && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium">Schedule</p>
-                          <div className="rounded-md bg-muted p-2">
-                            <code className="text-xs">{endpoint.schedule}</code>
-                          </div>
-                        </div>
-                      )}
-                      {endpoint.setup && (
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium">
-                            Setup Instructions
-                          </p>
-                          <div className="rounded-lg border bg-muted/30 p-3">
-                            <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
-                              {endpoint.setup}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
+                {Object.entries(pathData).map(([method, operation]) => (
+                  <div
+                    key={`${path}-${method}`}
+                    className="space-y-4 rounded-lg border bg-white p-4"
+                  >
+                    <div>
+                      <h4 className="text-sm font-medium">
+                        {operation.summary || path}
+                      </h4>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {operation.description}
+                      </p>
                     </div>
-                  )
-                )}
+                    {operation.instructions && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">
+                          Setup Instructions
+                        </p>
+                        <div className="rounded-lg border bg-muted/30 p-3">
+                          <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
+                            {operation.instructions}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-        ) : endpoints.length > 0 &&
-          currentEndpointData &&
-          selectedMethod === currentEndpointData.method ? (
+        ) : endpoints.length > 0 && currentEndpointData ? (
           <div className="pb-safe">
             {showDocs ? (
               <div className="space-y-4 p-4">
@@ -516,7 +1041,11 @@ const PreviewWindow = () => {
                                   currentEndpointData.requestBody.content[
                                     "application/json"
                                   ].schema.properties
-                                ).map(([key]) => [key, "example_value"])
+                                ).map(([key, schema]) => [
+                                  key,
+                                  (schema as OpenAPISchema).example ||
+                                    "example_value",
+                                ])
                               ),
                               null,
                               2
@@ -532,7 +1061,11 @@ const PreviewWindow = () => {
                                   currentEndpointData.requestBody.content[
                                     "application/json"
                                   ].schema.properties
-                                ).map(([key]) => [key, "example_value"])
+                                ).map(([key, schema]) => [
+                                  key,
+                                  (schema as OpenAPISchema).example ||
+                                    "example_value",
+                                ])
                               ),
                               null,
                               2
@@ -545,7 +1078,9 @@ const PreviewWindow = () => {
                     <div className="group relative overflow-hidden rounded-lg border bg-white">
                       <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
                         {renderCopyToClipboard(
-                          BASE_URL + currentEndpointData.path,
+                          currentEndpointData.method === "GET"
+                            ? buildExampleUrl(BASE_URL, currentEndpointData)
+                            : BASE_URL + currentEndpointData.path,
                           "request-url"
                         )}
                       </div>
@@ -560,7 +1095,9 @@ const PreviewWindow = () => {
                             {currentEndpointData.method}
                           </span>
                           <span className="truncate text-xs text-muted-foreground">
-                            {BASE_URL + currentEndpointData.path}
+                            {currentEndpointData.method === "GET"
+                              ? buildExampleUrl(BASE_URL, currentEndpointData)
+                              : BASE_URL + currentEndpointData.path}
                           </span>
                         </div>
                       </div>
@@ -596,14 +1133,14 @@ const PreviewWindow = () => {
                 </div>
 
                 {/* Setup Instructions */}
-                {currentEndpointData.setupInstructions && (
+                {currentEndpointData.instructions && (
                   <div>
                     <h3 className="mb-2 text-xs font-medium">
                       Setup Instructions
                     </h3>
                     <div className="rounded-lg border bg-white p-3">
                       <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
-                        {currentEndpointData.setupInstructions}
+                        {currentEndpointData.instructions}
                       </pre>
                     </div>
                   </div>
@@ -613,89 +1150,56 @@ const PreviewWindow = () => {
               <>
                 {!response ? (
                   <Form {...form}>
-                    <form className="space-y-4 p-4">
-                      {/* Request Body */}
-                      {(() => {
-                        const properties =
-                          currentEndpointData?.requestBody?.content?.[
-                            "application/json"
-                          ]?.schema?.properties;
-                        if (!properties) return null;
-
-                        return (
-                          <div>
-                            <h3 className="mb-2 text-xs font-medium">
-                              Request Body
-                            </h3>
-                            <div className="space-y-3">
-                              {Object.entries(properties).map(
-                                ([key, value]) => {
-                                  const required =
-                                    currentEndpointData?.requestBody?.required;
-                                  const isRequired =
-                                    Array.isArray(required) &&
-                                    required.includes(key);
-                                  return (
-                                    <FormField
-                                      key={key}
-                                      control={form.control}
-                                      name={key}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel className="text-xs text-neutral-700">
-                                            {key}
-                                            {isRequired && (
-                                              <span className="ml-1 text-red-500">
-                                                *
-                                              </span>
-                                            )}
-                                          </FormLabel>
-                                          <FormControl>
-                                            <Input
-                                              {...field}
-                                              className="h-8 text-sm"
-                                              placeholder={
-                                                (value as any).example ||
-                                                `Enter ${key}`
-                                              }
-                                            />
-                                          </FormControl>
-                                          {showValidation && (
-                                            <FormMessage className="text-xs" />
-                                          )}
-                                        </FormItem>
-                                      )}
-                                    />
-                                  );
-                                }
-                              )}
-                            </div>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleTrigger();
+                      }}
+                      className="space-y-4 p-4"
+                    >
+                      {renderParameters()}
+                      {currentEndpointData?.requestBody && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-neutral-700">
+                            Request Body
+                          </h4>
+                          <div className="grid gap-2">
+                            {Object.entries(
+                              currentEndpointData.requestBody.content?.[
+                                "application/json"
+                              ]?.schema?.properties || {}
+                            ).map(([key, value]) => {
+                              const schema = value as OpenAPISchema;
+                              return renderFormField(
+                                key,
+                                schema,
+                                currentEndpointData.requestBody?.required ||
+                                  false,
+                                currentEndpointData.requestBody?.content?.[
+                                  "application/json"
+                                ]?.schema?.description
+                              );
+                            })}
                           </div>
-                        );
-                      })()}
-
-                      {/* Submit Button */}
-                      <div className="flex justify-end pt-2">
-                        <Button
-                          type="button"
-                          variant={isLoading ? "destructive" : "default"}
-                          className="h-8 gap-2 rounded-md px-4 text-xs"
-                          onClick={handleTrigger}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            <>
-                              <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              <span>Cancel</span>
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-3 w-3" />
-                              <span>Submit</span>
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                        </div>
+                      )}
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        variant={isLoading ? "destructive" : "default"}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Square className="h-3 w-3" />
+                            <span className="ml-2">Stop</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-3 w-3" />
+                            <span className="ml-2">Trigger</span>
+                          </>
+                        )}
+                      </Button>
                     </form>
                   </Form>
                 ) : (

@@ -31,15 +31,18 @@ jobs:
           
           if [[ "$BASE_BRANCH" == "main" && "$HEAD_BRANCH" == "staging/shards" ]]; then
             PORT=8001
-            PREVIEW_URL="staging.microfox.app"
+            PREVIEW_URL="https://staging.microfox.app"
+            PM2_NAME="foxhub-staging"
           else
             PORT_RANGE=500
             PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
-            PREVIEW_URL="preview-${PORT}.microfox.app"
+            PREVIEW_URL="https://preview-${PORT}.microfox.app"
+            PM2_NAME="foxhub-${PR_NUMBER}"
           fi
           
           echo "port=$PORT" >> $GITHUB_OUTPUT
           echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+          echo "pm2_name=$PM2_NAME" >> $GITHUB_OUTPUT
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
@@ -189,6 +192,7 @@ jobs:
             
             PR_NUMBER="${{ github.event.pull_request.number }}"
             APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/${PR_NUMBER}"
+            PM2_NAME="${{ steps.preview-configs.outputs.pm2_name }}"
             
             cd "$APP_PATH"
             cd apps/web
@@ -199,26 +203,27 @@ jobs:
             echo "APP_PATH: $APP_PATH"
             echo "PORT: $PORT"
             echo "PR_NUMBER: $PR_NUMBER"
+            echo "PM2_NAME: $PM2_NAME"
 
-            if pm2 list | grep -q "foxhub-${PR_NUMBER}" ; then
-              if ! pm2 restart "foxhub-${PR_NUMBER}" --update-env ; then
+            if pm2 list | grep -q "$PM2_NAME" ; then
+              if ! pm2 restart "$PM2_NAME" --update-env ; then
                 echo "Failed to restart PM2 process"
                 exit 1
               fi
             else
-              if ! pm2 start npm --name "foxhub-${PR_NUMBER}" -- run start:ci ; then
+              if ! pm2 start npm --name "$PM2_NAME" -- run start:ci ; then
                 echo "Failed to start PM2 process"
                 exit 1
               fi
             fi
             
-            if ! pm2 show "foxhub-${PR_NUMBER}" > /dev/null 2>&1; then
+            if ! pm2 show "$PM2_NAME" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 process"
               exit 1
             fi
 
             # Check PM2 process status
-            PM2_STATUS=$(pm2 show "foxhub-${PR_NUMBER}" | grep "status" | awk '{print $4}')
+            PM2_STATUS=$(pm2 show "$PM2_NAME" | grep "status" | awk '{print $4}')
             if [ "$PM2_STATUS" = "errored" ]; then
               echo "PM2 process is in error state"
               exit 1
@@ -259,10 +264,11 @@ jobs:
             const deployText = deployStatus === 'success' ? 'Preview Deployed!' : 'Preview Failed!';
 
             const commentBody = `## Preview Deployment Status\n\n` +
-              `### Build Status\n` +
-              `${buildEmoji} ${buildText}\n\n` +
+              `| Status | Result |\n` +
+              `|--------|--------|\n` +
+              `| Build | ${buildEmoji} ${buildText} |\n` +
+              `| Deploy | ${deployEmoji} ${deployText} |\n\n` +
               `### Preview URL\n` +
-              `${deployEmoji} ${deployText}\n` +
               `[View Preview](${previewUrl})\n\n` +
               `### Logs\n` +
               `[View Build Logs](${logsUrl})`;

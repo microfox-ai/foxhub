@@ -1,0 +1,141 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches:
+      - staging/shards
+
+permissions:
+  contents: write
+
+jobs:
+  staging-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache dependencies and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/web/.next/cache
+          key: ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        id: install
+        run: |
+          if ! npm install; then
+            echo "install-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "install-status=1" >> $GITHUB_OUTPUT
+
+      - name: Build project
+        id: build
+        run: |
+          if ${{steps.install.outputs.install-status == 0}} ; then
+            echo "npm install failed"
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
+
+          if ! npm run build:ci; then
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "build-status=1" >> $GITHUB_OUTPUT
+
+      - name: Prepare deployment files
+        if: ${{steps.build.outputs.build-status == 1 }}
+        run: |
+          shopt -s dotglob
+          mkdir -p build/staging
+          cp -r apps/web/.next/standalone/* build/staging
+          mkdir -p build/staging/apps/web/.next/static
+          cp -r apps/web/.next/static/* build/staging/apps/web/.next/static
+          mkdir -p build/staging/apps/web/public
+          cp -r apps/web/public/* build/staging/apps/web/public
+          cp .env.vault build/staging/.env.vault
+          cp .env.vault build/staging/apps/web/.env.vault
+
+      - name: Upload using rsync
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: "-av --delete --partial --bwlimit=5000"
+          path: "build/staging/"
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/staging"
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up SSH (secured)
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
+
+      - name: Deploy on DigitalOcean
+        if: ${{steps.build.outputs.build-status == 1 }}
+        id: deploy
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+            source ~/.nvm/nvm.sh
+            nvm use 23
+            
+            APP_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/preview/staging"
+            
+            cd "$APP_PATH"
+            cd apps/web
+
+            export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
+            export PORT=8001
+
+            echo "APP_PATH: $APP_PATH"
+            echo "PORT: $PORT"
+
+            if pm2 list | grep -q "foxhub-staging" ; then
+              if ! pm2 restart "foxhub-staging" --update-env ; then
+                echo "Failed to restart PM2 process"
+                exit 1
+              fi
+            else
+              if ! pm2 start npm --name "foxhub-staging" -- run start:ci ; then
+                echo "Failed to start PM2 process"
+                exit 1
+              fi
+            fi
+            
+            if ! pm2 show "foxhub-staging" > /dev/null 2>&1; then
+              echo "Failed to start/restart PM2 process"
+              exit 1
+            fi
+
+            # Check PM2 process status
+            PM2_STATUS=$(pm2 show "foxhub-staging" | grep "status" | awk '{print $4}')
+            if [ "$PM2_STATUS" = "errored" ]; then
+              echo "PM2 process is in error state"
+              exit 1
+            fi
+
+            echo "Successfully deployed staging"
+          ENDSSH
+          if [ $? -ne 0 ]; then
+            echo "Deployment step failed"
+            exit 1
+          fi 

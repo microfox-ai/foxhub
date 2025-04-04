@@ -16,8 +16,8 @@ jobs:
   cleanup_on_pr_close:
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for 5 minutes
-        run: sleep 300
+      - name: Wait for 3 minutes
+        run: sleep 180
 
       - name: Set up SSH (secured)
         uses: webfactory/ssh-agent@v0.9.0

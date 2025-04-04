@@ -1015,76 +1015,61 @@ const EnvCollector = ({
           </p>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            <div className="relative">
-              <Button
-                variant="outline"
-                onClick={() => setShowAddEnvModal(true)}
-              >
-                <Plus className="w-4 h-4 " />
-                {!hasAllRequiredKeys
-                  ? "Add the following keys"
-                  : "Update the following keys"}
-              </Button>
-              {!hasAllRequiredKeys ? (
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 animate-pulse" />
-              ) : (
-                <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-5 w-5 rounded-full text-green-500" />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4">
+        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
           {envVariables?.map((env: any) => (
             <div
               key={env.env + env.name}
-              className="bg-gray-50 rounded-lg p-4 space-y-3"
+              className="flex items-center justify-between  pb-3 last:border-b-0 last:pb-0"
             >
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium text-gray-900">
-                      {env.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TooltipProvider delayDuration={3000}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="text-blue-500 hover:text-blue-600 transition-colors p-1 rounded-md border border-blue-100 bg-blue-50 hover:bg-blue-100"
-                            onClick={() => {
-                              setSelectedEnv(env);
-                              setShowDocDialog(true);
-                            }}
-                          >
-                            <HelpCircle className="h-4 w-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                          side="right"
-                          className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
-                          showArrow={false}
-                        >
-                          <p>Click for detailed documentation</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
-                {/* <div className="space-y-2 mt-2">
-                  <div className="flex gap-2 items-start">
-                    <FileText className="w-4 h-4 mt-1 text-gray-400" />
-                    <span className="text-sm text-gray-600">{env.what}</span>
-                  </div>
-                </div> */}
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-gray-500" />
+                <span className="font-medium text-gray-900">{env.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TooltipProvider delayDuration={3000}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-blue-500 hover:text-blue-600 transition-colors p-1 rounded-md border border-blue-100 bg-blue-50 hover:bg-blue-100"
+                        onClick={() => {
+                          setSelectedEnv(env);
+                          setShowDocDialog(true);
+                        }}
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
+                      showArrow={false}
+                    >
+                      <p>Click for detailed documentation</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="flex gap-2">
+          <div className="relative">
+            <Button
+              variant="outline"
+              className="text-blue-500 hover:bg-blue-50 border-blue-100 bg-blue-50 hover:text-blue-600 transition"
+              onClick={() => setShowAddEnvModal(true)}
+            >
+              <Plus className="w-4 h-4 " />
+              {!hasAllRequiredKeys ? "Add the keys" : "Update the keys"}
+            </Button>
+            {!hasAllRequiredKeys ? (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 animate-pulse" />
+            ) : (
+              <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-5 w-5 rounded-full text-green-500" />
+            )}
+          </div>
         </div>
 
         <ActionButtons

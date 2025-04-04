@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev --turbopack --port 3000",
     "build": "next build",
-    "start": "next start",
+    "build:ci": "dotenv -- next build",
+    "start": "node .next/standalone/server.js",
+    "start:prod": "node --env-file=.env ./server.js",
+    "start:ci": "node -r dotenv/config ./server.js",
     "lint": "next lint --max-warnings 30",
     "check-types": "tsc --noEmit",
     "format": "prettier --write .",

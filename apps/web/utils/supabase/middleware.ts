@@ -44,11 +44,10 @@ export const updateSession = async (request: NextRequest) => {
       error: userError,
     } = await supabase.auth.getUser();
 
+    const publicRoutes = ["/login", "/signup", "/auth", "/auth/callback"];
+
     // Skip auth check for public routes
-    const isAuthRoute =
-      request.nextUrl.pathname.startsWith("/auth") ||
-      request.nextUrl.pathname === "/login" ||
-      request.nextUrl.pathname === "/signup";
+    const isAuthRoute = publicRoutes.includes(request.nextUrl.pathname);
 
     if (isAuthRoute) {
       return NextResponse.next();
@@ -56,7 +55,9 @@ export const updateSession = async (request: NextRequest) => {
 
     // If there's no user or an error, redirect to login
     if ((!user || userError) && !request.nextUrl.pathname.startsWith("/api")) {
+      const redirectTo = request.nextUrl.href;
       const redirectUrl = new URL("/login", request.url);
+      redirectUrl.searchParams.set("redirect_to", redirectTo);
       return NextResponse.redirect(redirectUrl);
     }
 

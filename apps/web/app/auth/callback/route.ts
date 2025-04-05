@@ -46,7 +46,7 @@ export async function GET(request: Request) {
   }
 
   if (redirectTo && redirectTo?.length > 0) {
-    return NextResponse.redirect(`${origin}${redirectTo}`);
+    return NextResponse.redirect(redirectTo);
   }
 
   // URL to redirect to after sign up process completes

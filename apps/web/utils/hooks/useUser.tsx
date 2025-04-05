@@ -48,7 +48,7 @@ export function useUser(): UseUserReturn {
       }
 
       try {
-        const localUser = localStorage.getItem("app_user");
+        const localUser = localStorage.getItem("microfox_app_user");
         if (localUser) {
           const user = JSON.parse(localUser);
           setDbUser(user);
@@ -62,7 +62,7 @@ export function useUser(): UseUserReturn {
           const user = await response.json();
           setDbUser(user);
           identifyUser(user);
-          localStorage.setItem("app_user", JSON.stringify(user));
+          localStorage.setItem("microfox_app_user", JSON.stringify(user));
         }
       } catch (err: any) {
         setError(err);

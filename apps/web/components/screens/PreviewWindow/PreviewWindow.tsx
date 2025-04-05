@@ -42,12 +42,21 @@ import {
   OpenAPIOperation,
   OpenAPIPath,
   OpenAPIDoc,
+  OpenAPIResponse,
 } from "./types";
+import { useApiDoc } from "../providers/ApiDocProvider";
 
 const PreviewWindow = () => {
   const { deploymentInfo } = useTaskInstanceMetaContext();
-  const [apiDoc, setApiDoc] = useState<OpenAPIDoc | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<HttpMethod>("POST");
+  const {
+    apiDoc,
+    endpoints,
+    selectedMethod,
+    selectedEndpoint,
+    setSelectedMethod,
+    setSelectedEndpoint,
+    currentEndpointData,
+  } = useApiDoc();
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<any | null>(null);
@@ -59,66 +68,6 @@ const PreviewWindow = () => {
   const { isRightCollapsed, handleRightCollapse } = useLayout();
 
   const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
-
-  const endpoints =
-    apiDoc && apiDoc.paths
-      ? Object.entries(apiDoc.paths).flatMap(
-          ([path, pathData]: [string, OpenAPIPath]) =>
-            Object.entries(pathData).map(
-              ([method, operation]: [string, OpenAPIOperation]) => ({
-                path: path,
-                method: method.toUpperCase() as HttpMethod,
-                title: operation.summary || "",
-                operationId: operation.operationId,
-              })
-            )
-        )
-      : [];
-
-  const [selectedEndpoint, setSelectedEndpoint] = useState<string>("");
-
-  useEffect(() => {
-    if (apiDoc && apiDoc.paths && endpoints.length > 0 && !selectedEndpoint) {
-      const firstEndpoint = endpoints[0];
-      if (firstEndpoint) {
-        setSelectedEndpoint(firstEndpoint.path);
-        setSelectedMethod(firstEndpoint.method);
-      }
-    }
-  }, [apiDoc, endpoints]);
-
-  useEffect(() => {
-    const initializeState = async () => {
-      if (!deploymentInfo?.baseUrl) return;
-
-      try {
-        const response = await PortalSdk.getData(
-          `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
-          {}
-        );
-        setApiDoc(response);
-      } catch (error) {
-        console.error("Failed to fetch API docs:", error);
-      }
-    };
-
-    initializeState();
-  }, [deploymentInfo]);
-
-  // Get the current endpoint data
-  const currentEndpoint = endpoints.find(
-    (e) => e.path === selectedEndpoint && e.method === selectedMethod
-  );
-  const currentEndpointData =
-    selectedEndpoint && selectedMethod
-      ? {
-          ...(apiDoc?.paths[selectedEndpoint]?.[
-            selectedMethod.toLowerCase()
-          ] as OpenAPIOperation),
-          method: selectedMethod,
-          path: selectedEndpoint,
-        }
-      : null;
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
@@ -245,6 +194,22 @@ const PreviewWindow = () => {
     return z.object(schemaFields);
   };
 
+  const form = useForm<FormValues>({
+    resolver: zodResolver(createFormSchema()),
+    mode: "onChange",
+  });
+
+  // Reset form when endpoint changes
+  useEffect(() => {
+    const resetForm = () => {
+      form.reset();
+      setShowValidation(false);
+      setResponse(null);
+    };
+
+    resetForm();
+  }, [selectedEndpoint, form]);
+
   // Helper function to create Zod schema from OpenAPI schema
   const createZodSchemaFromOpenAPI = (
     schema: OpenAPISchema
@@ -286,22 +251,6 @@ const PreviewWindow = () => {
         return z.any();
     }
   };
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(createFormSchema()),
-    mode: "onChange",
-  });
-
-  // Reset form when endpoint changes
-  useEffect(() => {
-    const resetForm = () => {
-      form.reset();
-      setShowValidation(false);
-      setResponse(null);
-    };
-
-    resetForm();
-  }, [selectedEndpoint, form]);
 
   const makeApiCall = async (data: FormValues) => {
     if (!currentEndpointData) return;
@@ -862,9 +811,9 @@ const PreviewWindow = () => {
           {endpoints.length > 0 ? (
             <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
               <Select
-                value={selectedMethod}
-                onValueChange={(value) => {
-                  setSelectedMethod(value as HttpMethod);
+                value={selectedMethod || undefined}
+                onValueChange={(value: HttpMethod) => {
+                  setSelectedMethod(value);
                 }}
                 disabled={isLoading}
               >
@@ -911,7 +860,7 @@ const PreviewWindow = () => {
               </Select>
 
               <Select
-                value={selectedEndpoint}
+                value={selectedEndpoint || undefined}
                 onValueChange={(value) => {
                   setSelectedEndpoint(value);
                   // Get available methods for this endpoint
@@ -1079,7 +1028,10 @@ const PreviewWindow = () => {
                       <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
                         {renderCopyToClipboard(
                           currentEndpointData.method === "GET"
-                            ? buildExampleUrl(BASE_URL, currentEndpointData)
+                            ? buildExampleUrl(
+                                BASE_URL,
+                                currentEndpointData as any
+                              )
                             : BASE_URL + currentEndpointData.path,
                           "request-url"
                         )}
@@ -1096,7 +1048,10 @@ const PreviewWindow = () => {
                           </span>
                           <span className="truncate text-xs text-muted-foreground">
                             {currentEndpointData.method === "GET"
-                              ? buildExampleUrl(BASE_URL, currentEndpointData)
+                              ? buildExampleUrl(
+                                  BASE_URL,
+                                  currentEndpointData as any
+                                )
                               : BASE_URL + currentEndpointData.path}
                           </span>
                         </div>
@@ -1109,26 +1064,27 @@ const PreviewWindow = () => {
                 <div>
                   <h3 className="mb-2 text-xs font-medium">Responses</h3>
                   <div className="space-y-2">
-                    {Object.entries(currentEndpointData.responses).map(
-                      ([status, response]) => (
-                        <div
-                          key={status}
-                          className="flex items-center gap-2 rounded-lg border bg-white p-2"
-                        >
-                          <span
-                            className={cn(
-                              "inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium shrink-0",
-                              getStatusColor(status)
-                            )}
+                    {currentEndpointData.responses &&
+                      Object.entries(currentEndpointData.responses).map(
+                        ([status, response]) => (
+                          <div
+                            key={status}
+                            className="flex items-center gap-2 rounded-lg border bg-white p-2"
                           >
-                            {status}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {(response as any).description}
-                          </span>
-                        </div>
-                      )
-                    )}
+                            <span
+                              className={cn(
+                                "inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium shrink-0",
+                                getStatusColor(status)
+                              )}
+                            >
+                              {status}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {(response as OpenAPIResponse).description}
+                            </span>
+                          </div>
+                        )
+                      )}
                   </div>
                 </div>
 

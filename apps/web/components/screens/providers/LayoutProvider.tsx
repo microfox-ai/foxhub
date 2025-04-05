@@ -12,6 +12,8 @@ interface LayoutContextType {
   handleRightCollapse: (collapsed: boolean) => void;
   handleLeftResizeHandleClick: () => void;
   handleRightResizeHandleClick: () => void;
+  isFeedbackModalOpen: boolean;
+  setIsFeedbackModalOpen: (open: boolean) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
   const [isRightCollapsed, setIsRightCollapsed] = useState(true);
   const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
   const [isRightTransitioning, setIsRightTransitioning] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const leftPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle | null>(
     null
   );
@@ -77,6 +80,8 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
         handleRightCollapse,
         handleLeftResizeHandleClick,
         handleRightResizeHandleClick,
+        isFeedbackModalOpen,
+        setIsFeedbackModalOpen,
       }}
     >
       {children}

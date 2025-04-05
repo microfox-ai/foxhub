@@ -182,7 +182,7 @@ function ChatWindow({
                       duration: 0.1,
                       exit: { duration: 0 },
                     }}
-                    className=" w-full h-full overflow-y-auto"
+                    className=" w-full h-full overflow-y-auto thin-scrollbar"
                   >
                     <div className="max-w-[800px] mx-auto">
                       <ConfigureTab />

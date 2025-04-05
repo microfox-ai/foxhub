@@ -35,6 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLayout } from "../providers/LayoutProvider";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -63,6 +64,7 @@ export default function Sidebar({
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
   const searchParams: any = useSearchParams();
+  const { setIsFeedbackModalOpen } = useLayout();
 
   // const { user, handleLogout } = useUser();
 
@@ -254,6 +256,9 @@ export default function Sidebar({
               {/* Feedback   */}
               <li
                 className={`hover:bg-gray-100 rounded-lg cursor-pointer ${isCollapsed ? "p-2 w-full flex justify-center" : "p-2 px-3"} group`}
+                onClick={() => {
+                  setIsFeedbackModalOpen(true);
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-neutral-500 group-hover:text-black transition-all duration-200">
@@ -364,4 +369,3 @@ export default function Sidebar({
     </div>
   );
 }
-

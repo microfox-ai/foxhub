@@ -190,6 +190,7 @@ jobs:
 
             export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
             export PORT=${{ steps.preview-configs.outputs.port }}
+            export NEXT_PUBLIC_APP_BASE_URL=${{ steps.preview-configs.outputs.preview_url }}
 
             echo "APP_PATH: $APP_PATH"
             echo "PORT: $PORT"

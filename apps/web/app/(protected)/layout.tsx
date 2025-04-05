@@ -7,7 +7,7 @@ import { BotTemplateProvider } from "@/components/screens/providers/BotTemplateP
 import { FileUploadProvider } from "@/components/screens/providers/FileUploadProvider";
 import { ClientProjectProvider } from "@/components/screens/providers/ClientProjectProvider";
 import { LayoutProvider } from "@/components/screens/providers/LayoutProvider";
-
+import FeebackModal from "@/components/global/FeebackModal";
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const isPlayground = pathname.includes("playground");
@@ -20,6 +20,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <main className="relative flex h-screen flex-col bg-background">
               {!isPlayground && !isProject && <CustomBotsHeader />}
               <Toaster position="top-right" richColors duration={3000} />
+              <FeebackModal />
               {!isProject && <div className="h-16" />}
               <div className="flex-1">{children}</div>
             </main>

@@ -18,6 +18,7 @@ import {
   MySlackChannels,
 } from "@/utils/services/slackBotSdk";
 import { toast } from "sonner";
+import dayjs from "dayjs";
 
 const feedbackSchema = z.object({
   rating: z.enum(["1", "2", "3", "4", "5"]),
@@ -63,7 +64,7 @@ const FeedbackModal = () => {
         : "No additional feedback provided";
 
       // Create a more detailed message for the DM
-      const finalMessage = `📬 *New Feedback Submitted*\n\n*${ratingText}*\n${messageText}\n\n_Submitted at ${new Date().toLocaleString()}_`;
+      const finalMessage = `📬 *New Feedback Submitted*\n\n*${ratingText}*\n${messageText}\n\n_Submitted at ${dayjs().format("DD MMM YYYY, hh:mm A")}_`;
 
       // Send direct message to yourself
       // Replace 'subhakar' with your Slack user ID from SlackUsers object

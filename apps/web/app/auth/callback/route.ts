@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     }
   }
 
-  if (redirectTo) {
+  if (redirectTo && redirectTo?.length > 0) {
     return NextResponse.redirect(`${origin}${redirectTo}`);
   }
 

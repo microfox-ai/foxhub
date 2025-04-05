@@ -96,17 +96,19 @@ const ChatHeader = ({
 
   return (
     <div className="grid grid-cols-12 w-full items-start justify-between gap-2 px-4 pt-6 py-2">
-      <div className="col-span-3">
+      <div className="col-span-4">
         <Breadcrumb>
-          <BreadcrumbList>
+          <BreadcrumbList className="flex-nowrap">
             <BreadcrumbItem>
               <BreadcrumbLink className="hover:text-gray-500">
                 {projectTitle}
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{clientRequest?.title}</BreadcrumbPage>
+            <BreadcrumbItem className="truncate">
+              <BreadcrumbPage className="truncate">
+                {clientRequest?.title}
+              </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -120,7 +122,7 @@ const ChatHeader = ({
         )}
       </div>
 
-      <div className="col-span-6 flex justify-center">
+      <div className="col-span-4 flex justify-center">
         {messages.length > 0 && (
           <TabsList className="relative flex bg-gray-100 p-[3px] h-11 rounded-lg">
             {tabList.map((tab) => (
@@ -162,7 +164,7 @@ const ChatHeader = ({
         )}
       </div>
 
-      <div className="col-span-3 flex justify-end">
+      <div className="col-span-4 flex justify-end">
         <Popover>
           <PopoverTrigger asChild>
             <div className="flex cursor-pointer items-center gap-2">

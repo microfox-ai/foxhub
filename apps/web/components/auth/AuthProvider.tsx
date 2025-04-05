@@ -9,7 +9,7 @@ import {
 } from "react";
 import { type User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/browser-client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signInWithGoogle, signOut } from "@/actions/auth-actions";
 import { analytics } from "@/utils/services/analytics/client";
 
@@ -36,13 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
+  const pathname = usePathname();
 
   const handleSigninWithGoogle = useCallback(async () => {
     try {
       // Track the attempt to sign in
       analytics.track("Login Attempt", { provider: "google" });
 
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle({ redirectTo: pathname });
 
       if (result.url) {
         analytics.track("Login Success", {
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await signOut();
 
       if (result.success) {
-        localStorage.removeItem("app_user");
+        localStorage.removeItem("microfox_app_user");
         router.refresh();
       } else {
         console.error("Logout failed:", result.error);

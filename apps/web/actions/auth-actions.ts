@@ -4,13 +4,13 @@ import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { createClient } from "@/utils/supabase/server-client";
 import { redirect } from "next/navigation";
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle({ redirectTo }: { redirectTo: string }) {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${APP_BASE_URL}/auth/callback`,
+        redirectTo: `${APP_BASE_URL}/auth/callback?redirect_to=${redirectTo}`,
         scopes: "email profile",
       },
     });

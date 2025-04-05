@@ -15,6 +15,7 @@ import {
   slackBotSdk,
   SlackUsers,
   MICROFOX_LOGO,
+  MySlackChannels,
 } from "@/utils/services/slackBotSdk";
 import { toast } from "sonner";
 
@@ -52,12 +53,7 @@ const FeedbackModal = () => {
     try {
       setIsSubmitting(true);
 
-      const channelId = null; // TODO: change to actual channel id
-      if (!channelId) {
-        toast.error("Failed to submit feedback. Please pass the channel id.");
-        setIsSubmitting(false);
-        return;
-      }
+      const channelId = MySlackChannels.microfox_feedback;
 
       // Format message for Slack
       const ratingEmoji = getRatingEmoji(data.rating);

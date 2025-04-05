@@ -20,10 +20,6 @@ export async function signInWithGoogle({ redirectTo }: { redirectTo: string }) {
           ? `${APP_BASE_URL}/auth/callback?redirect_to=${redirectTo}`
           : `${APP_BASE_URL}/auth/callback`,
         scopes: "email profile",
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
-        },
       },
     });
 

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { APP_BASE_URL } from "../constants/appInfo";
 
 export const updateSession = async (request: NextRequest) => {
   if (
@@ -44,11 +45,10 @@ export const updateSession = async (request: NextRequest) => {
       error: userError,
     } = await supabase.auth.getUser();
 
+    const publicRoutes = ["/login", "/signup", "/auth", "/auth/callback"];
+
     // Skip auth check for public routes
-    const isAuthRoute =
-      request.nextUrl.pathname.startsWith("/auth") ||
-      request.nextUrl.pathname === "/login" ||
-      request.nextUrl.pathname === "/signup";
+    const isAuthRoute = publicRoutes.includes(request.nextUrl.pathname);
 
     if (isAuthRoute) {
       return NextResponse.next();
@@ -56,7 +56,11 @@ export const updateSession = async (request: NextRequest) => {
 
     // If there's no user or an error, redirect to login
     if ((!user || userError) && !request.nextUrl.pathname.startsWith("/api")) {
-      const redirectUrl = new URL("/login", request.url);
+      console.log("redirecting to", request.nextUrl.pathname);
+      const redirectTo = `${APP_BASE_URL}${request.nextUrl.pathname}`;
+      console.log("redirectTo", redirectTo);
+      const redirectUrl = new URL("/login", APP_BASE_URL);
+      redirectUrl.searchParams.set("redirect_to", redirectTo);
       return NextResponse.redirect(redirectUrl);
     }
 

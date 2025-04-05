@@ -35,7 +35,7 @@ export function useUser(): UseUserReturn {
         name: user.name,
         avatar: user.avatar,
       });
-      localStorage.setItem("micorfoxapp_user", JSON.stringify(user));
+      localStorage.setItem("microfox_app_user", JSON.stringify(user));
     }
   };
 

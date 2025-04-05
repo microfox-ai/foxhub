@@ -9,7 +9,7 @@ import {
 } from "react";
 import { type User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/browser-client";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signInWithGoogle, signOut } from "@/actions/auth-actions";
 import { analytics } from "@/utils/services/analytics/client";
 
@@ -36,14 +36,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
-  const pathname = usePathname();
+  const pathname = useSearchParams();
 
   const handleSigninWithGoogle = useCallback(async () => {
     try {
       // Track the attempt to sign in
       analytics.track("Login Attempt", { provider: "google" });
 
-      const result = await signInWithGoogle({ redirectTo: pathname });
+      const result = await signInWithGoogle({
+        redirectTo: pathname.get("redirect_to") ?? "",
+      });
 
       if (result.url) {
         analytics.track("Login Success", {
@@ -71,14 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleLogout = useCallback(async () => {
     try {
-      const result = await signOut();
-
-      if (result.success) {
-        localStorage.removeItem("microfox_app_user");
-        router.refresh();
-      } else {
-        console.error("Logout failed:", result.error);
-      }
+      localStorage.removeItem("microfox_app_user");
+      await signOut();
     } catch (error) {
       console.error("Logout error:", error);
     }

@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma/prisma";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { createClient } from "@/utils/supabase/server-client";
 import { NextResponse } from "next/server";
 
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
   // https://supabase.com/docs/guides/auth/server-side/nextjs
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const origin = requestUrl.origin;
+  const origin = APP_BASE_URL;
   const redirectTo = requestUrl.searchParams.get("redirect_to")?.toString();
 
   if (code) {
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
   }
 
   if (redirectTo && redirectTo?.length > 0) {
-    return NextResponse.redirect(`${origin}${redirectTo}`);
+    return NextResponse.redirect(redirectTo);
   }
 
   // URL to redirect to after sign up process completes

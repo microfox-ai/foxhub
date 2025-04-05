@@ -7,22 +7,45 @@ import { redirect } from "next/navigation";
 export async function signInWithGoogle({ redirectTo }: { redirectTo: string }) {
   try {
     const supabase = await createClient();
+    console.log("Initiating Google OAuth sign-in...");
+    console.log(
+      "Redirect URL:",
+      `${APP_BASE_URL}/auth/callback?redirect_to=${redirectTo}`
+    );
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${APP_BASE_URL}/auth/callback?redirect_to=${redirectTo}`,
         scopes: "email profile",
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
       },
     });
 
     if (error) {
+      console.error("OAuth error details:", {
+        message: error.message,
+        status: error.status,
+        name: error.name,
+      });
       return { error: error.message };
+    }
+
+    if (!data.url) {
+      console.error("No URL returned from OAuth provider");
+      return { error: "Authentication URL not received" };
     }
 
     return { url: data.url };
   } catch (error) {
     console.error("Sign in error:", error);
-    return { error: "An unexpected error occurred" };
+    return {
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
+    };
   }
 }
 

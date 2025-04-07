@@ -112,11 +112,6 @@ export default function ChatInputBox({
             }
           }}
           disabled={
-            (
-              lastMessage?.annotations?.[
-              lastMessage.annotations.length - 1
-              ] as any
-            )?.type === "ui" ||
             messageStatus === "pending" ||
             messageStatus === "streaming" ||
             mediaUploadStatus === "UPLOADING" ||

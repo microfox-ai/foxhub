@@ -93,8 +93,8 @@ export const genFinalCode = async (
       model: models.claude35Sonnet.modelId,
       usage: result.usage,
     });
-    // modify the package.json file to support all the functions & cron jobs
 
+    // modify the package.json file to support all the functions & cron jobs
     const packageJson = await fs.readFile(
       path.join(
         process.cwd(),
@@ -169,7 +169,6 @@ export const genFinalCode = async (
             
             make sure the imports follow the '.js' extension like this:
             import { getExternalData } from './functions/getExternalData.js'
-
 
             your workflow should be as follows:
             1. read the example index.ts file & keep it as a reference for how to write code.

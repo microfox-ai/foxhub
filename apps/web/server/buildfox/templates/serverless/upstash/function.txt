@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import {
   getPaginationState,
   incrementPaginationState,
@@ -10,14 +11,25 @@ dotenv.config();
 /**
  * GET endpoint to fetch data from an external API
  */
-export const getExternalData = async (event: any) => {
+export const getExternalData = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
+    // Get query parameters from the event
+    const queryParams = event.queryStringParameters || {};
+    const requestedPage = queryParams.page
+      ? parseInt(queryParams.page)
+      : undefined;
+    const requestedPerPage = queryParams.perPage
+      ? parseInt(queryParams.perPage)
+      : undefined;
+
     // Initialize Redis client
     const paginationState = await getPaginationState(getExternalDataRedisKey);
 
-    // Determine pagination based on call count
-    const page = paginationState.page;
-    const perPage = paginationState.limit;
+    // Use provided parameters or fall back to Redis state
+    const page = requestedPage || paginationState.page;
+    const perPage = requestedPerPage || paginationState.limit;
     const shouldPaginate = page > 0;
 
     // Fetch data with pagination when needed
@@ -28,10 +40,17 @@ export const getExternalData = async (event: any) => {
     const response = await fetch(apiUrl);
     const data = await response.json();
 
-    await incrementPaginationState(getExternalDataRedisKey);
+    // Only increment Redis state if we're using the default pagination
+    if (!requestedPage && !requestedPerPage) {
+      await incrementPaginationState(getExternalDataRedisKey);
+    }
 
     return {
       statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
       body: JSON.stringify({
         data,
         page: shouldPaginate ? page : null,
@@ -43,6 +62,10 @@ export const getExternalData = async (event: any) => {
     console.error("Error fetching external data:", error);
     return {
       statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
       body: JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",
       }),
@@ -52,43 +75,104 @@ export const getExternalData = async (event: any) => {
 
 /**
  * Documentation for external API endpoints
+ * Write down this apiDocs on the basis of open api 3.0.1 in JSON format
  */
 export const getExternalDataDocs = {
-  title: "Get External Data",
+  instructions: `
+  This is a simple GET endpoint that fetches data from an external API.
+  If any webhook setup instructions are required, they are written in this field.
+  `,
+  summary: "Fetch data from external API with pagination support",
   description:
-    "Retrieve data from an external API with pagination on 2nd and 3rd calls",
-  method: "GET",
-  path: "/external",
-  responses: {
-    200: {
-      description: "External data retrieved successfully",
+    "Retrieves data from JSONPlaceholder API with optional pagination. The first call returns a single item, and subsequent calls return paginated results.",
+  parameters: [
+    {
+      name: "page",
+      in: "query",
+      description:
+        "Page number for pagination (automatically managed by the API)",
+      required: false,
       schema: {
-        type: "object",
-        properties: {
-          data: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                userId: { type: "number" },
-                id: { type: "number" },
-                title: { type: "string" },
-                body: { type: "string" },
+        type: "integer",
+        minimum: 1,
+      },
+    },
+    {
+      name: "perPage",
+      in: "query",
+      description:
+        "Number of items per page (automatically managed by the API)",
+      required: false,
+      schema: {
+        type: "integer",
+        minimum: 1,
+      },
+    },
+  ],
+  responses: {
+    "200": {
+      description: "Successfully retrieved data",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              data: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "integer",
+                      description: "Unique identifier of the post",
+                    },
+                    title: {
+                      type: "string",
+                      description: "Title of the post",
+                    },
+                    body: {
+                      type: "string",
+                      description: "Content of the post",
+                    },
+                    userId: {
+                      type: "integer",
+                      description: "ID of the user who created the post",
+                    },
+                  },
+                },
+              },
+              page: {
+                type: "integer",
+                nullable: true,
+                description: "Current page number (null for first call)",
+              },
+              perPage: {
+                type: "integer",
+                nullable: true,
+                description: "Number of items per page (null for first call)",
+              },
+              callCount: {
+                type: "integer",
+                description: "Total number of API calls made",
               },
             },
           },
-          page: { type: ["number", "null"] },
-          perPage: { type: ["number", "null"] },
-          callCount: { type: "number" },
         },
       },
     },
-    500: {
-      description: "Server error",
-      schema: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
+    "500": {
+      description: "Internal server error",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              error: {
+                type: "string",
+                description: "Error message describing what went wrong",
+              },
+            },
+          },
         },
       },
     },

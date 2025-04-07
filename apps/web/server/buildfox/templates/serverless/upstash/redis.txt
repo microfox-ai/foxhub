@@ -1,34 +1,42 @@
 import { Redis } from "@upstash/redis";
+
+// Initialize Redis client
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
+
+export const getExternalDataRedisKey = "external_data_pagination";
 
 interface PaginationState {
   page: number;
   limit: number;
-  total: number;
-  totalPages: number;
+  lastUpdated: string;
 }
 
-export const getExternalDataRedisKey = `external_api_calls`;
-
-export const getPaginationState = async (key: string) => {
-  const paginationState = await redis.get(key);
-  return paginationState
-    ? (JSON.parse(paginationState as string) as PaginationState)
-    : {
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0,
-      };
+export const getPaginationState = async (
+  key: string
+): Promise<PaginationState> => {
+  const state = await redis.get<PaginationState>(key);
+  if (!state) {
+    // Initialize with default values if not exists
+    const initialState: PaginationState = {
+      page: 1,
+      limit: 10,
+      lastUpdated: new Date().toISOString(),
+    };
+    await redis.set(key, initialState);
+    return initialState;
+  }
+  return state;
 };
 
-export const incrementPaginationState = async (key: string) => {
-  const paginationState = await getPaginationState(key);
-  await redis.set(
-    key,
-    JSON.stringify({ ...paginationState, page: paginationState.page + 1 })
-  );
+export const incrementPaginationState = async (key: string): Promise<void> => {
+  const state = await getPaginationState(key);
+  const updatedState: PaginationState = {
+    ...state,
+    page: state.page + 1,
+    lastUpdated: new Date().toISOString(),
+  };
+  await redis.set(key, updatedState);
 };

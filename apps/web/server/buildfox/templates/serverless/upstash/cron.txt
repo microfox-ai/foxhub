@@ -1,67 +1,117 @@
 import dotenv from "dotenv";
+import { APIGatewayProxyResult } from "aws-lambda";
 import {
   getPaginationState,
   incrementPaginationState,
   getExternalDataRedisKey,
 } from "./helpers/redis.js";
 
+dotenv.config();
+
 /**
- * Cron job that runs every day at 8:00 AM
+ * Cron job that runs every day at 8:00 AM to manage pagination state
+ * This job ensures the pagination state is properly maintained and cleaned up
  */
-export const dailyMorningJob = async (event: any) => {
+export const dailyMorningJob = async (): Promise<APIGatewayProxyResult> => {
   try {
-    // Clean up old records (30 days)
+    // Get current pagination state
     const paginationState = await getPaginationState(getExternalDataRedisKey);
 
+    // Increment the page counter
     await incrementPaginationState(getExternalDataRedisKey);
+
     return {
       statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        message:
-          "Daily morning job completed successfully - incrementing the page by 1",
-        currentPage: paginationState.page,
+        message: "Daily morning job completed successfully",
+        details: {
+          previousPage: paginationState.page,
+          newPage: paginationState.page + 1,
+          lastUpdated: new Date().toISOString(),
+        },
       }),
     };
   } catch (error) {
     console.error("Error running daily job:", error);
     return {
       statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
       }),
     };
-  } finally {
   }
 };
 
 /**
- * Documentation for cron job endpoints
+ * OpenAPI 3.0.1 documentation for the cron job endpoint
  */
-
 export const dailyMorningJobDocs = {
   title: "Daily Morning Job",
   description:
-    "Cron job that runs every day at 8:00 AM to clean up old records",
+    "Cron job that runs every day at 8:00 AM to manage pagination state",
   method: "GET",
   path: "/cron/daily-morning",
   schedule: "cron(0 8 * * ? *)",
   responses: {
     200: {
       description: "Job completed successfully",
-      schema: {
-        type: "object",
-        properties: {
-          message: { type: "string" },
-          currentPage: { type: "number" },
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              message: {
+                type: "string",
+                description: "Success message",
+              },
+              details: {
+                type: "object",
+                properties: {
+                  previousPage: {
+                    type: "number",
+                    description: "Previous page number",
+                  },
+                  newPage: {
+                    type: "number",
+                    description: "New page number after increment",
+                  },
+                  lastUpdated: {
+                    type: "string",
+                    format: "date-time",
+                    description: "Timestamp of the last update",
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },
     500: {
       description: "Server error",
-      schema: {
-        type: "object",
-        properties: {
-          error: { type: "string" },
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              error: {
+                type: "string",
+                description: "Error message",
+              },
+              timestamp: {
+                type: "string",
+                format: "date-time",
+                description: "When the error occurred",
+              },
+            },
+          },
         },
       },
     },

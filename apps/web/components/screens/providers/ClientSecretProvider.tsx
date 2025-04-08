@@ -29,15 +29,14 @@ type ClientSecretContextType = {
 };
 
 const ClientSecretContext = createContext<ClientSecretContextType | undefined>(
-  undefined,
+  undefined
 );
 
 export const ClientSecretProvider: React.FC<{
-  userId: string;
   botProjectId?: string;
   // clientRequestId?: string;
   children: React.ReactNode;
-}> = ({ userId, botProjectId, children }) => {
+}> = ({ botProjectId, children }) => {
   const searchParams = new URLSearchParams();
   // searchParams.append('userId', userId);
   searchParams.append("botProjectId", botProjectId || "");
@@ -45,7 +44,7 @@ export const ClientSecretProvider: React.FC<{
 
   const { data, error, mutate, isLoading } = useSWR(
     `/api/client-secrets?${searchParams.toString()}`,
-    (url) => fetch(url).then((res) => res.json()),
+    (url) => fetch(url).then((res) => res.json())
   );
 
   if (error) {
@@ -89,7 +88,7 @@ export const useClientSecrets = () => {
   const context = useContext(ClientSecretContext);
   if (!context) {
     throw new Error(
-      "useClientSecrets must be used within a ClientSecretProvider",
+      "useClientSecrets must be used within a ClientSecretProvider"
     );
   }
   return context;

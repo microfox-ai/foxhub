@@ -41,6 +41,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
@@ -51,6 +52,7 @@ interface IChatHeaderProps {
   setActiveTab: (tab: string) => void;
   projectTitle?: string;
   messages: UIMessage[];
+  isChatLoading: boolean;
 }
 
 const tabList = [
@@ -75,6 +77,7 @@ const ChatHeader = ({
   clientRequest,
   mutate,
   isLoading,
+  isChatLoading,
   isValidating,
   activeTab,
   setActiveTab,
@@ -97,21 +100,25 @@ const ChatHeader = ({
   return (
     <div className="grid grid-cols-12 w-full items-start justify-between gap-2 px-4 pt-6 py-2">
       <div className="col-span-4">
-        <Breadcrumb>
-          <BreadcrumbList className="flex-nowrap">
-            <BreadcrumbItem>
-              <BreadcrumbLink className="hover:text-gray-500">
-                {projectTitle}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem className="truncate">
-              <BreadcrumbPage className="truncate">
-                {clientRequest?.title}
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+        {isChatLoading ? (
+          <Skeleton className="w-full h-6" />
+        ) : (
+          <Breadcrumb>
+            <BreadcrumbList className="flex-nowrap">
+              <BreadcrumbItem>
+                <BreadcrumbLink className="hover:text-gray-500">
+                  {projectTitle}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem className="truncate">
+                <BreadcrumbPage className="truncate">
+                  {clientRequest?.title}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        )}
         {IN_DEV && (
           <>
             <p className="text-xs text-gray-500">

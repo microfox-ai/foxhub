@@ -15,7 +15,11 @@ import {
   deployStep,
   TaskInstanceMetaType,
 } from "../convertfox/types";
-import { fetchLogs, getLatestRunForClientRequest, getRunforClientRequestbySha } from "./fetchLogs";
+import {
+  fetchLogs,
+  getLatestRunForClientRequest,
+  getRunforClientRequestbySha,
+} from "./fetchLogs";
 import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
 import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
 export const deployFoxRouter: ServerStreamingFunction<
@@ -56,7 +60,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   });
 
   //clone template in dev mode
-  await recloneTemplateStuffToClientRequest(props, clientRequest);
+  //await recloneTemplateStuffToClientRequest(props, clientRequest);
 
   // Monitor workflow runs
   const { sha } = await deployViaGit(props, clientRequest, taskInstanceMeta);

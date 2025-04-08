@@ -1,11 +1,15 @@
 [
   {
     "key": "UPSTASH_REDIS_REST_URL",
+    "package": "@upstash/redis",
+    "constructorFunction": "Redis",
     "value": "https://vocal-moccasin-52172.upstash.io",
     "description": "The URL of the Upstash Redis instance"
   },
   {
     "key": "UPSTASH_REDIS_REST_TOKEN",
+    "package": "@upstash/redis",
+    "constructorFunction": "Redis",
     "value": "AcvMAAIjcDEwYTQ4MjFmZGZhNzU0YTk5YTAxODNmMTdjY2Y1ZmRhMnAxMA",
     "description": "The token of the Upstash Redis instance"
   }

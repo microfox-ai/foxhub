@@ -1,53 +1,50 @@
-service: template-function
+service: u-1743989701622-sigma
+
+package:
+  exclude:
+    - venv/**
+    - src/**
 
 # Configuration
 custom:
   # Get environment from env or default to dev
   stage: ${env:ENVIRONMENT, 'dev'}
-  # HTTP port for offline mode
-  serverless-offline:
-    httpPort: 4000
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: us-east-1
   stage: ${env:ENVIRONMENT, 'dev'}
-  environment:
-    STAGE: ${env:ENVIRONMENT, 'dev'}
+  environment: ${file(env.json)}
+
+plugins:
+  - serverless-plugin-typescript
 
 functions:
-  # External API Endpoints
-  getExternalData:
-    handler: dist/index.getExternalData
+  fetchAndSendUpdates:
+    handler: dist/index.fetchAndSendUpdates
     events:
       - http:
-          path: /external
+          path: /updates
+          method: post
+          cors: true
+
+  getLastSentUpdate:
+    handler: dist/index.getLastSentUpdate
+    events:
+      - http:
+          path: /last-update
           method: get
           cors: true
 
-  postExternalData:
-    handler: dist/index.postExternalData
+  scheduledUpdateCheck:
+    handler: dist/index.scheduledUpdateCheck
     events:
+      - schedule: cron(0 */6 * * ? *)
       - http:
-          path: /external
+          path: /cron/scheduled-update
           method: post
           cors: true
-
-  # Cron Jobs
-  dailyMorningJob:
-    handler: dist/index.dailyMorningJob
-    events:
-      # HTTP endpoint for testing in all environments
-      - http:
-          path: /cron/daily-morning
-          method: post
-          cors: true
-      - schedule:
-          rate: cron(0 8 * * ? *)
-          input:
-            environment: ${env:ENVIRONMENT, 'dev'}
-            source: scheduled-job
 
   # Documentation
   getDocs:

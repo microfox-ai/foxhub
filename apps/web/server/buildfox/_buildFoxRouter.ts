@@ -179,7 +179,8 @@ export const buildFoxRouter: ServerStreamingFunction<
   const envVariables = await genEnvCollector(
     props,
     envVariablesUsedUnique,
-    taskInstanceMeta
+    taskInstanceMeta,
+    clientRequest
   );
   console.log("envVariablesShouldAsk", envVariables);
 
@@ -291,7 +292,7 @@ export const buildFoxRouter: ServerStreamingFunction<
   }
 
   // delete the files in local directory
-  await deleteAllGenFiles(clientRequest);
+  //await deleteAllGenFiles(clientRequest);
 
   return {
     responseBody: { ...responseBody },

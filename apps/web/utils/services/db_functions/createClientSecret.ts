@@ -7,7 +7,7 @@ import { ClientSecret } from "@prisma/client";
 import { GithubSdk } from "../githubSdk";
 
 export interface ClientSecreVariable {
-  mode: Array<"DEV" | "PROD" | "STAGING">;
+  mode?: Array<"DEV" | "PROD" | "STAGING">;
   key: string;
   value: string;
   isOptional: boolean;

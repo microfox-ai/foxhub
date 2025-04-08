@@ -63,30 +63,6 @@ export const triggerDeployment = async (
     auth: GITHUB_TOKEN,
   });
 
-  if (stage === DEPLOY_STAGE.PROD) {
-    try {
-      if (!clientRequest.prNumber) {
-        throw new Error("Pull request number is required");
-      }
-      // Merge the pull request
-      const { data } = await octo.rest.pulls.merge({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: clientRequest.repoName,
-        pull_number: clientRequest.prNumber,
-        merge_method: "merge",
-      });
-
-      console.log(
-        `Successfully merged pull request #${clientRequest.prNumber}`
-      );
-
-      return { sha: data.sha };
-    } catch (error) {
-      console.error("Error merging pull request:", error);
-      throw error;
-    }
-  }
-
   try {
     console.log(
       "Creating clientRequest.json update to trigger deployment",
@@ -128,7 +104,7 @@ export const triggerDeployment = async (
       owner: TEMPLATE_REPO_OWNER,
       repo: clientRequest.repoName,
       path: changelogPath,
-      message: "deployfox: Update CHANGELOG.md to trigger deployment",
+      message: `${stage}: deployfox: Update CHANGELOG.md to trigger deployment`,
       content: Buffer.from(
         `# Deployment Log\n\n` +
         `## Latest Deployment\n` +

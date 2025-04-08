@@ -13,20 +13,12 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signInWithGoogle, signOut } from "@/actions/auth-actions";
 import { analytics } from "@/utils/services/analytics/client";
 
-interface DbUser {
-  id: string;
-  email: string;
-  name: string;
-  avatar?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   handleSigninWithGoogle: () => Promise<void>;
   handleLogout: () => Promise<void>;
+  loggingOut: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -34,6 +26,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const pathname = useSearchParams();
@@ -73,10 +66,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleLogout = useCallback(async () => {
     try {
+      setLoggingOut(true);
       localStorage.removeItem("microfox_app_user");
       await signOut();
+      setLoggingOut(false);
     } catch (error) {
       console.error("Logout error:", error);
+      setLoggingOut(false);
     }
   }, [router]);
 
@@ -104,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     handleSigninWithGoogle,
     handleLogout,
+    loggingOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

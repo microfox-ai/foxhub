@@ -10,6 +10,7 @@ import {
   Slash,
   Home,
   LayoutDashboard,
+  Loader2,
 } from "lucide-react";
 import { useMicrofox } from "../providers/MicrofoxProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
@@ -42,7 +43,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import LogoutConfirmationDialog from "@/components/auth/LogoutConfirmationDialog";
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
   mutate: () => void;
@@ -84,7 +85,7 @@ const ChatHeader = ({
   projectTitle,
 }: IChatHeaderProps) => {
   const { minionType } = useMicrofox();
-  const { user, handleLogout } = useUser();
+  const { user, handleLogout, loggingOut } = useUser();
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -92,9 +93,13 @@ const ChatHeader = ({
     setShowLogoutDialog(true);
   };
 
-  const handleConfirmLogout = () => {
-    handleLogout();
-    setShowLogoutDialog(false);
+  const handleConfirmLogout = async () => {
+    try {
+      await handleLogout();
+      setShowLogoutDialog(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   return (
@@ -225,6 +230,7 @@ const ChatHeader = ({
         </Popover>
       </div>
       <LogoutConfirmationDialog
+        loggingOut={loggingOut}
         showLogoutDialog={showLogoutDialog}
         setShowLogoutDialog={setShowLogoutDialog}
         handleConfirmLogout={handleConfirmLogout}
@@ -255,30 +261,3 @@ const ChatHeader = ({
 };
 
 export default ChatHeader;
-
-const LogoutConfirmationDialog = ({
-  showLogoutDialog,
-  setShowLogoutDialog,
-  handleConfirmLogout,
-}: {
-  showLogoutDialog: boolean;
-  setShowLogoutDialog: (show: boolean) => void;
-  handleConfirmLogout: () => void;
-}) => {
-  return (
-    <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Confirm Logout</DialogTitle>
-        </DialogHeader>
-        <DialogDescription>Are you sure you want to logout?</DialogDescription>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowLogoutDialog(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmLogout}>Logout</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};

@@ -25,8 +25,8 @@ interface ApiDocContextType {
   setSelectedEndpoint: (path: string) => void;
   setSelectedMethod: (method: HttpMethod) => void;
   currentEndpointData:
-    | (OpenAPIOperation & { method: HttpMethod; path: string })
-    | null;
+  | (OpenAPIOperation & { method: HttpMethod; path: string })
+  | null;
 }
 
 const ApiDocContext = createContext<ApiDocContextType | undefined>(undefined);
@@ -70,28 +70,28 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
 
   const endpoints = apiDoc?.paths
     ? Object.entries(apiDoc.paths).flatMap(
-        ([path, pathData]: [string, OpenAPIPath]) =>
-          Object.entries(pathData || {}).map(
-            ([method, operation]: [string, OpenAPIOperation]) => ({
-              path,
-              method: method.toUpperCase() as HttpMethod,
-              title: operation?.summary || "",
-              operationId: operation?.operationId,
-              operation,
-            })
-          )
-      )
+      ([path, pathData]: [string, OpenAPIPath]) =>
+        Object.entries(pathData || {}).map(
+          ([method, operation]: [string, OpenAPIOperation]) => ({
+            path,
+            method: method.toUpperCase() as HttpMethod,
+            title: operation?.summary || "",
+            operationId: operation?.operationId,
+            operation,
+          })
+        )
+    )
     : [];
 
   const currentEndpointData =
     selectedEndpoint && selectedMethod
       ? {
-          ...(apiDoc?.paths?.[selectedEndpoint]?.[
-            selectedMethod.toLowerCase()
-          ] as OpenAPIOperation),
-          method: selectedMethod,
-          path: selectedEndpoint,
-        }
+        ...(apiDoc?.paths?.[selectedEndpoint]?.[
+          selectedMethod.toLowerCase()
+        ] as OpenAPIOperation),
+        method: selectedMethod,
+        path: selectedEndpoint,
+      }
       : null;
 
   // Initialize with first endpoint if none selected

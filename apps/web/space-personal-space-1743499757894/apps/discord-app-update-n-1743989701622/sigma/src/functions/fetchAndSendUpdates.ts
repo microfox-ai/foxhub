@@ -28,14 +28,13 @@ interface FetchAndSendUpdatesParams {
 
 /**
  * Fetches the latest changelog entries from GitHub and sends them to Discord
- * @param event - The API Gateway event
- * @returns APIGatewayProxyResult
  */
 export const fetchAndSendUpdates = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const { owner, repo, discordChannelId } = JSON.parse(event.body || "{}") as FetchAndSendUpdatesParams;
+    const params = JSON.parse(event.body || "{}") as FetchAndSendUpdatesParams;
+    const { owner, repo, discordChannelId } = params;
 
     if (!owner || !repo || !discordChannelId) {
       return {
@@ -44,7 +43,7 @@ export const fetchAndSendUpdates = async (
       };
     }
 
-    // Fetch the CHANGELOG.md file from GitHub
+    // Fetch the CHANGELOG.md file content
     const { data: changelogFile } = await octokit.rest.repos.getContent({
       owner,
       repo,
@@ -52,7 +51,7 @@ export const fetchAndSendUpdates = async (
     });
 
     if (!("content" in changelogFile)) {
-      throw new Error("CHANGELOG.md not found");
+      throw new Error("CHANGELOG.md not found or is a directory");
     }
 
     const changelogContent = Buffer.from(changelogFile.content, "base64").toString("utf-8");
@@ -71,14 +70,15 @@ export const fetchAndSendUpdates = async (
     if (newChanges.length === 0) {
       return {
         statusCode: 200,
-        body: JSON.stringify({ message: "No new changes to send" }),
+        body: JSON.stringify({ message: "No new updates to send" }),
       };
     }
 
     // Send updates to Discord
     for (const change of newChanges) {
+      const message = formatDiscordMessage(change);
       await discordSdk.sendMessage({
-        content: formatDiscordMessage(change),
+        content: message,
         channelId: discordChannelId,
       });
     }
@@ -102,18 +102,21 @@ export const fetchAndSendUpdates = async (
 interface ChangelogEntry {
   version: string;
   date: string;
-  changes: string[];
+  changes: {
+    added?: string[];
+    changed?: string[];
+    deprecated?: string[];
+    removed?: string[];
+    fixed?: string[];
+    security?: string[];
+  };
 }
 
-/**
- * Parses the changelog content and extracts the latest entries
- * @param content - The content of the CHANGELOG.md file
- * @returns An array of ChangelogEntry objects
- */
 function parseChangelog(content: string): ChangelogEntry[] {
-  const lines = content.split("\n");
   const entries: ChangelogEntry[] = [];
+  const lines = content.split("\n");
   let currentEntry: ChangelogEntry | null = null;
+  let currentSection: keyof ChangelogEntry["changes"] | null = null;
 
   for (const line of lines) {
     if (line.startsWith("## [")) {
@@ -121,9 +124,17 @@ function parseChangelog(content: string): ChangelogEntry[] {
         entries.push(currentEntry);
       }
       const [version, date] = line.match(/\[(.*?)\]\s*-\s*(.*)/)?.slice(1) || [];
-      currentEntry = { version, date, changes: [] };
-    } else if (currentEntry && line.trim().startsWith("-")) {
-      currentEntry.changes.push(line.trim().substring(2));
+      currentEntry = { version, date, changes: {} };
+      currentSection = null;
+    } else if (currentEntry) {
+      if (line.startsWith("### ")) {
+        currentSection = line.slice(4).toLowerCase() as keyof ChangelogEntry["changes"];
+      } else if (currentSection && line.startsWith("- ")) {
+        if (!currentEntry.changes[currentSection]) {
+          currentEntry.changes[currentSection] = [];
+        }
+        currentEntry.changes[currentSection]!.push(line.slice(2));
+      }
     }
   }
 
@@ -134,13 +145,20 @@ function parseChangelog(content: string): ChangelogEntry[] {
   return entries;
 }
 
-/**
- * Formats a changelog entry for Discord
- * @param entry - The ChangelogEntry object
- * @returns A formatted string for Discord
- */
-function formatDiscordMessage(entry: ChangelogEntry): string {
-  return `**New Update: ${entry.version} (${entry.date})**\n\n${entry.changes.map(change => `• ${change}`).join("\n")}`;
+function formatDiscordMessage(change: ChangelogEntry): string {
+  let message = `**New Update: ${change.version}** (${change.date})\n\n`;
+
+  for (const [section, items] of Object.entries(change.changes)) {
+    if (items && items.length > 0) {
+      message += `**${section.charAt(0).toUpperCase() + section.slice(1)}:**\n`;
+      for (const item of items) {
+        message += `• ${item}\n`;
+      }
+      message += "\n";
+    }
+  }
+
+  return message.trim();
 }
 
 /**
@@ -148,76 +166,68 @@ function formatDiscordMessage(entry: ChangelogEntry): string {
  */
 export const fetchAndSendUpdatesDocs = {
   instructions: `
-This function is designed to be triggered as a webhook or scheduled as a cron job to fetch the latest changelog entries from a GitHub repository and send them to a Discord channel.
+This function is designed to be triggered as a webhook or scheduled as a cron job.
 
 To set up as a webhook:
-1. Deploy this function to your serverless platform.
-2. Obtain the function's URL from your serverless platform.
+1. Deploy the function to your serverless platform.
+2. Obtain the function's URL endpoint.
 3. Set up a webhook in your GitHub repository:
    - Go to your repository settings
-   - Click on "Webhooks"
-   - Add a new webhook
-   - Set the Payload URL to your function's URL
+   - Navigate to "Webhooks"
+   - Click "Add webhook"
+   - Set the Payload URL to your function's endpoint
    - Choose "application/json" as the content type
-   - Select the events you want to trigger the webhook (e.g., "Push" event)
+   - Select "Let me select individual events" and choose "Release" events
    - Save the webhook
 
 To set up as a cron job:
-1. Deploy this function to your serverless platform.
-2. In your serverless configuration file (e.g., serverless.yml), add a schedule event:
+1. Deploy the function to your serverless platform.
+2. Configure a cron job to trigger the function at your desired interval.
+   For example, to run every day at midnight UTC:
+   - AWS CloudWatch Events / EventBridge: cron(0 0 * * ? *)
+   - Azure Functions: 0 0 0 * * *
+   - Google Cloud Functions: 0 0 * * *
 
-   events:
-     - schedule: cron(0 0 * * ? *) # This runs the function daily at midnight UTC
-
-3. Adjust the cron expression as needed for your desired schedule.
-
-When calling this function, provide the following parameters in the request body:
-{
-  "owner": "GitHub_username_or_organization",
-  "repo": "repository_name",
-  "discordChannelId": "Discord_channel_ID"
-}
-
-Make sure to set up the required environment variables:
-- GITHUB_TOKEN: A GitHub personal access token with repo scope
+Make sure to provide the necessary environment variables:
+- GITHUB_TOKEN: Your GitHub personal access token
 - DISCORD_TOKEN: Your Discord bot token
-- UPSTASH_REDIS_REST_URL: The URL for your Upstash Redis instance
-- UPSTASH_REDIS_REST_TOKEN: The token for your Upstash Redis instance
+- UPSTASH_REDIS_REST_URL: Your Upstash Redis REST URL
+- UPSTASH_REDIS_REST_TOKEN: Your Upstash Redis REST token
 `,
   summary: "Fetch changelog updates from GitHub and send them to Discord",
-  description: "This function fetches the latest changelog entries from a specified GitHub repository, parses the changelog, and sends the updates to a designated Discord channel.",
+  description: "This function fetches the latest changelog entries from a specified GitHub repository, parses them, and sends the updates to a designated Discord channel.",
   parameters: [
     {
       name: "owner",
       in: "body",
-      description: "The GitHub username or organization that owns the repository",
+      description: "The GitHub repository owner",
       required: true,
       schema: {
-        type: "string",
-      },
+        type: "string"
+      }
     },
     {
       name: "repo",
       in: "body",
-      description: "The name of the GitHub repository",
+      description: "The GitHub repository name",
       required: true,
       schema: {
-        type: "string",
-      },
+        type: "string"
+      }
     },
     {
       name: "discordChannelId",
       in: "body",
-      description: "The ID of the Discord channel where updates will be sent",
+      description: "The Discord channel ID to send updates to",
       required: true,
       schema: {
-        type: "string",
-      },
-    },
+        type: "string"
+      }
+    }
   ],
   responses: {
     "200": {
-      description: "Successfully fetched and sent updates",
+      description: "Successfully processed the request",
       content: {
         "application/json": {
           schema: {
@@ -225,12 +235,12 @@ Make sure to set up the required environment variables:
             properties: {
               message: {
                 type: "string",
-                description: "A success message",
-              },
-            },
-          },
-        },
-      },
+                description: "Status message"
+              }
+            }
+          }
+        }
+      }
     },
     "400": {
       description: "Bad request - missing required parameters",
@@ -241,12 +251,12 @@ Make sure to set up the required environment variables:
             properties: {
               error: {
                 type: "string",
-                description: "Error message describing the missing parameters",
-              },
-            },
-          },
-        },
-      },
+                description: "Error message"
+              }
+            }
+          }
+        }
+      }
     },
     "500": {
       description: "Internal server error",
@@ -257,12 +267,12 @@ Make sure to set up the required environment variables:
             properties: {
               error: {
                 type: "string",
-                description: "Error message describing what went wrong",
-              },
-            },
-          },
-        },
-      },
-    },
-  },
+                description: "Error message"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 };

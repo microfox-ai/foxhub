@@ -275,11 +275,18 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
       console.log("deleted messages", response);
     }
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
+    const messageMinion = message?.annotations?.find(
+      (annotation: any) => annotation.type === "minion"
+    );
     // bypass the createMessage by using the original append method (as we did not delete the last message from the db)
     // if doing edit, we should also delete the last message from the db
     if (message) {
       try {
-        await appendMessage(message as Message, {}, true);
+        await appendMessage(message as Message, {
+          body: {
+            minionType: (message as any)?.minionType ?? (messageMinion as any)?.value,
+          },
+        }, true);
       } catch (error) {
         console.log("error appending message", error);
       }

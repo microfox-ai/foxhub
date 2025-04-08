@@ -147,7 +147,7 @@ const ActionButtons = (props: any) => {
               disabled:opacity-50 disabled:cursor-not-allowed
             `,
               button.type === "confirm" &&
-                "bg-black text-white hover:bg-black/80 hover:text-white"
+              "bg-black text-white hover:bg-black/80 hover:text-white"
             )}
             disabled={
               !IN_DEV &&
@@ -424,8 +424,8 @@ const TaskIntegrations = ({
           );
           authStatus[platform.name] = oauthSecret
             ? oauthSecret.variables.every(
-                (variable) => variable.value?.trim() !== ""
-              )
+              (variable) => variable.value?.trim() !== ""
+            )
             : false;
         }
       }
@@ -565,8 +565,8 @@ const TaskIntegrations = ({
 
           const hasAllAuthRelatedKeys = getMatchingOAuthSecret
             ? getMatchingOAuthSecret?.variables.every((variable: any) => {
-                return variable.value?.trim() !== "";
-              })
+              return variable.value?.trim() !== "";
+            })
             : false;
 
           return (
@@ -931,34 +931,34 @@ const EnvCollector = ({
 
       const body = existingSecret
         ? {
-            id: existingSecret.id,
-            variables: Object.entries(values)
-              .filter(([_, value]) => value.trim())
-              .map(([key, value]) => ({
-                key,
-                value: value.trim(),
-                isOptional: false,
-              })),
-            clientRequestId: requestParamId,
-            botProjectId: projectParamId,
-            userId: user?.id,
-            name: "custom_keys",
-            type: "custom",
-          }
+          id: existingSecret.id,
+          variables: Object.entries(values)
+            .filter(([_, value]) => value.trim())
+            .map(([key, value]) => ({
+              key,
+              value: value.trim(),
+              isOptional: false,
+            })),
+          clientRequestId: requestParamId,
+          botProjectId: projectParamId,
+          userId: user?.id,
+          name: "custom_keys",
+          type: "custom",
+        }
         : {
-            clientRequestId: requestParamId,
-            botProjectId: projectParamId,
-            name: "custom_keys",
-            userId: user?.id,
-            type: "custom",
-            variables: Object.entries(values)
-              .filter(([_, value]) => value.trim())
-              .map(([key, value]) => ({
-                key,
-                value: value.trim(),
-                isOptional: false,
-              })),
-          };
+          clientRequestId: requestParamId,
+          botProjectId: projectParamId,
+          name: "custom_keys",
+          userId: user?.id,
+          type: "custom",
+          variables: Object.entries(values)
+            .filter(([_, value]) => value.trim())
+            .map(([key, value]) => ({
+              key,
+              value: value.trim(),
+              isOptional: false,
+            })),
+        };
 
       const response = await fetch(endpoint, {
         method,
@@ -1147,6 +1147,79 @@ const EnvCollector = ({
   );
 };
 
+const LogsDialog = ({
+  isOpen,
+  onClose,
+  jobId,
+  repoName,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  jobId: string;
+  repoName: string;
+}) => {
+  const [logs, setLogs] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          `/api/github/logs?jobId=${encodeURIComponent(jobId)}&repoName=${encodeURIComponent(repoName)}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch logs");
+        }
+        const data = await response.json();
+        setLogs(data.logs);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch logs");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isOpen && jobId) {
+      fetchLogs();
+    }
+  }, [isOpen, jobId, repoName]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+            <FileText className="h-5 w-5" />
+            Deployment Logs
+          </DialogTitle>
+          <DialogDescription className="text-sm text-gray-500">
+            Detailed logs from the deployment process
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="relative mt-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : error ? (
+            <div className="flex items-center gap-2 text-red-500 py-4">
+              <AlertCircle className="h-5 w-5" />
+              <span>{error}</span>
+            </div>
+          ) : (
+            <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre-wrap">
+              {logs}
+            </pre>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const DeploymentsInfo = ({
   uiAnnotation,
   idx,
@@ -1159,6 +1232,7 @@ const DeploymentsInfo = ({
   const stage = annotation.stage;
   const runId = annotation.runId;
   const [finalData, setFinalData] = useState<any>(null);
+  const [showLogsDialog, setShowLogsDialog] = useState(false);
   const params = useParams<{
     project_id?: string;
     request_id?: string;
@@ -1197,7 +1271,6 @@ const DeploymentsInfo = ({
 
   if (!finalData?.shouldBreak) {
     return (
-      // TODO: Add status of the deployment
       <motion.div
         className="flex items-center  gap-3  p-4 bg-white rounded-xl border border-gray-100 shadow-sm"
         initial={{ opacity: 0, y: 10 }}
@@ -1216,123 +1289,132 @@ const DeploymentsInfo = ({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
-      {/* Header with Status */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center space-x-3">
-          <div
+    <>
+      <div className="flex flex-col gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
+        {/* Header with Status */}
+        <div className="flex items-center justify-between border-b pb-4">
+          <div className="flex items-center space-x-3">
+            <div
+              className={cn(
+                "w-2 h-2 rounded-full",
+                deployStep.status === "failed"
+                  ? "bg-red-500 animate-pulse"
+                  : deployStep.status === "success"
+                    ? "bg-green-500"
+                    : "bg-yellow-500 animate-pulse"
+              )}
+            />
+            <h2 className="text-xl font-medium text-gray-900">
+              Deployment Status
+            </h2>
+          </div>
+          <span
             className={cn(
-              "w-2 h-2 rounded-full",
+              "text-xs font-medium px-2.5 py-1 rounded-full",
               deployStep.status === "failed"
-                ? "bg-red-500 animate-pulse"
+                ? "bg-red-50 text-red-700"
                 : deployStep.status === "success"
-                  ? "bg-green-500"
-                  : "bg-yellow-500 animate-pulse"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-yellow-50 text-yellow-700"
             )}
-          />
-          <h2 className="text-xl font-medium text-gray-900">
-            Deployment Status
-          </h2>
+          >
+            {deployStep.status.toUpperCase()}
+          </span>
         </div>
-        <span
-          className={cn(
-            "text-xs font-medium px-2.5 py-1 rounded-full",
-            deployStep.status === "failed"
-              ? "bg-red-50 text-red-700"
-              : deployStep.status === "success"
-                ? "bg-green-50 text-green-700"
-                : "bg-yellow-50 text-yellow-700"
-          )}
-        >
-          {deployStep.status.toUpperCase()}
-        </span>
-      </div>
 
-      {/* Title and PR Info */}
-      <div className="p-3 bg-gray-50 rounded-lg text-sm flex items-start gap-2">
-        <GitPullRequest className="w-4 h-4 text-gray-500 mt-px" />
-        <div className="flex flex-col gap-1">
-          <div className="font-medium text-gray-900">
-            {deployStep.metadata.display_title}
-          </div>
-          <div className="text-gray-500 mt-1">
-            PR #{deployStep.metadata.pull_requests[0].number}
-          </div>
-        </div>
-      </div>
-
-      {/* Info Grid */}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <Package size={14} color="#2b7fff" />
-            <div className="text-gray-500">Environment</div>
-          </div>
-          <div className="font-medium text-gray-900 mt-1">
-            {deployStep.stage}
+        {/* Title and PR Info */}
+        <div className="p-3 bg-gray-50 rounded-lg text-sm flex items-start gap-2">
+          <GitPullRequest className="w-4 h-4 text-gray-500 mt-px" />
+          <div className="flex flex-col gap-1">
+            <div className="font-medium text-gray-900">
+              {deployStep.metadata.display_title}
+            </div>
+            <div className="text-gray-500 mt-1">
+              PR #{deployStep.metadata.pull_requests[0].number}
+            </div>
           </div>
         </div>
 
-        <div>
-          <div className="flex items-center gap-2">
-            <Clock size={14} color="#2b7fff" />
-            <div className="text-gray-500">Duration</div>
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <div className="flex items-center gap-2">
+              <Package size={14} color="#2b7fff" />
+              <div className="text-gray-500">Environment</div>
+            </div>
+            <div className="font-medium text-gray-900 mt-1">
+              {deployStep.stage}
+            </div>
           </div>
-          <div className="font-medium text-gray-900 mt-1">
-            {prettyPrintDuration(deployStep.startTime, deployStep.endTime)}
+
+          <div>
+            <div className="flex items-center gap-2">
+              <Clock size={14} color="#2b7fff" />
+              <div className="text-gray-500">Duration</div>
+            </div>
+            <div className="font-medium text-gray-900 mt-1">
+              {prettyPrintDuration(deployStep.startTime, deployStep.endTime)}
+            </div>
           </div>
         </div>
+
+        {/* Quick Actions */}
+        <div className="flex gap-2 mt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 transition-colors"
+            onClick={() => setShowLogsDialog(true)}
+          >
+            <FileText className="w-3 h-3" />
+            View Logs
+          </Button>
+        </div>
+
+        {/* Run Info */}
+        <div className="text-xs text-gray-500">
+          Attempt {deployStep.metadata.run_attempt} of deployment #
+          {deployStep.metadata.run_number}
+        </div>
+
+        {stage === "STAGING" && deployStep.status === "success" && (
+          <>
+            <div className="text-xs text-gray-500">
+              <span className="font-medium text-gray-900">Staging </span>
+              environment is ready to be promoted to{" "}
+              <span className="font-medium text-gray-900">Production</span>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+              >
+                <Rocket className="w-4 h-4" />
+                Deploy to Production
+              </Button>
+              <Button
+                onClick={() => {
+                  setDeploymentInfo(finalData.clientDeployment);
+                  handleRightCollapse(!isRightCollapsed);
+                }}
+                variant="default"
+                className="group/button flex items-center gap-2"
+              >
+                Test Endpoints
+                <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="flex gap-2 mt-2">
-        <a
-          href={deployStep.metadata.logs_url}
-          className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 transition-colors"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <FileText className="w-3 h-3" />
-          View Logs
-        </a>
-      </div>
-
-      {/* Run Info */}
-      <div className="text-xs text-gray-500">
-        Attempt {deployStep.metadata.run_attempt} of deployment #
-        {deployStep.metadata.run_number}
-      </div>
-
-      {stage === "STAGING" && deployStep.status === "success" && (
-        <>
-          <div className="text-xs text-gray-500">
-            <span className="font-medium text-gray-900">Staging </span>
-            environment is ready to be promoted to{" "}
-            <span className="font-medium text-gray-900">Production</span>
-          </div>
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-            >
-              <Rocket className="w-4 h-4" />
-              Deploy to Production
-            </Button>
-            <Button
-              onClick={() => {
-                setDeploymentInfo(finalData.clientDeployment);
-                handleRightCollapse(!isRightCollapsed);
-              }}
-              variant="default"
-              className="group/button flex items-center gap-2"
-            >
-              Test Endpoints
-              <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
-            </Button>
-          </div>
-        </>
-      )}
-    </div>
+      <LogsDialog
+        isOpen={showLogsDialog}
+        onClose={() => setShowLogsDialog(false)}
+        jobId={deployStep.metadata.job_id}
+        repoName={finalData.clientDeployment.repoName}
+      />
+    </>
   );
 };
 

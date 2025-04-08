@@ -1,14 +1,12 @@
 import {
-  ServerStreamingRouter,
   defaultCallbackResultBody,
-  ServerStreamingFunction,
+  ServerStreamingRouter,
 } from "@repo/ai-utils/router";
-import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
-import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
-import { createMessage } from "@/utils/services/db_functions/messages";
-import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
 import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
+import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
+import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { deployFoxRouter } from "./deployfox/_deployfoxRouter";
+import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -24,36 +22,6 @@ const microfoxRouter = new ServerStreamingRouter<
 
 // ratelimit should be per time per model ().
 
-// TODO: Shift to the frontend.
-const createMessageRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
-  const lastMessage =
-    requestBody.messages.length > 0
-      ? requestBody.messages[requestBody.messages.length - 1]
-      : null;
-  let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
-  if (lastMessage) {
-    console.log("createMessage", lastMessage);
-    await createMessage({
-      clientRequestId: requestBody.clientRequestId,
-      message: {
-        ...lastMessage,
-        id: requestBody.clientRequestId + "-" + lastMessage.id,
-        originClientRequestId: requestBody.clientRequestId,
-        userId: requestBody.userId,
-        minionType: minionType,
-        context: "on-start",
-      },
-    });
-  }
-  return {
-    responseBody: props.responseBody,
-    appendRequestBody: props.requestBody,
-  };
-};
 // TODO: remove this & bifract this into multiple small steps in both server & frontend
 //microfoxRouter.addPath("createMessage", createMessageRouter);
 microfoxRouter.addPath("hellofox", hellofoxRouter);

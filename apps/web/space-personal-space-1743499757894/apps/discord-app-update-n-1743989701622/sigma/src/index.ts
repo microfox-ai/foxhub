@@ -1,11 +1,10 @@
 // Re-export external API functions
-import { fetchAndSendUpdatesDocs } from './functions/fetchAndSendUpdates.js';
-import { getLastSentUpdateDocs } from './functions/getLastSentUpdate.js';
-import { scheduledUpdateCheckDocs } from './functions/scheduledUpdateCheck.js';
-
-export { fetchAndSendUpdates } from './functions/fetchAndSendUpdates.js';
-export { getLastSentUpdate } from './functions/getLastSentUpdate.js';
-export { scheduledUpdateCheck } from './functions/scheduledUpdateCheck.js';
+import { fetchAndSendUpdatesDocs } from "./functions/fetchAndSendUpdates.js";
+import { getLastSentUpdateDocs } from "./functions/getLastSentUpdate.js";
+import { scheduledUpdateCheckDocs } from "./functions/scheduledUpdateCheck.js";
+export { fetchAndSendUpdates } from "./functions/fetchAndSendUpdates.js";
+export { getLastSentUpdate } from "./functions/getLastSentUpdate.js";
+export { scheduledUpdateCheck } from "./functions/scheduledUpdateCheck.js";
 
 /**
  * Complete API documentation
@@ -17,7 +16,8 @@ const apiDocs = {
   info: {
     title: "Update Fetcher and Sender API",
     version: "1.0.0",
-    description: "API for fetching updates and sending them to users",
+    description:
+      "API for fetching and sending updates, checking last sent update, and scheduling update checks",
     contact: {
       name: "API Support",
       email: "support@microfox.com",
@@ -30,13 +30,13 @@ const apiDocs = {
     },
   ],
   paths: {
-    "/fetch-and-send-updates": {
+    "/updates": {
       post: fetchAndSendUpdatesDocs,
     },
-    "/get-last-sent-update": {
+    "/last-update": {
       get: getLastSentUpdateDocs,
     },
-    "/scheduled-update-check": {
+    "/cron/update-check": {
       post: scheduledUpdateCheckDocs,
     },
   },

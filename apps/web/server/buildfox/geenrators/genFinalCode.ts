@@ -167,10 +167,17 @@ export const genFinalCode = async (
     // Parse serverless.yml to get function paths
     const serverlessConfig = YAML.parse(serverlessYmlContent);
     const functionPaths = Object.entries(serverlessConfig.functions || {}).map(
-      ([name, config]: [string, any]) => ({
-        name,
-        handler: config.handler,
-      })
+      ([name, config]: [string, any]) => {
+        const httpEvents =
+          config.events?.filter((event: any) => event.http) || [];
+        return {
+          name,
+          paths: httpEvents.map((event: any) => ({
+            path: event.http.path,
+            method: event.http.method,
+          })),
+        };
+      }
     );
     console.log("Parsed function paths:", functionPaths);
 
@@ -189,7 +196,10 @@ export const genFinalCode = async (
 
             The following are the function paths from the serverless.yml file for your reference when writing the docs in index.ts file:
             ${functionPaths
-              .map((func) => `Name: ${func.name} - Path: ${func.handler}`)
+              .map(
+                (func) =>
+                  `Name: ${func.name} - Path: ${func.paths.map((p: { method: string; path: string }) => `${p.method} ${p.path}`).join("\n - ")}`
+              )
               .join("\n - ")}
 
             The example index.ts file is as follows:

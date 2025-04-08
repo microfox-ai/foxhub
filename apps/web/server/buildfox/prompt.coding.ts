@@ -39,6 +39,7 @@ export const codingSystemPrompt = (
       ` Make sure to add/include the endpoint in index.ts file once each function is written.
         Make sure to add any new dependencies in package.json file.
         Make sure to write proper comments for the code.
+        Make sure you properly handle errors, and pass them to the client via response object.
 
         The file structure is as follows (observed from the project root):
         [root]
@@ -83,6 +84,7 @@ export const codingSystemPrompt = (
 
     Critically, you must carefully analyze the results of each tool call you receive. 
     These outputs might mention error messages, files, or symbols you haven't considered yet.
+    Mak double sure, you're using ?. format for all anything that could throw a null or undefined error.
 
     package.json should never be written by you, it should be written by the write_to_file tool.
     write_to_file will update the package.json file as long as you pass in the packagesUsed array.
@@ -216,6 +218,7 @@ export const codingFunctionPrompt = async ({
             - Add proper Docs
             - Add appropriate comments
             - Return properly formatted responses
+            - Return the response object with the proper headers like in example (always enable cors by default, & pick json response type by default, unless otherwise specified)
 
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}

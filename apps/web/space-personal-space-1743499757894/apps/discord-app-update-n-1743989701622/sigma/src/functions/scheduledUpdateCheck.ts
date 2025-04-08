@@ -38,18 +38,14 @@ async function fetchLatestChangelog(): Promise<string> {
   const content = Buffer.from(data.content, "base64").toString("utf-8");
   const lines = content.split("\n");
   let latestChanges = "";
-  let inLatestVersion = false;
+  let isLatestVersion = true;
 
   for (const line of lines) {
     if (line.startsWith("## [")) {
-      if (inLatestVersion) {
-        break;
-      }
-      inLatestVersion = true;
-      latestChanges += line + "\n";
-    } else if (inLatestVersion) {
-      latestChanges += line + "\n";
+      if (!isLatestVersion) break;
+      isLatestVersion = false;
     }
+    latestChanges += line + "\n";
   }
 
   return latestChanges.trim();
@@ -61,13 +57,20 @@ async function fetchLatestChangelog(): Promise<string> {
  */
 async function sendChangelogToDiscord(changelog: string): Promise<void> {
   await discordSdk.sendMessage({
-    content: "New application update available!\n\n" + changelog,
+    content: "New application update available!",
     channelId: DISCORD_CHANNEL_ID,
+    embeds: [
+      {
+        title: "Changelog",
+        description: changelog,
+        color: 0x00ff00,
+      },
+    ],
   });
 }
 
 /**
- * Checks for updates and sends them to Discord if new
+ * Checks for updates and sends them to Discord if new ones are available
  * @returns {Promise<APIGatewayProxyResult>} The result of the operation
  */
 export const scheduledUpdateCheck = async (): Promise<APIGatewayProxyResult> => {
@@ -82,7 +85,7 @@ export const scheduledUpdateCheck = async (): Promise<APIGatewayProxyResult> => 
       return {
         statusCode: 200,
         body: JSON.stringify({
-          message: "New update sent to Discord successfully",
+          message: "New updates sent to Discord successfully",
           timestamp: new Date().toISOString(),
         }),
       };
@@ -115,14 +118,14 @@ export const scheduledUpdateCheckDocs = `
   "openapi": "3.0.1",
   "info": {
     "title": "Scheduled Update Check",
-    "description": "Periodically checks for new updates in the GitHub repository's CHANGELOG.md and sends them to a Discord channel",
+    "description": "Cron job that checks for new app updates and sends them to a Discord channel",
     "version": "1.0.0"
   },
   "paths": {
     "/cron/scheduled-update-check": {
       "get": {
         "summary": "Check for updates and send to Discord",
-        "description": "This endpoint is triggered by a cron job to check for new updates in the CHANGELOG.md file and send them to a Discord channel if new updates are found.",
+        "description": "This endpoint is triggered by a cron job to check for new updates in the GitHub repository's CHANGELOG.md file and send them to a specified Discord channel.",
         "responses": {
           "200": {
             "description": "Successful operation",
@@ -174,10 +177,10 @@ export const scheduledUpdateCheckDocs = `
 `;
 
 /**
- * Instructions for setting up the cron job
+ * Cron job setup instructions
  */
 export const cronJobSetupInstructions = `
-To set up the cron job for the scheduledUpdateCheck function:
+To set up the scheduledUpdateCheck cron job:
 
 1. Ensure your serverless.yml file includes the following configuration:
 
@@ -187,22 +190,20 @@ functions:
     events:
       - schedule: cron(0 */6 * * ? *)
 
-This configuration will run the scheduledUpdateCheck function every 6 hours.
+2. Deploy your serverless application.
 
-2. Deploy your serverless application to AWS Lambda.
+3. The cron job will automatically run every 6 hours (0 */6 * * ? *).
 
-3. The function will automatically run according to the specified schedule.
-
-4. Make sure to set the following environment variables in your AWS Lambda function configuration:
+4. Make sure to set the following environment variables:
    - GITHUB_TOKEN: Your GitHub personal access token
    - DISCORD_TOKEN: Your Discord bot token
    - UPSTASH_REDIS_REST_URL: Your Upstash Redis REST URL
    - UPSTASH_REDIS_REST_TOKEN: Your Upstash Redis REST token
 
 5. Update the following constants in the scheduledUpdateCheck.ts file:
-   - GITHUB_OWNER: Your GitHub username or organization name
-   - GITHUB_REPO: Your GitHub repository name
-   - DISCORD_CHANNEL_ID: The ID of the Discord channel where updates should be sent
+   - GITHUB_OWNER: Your GitHub username or organization
+   - GITHUB_REPO: Your repository name
+   - DISCORD_CHANNEL_ID: The ID of the Discord channel where updates will be sent
 
-The cron job will now automatically check for updates in your GitHub repository's CHANGELOG.md file every 6 hours and send any new updates to the specified Discord channel.
+The cron job will fetch the latest changelog from your GitHub repository's CHANGELOG.md file, compare it with the last sent update (stored in Redis), and send any new updates to the specified Discord channel.
 `;

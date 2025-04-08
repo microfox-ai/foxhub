@@ -19,7 +19,7 @@ export const getLastSentUpdate = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Retrieve the last sent update timestamp from Redis
+    // Retrieve the timestamp from Redis
     const lastSentUpdate = await redis.get(LAST_UPDATE_KEY);
 
     return {
@@ -69,7 +69,7 @@ No specific setup is required for this endpoint as it's not a webhook or a cronj
               lastSentUpdate: {
                 type: "string",
                 nullable: true,
-                description: "Timestamp of the last sent update, or null if no update has been sent",
+                description: "Timestamp of the last sent update, or null if not set",
               },
             },
           },

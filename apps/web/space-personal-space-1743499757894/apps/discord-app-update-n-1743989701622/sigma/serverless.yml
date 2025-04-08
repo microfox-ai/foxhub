@@ -42,7 +42,7 @@ functions:
     events:
       - schedule: cron(0 */6 * * ? *)
       - http:
-          path: /cron/scheduled-update
+          path: /cron/update-check
           method: post
           cors: true
 

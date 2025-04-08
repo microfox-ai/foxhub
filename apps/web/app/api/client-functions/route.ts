@@ -197,17 +197,17 @@ export async function PUT(req: NextRequest) {
 
     // Notify in chat about the update
     if (Object.keys(updateData).length > 0) {
-      await prisma.chatUIMessage.create({
-        data: {
-          originClientRequestId: clientFunction.originClientRequestId,
-          userId: clientFunction.userId,
-          content: `Function "${updatedFunction.name}" has been updated.`,
-          context: `server`,
-          role: `assistant`,
-          minionType: `other`,
-          createdAt: new Date(),
-        },
-      });
+      // await prisma.chatUIMessage.create({
+      //   data: {
+      //     originClientRequestId: clientFunction.originClientRequestId,
+      //     userId: clientFunction.userId,
+      //     content: `Function "${updatedFunction.name}" has been updated.`,
+      //     context: `server`,
+      //     role: `assistant`,
+      //     minionType: `other`,
+      //     createdAt: new Date(),
+      //   },
+      // });
     }
 
     return NextResponse.json(updatedFunction, { status: 200 });

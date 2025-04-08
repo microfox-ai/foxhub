@@ -84,6 +84,13 @@ export function ClientProjectProvider({
           setSelectedRequest(request);
         }
       }
+    } else {
+      const personalSpace = projects.find(
+        (p: any) => p.name === "Personal Space"
+      );
+      if (personalSpace) {
+        setSelectedProject(personalSpace);
+      }
     }
   }, [projectParamId, requestParamId, projects]);
 

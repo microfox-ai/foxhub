@@ -23,9 +23,7 @@ export const RequestPage = () => {
   const {
     isLeftCollapsed,
     isRightCollapsed,
-    isLeftTransitioning,
     isRightTransitioning,
-    leftPanelRef,
     rightPanelRef,
     handleLeftCollapse,
     handleRightCollapse,
@@ -33,14 +31,8 @@ export const RequestPage = () => {
     handleRightResizeHandleClick,
   } = useLayout();
 
-  const {
-    selectedProject,
-    selectedRequest,
-    isLoading,
-    setSelectedRequest,
-    createNewEmptyRequest,
-    clientRequestId,
-  } = useClientProject();
+  const { selectedProject, selectedRequest, isLoading, clientRequestId } =
+    useClientProject();
 
   if (!user || isLoading) {
     return (
@@ -52,80 +44,50 @@ export const RequestPage = () => {
 
   return (
     <ClientSecretProvider botProjectId={selectedProject?.id}>
-      <ResizablePanelGroup
-        direction="horizontal"
-        autoSaveId="request-page"
-        className="!h-screen"
-      >
-        <ResizablePanel
-          ref={leftPanelRef}
-          defaultSize={16}
-          minSize={16}
-          maxSize={16}
-          collapsible={true}
-          collapsedSize={4}
-          onCollapse={() => handleLeftCollapse(true)}
-          onExpand={() => handleLeftCollapse(false)}
-          className={cn(
-            isLeftTransitioning && "transition-all duration-100 linear"
-          )}
-        >
-          <div className="flex h-full flex-col">
-            <Sidebar
-              selectedProject={selectedProject}
-              onSelectRequest={setSelectedRequest}
-              onNewRequest={createNewEmptyRequest}
-              onOpenConfig={(project: any) => {}}
-              isCollapsed={isLeftCollapsed}
-              onCollapse={handleLeftCollapse}
-            />
-          </div>
-        </ResizablePanel>
-        <ResizableHandle
-          className="cursor-pointer hidden"
-          onClick={handleLeftResizeHandleClick}
-        />
-        <TaskInstanceMetaProvider clientRequestId={clientRequestId!}>
-          <ApiDocProvider>
-            <ResizablePanel defaultSize={84}>
-              <div className="h-full">
-                <ChatWindow
-                  userId={user.id}
-                  onCollapse={handleLeftCollapse}
-                  isCollapsed={isLeftCollapsed}
-                  isLoading={isLoading}
-                  clientRequest={selectedRequest}
-                  projectTitle={selectedProject?.name}
-                />
-              </div>
-            </ResizablePanel>
-            {!isRightCollapsed && (
-              <ResizableHandle
-                className="cursor-pointer w-[2px] ml-2 opacity-0 hover:opacity-100 transition-opacity duration-300"
-                onClick={handleRightResizeHandleClick}
+      <ResizableHandle
+        className="cursor-pointer hidden"
+        onClick={handleLeftResizeHandleClick}
+      />
+      <TaskInstanceMetaProvider clientRequestId={clientRequestId!}>
+        <ApiDocProvider>
+          <ResizablePanel defaultSize={84}>
+            <div className="h-full">
+              <ChatWindow
+                userId={user.id}
+                onCollapse={handleLeftCollapse}
+                isCollapsed={isLeftCollapsed}
+                isLoading={isLoading}
+                clientRequest={selectedRequest}
+                projectTitle={selectedProject?.name}
               />
+            </div>
+          </ResizablePanel>
+          {!isRightCollapsed && (
+            <ResizableHandle
+              className="cursor-pointer w-[2px] ml-2 opacity-0 hover:opacity-100 transition-opacity duration-300"
+              onClick={handleRightResizeHandleClick}
+            />
+          )}
+          <ResizablePanel
+            ref={rightPanelRef}
+            defaultSize={0}
+            minSize={30}
+            maxSize={50}
+            collapsible={true}
+            collapsedSize={0}
+            onCollapse={() => handleRightCollapse(true)}
+            className={cn(
+              isRightTransitioning && "transition-all  duration-200 linear"
             )}
-            <ResizablePanel
-              ref={rightPanelRef}
-              defaultSize={0}
-              minSize={30}
-              maxSize={50}
-              collapsible={true}
-              collapsedSize={0}
-              onCollapse={() => handleRightCollapse(true)}
-              className={cn(
-                isRightTransitioning && "transition-all  duration-200 linear"
-              )}
-            >
-              <div className="h-full py-4 px-2">
-                <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
-                  <PreviewWindow />
-                </div>
+          >
+            <div className="h-full py-4 px-2">
+              <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
+                <PreviewWindow />
               </div>
-            </ResizablePanel>
-          </ApiDocProvider>
-        </TaskInstanceMetaProvider>
-      </ResizablePanelGroup>
+            </div>
+          </ResizablePanel>
+        </ApiDocProvider>
+      </TaskInstanceMetaProvider>
     </ClientSecretProvider>
   );
 };

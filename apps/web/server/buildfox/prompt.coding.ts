@@ -203,6 +203,13 @@ export const codingFunctionPrompt = async ({
             `
                 : ""
             }
+            ${
+              template_type === "upstash"
+                ? `
+            - If any extra redis saving is needed, make sure you null check the variables first, before saving them to redis.
+            `
+                : ""
+            }
 
             Requirements:
             - Use TypeScript
@@ -222,8 +229,9 @@ export const codingFunctionPrompt = async ({
 
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
-
+          
             
+
             The code should be created in the src/functions directory.
             Make sure to use the necessary imports from the packages when needed.
             Always call fetch_package_docs for the packages that start with @microfox to better understand how to use them.
@@ -237,6 +245,8 @@ export const codingFunctionPrompt = async ({
             - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
             - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.
             - the docs should be a pure string, do not insert any $ characters in the docs setup instructions.
+            - only write setup instructions for the functions, not for the cron jobs.
+            - only write setup instructions if it is meant to be configured as a webhook in external platform.
             `;
 };
 

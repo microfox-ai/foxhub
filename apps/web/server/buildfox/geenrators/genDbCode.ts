@@ -54,6 +54,8 @@ export const genDbCode = async (
                 The example redis helper file is as follows:
                 ${redisHelper}
 
+                Make sure you null check the variables first, before saving them to redis.
+
                 your workflow should be as follows:
                 1. understand all the functions & cron jobs that are to be generated for the task.
                 2. understand the example redis helper file.

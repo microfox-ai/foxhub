@@ -1,0 +1,70 @@
+service: u-1743989701622-sigma
+
+package:
+  exclude:
+    - venv/**
+    - src/**
+
+# Configuration
+custom:
+  # Get environment from env or default to dev
+  stage: ${env:ENVIRONMENT, 'dev'}
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: ${env:ENVIRONMENT, 'dev'}
+  environment: ${file(env.json)}
+
+plugins:
+  - serverless-plugin-typescript
+
+functions:
+  fetchAndSendUpdates:
+    handler: dist/index.fetchAndSendUpdates
+    events:
+      - http:
+          path: /fetch-and-send-updates
+          method: post
+          cors: true
+
+  getLastSentUpdate:
+    handler: dist/index.getLastSentUpdate
+    events:
+      - http:
+          path: /last-sent-update
+          method: get
+          cors: true
+
+  scheduledUpdateCheck:
+    handler: dist/index.scheduledUpdateCheck
+    events:
+      - schedule: cron(0 */6 * * ? *)
+      - http:
+          path: /scheduled-update-check
+          method: post
+          cors: true
+
+  # Documentation
+  getDocs:
+    handler: dist/index.getDocs
+    events:
+      - http:
+          path: /docs.json
+          method: get
+          cors: true
+
+# Resources for API Gateway
+resources:
+  Outputs:
+    ApiEndpoints:
+      Description: "API Endpoints"
+      Value:
+        Fn::Join:
+          - ""
+          - - "API: https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - Ref: "AWS::Region"
+            - ".amazonaws.com/${env:ENVIRONMENT, 'dev'}"

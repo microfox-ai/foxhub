@@ -69,7 +69,7 @@ function getStatusDisplay(status: string): string {
   switch (status.toLowerCase()) {
     case "stable":
       return "STABLE";
-    case "beta":
+    case "partial":
       return "BETA";
     case "alpha":
       return "ALPHA";

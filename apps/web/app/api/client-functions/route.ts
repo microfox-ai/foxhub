@@ -47,10 +47,8 @@ export async function POST(req: NextRequest) {
     const clientFunction = await prisma.clientDeployment.upsert({
       where: { id: originClientRequestId },
       update: {
-        userId,
-        botProjectId,
-        originClientRequestId,
         baseUrl,
+        name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
         metadata,

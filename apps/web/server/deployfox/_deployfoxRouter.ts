@@ -67,7 +67,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   });
 
   //clone template in dev mode
-  //await recloneTemplateStuffToClientRequest(props, clientRequest);
+  await recloneTemplateStuffToClientRequest(props, clientRequest);
 
   // Monitor workflow runs
   const { sha } = await deployViaGit(

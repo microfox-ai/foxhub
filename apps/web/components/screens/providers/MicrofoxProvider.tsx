@@ -22,23 +22,7 @@ import {
 import { createSlackSDK } from "@microfox/slack-web-tiny";
 import { findLastElementWith } from "@/utils/helpers/array";
 
-interface MicrofoxContextType extends UseChatHelpers {
-  minionType: ChatUIMessageWithTypes["minionType"] | null;
-  setMinionType: (type: ChatUIMessageWithTypes["minionType"] | null) => void;
-  serverMessages?: ChatUIMessageWithTypes[];
-  mutate: () => void;
-  handleRefresh: (messageIndex: number) => Promise<void>;
-  isLoading: boolean;
-  isValidating: boolean;
-  addToolResult: ({
-    toolCallId,
-    result,
-  }: {
-    toolCallId: string;
-    result: any;
-  }) => void;
-  // ... spread all chat options
-}
+type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 
 const MicrofoxContext = createContext<MicrofoxContextType | undefined>(
   undefined
@@ -51,14 +35,14 @@ export interface MicrofoxProviderProps {
   chatOptions?: Partial<UseChatOptions>;
 }
 
-export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
-  children,
-  clientRequest,
-  resetInputState,
-  chatOptions: userChatOptions,
-}) => {
+export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOptions?: Partial<UseChatOptions>) => {
   const [minionType, setMinionType] =
     useState<ChatUIMessageWithTypes["minionType"]>("hellofox");
+
+  // Tab-related states
+  const [activeTab, setActiveTab] = useState<"chat" | "dashboard" | "history">("chat");
+  const [previousTab, setPreviousTab] = useState<"chat" | "dashboard" | "history">("chat");
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   const {
     data: serverMessages,
@@ -305,7 +289,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     // console.log("deleted messages", extraMessages.map(m => m.id));
   };
 
-  const value = {
+  return {
     ...chatOptions,
     handleSubmit,
     minionType,
@@ -316,8 +300,23 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     isValidating,
     serverMessages,
     handleRefresh,
+    // Add tab-related states to the context value
+    activeTab,
+    setActiveTab,
+    previousTab,
+    setPreviousTab,
+    hasScrolled,
+    setHasScrolled,
   };
+}
 
+export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
+  children,
+  clientRequest,
+  resetInputState,
+  chatOptions: userChatOptions,
+}) => {
+  const value = useMicrofoxContext(clientRequest, userChatOptions);
   return (
     <MicrofoxContext.Provider value={value}>
       {children}

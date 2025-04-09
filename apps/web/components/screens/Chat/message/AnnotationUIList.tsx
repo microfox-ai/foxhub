@@ -30,6 +30,7 @@ import {
   GitPullRequest,
   Rocket,
   ArrowRight,
+  CatIcon,
 } from "lucide-react";
 import {
   Tooltip,
@@ -1217,7 +1218,7 @@ const DeploymentsInfo = ({
 
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const { setDeploymentInfo } = useTaskInstanceMetaContext();
-  const { append } = useMicrofox();
+  const { append, setActiveTab } = useMicrofox();
   const {
     data: DeploymentData,
     isLoading,
@@ -1418,7 +1419,7 @@ const DeploymentsInfo = ({
         </div>
 
         {/* Quick Actions */}
-        <div className="flex gap-2 mt-2">
+        {/* <div className="flex gap-2 mt-2">
           <Button
             variant="outline"
             size="sm"
@@ -1428,23 +1429,28 @@ const DeploymentsInfo = ({
             <FileText className="w-3 h-3" />
             View Logs
           </Button>
-        </div>
+        </div> */}
 
         {/* Run Info */}
-        <div className="text-xs text-gray-500">
+        {/* <div className="text-xs text-gray-500">
           Attempt {deployStep.metadata.run_attempt} of deployment #
           {deployStep.metadata.run_number}
-        </div>
+        </div> */}
 
-        {stage === "STAGING" && deployStep.status === "success" && (
+        {deployStep.status === "success" && (
           <>
-            <div className="text-xs text-gray-500">
-              <span className="font-medium text-gray-900">Staging </span>
-              environment is ready to be promoted to{" "}
-              <span className="font-medium text-gray-900">Production</span>
-            </div>
+            {deployStep.stage === DEPLOY_STAGE.STAGING ? (
+              <div className="text-xs text-gray-500">
+                <span className="font-medium text-gray-900">Staging </span>
+                environment is ready to be promoted to{" "}
+                <span className="font-medium text-gray-900">Production</span>
+              </div>) : (
+              <div className="text-md text-gray-500">
+                <span className="font-medium text-gray-900">Automation Published !</span>
+              </div>
+            )}
             <div className="flex gap-2 mt-4">
-              {stage === "STAGING" && <Button
+              {deployStep.stage === DEPLOY_STAGE.STAGING && <Button
                 variant="outline"
                 className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
                 onClick={deployToProduction}
@@ -1453,6 +1459,18 @@ const DeploymentsInfo = ({
                 Deploy to Production
               </Button>
               }
+              {deployStep.stage === DEPLOY_STAGE.PROD && (
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+                  onClick={() => {
+                    setActiveTab("dashboard");
+                  }}
+                >
+                  <CatIcon className="w-4 h-4" />
+                  Open Dashboard
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   setDeploymentInfo(finalData.clientDeployment);

@@ -93,6 +93,11 @@ export const taskStructure = z.object({
           "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
         ),
       description: z.string().describe("What does this lambda function do"),
+      brief: z
+        .string()
+        .describe(
+          "A brief step by step description of what does this lambda function does"
+        ),
       endResult: z
         .string()
         .describe("What is the end result of this lambda function"),
@@ -108,6 +113,11 @@ export const taskStructure = z.object({
   cronJobs: z.array(
     z.object({
       name: z.string().describe("The name of this cron job"),
+      brief: z
+        .string()
+        .describe(
+          "A brief step by step description of what does this lambda function does"
+        ),
       description: z.string().describe("What does this cron job do"),
       endResult: z.string().describe("What is the end result of this cron job"),
       endPoint: z.object({

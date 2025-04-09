@@ -1,6 +1,10 @@
 import { prisma } from "@/prisma/prisma";
 import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { generateMicrofoxEmailTemplate, sesSdk } from "@/utils/services/sesSdk";
+import { slackBotSdk } from "@/utils/services/slackBotSdk";
+import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
+import { MySlackChannels } from "@/utils/services/slackBotSdk";
 import { FUNCTIONTYPE, DEPLOY_STAGE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -44,10 +48,8 @@ export async function POST(req: NextRequest) {
     const clientFunction = await prisma.clientDeployment.upsert({
       where: { id: originClientRequestId },
       update: {
-        userId,
-        botProjectId,
-        originClientRequestId,
         baseUrl,
+        name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
         metadata,
@@ -105,6 +107,14 @@ export async function POST(req: NextRequest) {
     //   },
     // });
 
+    const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();
+
+    await slackBotSdk.sendMessage({
+      icon_url: MICROFOX_LOGO,
+      channel: MySlackChannels.microfox_updates,
+      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${endpoints?.length}. Total time taken since hellofox started conversation: ${timeTaken} seconds`,
+    });
+
     return NextResponse.json(clientFunction, { status: 201 });
   } catch (error) {
     console.error("Error creating ClientDeployment:", error);
@@ -160,7 +170,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, name, type, mode, baseUrl, endpoints, schedules, metadata } =
+    const { id, name, type, stage, baseUrl, endpoints, schedules, metadata } =
       body;
 
     if (!id) {
@@ -186,7 +196,7 @@ export async function PUT(req: NextRequest) {
 
     if (name !== undefined) updateData.name = name;
     if (type !== undefined) updateData.type = type as FUNCTIONTYPE;
-    if (mode !== undefined) updateData.mode = mode as DEPLOY_STAGE;
+    if (stage !== undefined) updateData.stage = stage as DEPLOY_STAGE;
     if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
     if (metadata !== undefined) updateData.metadata = metadata;
 
@@ -194,6 +204,20 @@ export async function PUT(req: NextRequest) {
       where: { id },
       data: updateData,
     });
+
+    if (updatedFunction.stage === DEPLOY_STAGE.PROD) {
+      await sesSdk.sendEmail({
+        sender: "notifications@microfox.app",
+        recipient: updatedFunction.userId,
+        subject: `Function "${updatedFunction.name}" has been updated.`,
+        bodyHtml: generateMicrofoxEmailTemplate({
+          title: `Congrats! Your automation has been published.`,
+          content: `"${updatedFunction.name}" has been published. You can now expect your automation to be running clockwise, untill you decide to stop it. You can stop it by visiting the dashboard.`,
+          // ctaText: "Test it out",
+          // ctaLink: `https://microfox.app/test/${updatedFunction.id}`,
+        }),
+      });
+    }
 
     // Notify in chat about the update
     if (Object.keys(updateData).length > 0) {

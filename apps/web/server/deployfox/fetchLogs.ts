@@ -34,7 +34,15 @@ export const fetchLogs = async (
   };
 };
 
-export const getRunforClientRequestbySha = async ({ head_sha, clientRequest, stage }: { head_sha: string, clientRequest: ClientRequest, stage: DEPLOY_STAGE }) => {
+export const getRunforClientRequestbySha = async ({
+  head_sha,
+  clientRequest,
+  stage,
+}: {
+  head_sha: string;
+  clientRequest: ClientRequest;
+  stage: DEPLOY_STAGE;
+}) => {
   const octokitSdk = new Octokit({
     auth: GITHUB_TOKEN,
   });
@@ -42,10 +50,10 @@ export const getRunforClientRequestbySha = async ({ head_sha, clientRequest, sta
   const workflowRuns = await octokitSdk.rest.actions.listWorkflowRunsForRepo({
     owner: TEMPLATE_REPO_OWNER,
     repo: clientRequest.repoName ?? "",
-    branch:
-      stage === DEPLOY_STAGE.STAGING
-        ? (clientRequest.prBranch ?? "")
-        : "project/master",
+    branch: clientRequest.prBranch ?? "",
+    // stage === DEPLOY_STAGE.STAGING
+    //   ? (clientRequest.prBranch ?? "")
+    //   : "project/master",
     head_sha,
   });
 

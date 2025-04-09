@@ -18,7 +18,8 @@ import dayjs from "dayjs";
 export const deployViaGit = async (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
-  taskInstanceMeta: TaskInstanceMetaType
+  taskInstanceMeta: TaskInstanceMetaType,
+  stage: DEPLOY_STAGE
 ) => {
   const { dataStream } = props;
 
@@ -31,14 +32,14 @@ export const deployViaGit = async (
   }
 
   dataStream.writeMessageAnnotation({
-    type: "thinking",
-    value: "Deploying a test version of automation",
+    type: "loading",
+    content: `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation`,
   });
 
   const { sha } = await triggerDeployment(
     clientRequest,
     taskInstanceMeta,
-    DEPLOY_STAGE.STAGING
+    stage ?? DEPLOY_STAGE.STAGING
   );
 
   return { sha };
@@ -62,30 +63,6 @@ export const triggerDeployment = async (
   const octo = new Octokit({
     auth: GITHUB_TOKEN,
   });
-
-  if (stage === DEPLOY_STAGE.PROD) {
-    try {
-      if (!clientRequest.prNumber) {
-        throw new Error("Pull request number is required");
-      }
-      // Merge the pull request
-      const { data } = await octo.rest.pulls.merge({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: clientRequest.repoName,
-        pull_number: clientRequest.prNumber,
-        merge_method: "merge",
-      });
-
-      console.log(
-        `Successfully merged pull request #${clientRequest.prNumber}`
-      );
-
-      return { sha: data.sha };
-    } catch (error) {
-      console.error("Error merging pull request:", error);
-      throw error;
-    }
-  }
 
   try {
     console.log(
@@ -128,13 +105,13 @@ export const triggerDeployment = async (
       owner: TEMPLATE_REPO_OWNER,
       repo: clientRequest.repoName,
       path: changelogPath,
-      message: "deployfox: Update CHANGELOG.md to trigger deployment",
+      message: `${stage}: deployfox: Update CHANGELOG.md to trigger deployment`,
       content: Buffer.from(
         `# Deployment Log\n\n` +
-        `## Latest Deployment\n` +
-        `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
-        `- Details:\n` +
-        `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
+          `## Latest Deployment\n` +
+          `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
+          `- Details:\n` +
+          `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
       ).toString("base64"),
       branch: clientRequest.prBranch,
       ...(sha ? { sha } : {}),

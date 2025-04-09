@@ -37,14 +37,30 @@ function ChatWindow({
   isChatLoading: boolean;
 }) {
   // Chat state
-  const [activeTab, setActiveTab] = useState("chat");
-  const [previousTab, setPreviousTab] = useState("chat");
-  const [hasScrolled, setHasScrolled] = useState(false);
+  const {
+    activeTab,
+    setActiveTab,
+    previousTab,
+    setPreviousTab,
+    hasScrolled,
+    setHasScrolled,
+    messages,
+    setMessages,
+    reload: mutate,
+    status,
+    isLoading,
+    input,
+    setInput,
+    handleInputChange,
+    append,
+    serverMessages,
+  } = useMicrofox();
+
   const { isRightCollapsed, handleRightCollapse } = useLayout();
 
   const handleTabChange = (value: string) => {
     setPreviousTab(activeTab);
-    setActiveTab(value);
+    setActiveTab(value as "chat" | "dashboard" | "history");
     // Reset scroll state when switching tabs
     if (value !== "chat") {
       setHasScrolled(false);
@@ -72,19 +88,6 @@ function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { mediaPayload, resetMedia } = useFileUpload();
-
-  const {
-    messages,
-    setMessages,
-    reload: mutate,
-    status,
-    isLoading,
-    input,
-    setInput,
-    handleInputChange,
-    append,
-    serverMessages,
-  } = useMicrofox();
 
   // Reload client data when specific operations are completed
   const reloadClientData = async () => {
@@ -155,9 +158,9 @@ function ChatWindow({
         )}
 
         {!isChatLoading &&
-        !isLoading &&
-        ((serverMessages && serverMessages.length > 0) ||
-          messages.length > 0) /* Chat Tabs */ ? (
+          !isLoading &&
+          ((serverMessages && serverMessages.length > 0) ||
+            messages.length > 0) /* Chat Tabs */ ? (
           <>
             <AnimatePresence mode="sync" initial={false}>
               <div className="relative flex-1 overflow-hidden">
@@ -260,7 +263,7 @@ function ChatWindow({
         <SlashModal
           clientRequest={clientRequest}
           onSuccess={reloadClientData}
-          onClose={() => {}}
+          onClose={() => { }}
         />
       )}
 

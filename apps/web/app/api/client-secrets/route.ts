@@ -6,6 +6,7 @@ import {
   GITHUB_TOKEN,
 } from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
+import { createOrUpdateClientSecret } from "@/utils/services/db_functions/createClientSecret";
 
 // Create ClientSecret
 export async function POST(req: NextRequest) {
@@ -23,113 +24,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the ClientSecret without a mode field (since it's not part of the schema)
-    const clientSecret = await prisma.clientSecret.create({
-      data: {
-        botProjectId,
-        userId,
-        type,
-        variables,
-        name,
-        clientRequestIds: [clientRequestId],
-      },
+    const clientSecret = await createOrUpdateClientSecret({
+      botProjectId,
+      userId,
+      type,
+      variables,
+      name,
+      clientRequestId,
     });
-
-    // If an originClientRequestId is provided, update that ClientRequest to add the new bot's id
-    if (clientRequestId) {
-      const clientRequest = await prisma.clientRequest.update({
-        where: { id: clientRequestId },
-        data: {
-          mentionedClientSecretIds: {
-            push: clientSecret.id,
-          },
-        },
-        include: {
-          requestUpdates: true,
-        },
-      });
-
-      if (!GITHUB_TOKEN) {
-        console.error("No GitHub token provided");
-        return NextResponse.json(
-          { error: "GitHub token missing" },
-          { status: 500 }
-        );
-      }
-
-      const repoName = clientRequest?.repoName;
-
-      if (!repoName) {
-        console.error("No repo name found");
-        return NextResponse.json(
-          { error: "Repo name missing" },
-          { status: 500 }
-        );
-      }
-
-      const appRepoSdk = new GithubSdk({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: repoName,
-        token: GITHUB_TOKEN,
-      });
-
-      const requestUpdates = clientRequest.requestUpdates;
-
-      // Find the update with the largest prNumber.
-      const lastRequestPrNumber =
-        requestUpdates.length > 0
-          ? requestUpdates.reduce((acc, curr) =>
-              acc.prNumber > curr.prNumber ? acc : curr
-            ).prNumber
-          : null;
-
-      const modeMap = clientSecret.variables.reduce(
-        (acc: Record<string, string[]>, variable: any) => {
-          if (
-            variable.mode &&
-            Array.isArray(variable.mode) &&
-            variable.mode.length > 0
-          ) {
-            variable.mode.forEach((mode: string) => {
-              acc[mode] = acc[mode] || [];
-              acc[mode].push(variable.key);
-            });
-          }
-          return acc;
-        },
-        {}
-      );
-
-      // Format as markdown for GitHub PR comment
-      const modeMapString = Object.entries(modeMap)
-        .map(([mode, keys]) => `- **${mode}**: ${keys.join(", ")}`)
-        .join("\n");
-
-      const commentBody = `<Not for Client> **Client has added a new bot to their request:**  
-**Bot Name:** ${clientSecret.name}  
-**Environment Variables:**  
-${modeMapString}`;
-
-      await appRepoSdk.createCommentOnPr(
-        lastRequestPrNumber || clientRequest.prNumber || 0,
-        commentBody
-      );
-
-      const variablesKeyString = variables
-        .map((variable: any) => variable.key)
-        .join(", ");
-
-      // await prisma.chatUIMessage.create({
-      //   data: {
-      //     originClientRequestId: clientRequest.id,
-      //     userId,
-      //     content: `${name} bot has been added to your request with the following variables: ${variablesKeyString}.`,
-      //     context: "chat",
-      //     role: "sysUpdate",
-      //     minionType: "other",
-      //   },
-      // });
-    }
     return NextResponse.json(clientSecret, { status: 201 });
   } catch (error) {
     return NextResponse.json(
@@ -161,6 +63,7 @@ export async function GET(req: NextRequest) {
         );
 
       if (!clientRequest.mentionedClientSecretIds) {
+        // just initialize the mentionedClientSecretIds array
         await prisma.clientRequest.update({
           where: { id: clientRequestId },
           data: {

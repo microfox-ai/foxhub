@@ -14,7 +14,7 @@ import {
   fetchTemplateRoot,
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
-import { createClientSecret } from "@/utils/services/db_functions/createClientSecret";
+import { createOrUpdateClientSecret } from "@/utils/services/db_functions/createClientSecret";
 import { ClientRequest } from "@prisma/client";
 import { coreEnvsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
@@ -63,7 +63,7 @@ export const genEnvCollector = async (
 
     // add respective clientSecrets for each templateEnv
     for (const [packageName, packageEnvs] of Object.entries(packageBasedEnvs)) {
-      const clientSecret = await createClientSecret({
+      const clientSecret = await createOrUpdateClientSecret({
         botProjectId: clientRequest.botProjectId,
         userId: clientRequest.userId,
         type: `${packageName}/${packageEnvs.constructorFunction}`,

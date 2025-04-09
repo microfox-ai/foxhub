@@ -22,6 +22,11 @@ import {
 } from "./fetchLogs";
 import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
 import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
+import {
+  MICROFOX_LOGO,
+  MySlackChannels,
+  slackBotSdk,
+} from "@/utils/services/slackBotSdk";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -39,14 +44,16 @@ export const deployFoxRouter: ServerStreamingFunction<
     };
   }
 
+  const stage = requestBody.stage;
+
   dataStream.writeMessageAnnotation({
     type: "minion",
     value: "deployfox",
   });
 
   dataStream.writeMessageAnnotation({
-    type: "thinking",
-    value: "Deploying Automation",
+    type: "loading",
+    content: `Deploying Automation to ${stage}`,
   });
 
   await updateTaskInstanceMeta({
@@ -60,10 +67,15 @@ export const deployFoxRouter: ServerStreamingFunction<
   });
 
   //clone template in dev mode
-  //await recloneTemplateStuffToClientRequest(props, clientRequest);
+  await recloneTemplateStuffToClientRequest(props, clientRequest);
 
   // Monitor workflow runs
-  const { sha } = await deployViaGit(props, clientRequest, taskInstanceMeta);
+  const { sha } = await deployViaGit(
+    props,
+    clientRequest,
+    taskInstanceMeta,
+    stage
+  );
   console.log("sha", sha);
   if (!sha) {
     throw new Error("Sha is undefined");
@@ -71,29 +83,34 @@ export const deployFoxRouter: ServerStreamingFunction<
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    value: "Triggered the deployment, waiting 20 seconds ",
+    content: `Deployement triggered, checking status updates!`,
   });
 
   // Wait for 20 seconds before starting to check logs
   await new Promise((resolve) => {
     setTimeout(() => {
       resolve(undefined);
-    }, 35000);
+    }, 10000);
   });
 
   const runId = await getRunforClientRequestbySha({
     head_sha: sha,
     clientRequest,
-    stage: DEPLOY_STAGE.STAGING,
+    stage: stage ?? DEPLOY_STAGE.STAGING,
   });
   console.log("runId", runId);
+
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: `Deploymnent detected, waiting for completion!`,
+  });
 
   await updateTaskInstanceMeta({
     clientRequestId,
     otherData: {
       deployStep: {
         runId,
-        stage: DEPLOY_STAGE.STAGING,
+        stage: stage ?? DEPLOY_STAGE.STAGING,
         status: "pending",
       },
     },
@@ -138,13 +155,21 @@ export const deployFoxRouter: ServerStreamingFunction<
   // }
 
   // const clientDeployment = await getClientDeployment(clientRequestId);
+  await slackBotSdk.sendMessage({
+    icon_url: MICROFOX_LOGO,
+    channel: MySlackChannels.microfox_updates,
+    text: `Deployfox triggered ${stage} a deployment for ${clientRequest.title} ${
+      runId ? `with runId ${runId}` : ""
+    }`,
+  });
+
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "deploymentsInfo",
     persona: "deployfox",
     text: `Deployments Completed !`,
     pingerInterval: 5000,
-    stage: DEPLOY_STAGE.STAGING,
+    stage: stage ?? DEPLOY_STAGE.STAGING,
     ...(runId && { runId }),
   });
   return {

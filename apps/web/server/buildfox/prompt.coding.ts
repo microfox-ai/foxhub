@@ -157,19 +157,23 @@ export const codingFunctionPrompt = async ({
 
   return dedent`You are requested to write a serverless function for the following requirement:
             Task Summary: ${taskInstanceMeta?.taskInfo?.summary}
+            
             ${
               type === "lambda"
-                ? `Function Details:
+                ? `Function:
             - Name: ${_function?.name}
             - Description: ${_function?.description}
+            - Brief: ${_function?.brief}
             Endpoint Details:
             - Path: ${_function?.path}
             - Method: ${_function?.method}`
-                : `Cron Job Details:
+                : `Cron Job:
             - Name: ${_cron?.name}
             - Description & Schedule: ${_cron?.description}
             - Result of the cron job: ${_cron?.endResult}
-            - Cron Expression: ${_cron?.cronExpression}`
+            - Cron Expression: ${_cron?.cronExpression}
+            - Brief: ${_cron?.brief}
+            `
             }
 
             The following packages are installed in the project:
@@ -230,8 +234,6 @@ export const codingFunctionPrompt = async ({
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
           
-            
-
             The code should be created in the src/functions directory.
             Make sure to use the necessary imports from the packages when needed.
             Always call fetch_package_docs for the packages that start with @microfox to better understand how to use them.
@@ -240,6 +242,7 @@ export const codingFunctionPrompt = async ({
             Only use the packages that are listed above in the project.
             Make no assumption of utils, or outside files - Create complete functionality in a single file.
             Do not write any mock code, it should be production ready code.
+            Make sure to pay attention the TASK SUMMARY, and the FUNCTION DESCRIPTION & BRIEF, if conflicting, TASK SUMMARY > FUNCTION DESCRIPTION > FUNCTION BRIEF.
 
             Some instructions for docs
             - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.

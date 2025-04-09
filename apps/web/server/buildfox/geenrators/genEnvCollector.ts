@@ -14,41 +14,77 @@ import {
   fetchTemplateRoot,
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
-import path from "path";
+import { createClientSecret } from "@/utils/services/db_functions/createClientSecret";
+import { ClientRequest } from "@prisma/client";
+import { coreEnvsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
+import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
 
 export const genEnvCollector = async (
   props: StreamingFucntionProps<any, any>,
   envVariablesUsed: string[],
-  taskInstanceMeta: TaskInstanceMetaType
+  taskInstanceMeta: TaskInstanceMetaType,
+  clientRequest: ClientRequest
 ) => {
   const templateType = taskInstanceMeta.taskStructure?.templateType ?? "plain";
   let envs = envVariablesUsed;
-  let envsJsonParsed: any[] = [];
+  let templatedEnvs: any[] = [];
   try {
-    const envsJSON = await readFile(
-      path.join(process.cwd(), fetchTemplateRoot(templateType), "envs.json"),
-      "utf8"
-    );
-    envsJsonParsed = JSON.parse(envsJSON);
+    templatedEnvs = await templateEnvsFromTaskIntegrations(templateType);
     console.log(
       "rootEnvs Used",
-      envsJsonParsed.map((env) => env.key)
+      templatedEnvs.map((env) => env.key)
     );
     envs = envs.filter(
-      (env) => !envsJsonParsed.some((envJson: any) => envJson.key === env)
+      (env) => !templatedEnvs.some((envJson: any) => envJson.key === env)
     );
+
+    const packageBasedEnvs: Record<
+      string,
+      { variables: any[]; constructorFunction: string }
+    > = {};
+    templatedEnvs.forEach(
+      (_env: {
+        key: string;
+        package: string;
+        value: string;
+        description: string;
+        constructorFunction: string;
+      }) => {
+        if (packageBasedEnvs[_env.package]) {
+          packageBasedEnvs[_env.package]?.variables?.push(_env);
+        } else {
+          packageBasedEnvs[_env.package] = {
+            variables: [_env],
+            constructorFunction: _env.constructorFunction,
+          };
+        }
+      }
+    );
+
+    // add respective clientSecrets for each templateEnv
+    for (const [packageName, packageEnvs] of Object.entries(packageBasedEnvs)) {
+      const clientSecret = await createClientSecret({
+        botProjectId: clientRequest.botProjectId,
+        userId: clientRequest.userId,
+        type: `${packageName}/${packageEnvs.constructorFunction}`,
+        variables: packageEnvs.variables.map((env) => ({
+          key: env.key,
+          value: env.value,
+          //mode: ["DEV", "PROD", "STAGING"],
+          isOptional: false,
+        })),
+        name: `${packageName}/${packageEnvs.constructorFunction}`,
+        clientRequestId: clientRequest.id,
+      });
+      console.log("clientSecret-created", clientSecret);
+    }
 
     // also filter out the env variables from the taskInstanceMeta.taskIntegrations.platforms.packages
     // NOTE: packageInfo exists even though it is not in type
-    let coreEnvs: string[] | undefined = [];
+    const coreEnvs = taskInstanceMeta.taskIntegrations
+      ? coreEnvsFromTaskIntegrations(taskInstanceMeta.taskIntegrations)
+      : [];
     try {
-      coreEnvs = taskInstanceMeta.taskIntegrations?.platforms?.flatMap(
-        (platform) =>
-          (platform as any).packageInfo?.keysInfo?.map(
-            (keyInfo: any) => keyInfo?.key as string
-          )
-      );
-      console.log("coreEnvs Used", coreEnvs);
       envs = envs.filter((env) => !coreEnvs?.includes(env));
     } catch (error) {
       console.error("Error generating core envs", error);

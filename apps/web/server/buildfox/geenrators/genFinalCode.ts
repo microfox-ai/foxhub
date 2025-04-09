@@ -17,6 +17,7 @@ import { codingSystemPrompt } from "../prompt.coding";
 import { promises as fs } from "fs";
 import dedent from "dedent";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
+import YAML from "yaml";
 
 // IMPROTANT TODO: serverless.yml being written has no idea what env variables are needed..
 export const genFinalCode = async (
@@ -93,8 +94,8 @@ export const genFinalCode = async (
       model: models.claude35Sonnet.modelId,
       usage: result.usage,
     });
-    // modify the package.json file to support all the functions & cron jobs
 
+    // modify the package.json file to support all the functions & cron jobs
     const packageJson = await fs.readFile(
       path.join(
         process.cwd(),
@@ -151,6 +152,35 @@ export const genFinalCode = async (
         ?.map((file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`)
         .join("\n - ")
     );
+    const serverlessYmlFInal = allGenFilesList?.find((file: any) =>
+      file.filePath?.includes("serverless.yml")
+    );
+    if (!serverlessYmlFInal) {
+      throw new Error("Serverless.yml file not found");
+    }
+    const serverlessYmlContent = await fs.readFile(
+      serverlessYmlFInal?.filePath,
+      "utf8"
+    );
+    console.log("serverlessYmlContent", serverlessYmlContent);
+
+    // Parse serverless.yml to get function paths
+    const serverlessConfig = YAML.parse(serverlessYmlContent);
+    const functionPaths = Object.entries(serverlessConfig.functions || {}).map(
+      ([name, config]: [string, any]) => {
+        const httpEvents =
+          config.events?.filter((event: any) => event.http) || [];
+        return {
+          name,
+          paths: httpEvents.map((event: any) => ({
+            path: event.http.path,
+            method: event.http.method,
+          })),
+        };
+      }
+    );
+    console.log("Parsed function paths:", functionPaths);
+
     const result2 = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),
@@ -164,19 +194,28 @@ export const genFinalCode = async (
               )
               .join("\n - ")}
 
+            The following are the function paths from the serverless.yml file for your reference when writing the docs in index.ts file:
+            ${functionPaths
+              .map(
+                (func) =>
+                  `Name: ${func.name} - Path: ${func.paths.map((p: { method: string; path: string }) => `${p.method} ${p.path}`).join("\n - ")}`
+              )
+              .join("\n - ")}
+
             The example index.ts file is as follows:
             ${indexTs}
             
             make sure the imports follow the '.js' extension like this:
             import { getExternalData } from './functions/getExternalData.js'
 
-
             your workflow should be as follows:
             1. read the example index.ts file & keep it as a reference for how to write code.
             2. remove all the old functions & cron jobs & imports & exports from the index.ts file
             3. add the new imports & exports for the new functions.
-            4. store the index.ts file is writen in "src/" folder.
+            4. add a proper apiDocs object & export it in the getDocs function just like in the example index.ts file.
+            5. store the index.ts file is writen in "src/" folder.
 
+            make sure you replace $$$clientRequestId$$$ with the ${clientRequest?.id} in the index.ts file inside apiDocs object.
             make sure that all the functions are imported and re-exported in the index.ts file.
             make sure that the docs are properly setup in the index.ts file based on docs imported from the function files.
             make sure you rewrite the entire file instead of any diffs.

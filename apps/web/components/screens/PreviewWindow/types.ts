@@ -36,7 +36,7 @@ export interface OpenAPIRequestBody {
 
 export interface OpenAPIParameter {
   name: string;
-  in: "query" | "path" | "header" | "cookie";
+  in: "query" | "path" | "header" | "cookie" | "body";
   required?: boolean;
   schema: OpenAPISchema;
   description?: string;

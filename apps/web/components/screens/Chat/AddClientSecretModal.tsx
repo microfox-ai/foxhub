@@ -8,6 +8,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { getTemplateIcon } from "./helpers/ui";
+import { ClientSecreVariable } from "@/utils/services/db_functions/createClientSecret";
 interface AddClientSecretModalProps {
   clientRequest: {
     id: string;
@@ -30,20 +31,10 @@ export function AddClientSecretModal({
   );
   const [newClientSecretName, setNewClientSecretName] = useState("");
   const [botVariables, setBotVariables] = useState<
-    Array<{
-      mode: Array<"DEV" | "PROD" | "STAGING">;
-      key: string;
-      value: string;
-      isOptional: boolean;
-    }>
+    Array<ClientSecreVariable>
   >([]);
   const [customVariables, setCustomVariables] = useState<
-    Array<{
-      mode: Array<"DEV" | "PROD" | "STAGING">;
-      key: string;
-      value: string;
-      isOptional: boolean;
-    }>
+    Array<ClientSecreVariable>
   >([]);
 
   // Handlers moved from ChatWindow

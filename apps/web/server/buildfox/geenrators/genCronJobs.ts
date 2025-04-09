@@ -9,7 +9,7 @@ import { fetchPackageDocs } from "../tool/fetchPackageDocs";
 import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { INTERNAL_TEMPLATE_PLAIN_ROOT, writeToFile } from "../tool/writeToFile";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-
+import { coreEnvsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
 export const genCronJobs = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,

@@ -28,14 +28,6 @@ functions:
           method: get
           cors: true
 
-  postExternalData:
-    handler: dist/index.postExternalData
-    events:
-      - http:
-          path: /external
-          method: post
-          cors: true
-
   # Cron Jobs
   dailyMorningJob:
     handler: dist/index.dailyMorningJob

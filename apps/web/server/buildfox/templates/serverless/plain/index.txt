@@ -1,8 +1,7 @@
 // Re-export external API functions
-import { getExternalDataDocs } from './functions/getExternalData.js'
-import { postExternalDataDocs } from './functions/postExternalData.js'
-export { getExternalData } from './functions/getExternalData.js'
-export { postExternalData } from './functions/postExternalData.js'
+import { getExternalDataDocs } from "./functions/getExternalData.js";
+import { dailyMorningJobDocs } from "./functions/dailyMorningJobDocs.js";
+export { getExternalData } from "./functions/getExternalData.js";
 
 /**
  * Complete API documentation
@@ -10,7 +9,32 @@ export { postExternalData } from './functions/postExternalData.js'
  * The required subdowcuments for endpoints can be imported from above imports
  */
 const apiDocs = {
-  
+  openapi: "3.0.1",
+  info: {
+    title: "GitHub Webhook API",
+    version: "1.0.0",
+    description:
+      "API for handling GitHub webhook events and sending Slack notifications",
+    contact: {
+      name: "API Support",
+      email: "support@microfox.com",
+    },
+  },
+  servers: [
+    {
+      url: "https://api.microfox.com/c/$$$clientRequestId$$$",
+      description: "Production server",
+    },
+  ],
+  paths: {
+    /**as read from serverless.yml */
+    "/external-data": {
+      get: getExternalDataDocs,
+    },
+    "/daily-morning-job": {
+      post: dailyMorningJobDocs,
+    },
+  },
 };
 
 /**
@@ -22,24 +46,24 @@ export const getDocs = async (event: any) => {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
       },
       body: JSON.stringify(apiDocs, null, 2),
-    }
+    };
   } catch (error) {
-    console.error('Error serving docs:', error)
+    console.error("Error serving docs:", error);
     return {
       statusCode: 500,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
       },
       body: JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
+        error: error instanceof Error ? error.message : "Unknown error",
+      }),
     };
   }
-}
+};

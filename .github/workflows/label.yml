@@ -22,4 +22,5 @@ jobs:
             .github
       - uses: actions/labeler@v4
         with:
+          sync-labels: false
           repo-token: "${{ secrets.GITHUB_TOKEN }}"

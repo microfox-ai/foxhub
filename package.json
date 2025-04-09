@@ -28,6 +28,7 @@
   ],
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
+    "@microfox/aws-ses": "^1.0.4",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0"
   }

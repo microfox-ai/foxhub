@@ -1,6 +1,7 @@
 import { prisma } from "@/prisma/prisma";
 import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { generateMicrofoxEmailTemplate, sesSdk } from "@/utils/services/sesSdk";
 import { slackBotSdk } from "@/utils/services/slackBotSdk";
 import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
 import { MySlackChannels } from "@/utils/services/slackBotSdk";
@@ -203,6 +204,20 @@ export async function PUT(req: NextRequest) {
       where: { id },
       data: updateData,
     });
+
+    if (updatedFunction.stage === DEPLOY_STAGE.PROD) {
+      await sesSdk.sendEmail({
+        sender: "notifications@microfox.app",
+        recipient: updatedFunction.userId,
+        subject: `Function "${updatedFunction.name}" has been updated.`,
+        bodyHtml: generateMicrofoxEmailTemplate({
+          title: `Congrats! Your automation has been published.`,
+          content: `"${updatedFunction.name}" has been published. You can now expect your automation to be running clockwise, untill you decide to stop it. You can stop it by visiting the dashboard.`,
+          // ctaText: "Test it out",
+          // ctaLink: `https://microfox.app/test/${updatedFunction.id}`,
+        }),
+      });
+    }
 
     // Notify in chat about the update
     if (Object.keys(updateData).length > 0) {

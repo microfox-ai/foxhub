@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         userId,
         botProjectId,
         originClientRequestId,
+        name: `${name}-${stage}-${originClientRequestId}`,
         baseUrl,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
@@ -156,69 +157,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Update ClientDeployment
-export async function PUT(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { id, name, type, mode, baseUrl, endpoints, schedules, metadata } =
-      body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing function ID" },
-        { status: 400 }
-      );
-    }
-
-    const clientFunction = await prisma.clientDeployment.findUnique({
-      where: { id },
-    });
-
-    if (!clientFunction) {
-      return NextResponse.json(
-        { error: "Function not found" },
-        { status: 404 }
-      );
-    }
-
-    // Only update fields that are provided
-    const updateData: any = {};
-
-    if (name !== undefined) updateData.name = name;
-    if (type !== undefined) updateData.type = type as FUNCTIONTYPE;
-    if (mode !== undefined) updateData.mode = mode as DEPLOY_STAGE;
-    if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
-    if (metadata !== undefined) updateData.metadata = metadata;
-
-    const updatedFunction = await prisma.clientDeployment.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Notify in chat about the update
-    if (Object.keys(updateData).length > 0) {
-      // await prisma.chatUIMessage.create({
-      //   data: {
-      //     originClientRequestId: clientFunction.originClientRequestId,
-      //     userId: clientFunction.userId,
-      //     content: `Function "${updatedFunction.name}" has been updated.`,
-      //     context: `server`,
-      //     role: `assistant`,
-      //     minionType: `other`,
-      //     createdAt: new Date(),
-      //   },
-      // });
-    }
-
-    return NextResponse.json(updatedFunction, { status: 200 });
-  } catch (error) {
-    console.error("Error updating ClientDeployment:", error);
-    return NextResponse.json(
-      { error: "Error updating ClientDeployment" },
-      { status: 500 }
-    );
-  }
-}
 
 // Delete ClientDeployment
 export async function DELETE(req: NextRequest) {

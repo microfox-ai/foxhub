@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-import { APP_BASE_URL } from "../constants/appInfo";
+import { APP_BASE_URL, PUBLIC_ROUTES } from "../constants/appInfo";
 
 export const updateSession = async (request: NextRequest) => {
   if (
@@ -45,10 +45,8 @@ export const updateSession = async (request: NextRequest) => {
       error: userError,
     } = await supabase.auth.getUser();
 
-    const publicRoutes = ["/login", "/signup", "/auth", "/auth/callback"];
-
     // Skip auth check for public routes
-    const isAuthRoute = publicRoutes.includes(request.nextUrl.pathname);
+    const isAuthRoute = PUBLIC_ROUTES.includes(request.nextUrl.pathname);
 
     if (isAuthRoute) {
       return NextResponse.next();

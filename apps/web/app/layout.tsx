@@ -5,6 +5,7 @@ import { AnalyticsProvider } from "@/components/providers/AnalyticsProvider";
 import "./globals.css";
 import { serverAnalytics } from "@/utils/services/analytics/server";
 import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Custom Bots",
@@ -43,7 +44,13 @@ export default function RootLayout({
         ></link>
       </head>
       <body>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex justify-center items-center overflow-hidden h-screen">
+              <Loader2 className="w-full h-6 animate-spin" />
+            </div>
+          }
+        >
           <AuthProvider>
             <AnalyticsProvider>
               <div className="flex-1">{children}</div>

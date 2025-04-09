@@ -109,7 +109,7 @@ export default function Dashboard() {
   }
 
   return (
-    <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
+    <ClientSecretProvider botProjectId={selectedProject?.id}>
       <div className="flex h-full bg-background">
         {showPreviewParam && (
           <div className="fixed right-10 top-10">
@@ -214,7 +214,7 @@ export default function Dashboard() {
               }}
             />
           ) : selectedRequest ? (
-            <ChatWindow userId={user.id} clientRequest={selectedRequest} />
+            <ChatWindow userId={user.id} clientRequest={selectedRequest} isLoading={false} />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               <p>

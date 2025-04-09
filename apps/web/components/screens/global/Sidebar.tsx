@@ -70,7 +70,7 @@ export default function Sidebar({
 
   return (
     <div
-      className={`h-full flex-1 overflow-y-auto bg-neutral-50 transition-all duration-300`}
+      className={`h-full flex-1 overflow-y-auto overflow-x-hidden bg-neutral-50 transition-all duration-300`}
     >
       <TooltipProvider>
         <div
@@ -88,7 +88,7 @@ export default function Sidebar({
               className={`flex mt-4 cursor-pointer items-center ${isCollapsed ? "justify-center" : "gap-2"} text-2xl`}
             >
               <img
-                src="/logo-mini.png"
+                src="/logo-mini-color.png"
                 alt=""
                 width={32}
                 height={32}
@@ -298,10 +298,11 @@ export default function Sidebar({
                 {selectedProject?.clientRequests?.length > 0 ? (
                   selectedProject?.clientRequests?.map(
                     (request: ClientRequest) => (
-                      <button
+                      <Link
                         key={request?.id}
+                        href={`/project/${selectedProject?.id}/request/${request?.id}`}
                         className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId ? "bg-gray-200 text-black" : "hover:bg-gray-100"}`}
-                        onClick={() => onSelectRequest(request)}
+                        // onClick={() => onSelectRequest(request)}
                       >
                         {request.id === requestParamId ? (
                           <ChevronRight
@@ -328,7 +329,7 @@ export default function Sidebar({
                         >
                           {request.title}
                         </span>
-                      </button>
+                      </Link>
                     )
                   )
                 ) : (

@@ -118,33 +118,45 @@ const PreviewWindow = () => {
       currentEndpointData?.method &&
       ["POST", "PUT", "PATCH"].includes(currentEndpointData.method)
     ) {
-      const requestBodySchema = currentEndpointData.requestBody?.content?.["application/json"]?.schema;
+      const requestBodySchema =
+        currentEndpointData.requestBody?.content?.["application/json"]?.schema;
       if (requestBodySchema) {
         let bodySchema: any = z.string();
 
-        if (requestBodySchema.type === "object" && requestBodySchema.properties) {
+        if (
+          requestBodySchema.type === "object" &&
+          requestBodySchema.properties
+        ) {
           const objectSchema: Record<string, any> = {};
-          Object.entries(requestBodySchema.properties).forEach(([key, schema]) => {
-            let fieldSchema: any = z.string();
+          Object.entries(requestBodySchema.properties).forEach(
+            ([key, schema]) => {
+              let fieldSchema: any = z.string();
 
-            if (schema.type === "array" || schema.type === "object") {
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return schema.type === "array" ? [] : {};
-                }
-              });
-            } else if (schema.type === "number" || schema.type === "integer") {
-              fieldSchema = z.string().transform((val) => Number(val));
-            } else if (schema.type === "boolean") {
-              fieldSchema = z.string().transform((val) => val === "true");
+              if (schema.type === "array" || schema.type === "object") {
+                fieldSchema = z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return schema.type === "array" ? [] : {};
+                  }
+                });
+              } else if (
+                schema.type === "number" ||
+                schema.type === "integer"
+              ) {
+                fieldSchema = z.string().transform((val) => Number(val));
+              } else if (schema.type === "boolean") {
+                fieldSchema = z.string().transform((val) => val === "true");
+              }
+
+              objectSchema[key] = fieldSchema.optional();
             }
-
-            objectSchema[key] = fieldSchema.optional();
-          });
+          );
           bodySchema = z.object(objectSchema);
-        } else if (requestBodySchema.type === "array" && requestBodySchema.items) {
+        } else if (
+          requestBodySchema.type === "array" &&
+          requestBodySchema.items
+        ) {
           bodySchema = z.string().transform((val) => {
             try {
               return JSON.parse(val);
@@ -152,7 +164,10 @@ const PreviewWindow = () => {
               return [];
             }
           });
-        } else if (requestBodySchema.type === "number" || requestBodySchema.type === "integer") {
+        } else if (
+          requestBodySchema.type === "number" ||
+          requestBodySchema.type === "integer"
+        ) {
           bodySchema = z.string().transform((val) => Number(val));
         } else if (requestBodySchema.type === "boolean") {
           bodySchema = z.string().transform((val) => val === "true");
@@ -303,7 +318,9 @@ const PreviewWindow = () => {
         currentEndpointData.method &&
         ["POST", "PUT", "PATCH"].includes(currentEndpointData.method)
       ) {
-        const requestBodySchema = currentEndpointData.requestBody?.content?.["application/json"]?.schema;
+        const requestBodySchema =
+          currentEndpointData.requestBody?.content?.["application/json"]
+            ?.schema;
         // if (requestBodySchema) {
         //   const bodyData: Record<string, any> = {};
 
@@ -359,7 +376,7 @@ const PreviewWindow = () => {
 
         //   requestBody = JSON.stringify(bodyData);
         // }
-        // else 
+        // else
         if (currentEndpointData.parameters) {
           const bodyParams = currentEndpointData.parameters.filter(
             (param) => param.in === "body"
@@ -403,7 +420,6 @@ const PreviewWindow = () => {
         contentType,
         status: response.status,
       });
-
     } catch (error) {
       console.log(error);
       if (error instanceof Error && error.name === "AbortError") {
@@ -865,39 +881,39 @@ const PreviewWindow = () => {
                 <SelectContent>
                   {selectedEndpoint
                     ? endpoints
-                      .filter((e) => e.path === selectedEndpoint)
-                      .map((endpoint) => (
+                        .filter((e) => e.path === selectedEndpoint)
+                        .map((endpoint) => (
+                          <SelectItem
+                            key={`${endpoint.path}-${endpoint.method}`}
+                            value={endpoint.method}
+                            className="text-xs"
+                          >
+                            <span
+                              className={cn(
+                                "inline-flex h-5 items-center rounded px-1.5 font-medium",
+                                getMethodColor(endpoint.method)
+                              )}
+                            >
+                              {endpoint.method}
+                            </span>
+                          </SelectItem>
+                        ))
+                    : HTTP_METHODS.map((method) => (
                         <SelectItem
-                          key={`${endpoint.path}-${endpoint.method}`}
-                          value={endpoint.method}
+                          key={method}
+                          value={method}
                           className="text-xs"
                         >
                           <span
                             className={cn(
                               "inline-flex h-5 items-center rounded px-1.5 font-medium",
-                              getMethodColor(endpoint.method)
+                              getMethodColor(method)
                             )}
                           >
-                            {endpoint.method}
+                            {method}
                           </span>
                         </SelectItem>
-                      ))
-                    : HTTP_METHODS.map((method) => (
-                      <SelectItem
-                        key={method}
-                        value={method}
-                        className="text-xs"
-                      >
-                        <span
-                          className={cn(
-                            "inline-flex h-5 items-center rounded px-1.5 font-medium",
-                            getMethodColor(method)
-                          )}
-                        >
-                          {method}
-                        </span>
-                      </SelectItem>
-                    ))}
+                      ))}
                 </SelectContent>
               </Select>
 
@@ -1023,57 +1039,57 @@ const PreviewWindow = () => {
                     {currentEndpointData.requestBody?.content?.[
                       "application/json"
                     ]?.schema?.properties && (
-                        <div className="relative overflow-hidden rounded-lg border bg-white">
-                          <div className="absolute right-2 top-2 z-10">
-                            {renderCopyToClipboard(
-                              JSON.stringify(
-                                Object.fromEntries(
-                                  Object.entries(
-                                    currentEndpointData.requestBody.content[
-                                      "application/json"
-                                    ].schema.properties
-                                  ).map(([key, schema]) => [
-                                    key,
-                                    (schema as OpenAPISchema).example ||
+                      <div className="relative overflow-hidden rounded-lg border bg-white">
+                        <div className="absolute right-2 top-2 z-10">
+                          {renderCopyToClipboard(
+                            JSON.stringify(
+                              Object.fromEntries(
+                                Object.entries(
+                                  currentEndpointData.requestBody.content[
+                                    "application/json"
+                                  ].schema.properties
+                                ).map(([key, schema]) => [
+                                  key,
+                                  (schema as OpenAPISchema).example ||
                                     "example_value",
-                                  ])
-                                ),
-                                null,
-                                2
+                                ])
                               ),
-                              "request-body"
-                            )}
-                          </div>
-                          <div className="p-3">
-                            <pre className="text-xs text-neutral-800">
-                              {JSON.stringify(
-                                Object.fromEntries(
-                                  Object.entries(
-                                    currentEndpointData.requestBody.content[
-                                      "application/json"
-                                    ].schema.properties
-                                  ).map(([key, schema]) => [
-                                    key,
-                                    (schema as OpenAPISchema).example ||
-                                    "example_value",
-                                  ])
-                                ),
-                                null,
-                                2
-                              )}
-                            </pre>
-                          </div>
+                              null,
+                              2
+                            ),
+                            "request-body"
+                          )}
                         </div>
-                      )}
+                        <div className="p-3">
+                          <pre className="text-xs text-neutral-800">
+                            {JSON.stringify(
+                              Object.fromEntries(
+                                Object.entries(
+                                  currentEndpointData.requestBody.content[
+                                    "application/json"
+                                  ].schema.properties
+                                ).map(([key, schema]) => [
+                                  key,
+                                  (schema as OpenAPISchema).example ||
+                                    "example_value",
+                                ])
+                              ),
+                              null,
+                              2
+                            )}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="group relative overflow-hidden rounded-lg border bg-white">
                       <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
                         {renderCopyToClipboard(
                           currentEndpointData.method === "GET"
                             ? buildExampleUrl(
-                              BASE_URL,
-                              currentEndpointData as any
-                            )
+                                BASE_URL,
+                                currentEndpointData as any
+                              )
                             : BASE_URL + currentEndpointData.path,
                           "request-url"
                         )}
@@ -1091,9 +1107,9 @@ const PreviewWindow = () => {
                           <span className="truncate text-xs text-muted-foreground">
                             {currentEndpointData.method === "GET"
                               ? buildExampleUrl(
-                                BASE_URL,
-                                currentEndpointData as any
-                              )
+                                  BASE_URL,
+                                  currentEndpointData as any
+                                )
                               : BASE_URL + currentEndpointData.path}
                           </span>
                         </div>
@@ -1177,7 +1193,7 @@ const PreviewWindow = () => {
                                 key,
                                 schema,
                                 currentEndpointData.requestBody?.required ||
-                                false,
+                                  false,
                                 currentEndpointData.requestBody?.content?.[
                                   "application/json"
                                 ]?.schema?.description
@@ -1216,14 +1232,18 @@ const PreviewWindow = () => {
                               "inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium",
                               response.status >= 200 && response.status < 300
                                 ? "bg-green-100 text-green-700"
-                                : response.status >= 300 && response.status < 400
+                                : response.status >= 300 &&
+                                    response.status < 400
                                   ? "bg-blue-100 text-blue-700"
-                                  : response.status >= 400 && response.status < 500
+                                  : response.status >= 400 &&
+                                      response.status < 500
                                     ? "bg-yellow-100 text-yellow-700"
                                     : "bg-red-100 text-red-700"
                             )}
                           >
-                            {response.status} {response.statusText || getStatusText(response.status)}
+                            {response.status}{" "}
+                            {response.statusText ||
+                              getStatusText(response.status)}
                           </span>
                           <button
                             onClick={() => setResponse(null)}
@@ -1235,7 +1255,9 @@ const PreviewWindow = () => {
                       </div>
                       <div className="overflow-hidden rounded-lg border bg-white">
                         <div className="p-3">
-                          {response.contentType?.includes("application/json") ? (
+                          {response.contentType?.includes(
+                            "application/json"
+                          ) ? (
                             <pre className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
                               {JSON.stringify(response.data, null, 2)}
                             </pre>
@@ -1259,11 +1281,14 @@ const PreviewWindow = () => {
             )}
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">
-              No endpoint available for {selectedMethod} {selectedEndpoint}
-            </p>
-          </div>
+          selectedMethod &&
+          selectedEndpoint && (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-muted-foreground">
+                No endpoint available for {selectedMethod} {selectedEndpoint}
+              </p>
+            </div>
+          )
         )}
       </div>
     </div>
@@ -1271,4 +1296,3 @@ const PreviewWindow = () => {
 };
 
 export default PreviewWindow;
-

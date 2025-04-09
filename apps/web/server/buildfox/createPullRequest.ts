@@ -142,6 +142,7 @@ export async function createPullRequest({
       prNumber: pr.data.number,
       prBranch: pr.data.head.ref,
       prTargetBranch: pr.data.base.ref,
+      templateVersion: botProject.templateVersion,
       metadata: {
         pr: pr.data,
         uniqueRequestTitle: uniqueRequestTitle,

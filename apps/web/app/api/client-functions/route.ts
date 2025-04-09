@@ -169,7 +169,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, name, type, mode, baseUrl, endpoints, schedules, metadata } =
+    const { id, name, type, stage, baseUrl, endpoints, schedules, metadata } =
       body;
 
     if (!id) {
@@ -195,7 +195,7 @@ export async function PUT(req: NextRequest) {
 
     if (name !== undefined) updateData.name = name;
     if (type !== undefined) updateData.type = type as FUNCTIONTYPE;
-    if (mode !== undefined) updateData.mode = mode as DEPLOY_STAGE;
+    if (stage !== undefined) updateData.stage = stage as DEPLOY_STAGE;
     if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
     if (metadata !== undefined) updateData.metadata = metadata;
 

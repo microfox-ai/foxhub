@@ -80,11 +80,7 @@ export default function Sidebar({
           <div className="flex items-center justify-between">
             <div
               onClick={() => {
-                if (isCollapsed) {
-                  onCollapse?.(false);
-                } else {
-                  router.push("/");
-                }
+                onCollapse?.(!isCollapsed);
               }}
               className={`flex mt-4 cursor-pointer items-center ${isCollapsed ? "justify-center" : "gap-2"} text-2xl`}
             >
@@ -341,7 +337,7 @@ export default function Sidebar({
                         key={request?.id}
                         href={`/project/${selectedProject?.id}/request/${request?.id}`}
                         className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId ? "bg-gray-200 text-black" : "hover:bg-gray-100"}`}
-                        // onClick={() => onSelectRequest(request)}
+                      // onClick={() => onSelectRequest(request)}
                       >
                         {request.id === requestParamId ? (
                           <ChevronRight
@@ -362,9 +358,8 @@ export default function Sidebar({
                           />
                         )}
                         <span
-                          className={`flex-1 truncate text-left ${
-                            request.id === requestParamId ? "font-semibold" : ""
-                          }`}
+                          className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""
+                            }`}
                         >
                           {request.title}
                         </span>

@@ -28,7 +28,8 @@ interface PackageJson {
 
 // Interface for packages list
 interface PackagesList {
-  packages: string[];
+  partialPackages: string[];
+  stablePackages: string[];
   total: number;
   generatedAt: string;
 }
@@ -41,6 +42,7 @@ interface FormattedPackageData {
   description: string;
   installs: string;
   inUse: string;
+  icon: string;
 }
 
 // Helper function to fetch data with potential caching
@@ -140,8 +142,11 @@ export async function GET(request: Request) {
       cacheOptions
     )) as PackagesList;
 
+    const allPackages = packagesList.stablePackages.concat(
+      packagesList.partialPackages
+    );
     // Fetch package info for each package
-    const packagePromises = packagesList.packages.map(async (packagePath) => {
+    const packagePromises = allPackages.map(async (packagePath) => {
       try {
         // Fetch package-info.json
         const packageInfo = (await fetchWithCache(
@@ -152,6 +157,7 @@ export async function GET(request: Request) {
         // Fetch package.json to get version and description
         let version = "-";
         let description = "No description available";
+        let _packageJson: any = {};
         try {
           const packageJson = (await fetchWithCache(
             `${PACKAGE_BASE_URL}/${packagePath}/package.json`,
@@ -179,6 +185,7 @@ export async function GET(request: Request) {
 
         // Format the package data
         return {
+          ...packageInfo,
           name: packageInfo.name,
           status: getStatusDisplay(packageInfo.status),
           version: version,

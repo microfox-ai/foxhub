@@ -8,18 +8,39 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import useSWR from "swr";
+import { Badge } from "@/components/ui/badge";
+import {
+  Package,
+  Activity,
+  Info,
+  Download,
+  FunctionSquare,
+  PlayCircle,
+  ChevronLeft,
+  ChevronRight,
+  Box,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Interface for package data
 interface PackageData {
   name: string;
-  status: string;
+  icon: string;
+  status: "STABLE" | "BETA" | "ALPHA" | "DEPRECATED";
   version: string;
   description: string;
   installs: string;
   inUse: string;
+  readme_map: any;
+  documentation: string;
 }
 
 // Fetcher function for SWR
@@ -44,17 +65,41 @@ const Status = () => {
     }
   );
 
+  console.log("data", data);
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
+
+  // Sort packages by status and inUse count
+  const sortedPackages = useMemo(() => {
+    if (!data?.packages) return [];
+
+    return [...data.packages].sort((a, b) => {
+      // Define status priority
+      const statusPriority: Record<PackageData["status"], number> = {
+        STABLE: 0,
+        BETA: 1,
+        ALPHA: 2,
+        DEPRECATED: 3,
+      };
+
+      // Compare status first
+      const statusDiff = statusPriority[a.status] - statusPriority[b.status];
+      if (statusDiff !== 0) return statusDiff;
+
+      // If status is the same, compare inUse count
+      const aInUse = a.inUse === "-" ? 0 : parseInt(a.inUse);
+      const bInUse = b.inUse === "-" ? 0 : parseInt(b.inUse);
+      return bInUse - aInUse; // Sort in descending order
+    });
+  }, [data?.packages]);
 
   // Calculate pagination values
-  const packages = data?.packages || [];
-  const totalItems = packages.length;
+  const totalItems = sortedPackages.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const currentData = packages.slice(startIndex, endIndex);
+  const currentData = sortedPackages.slice(startIndex, endIndex);
 
   // Pagination handlers
   const goToNextPage = () => {
@@ -76,131 +121,198 @@ const Status = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Status</h1>
-
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <p className="text-lg">Loading package data...</p>
+    <div className="flex flex-col h-full w-full ">
+      <div className="max-w-screen-2xl overflow-y-auto max-h-screen">
+        <div className="flex items-center gap-2 mb-6 sticky top-0 bg-white/20 backdrop-blur-sm z-10 p-6">
+          <div className="relative w-6 h-6">
+            <Box className="w-6 h-6 animate-spin" style={{ animationDuration: '3s' }} />
+          </div>
+          <h1 className="text-2xl font-bold">Status</h1>
         </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          <p>Failed to load package data. Please try again later.</p>
-        </div>
-      ) : (
-        <>
-          <Table className="border-collapse">
-            <TableHeader className="bg-gray-100">
-              <TableRow className="border-0">
-                <TableHead className="border-0">Name</TableHead>
-                <TableHead className="border-0">Status</TableHead>
-                <TableHead className="border-0">Version</TableHead>
-                <TableHead className="border-0">Description</TableHead>
-                <TableHead className="border-0">Installs</TableHead>
-                <TableHead className="border-0">In Use</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentData.map((item, index) => (
-                <TableRow key={index} className="border-0">
-                  <TableCell className="border-0">{item.name}</TableCell>
-                  <TableCell className="border-0">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.status === "STABLE"
-                          ? "bg-green-100 text-green-800"
-                          : item.status === "BETA"
-                            ? "bg-blue-100 text-blue-800"
-                            : item.status === "ALPHA"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : item.status === "DEPRECATED"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="border-0">{item.version}</TableCell>
-                  <TableCell
-                    className="border-0 max-w-md truncate"
-                    title={item.description}
-                  >
-                    {item.description}
-                  </TableCell>
-                  <TableCell className="border-0">{item.installs}</TableCell>
-                  <TableCell className="border-0">
-                    {item.inUse === "-" ? (
-                      <span className="text-gray-500">-</span>
-                    ) : (
-                      <span className="font-medium">{item.inUse}</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-500">
-                Showing {startIndex + 1}-{endIndex} of {totalItems} items
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-
-                {/* Page numbers */}
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    // Show pages around current page
-                    let pageNumber;
-                    if (totalPages <= 5) {
-                      pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
-                    } else {
-                      pageNumber = currentPage - 2 + i;
-                    }
-
-                    return (
-                      <Button
-                        key={pageNumber}
-                        variant={
-                          currentPage === pageNumber ? "default" : "outline"
-                        }
-                        size="sm"
-                        onClick={() => goToPage(pageNumber)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {pageNumber}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 animate-spin" />
+              <p className="text-lg">Loading package data...</p>
             </div>
-          )}
-        </>
-      )}
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
+            <Info className="w-5 h-5" />
+            <p>Failed to load package data. Please try again later.</p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-md border max-w-screen-xl mx-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[300px]">Package</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Stats</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentData.map((item, index) => (
+                    <TableRow key={index} className="cursor-pointer">
+                      <TableCell>
+                        <div className="flex items-start gap-3 p-3">
+                          <img
+                            src={item.icon}
+                            alt=""
+                            className="w-10 h-10 rounded-lg"
+                          />
+                          <div className="space-y-1">
+                            <div className="font-medium">{item.name}</div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  item.status === "STABLE"
+                                    ? "success"
+                                    : item.status === "BETA"
+                                      ? "default"
+                                      : item.status === "ALPHA"
+                                        ? "secondary"
+                                        : item.status === "DEPRECATED"
+                                          ? "destructive"
+                                          : "secondary"
+                                }
+                                className={item.status === "STABLE" ? "text-xs px-1.5 py-0" : ""}
+                              >
+                                {item.status}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                v{item.version}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-md">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Info className="w-4 h-4 text-muted-foreground" />
+                            <span className="truncate" title={item.description}>
+                              {item.description}
+                            </span>
+                          </div>
+                          <a
+                            href={item.documentation}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                          >
+                            <Package className="w-3 h-3" />
+                            View on npm
+                          </a>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-4">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 cursor-help">
+                                  <FunctionSquare className="w-5 h-5 text-muted-foreground" />
+                                  <span className="font-medium text-lg">
+                                    {item.readme_map?.functionalities?.length}
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Available functionalities</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 cursor-help">
+                                  {item.inUse === "-" ? (
+                                    <span className="text-muted-foreground text-lg">-</span>
+                                  ) : (
+                                    <>
+                                      <PlayCircle className="w-5 h-5 text-green-500" />
+                                      <span className="font-medium text-lg">{item.inUse}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Active instances</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1}-{endIndex} of {totalItems} items
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Previous
+                  </Button>
+
+                  {/* Page numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNumber}
+                          variant={currentPage === pageNumber ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(pageNumber)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNumber}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

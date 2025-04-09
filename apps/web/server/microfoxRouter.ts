@@ -38,7 +38,7 @@ microfoxRouter.setRouting((requestBody: any) => {
   //   return ["nothing"];
   // }
 
-  console.log("requestBody", requestBody);
+  //console.log("requestBody", requestBody);
 
   if (
     requestBody.action === "abrupt-switch" ||

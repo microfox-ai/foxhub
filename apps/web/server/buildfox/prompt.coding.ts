@@ -244,6 +244,10 @@ export const codingFunctionPrompt = async ({
             Do not write any mock code, it should be production ready code.
             Make sure to pay attention the TASK SUMMARY, and the FUNCTION DESCRIPTION & BRIEF, if conflicting, TASK SUMMARY > FUNCTION DESCRIPTION > FUNCTION BRIEF.
 
+
+          Critically, if the packageDocs are available from fetch_package_docs tool, 
+          do not make any assumptions of functions, properties that are not mentioned in the package docs.
+
             Some instructions for docs
             - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
             - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.

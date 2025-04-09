@@ -52,13 +52,15 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
     existingClientSecret = await prisma.clientSecret.findFirst({
       where: {
         botProjectId,
-        name,
+        type,
         clientRequestIds: {
           has: clientRequestId,
         },
       },
     });
   }
+
+  console.log("existingClientSecret", existingClientSecret);
 
   let clientSecret;
 
@@ -68,10 +70,15 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
       where: { id: existingClientSecret.id },
       data: {
         variables: variables as any,
-        clientRequestIds: { push: clientRequestId },
+        clientRequestIds: existingClientSecret.clientRequestIds.includes(
+          clientRequestId
+        )
+          ? undefined
+          : { push: clientRequestId },
       },
     });
   } else {
+    console.log("creating a new clientSecret");
     // create a new clientSecret
     clientSecret = await prisma.clientSecret.create({
       data: {
@@ -87,12 +94,25 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
 
   // If an clientRequestId is provided, update that ClientRequest to add the new bot's id
   if (clientRequestId) {
+    // First fetch the client request to check if the ID already exists
+    const existingClientRequest = await prisma.clientRequest.findUnique({
+      where: { id: clientRequestId },
+    });
+
+    if (!existingClientRequest) {
+      throw new Error(`Client request with ID ${clientRequestId} not found`);
+    }
+
+    // Then update it, only pushing the ID if it doesn't already exist
     const clientRequest = await prisma.clientRequest.update({
       where: { id: clientRequestId },
       data: {
-        mentionedClientSecretIds: {
-          push: clientSecret.id,
-        },
+        mentionedClientSecretIds:
+          existingClientRequest.mentionedClientSecretIds.includes(
+            clientSecret.id
+          )
+            ? undefined
+            : { push: clientSecret.id },
       },
     });
 

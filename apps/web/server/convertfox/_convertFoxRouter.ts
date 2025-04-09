@@ -45,7 +45,7 @@ export const convertfoxRouter: ServerStreamingFunction<
     (m: any) => m.role === "assistant"
   );
   let lastAssistantJob = lastAssistantMessage.annotations.find(
-    (a: any) => a.persona === "taskManager" && a.role === "assistant"
+    (a: any) => a.persona === "taskManager"
   )?.objectType;
   const lastUserMessage = findLastElementWith(
     requestBody.messages,
@@ -121,11 +121,11 @@ export const convertfoxRouter: ServerStreamingFunction<
     }
   }
 
-  console.log("classification", classification, lastAssistantJob);
+  console.log("classification", classification, lastAssistantMessage);
 
   // if the last message of assistant is not t=convertfox, then in the case that taskInstanceMeta.taskInfo already exists,
   // then we can confirm that this is a modification at a later point.
-  if (taskInstanceMeta.taskInfo) {
+  if (taskInstanceMeta.taskStructure) {
     if (!lastAssistantJob && classification.modificationType) {
       lastAssistantJob = classification.modificationType;
       dataStream.writeMessageAnnotation({

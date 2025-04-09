@@ -7,6 +7,7 @@ import { BotProject, ClientRequest } from "@prisma/client";
 import {
   Book,
   ChevronRight,
+  CircleCheck,
   FileCheck,
   Flag,
   LogOut,
@@ -238,6 +239,44 @@ export default function Sidebar({
                     )}
                     {!isCollapsed && (
                       <span className="text-sm font-medium">Whitepaper</span>
+                    )}
+                  </div>
+                </Link>
+              </li>
+
+              <li
+                className={`hover:bg-gray-100 rounded-lg cursor-pointer ${isCollapsed ? "p-2 w-full flex justify-center" : "p-2 px-3"} group`}
+              >
+                <Link
+                  href="/status"
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2 text-neutral-500 group-hover:text-black transition-all duration-200">
+                    {!isCollapsed ? (
+                      <CircleCheck
+                        strokeWidth={2.5}
+                        className={cn("h-4 w-4")}
+                      />
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <CircleCheck
+                            strokeWidth={2.5}
+                            className={cn("h-[18px] w-[18px]")}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="right"
+                          className="bg-white !text-black border border-gray-300 text-xs rounded-full"
+                          sideOffset={10}
+                          showArrow={false}
+                        >
+                          Status
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    {!isCollapsed && (
+                      <span className="text-sm font-medium">Status</span>
                     )}
                   </div>
                 </Link>

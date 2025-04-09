@@ -83,7 +83,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   await new Promise((resolve) => {
     setTimeout(() => {
       resolve(undefined);
-    }, 35000);
+    }, 10000);
   });
 
   const runId = await getRunforClientRequestbySha({

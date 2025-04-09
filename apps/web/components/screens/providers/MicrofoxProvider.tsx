@@ -22,23 +22,7 @@ import {
 import { createSlackSDK } from "@microfox/slack-web-tiny";
 import { findLastElementWith } from "@/utils/helpers/array";
 
-interface MicrofoxContextType extends UseChatHelpers {
-  minionType: ChatUIMessageWithTypes["minionType"] | null;
-  setMinionType: (type: ChatUIMessageWithTypes["minionType"] | null) => void;
-  serverMessages?: ChatUIMessageWithTypes[];
-  mutate: () => void;
-  handleRefresh: (messageIndex: number) => Promise<void>;
-  isLoading: boolean;
-  isValidating: boolean;
-  addToolResult: ({
-    toolCallId,
-    result,
-  }: {
-    toolCallId: string;
-    result: any;
-  }) => void;
-  // ... spread all chat options
-}
+type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 
 const MicrofoxContext = createContext<MicrofoxContextType | undefined>(
   undefined
@@ -51,14 +35,14 @@ export interface MicrofoxProviderProps {
   chatOptions?: Partial<UseChatOptions>;
 }
 
-export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
-  children,
-  clientRequest,
-  resetInputState,
-  chatOptions: userChatOptions,
-}) => {
+export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOptions?: Partial<UseChatOptions>) => {
   const [minionType, setMinionType] =
     useState<ChatUIMessageWithTypes["minionType"]>("hellofox");
+
+  // Tab-related states
+  const [activeTab, setActiveTab] = useState<"chat" | "dashboard" | "history">("chat");
+  const [previousTab, setPreviousTab] = useState<"chat" | "dashboard" | "history">("chat");
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   const {
     data: serverMessages,
@@ -158,7 +142,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
   }, [chatOptions.messages]);
 
   useEffect(() => {
-    console.log("data", chatOptions.data);
+    //console.log("data", chatOptions.data);
   }, [chatOptions.data]);
 
   //-----------DB OPERATIONS -----------------
@@ -238,10 +222,18 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
       chatRequestOptions?: ChatRequestOptions,
       bypassDb?: boolean
     ) => {
+      let _minionType = (chatRequestOptions?.body as any)?.minionType ?? minionType;
+      // console.log("chatRequestOptions", chatRequestOptions, _minionType);
+      if (!(chatRequestOptions?.body as any)?.minionType && (
+        _minionType === "deployfox" ||
+        _minionType === "buildfox"
+      )) {
+        _minionType = "modifyfox";
+      }
       if (!bypassDb) {
         await createMessage(
           message as any,
-          (chatRequestOptions?.body as any)?.minionType ?? minionType
+          _minionType
         );
       }
       const id = await chatOptions.append(message, {
@@ -250,8 +242,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
           ...chatRequestOptions?.body,
           clientRequestId: clientRequest?.id,
           userId: clientRequest?.userId,
-          minionType:
-            (chatRequestOptions?.body as any)?.minionType ?? minionType,
+          minionType: _minionType,
         },
       });
       return id;
@@ -278,6 +269,9 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     const messageMinion = message?.annotations?.find(
       (annotation: any) => annotation.type === "minion"
     );
+    const messageAttachments = message?.annotations?.filter(
+      (annotation: any) => annotation.type === "attachment"
+    );
     // bypass the createMessage by using the original append method (as we did not delete the last message from the db)
     // if doing edit, we should also delete the last message from the db
     if (message) {
@@ -285,6 +279,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         await appendMessage(message as Message, {
           body: {
             minionType: (message as any)?.minionType ?? (messageMinion as any)?.value,
+            ...(messageAttachments?.reduce((acc: any, attachment: any) => ({ ...acc, [attachment.key]: attachment.value }), {}) ?? {}),
           },
         }, true);
       } catch (error) {
@@ -294,7 +289,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     // console.log("deleted messages", extraMessages.map(m => m.id));
   };
 
-  const value = {
+  return {
     ...chatOptions,
     handleSubmit,
     minionType,
@@ -305,8 +300,23 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     isValidating,
     serverMessages,
     handleRefresh,
+    // Add tab-related states to the context value
+    activeTab,
+    setActiveTab,
+    previousTab,
+    setPreviousTab,
+    hasScrolled,
+    setHasScrolled,
   };
+}
 
+export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
+  children,
+  clientRequest,
+  resetInputState,
+  chatOptions: userChatOptions,
+}) => {
+  const value = useMicrofoxContext(clientRequest, userChatOptions);
   return (
     <MicrofoxContext.Provider value={value}>
       {children}

@@ -4,6 +4,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { User } from "@prisma/client";
 import { useState, useEffect } from "react";
 import { analytics } from "@/utils/services/analytics/client";
+import { usePathname } from "next/navigation";
+import { PUBLIC_ROUTES } from "../constants/appInfo";
 
 interface UseUserReturn {
   user: User | null;
@@ -11,6 +13,7 @@ interface UseUserReturn {
   error: any;
   handleSigninWithGoogle: () => Promise<void>;
   handleLogout: () => Promise<void>;
+  loggingOut: boolean;
 }
 
 export function useUser(): UseUserReturn {
@@ -18,6 +21,8 @@ export function useUser(): UseUserReturn {
   const [dbUser, setDbUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const pathname = usePathname();
 
   // Function to identify user in analytics only if user data has changed
   const identifyUser = (user: User) => {
@@ -40,6 +45,9 @@ export function useUser(): UseUserReturn {
   };
 
   useEffect(() => {
+    if (PUBLIC_ROUTES.includes(pathname)) {
+      return;
+    }
     async function fetchUser() {
       if (!authUser) {
         setDbUser(null);

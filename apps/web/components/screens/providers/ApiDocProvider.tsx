@@ -66,7 +66,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchApiDocs();
-  }, [deploymentInfo]);
+  }, [deploymentInfo?.stage, deploymentInfo?.baseUrl]);
 
   const endpoints = apiDoc?.paths
     ? Object.entries(apiDoc.paths).flatMap(

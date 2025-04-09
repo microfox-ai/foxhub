@@ -1,0 +1,70 @@
+import { AnimatePresence, motion } from "framer-motion";
+import { useMicrofox } from "../../providers/MicrofoxProvider";
+import { UIMessage } from "ai";
+
+// Define types for annotations
+export type ThinkingAnnotation = {
+    type: "thinking";
+    contents: string;
+    content: string;
+};
+
+export type LoadingAnnotation = {
+    type: "loading";
+    text: string;
+    content: string;
+    contents: string;
+};
+
+export type StatusAnnotation = ThinkingAnnotation | LoadingAnnotation;
+
+interface LoadingIndicatorProps {
+    message: UIMessage;
+}
+
+export const LoadingIndicator = ({ message }: LoadingIndicatorProps) => {
+    const { status } = useMicrofox();
+
+    // Get the latest thinking or loading annotation
+    const getLatestStatusAnnotation = (): StatusAnnotation | null => {
+        if (!message.annotations) return null;
+        const statusAnnotations = message.annotations.filter(
+            (a: any): a is StatusAnnotation =>
+                a.type === "thinking" || a.type === "loading"
+        );
+        return statusAnnotations[statusAnnotations.length - 1] || null;
+    };
+
+    return (
+        <div className="flex gap-2 items-center">
+            <div className="bg-black/80 animate-bounce h-4 w-4 rounded-full p-0 text-xs text-white"></div>
+            {(() => {
+                const latestAnnotation = getLatestStatusAnnotation();
+                if (!latestAnnotation) return null;
+
+                const content =
+                    latestAnnotation.type === "thinking"
+                        ? (latestAnnotation.contents ??
+                            latestAnnotation.content)
+                        : (latestAnnotation.text ??
+                            latestAnnotation.content ??
+                            latestAnnotation.contents);
+
+                return (
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={content}
+                            className="loading-text"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {content}
+                        </motion.div>
+                    </AnimatePresence>
+                );
+            })()}
+        </div>
+    );
+}; 

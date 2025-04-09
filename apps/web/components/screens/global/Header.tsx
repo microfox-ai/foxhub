@@ -6,14 +6,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { ProjectDropdown } from "./ProjectDropdown";
 import { LogOut, Settings } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -21,10 +14,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import Image from "next/image";
+import LogoutConfirmationDialog from "@/components/auth/LogoutConfirmationDialog";
 
 const Header: React.FC = () => {
-  const { user, handleLogout } = useUser();
+  const { user, handleLogout, loggingOut } = useUser();
   const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -32,9 +25,13 @@ const Header: React.FC = () => {
     setShowLogoutDialog(true);
   };
 
-  const handleConfirmLogout = () => {
-    handleLogout();
-    setShowLogoutDialog(false);
+  const handleConfirmLogout = async () => {
+    try {
+      await handleLogout();
+      setShowLogoutDialog(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   //console.log(user?.avatar)
@@ -58,9 +55,7 @@ const Header: React.FC = () => {
               className="rounded-md w-10 min-w-10 h-10 min-h-10"
             />
             <div className="flex items-center gap-2">
-              <h1 className="font-medium text-xl text-gray-800">
-                Microfox
-              </h1>
+              <h1 className="font-medium text-xl text-gray-800">Microfox</h1>
               <p className="text-xs font-medium text-gray-500 mt-1">v1.0.1</p>
             </div>
           </div>
@@ -146,31 +141,12 @@ const Header: React.FC = () => {
         {/* Add your header content here */}
       </header>
 
-      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Logout</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to logout? You will need to login again to
-              access your account.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowLogoutDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmLogout}
-              className="bg-black text-white hover:bg-black/90 transition-colors"
-            >
-              Logout
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LogoutConfirmationDialog
+        showLogoutDialog={showLogoutDialog}
+        setShowLogoutDialog={setShowLogoutDialog}
+        handleConfirmLogout={handleConfirmLogout}
+        loggingOut={loggingOut}
+      />
     </>
   );
 };

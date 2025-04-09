@@ -1,6 +1,10 @@
 import { prisma } from "@/prisma/prisma";
 import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { generateMicrofoxEmailTemplate, sesSdk } from "@/utils/services/sesSdk";
+import { slackBotSdk } from "@/utils/services/slackBotSdk";
+import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
+import { MySlackChannels } from "@/utils/services/slackBotSdk";
 import { FUNCTIONTYPE, DEPLOY_STAGE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -44,11 +48,8 @@ export async function POST(req: NextRequest) {
     const clientFunction = await prisma.clientDeployment.upsert({
       where: { id: originClientRequestId },
       update: {
-        userId,
-        botProjectId,
-        originClientRequestId,
-        name: `${name}-${stage}-${originClientRequestId}`,
         baseUrl,
+        name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
         metadata,
@@ -69,6 +70,20 @@ export async function POST(req: NextRequest) {
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
       },
     });
+
+    if (clientFunction.stage === DEPLOY_STAGE.PROD) {
+      await sesSdk.sendEmail({
+        sender: "notifications@microfox.app",
+        recipient: clientFunction.userId,
+        subject: `Function "${clientFunction.name}" has been updated.`,
+        bodyHtml: generateMicrofoxEmailTemplate({
+          title: `Congrats! Your automation has been published.`,
+          content: `"${clientFunction.name}" has been published. You can now expect your automation to be running clockwise, untill you decide to stop it. You can stop it by visiting the dashboard.`,
+          // ctaText: "Test it out",
+          // ctaLink: `https://microfox.app/test/${updatedFunction.id}`,
+        }),
+      });
+    }
 
     const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
       where: {
@@ -105,6 +120,14 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
+
+    const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();
+
+    await slackBotSdk.sendMessage({
+      icon_url: MICROFOX_LOGO,
+      channel: MySlackChannels.microfox_updates,
+      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${endpoints?.length}. Total time taken since hellofox started conversation: ${timeTaken} seconds`,
+    });
 
     return NextResponse.json(clientFunction, { status: 201 });
   } catch (error) {
@@ -157,6 +180,69 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Update ClientDeployment
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { id, name, type, stage, baseUrl, endpoints, schedules, metadata } =
+      body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing function ID" },
+        { status: 400 }
+      );
+    }
+
+    const clientFunction = await prisma.clientDeployment.findUnique({
+      where: { id },
+    });
+
+    if (!clientFunction) {
+      return NextResponse.json(
+        { error: "Function not found" },
+        { status: 404 }
+      );
+    }
+
+    // Only update fields that are provided
+    const updateData: any = {};
+
+    if (name !== undefined) updateData.name = name;
+    if (type !== undefined) updateData.type = type as FUNCTIONTYPE;
+    if (stage !== undefined) updateData.stage = stage as DEPLOY_STAGE;
+    if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
+    if (metadata !== undefined) updateData.metadata = metadata;
+
+    const updatedFunction = await prisma.clientDeployment.update({
+      where: { id },
+      data: updateData,
+    });
+
+    // Notify in chat about the update
+    if (Object.keys(updateData).length > 0) {
+      // await prisma.chatUIMessage.create({
+      //   data: {
+      //     originClientRequestId: clientFunction.originClientRequestId,
+      //     userId: clientFunction.userId,
+      //     content: `Function "${updatedFunction.name}" has been updated.`,
+      //     context: `server`,
+      //     role: `assistant`,
+      //     minionType: `other`,
+      //     createdAt: new Date(),
+      //   },
+      // });
+    }
+
+    return NextResponse.json(updatedFunction, { status: 200 });
+  } catch (error) {
+    console.error("Error updating ClientDeployment:", error);
+    return NextResponse.json(
+      { error: "Error updating ClientDeployment" },
+      { status: 500 }
+    );
+  }
+}
 
 // Delete ClientDeployment
 export async function DELETE(req: NextRequest) {

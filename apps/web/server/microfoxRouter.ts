@@ -7,6 +7,7 @@ import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
 import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { deployFoxRouter } from "./deployfox/_deployfoxRouter";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
+import { modifyFoxRouter } from "./system/modifier";
 
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
@@ -28,6 +29,7 @@ microfoxRouter.addPath("hellofox", hellofoxRouter);
 microfoxRouter.addPath("convertfox", convertfoxRouter);
 microfoxRouter.addPath("buildfox", buildFoxRouter);
 microfoxRouter.addPath("deployfox", deployFoxRouter);
+microfoxRouter.addPath("modifyfox", modifyFoxRouter);
 microfoxRouter.addPath("usageTracker", usageTrackerRouter);
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
@@ -36,6 +38,15 @@ microfoxRouter.setRouting((requestBody: any) => {
   //   return ["nothing"];
   // }
 
+  console.log("requestBody", requestBody);
+
+  if (
+    requestBody.action === "abrupt-switch" ||
+    requestBody.action === "switch-notsure" ||
+    requestBody.action === "unkown"
+  ) {
+    return ["usageTracker", "modifyfox"];
+  }
   let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
   if (minionType === "hellofox") {
     return ["usageTracker", "hellofox"];
@@ -45,6 +56,8 @@ microfoxRouter.setRouting((requestBody: any) => {
     return ["usageTracker", "buildfox"];
   } else if (minionType === "deployfox") {
     return ["usageTracker", "deployfox"];
+  } else if (minionType === "modifyfox") {
+    return ["usageTracker", "modifyfox"];
   }
   return ["usageTracker"];
 });

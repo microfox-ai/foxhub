@@ -59,6 +59,7 @@ export const ProjectDropdown = ({
   const projectParamId = params?.project_id;
 
   const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [value, setValue] = useState("");
   const [search, setSearch] = useState("");
   const {
@@ -92,7 +93,7 @@ export const ProjectDropdown = ({
     );
   }
   return (
-    <Dialog>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <div
         className={cn(
           "flex items-center justify-between text-sm w-[200px]",
@@ -197,7 +198,10 @@ export const ProjectDropdown = ({
           userId={user?.id}
           onProjectCreated={(newProject) => {
             setSelectedProject(newProject);
-            router.push(`/project/${newProject.id}`);
+            setDialogOpen(false);
+            router.push(
+              `/project/${newProject.id}/request/${newProject.clientRequests[0].id}`
+            );
           }}
         />
       </DialogContent>

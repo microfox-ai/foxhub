@@ -433,6 +433,7 @@ const ConfigureTab = () => {
     }
   );
 
+  console.log(clientDeployment, "clientDeployment");
   const clientDeploymentData = clientDeployment?.[0] || null;
 
   const handleEndpointClick = (endpoint: {
@@ -647,20 +648,20 @@ const ConfigureTab = () => {
 
             {(!customSecrets?.clientSecrets ||
               customSecrets.clientSecrets.length === 0) && (
-              <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="p-3 bg-gray-100 rounded-full">
-                    <Key className="w-6 h-6 text-gray-500" />
+                <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-3 bg-gray-100 rounded-full">
+                      <Key className="w-6 h-6 text-gray-500" />
+                    </div>
+                    <h4 className="text-lg font-medium text-gray-800">
+                      No Custom Keys
+                    </h4>
+                    <p className="text-gray-500 max-w-md">
+                      You haven&apos;t added any custom keys yet.
+                    </p>
                   </div>
-                  <h4 className="text-lg font-medium text-gray-800">
-                    No Custom Keys
-                  </h4>
-                  <p className="text-gray-500 max-w-md">
-                    You haven&apos;t added any custom keys yet.
-                  </p>
                 </div>
-              </div>
-            )}
+              )}
           </TabsContent>
         </Tabs>
       </div>

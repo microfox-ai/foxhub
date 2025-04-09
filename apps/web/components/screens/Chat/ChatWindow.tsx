@@ -11,11 +11,10 @@ import { SlashModal } from "./SlashModal";
 import TabMessages from "./TabMessages";
 import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
 import { ButtonSCN } from "@/components/elements/Button";
-import { PanelRightIcon } from "lucide-react";
+import { ChevronsRight, Loader2, PanelRightIcon } from "lucide-react";
 import ConfigureTab from "./ConfigureTab";
 import { motion, AnimatePresence } from "framer-motion";
-import useSWR from "swr";
-import { PortalSdk } from "@/utils/services/PortalSdk";
+import { useLayout } from "../providers/LayoutProvider";
 
 export type AttachedMedia = {
   file: File;
@@ -28,21 +27,40 @@ function ChatWindow({
   isCollapsed,
   onCollapse,
   projectTitle,
+  isChatLoading,
 }: {
   userId: string;
   clientRequest?: ClientRequest;
   isCollapsed?: boolean;
   onCollapse?: (collapsed: boolean) => void;
   projectTitle?: string;
+  isChatLoading: boolean;
 }) {
   // Chat state
-  const [activeTab, setActiveTab] = useState("chat");
-  const [previousTab, setPreviousTab] = useState("chat");
-  const [hasScrolled, setHasScrolled] = useState(false);
+  const {
+    activeTab,
+    setActiveTab,
+    previousTab,
+    setPreviousTab,
+    hasScrolled,
+    setHasScrolled,
+    messages,
+    setMessages,
+    reload: mutate,
+    status,
+    isLoading,
+    input,
+    setInput,
+    handleInputChange,
+    append,
+    serverMessages,
+  } = useMicrofox();
+
+  const { isRightCollapsed, handleRightCollapse } = useLayout();
 
   const handleTabChange = (value: string) => {
     setPreviousTab(activeTab);
-    setActiveTab(value);
+    setActiveTab(value as "chat" | "dashboard" | "history");
     // Reset scroll state when switching tabs
     if (value !== "chat") {
       setHasScrolled(false);
@@ -71,19 +89,6 @@ function ChatWindow({
 
   const { mediaPayload, resetMedia } = useFileUpload();
 
-  const {
-    messages,
-    setMessages,
-    reload: mutate,
-    status,
-    isLoading,
-    input,
-    setInput,
-    handleInputChange,
-    append,
-    data,
-  } = useMicrofox();
-
   // Reload client data when specific operations are completed
   const reloadClientData = async () => {
     try {
@@ -109,12 +114,12 @@ function ChatWindow({
         onValueChange={handleTabChange}
         className="relative h-screen gap-0"
       >
-        <div className="flex w-full">
+        <div className="flex items-start w-full">
           {isCollapsed && (
             <ButtonSCN
               variant="ghost"
               size="icon"
-              className="mt-5 ml-4"
+              className=" ml-4 mt-6"
               onClick={() => onCollapse?.(!isCollapsed)}
             >
               <PanelRightIcon style={{ height: "1rem", width: "1rem" }} />
@@ -125,14 +130,37 @@ function ChatWindow({
             projectTitle={projectTitle}
             clientRequest={clientRequest}
             mutate={mutate}
+            isChatLoading={isChatLoading}
             isLoading={isLoading}
             isValidating={isLoading}
             activeTab={activeTab}
             setActiveTab={handleTabChange}
           />
+          {isRightCollapsed && (
+            <ButtonSCN
+              variant="outline"
+              size="icon"
+              className="shadow-none mt-6 !p-px mx-2 mr-4 text-gray-400 hover:text-gray-500 border-gray-300"
+              onClick={() => handleRightCollapse(false)}
+            >
+              <ChevronsRight
+                strokeWidth={2.5}
+                style={{ height: "1rem", width: "1rem" }}
+              />
+            </ButtonSCN>
+          )}
         </div>
 
-        {messages.length > 0 /* Chat Tabs */ ? (
+        {(isChatLoading || isLoading) && (
+          <div className="w-full flex justify-center h-full items-center">
+            <Loader2 className="w-full h-6 animate-spin" />
+          </div>
+        )}
+
+        {!isChatLoading &&
+          !isLoading &&
+          ((serverMessages && serverMessages.length > 0) ||
+            messages.length > 0) /* Chat Tabs */ ? (
           <>
             <AnimatePresence mode="sync" initial={false}>
               <div className="relative flex-1 overflow-hidden">
@@ -211,7 +239,10 @@ function ChatWindow({
             </AnimatePresence>
           </>
         ) : (
-          !isLoading && (
+          !isChatLoading &&
+          !isLoading &&
+          messages.length === 0 &&
+          (!serverMessages || serverMessages.length === 0) && (
             <div className="flex relative -mt-10 flex-col gap-4 justify-center items-center h-full">
               <h1 className="text-4xl font-bold">
                 What would you like to build?
@@ -232,7 +263,7 @@ function ChatWindow({
         <SlashModal
           clientRequest={clientRequest}
           onSuccess={reloadClientData}
-          onClose={() => {}}
+          onClose={() => { }}
         />
       )}
 
@@ -254,12 +285,14 @@ export default function ChatWindowWithProvider({
   isCollapsed,
   onCollapse,
   projectTitle,
+  isLoading,
 }: {
   userId: string;
   clientRequest?: ClientRequest;
   isCollapsed?: boolean;
   onCollapse?: (collapsed: boolean) => void;
   projectTitle?: string;
+  isLoading: boolean;
 }) {
   return (
     <MicrofoxProvider clientRequest={clientRequest}>
@@ -269,6 +302,7 @@ export default function ChatWindowWithProvider({
         isCollapsed={isCollapsed}
         onCollapse={onCollapse}
         projectTitle={projectTitle}
+        isChatLoading={isLoading}
       />
     </MicrofoxProvider>
   );

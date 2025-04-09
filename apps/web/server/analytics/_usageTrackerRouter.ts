@@ -12,6 +12,10 @@ export const usageTrackerRouter: ServerStreamingFunction<
   defaultCallbackResultBody
 > = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
+  props.dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: "Thinking...",
+  });
   const userUsagesGeminiPro =
     await TokenUsageAnalyticsTracker.getTokenUsagePerUser(
       requestBody.userId,

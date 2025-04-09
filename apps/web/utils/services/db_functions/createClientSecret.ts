@@ -13,7 +13,7 @@ export interface ClientSecreVariable {
   isOptional: boolean;
 }
 
-export const createClientSecret = async (_clientSecret: {
+export const createOrUpdateClientSecret = async (_clientSecret: {
   botProjectId?: string;
   userId?: string;
   type: string;
@@ -35,18 +35,57 @@ export const createClientSecret = async (_clientSecret: {
   }
 
   // Create the ClientSecret without a mode field (since it's not part of the schema)
-  const clientSecret = await prisma.clientSecret.create({
-    data: {
-      botProjectId,
-      userId,
-      type,
-      variables: variables as any,
-      name,
-      clientRequestIds: [clientRequestId],
-    },
-  });
 
-  // If an originClientRequestId is provided, update that ClientRequest to add the new bot's id
+  // for a particular botProjectId, if the clientSecret alreay exists, push this clientRequestId to the clientSecret.clientRequestIds array
+  let existingClientSecret;
+
+  if (type !== "custom") {
+    // fetch from the bot-project-id
+    existingClientSecret = await prisma.clientSecret.findFirst({
+      where: {
+        botProjectId,
+        type,
+      },
+    });
+  } else {
+    // fetch from the clientRequestId (because custom secrets are created per request)
+    existingClientSecret = await prisma.clientSecret.findFirst({
+      where: {
+        botProjectId,
+        name,
+        clientRequestIds: {
+          has: clientRequestId,
+        },
+      },
+    });
+  }
+
+  let clientSecret;
+
+  if (existingClientSecret) {
+    // update the existing clientSecret
+    clientSecret = await prisma.clientSecret.update({
+      where: { id: existingClientSecret.id },
+      data: {
+        variables: variables as any,
+        clientRequestIds: { push: clientRequestId },
+      },
+    });
+  } else {
+    // create a new clientSecret
+    clientSecret = await prisma.clientSecret.create({
+      data: {
+        botProjectId,
+        userId,
+        type,
+        variables: variables as any,
+        name,
+        clientRequestIds: [clientRequestId],
+      },
+    });
+  }
+
+  // If an clientRequestId is provided, update that ClientRequest to add the new bot's id
   if (clientRequestId) {
     const clientRequest = await prisma.clientRequest.update({
       where: { id: clientRequestId },
@@ -54,9 +93,6 @@ export const createClientSecret = async (_clientSecret: {
         mentionedClientSecretIds: {
           push: clientSecret.id,
         },
-      },
-      include: {
-        requestUpdates: true,
       },
     });
 
@@ -75,16 +111,6 @@ export const createClientSecret = async (_clientSecret: {
       repo: repoName,
       token: GITHUB_TOKEN,
     });
-
-    const requestUpdates = clientRequest.requestUpdates;
-
-    // Find the update with the largest prNumber.
-    const lastRequestPrNumber =
-      requestUpdates.length > 0
-        ? requestUpdates.reduce((acc, curr) =>
-            acc.prNumber > curr.prNumber ? acc : curr
-          ).prNumber
-        : null;
 
     const modeMap = clientSecret.variables.reduce(
       (acc: Record<string, string[]>, variable: any) => {
@@ -114,7 +140,7 @@ export const createClientSecret = async (_clientSecret: {
 ${modeMapString}`;
 
     await appRepoSdk.createCommentOnPr(
-      lastRequestPrNumber || clientRequest.prNumber || 0,
+      clientRequest.prNumber || 0,
       commentBody
     );
 

@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import * as ResizablePrimitive from "react-resizable-panels";
 
 interface LayoutContextType {
@@ -19,8 +25,12 @@ interface LayoutContextType {
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
 export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
-  const [isRightCollapsed, setIsRightCollapsed] = useState(true);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(
+    localStorage.getItem("isLeftCollapsed") === "true"
+  );
+  const [isRightCollapsed, setIsRightCollapsed] = useState(
+    localStorage.getItem("isRightCollapsed") === "true"
+  );
   const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
   const [isRightTransitioning, setIsRightTransitioning] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
@@ -30,8 +40,13 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
   const rightPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle | null>(
     null
   );
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const handleLeftCollapse = (collapsed: boolean) => {
+  const handleLeftCollapse = useCallback((collapsed: boolean) => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+
     setIsLeftTransitioning(true);
     if (leftPanelRef.current) {
       if (collapsed) {
@@ -41,11 +56,18 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     setIsLeftCollapsed(collapsed);
-    // Remove transition after animation completes
-    setTimeout(() => setIsLeftTransitioning(false), 300);
-  };
+    localStorage.setItem("isLeftCollapsed", collapsed.toString());
 
-  const handleRightCollapse = (collapsed: boolean) => {
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsLeftTransitioning(false);
+    }, 400);
+  }, []);
+
+  const handleRightCollapse = useCallback((collapsed: boolean) => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+
     setIsRightTransitioning(true);
     if (rightPanelRef.current) {
       if (collapsed) {
@@ -55,17 +77,20 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     setIsRightCollapsed(collapsed);
-    // Remove transition after animation completes
-    setTimeout(() => setIsRightTransitioning(false), 300);
-  };
+    localStorage.setItem("isRightCollapsed", collapsed.toString());
 
-  const handleLeftResizeHandleClick = () => {
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsRightTransitioning(false);
+    }, 400);
+  }, []);
+
+  const handleLeftResizeHandleClick = useCallback(() => {
     handleLeftCollapse(!isLeftCollapsed);
-  };
+  }, [isLeftCollapsed, handleLeftCollapse]);
 
-  const handleRightResizeHandleClick = () => {
+  const handleRightResizeHandleClick = useCallback(() => {
     handleRightCollapse(!isRightCollapsed);
-  };
+  }, [isRightCollapsed, handleRightCollapse]);
 
   return (
     <LayoutContext.Provider

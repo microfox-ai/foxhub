@@ -107,7 +107,7 @@ export const RequestPage = () => {
     );
   }
 
-  console.log(selectedProject, "selectedProject");
+  //console.log(selectedProject, "selectedProject");
 
   return (
     <ClientSecretProvider botProjectId={selectedProject?.id} userId={user?.id}>
@@ -152,7 +152,7 @@ export const RequestPage = () => {
                   );
                 }
               }}
-              onOpenConfig={(project: any) => {}}
+              onOpenConfig={(project: any) => { }}
               isCollapsed={isLeftCollapsed}
               onCollapse={handleLeftCollapse}
             />
@@ -191,7 +191,7 @@ export const RequestPage = () => {
               onExpand={() => handleRightCollapse(false)}
               className={cn(
                 isRightTransitioning &&
-                  "transition-all  duration-300 ease-in-out"
+                "transition-all  duration-300 ease-in-out"
               )}
             >
               <div className="h-full py-4 px-2  ">

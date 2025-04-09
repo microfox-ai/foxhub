@@ -84,6 +84,7 @@ export const createTaskInfo = async (
         type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "Yes, That's Correct!",
+        minionType: "convertfox",
       },
     ],
   });

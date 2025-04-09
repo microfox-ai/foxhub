@@ -36,9 +36,15 @@ export const RequestPage = () => {
 
   if (!user || isLoading) {
     return (
-      <div className="flex h-screen flex-col items-center overflow-hidden justify-center">
+      <ResizablePanel
+        defaultSize={isLeftCollapsed ? 96 : 84}
+        minSize={isLeftCollapsed ? 96 : 84}
+        maxSize={isLeftCollapsed ? 96 : 84}
+        className={`flex h-screen flex-col items-center overflow-hidden justify-center
+          `}
+      >
         <Loader2 className="w-full h-6 animate-spin" />
-      </div>
+      </ResizablePanel>
     );
   }
 

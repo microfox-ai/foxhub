@@ -71,19 +71,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (clientFunction.stage === DEPLOY_STAGE.PROD) {
-      await sesSdk.sendEmail({
-        sender: "notifications@microfox.app",
-        recipient: clientFunction.userId,
-        subject: `Function "${clientFunction.name}" has been updated.`,
-        bodyHtml: generateMicrofoxEmailTemplate({
-          title: `Congrats! Your automation has been published.`,
-          content: `"${clientFunction.name}" has been published. You can now expect your automation to be running clockwise, untill you decide to stop it. You can stop it by visiting the dashboard.`,
-          // ctaText: "Test it out",
-          // ctaLink: `https://microfox.app/test/${updatedFunction.id}`,
-        }),
-      });
-    }
+    // if (clientFunction.stage === DEPLOY_STAGE.PROD) {
+    //   await sesSdk.sendEmail({
+    //     sender: "notifications@microfox.app",
+    //     recipient: clientFunction.userId,
+    //     subject: `Function "${clientFunction.name}" has been updated.`,
+    //     bodyHtml: generateMicrofoxEmailTemplate({
+    //       title: `Congrats! Your automation has been published.`,
+    //       content: `"${clientFunction.name}" has been published. You can now expect your automation to be running clockwise, untill you decide to stop it. You can stop it by visiting the dashboard.`,
+    //       // ctaText: "Test it out",
+    //       // ctaLink: `https://microfox.app/test/${updatedFunction.id}`,
+    //     }),
+    //   });
+    // }
 
     const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
       where: {

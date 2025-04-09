@@ -1,6 +1,9 @@
 import { prisma } from "@/prisma/prisma";
 import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { slackBotSdk } from "@/utils/services/slackBotSdk";
+import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
+import { MySlackChannels } from "@/utils/services/slackBotSdk";
 import { FUNCTIONTYPE, DEPLOY_STAGE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -104,6 +107,14 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
+
+    const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();
+
+    await slackBotSdk.sendMessage({
+      icon_url: MICROFOX_LOGO,
+      channel: MySlackChannels.microfox_updates,
+      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${endpoints?.length}. Total time taken since hellofox started conversation: ${timeTaken} seconds`,
+    });
 
     return NextResponse.json(clientFunction, { status: 201 });
   } catch (error) {

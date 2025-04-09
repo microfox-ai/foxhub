@@ -63,6 +63,11 @@ import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 import Cube from "@/components/ui/spinners/cube";
 import { useLayout } from "../../providers/LayoutProvider";
 import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
+import {
+  constructMessageFromButton,
+  constructShiftMinionMessage,
+  constructAppendBody
+} from "@/components/screens/Chat/message/messageHelpers";
 
 dayjs.extend(duration);
 
@@ -161,49 +166,18 @@ const ActionButtons = (props: any) => {
               }
               if (button.action === "appendMessage") {
                 setInput("");
-                append({
-                  id: crypto.randomUUID(),
-                  content: button.value ?? button.text,
-                  role: "user",
-                  parts: [
-                    {
-                      type: "text",
-                      text: button.value ?? button.text,
-                    },
-                  ],
-                });
+                append(
+                  constructMessageFromButton(button),
+                  constructAppendBody(button.minionType)
+                );
               }
               if (button.action === "shiftMinion") {
                 console.log("shiftMinion", button.value);
                 setMinionType(button.value);
                 setInput("");
                 append(
-                  {
-                    id: crypto.randomUUID(),
-                    content:
-                      button.actionText ?? button.text ?? "Changing gears..",
-                    role: "user",
-                    parts: [
-                      {
-                        type: "text",
-                        text:
-                          button.actionText ??
-                          button.text ??
-                          "Changing gears..",
-                      },
-                    ],
-                    annotations: [
-                      {
-                        type: "minion",
-                        value: button.value,
-                      },
-                    ],
-                  },
-                  {
-                    body: {
-                      minionType: button.value,
-                    },
-                  }
+                  constructShiftMinionMessage(button),
+                  constructAppendBody(button.value)
                 );
               }
             }}

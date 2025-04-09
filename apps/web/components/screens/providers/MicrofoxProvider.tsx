@@ -158,7 +158,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
   }, [chatOptions.messages]);
 
   useEffect(() => {
-    console.log("data", chatOptions.data);
+    //console.log("data", chatOptions.data);
   }, [chatOptions.data]);
 
   //-----------DB OPERATIONS -----------------
@@ -238,10 +238,18 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
       chatRequestOptions?: ChatRequestOptions,
       bypassDb?: boolean
     ) => {
+      let _minionType = (chatRequestOptions?.body as any)?.minionType ?? minionType;
+      // console.log("chatRequestOptions", chatRequestOptions, _minionType);
+      if (!(chatRequestOptions?.body as any)?.minionType && (
+        _minionType === "deployfox" ||
+        _minionType === "buildfox"
+      )) {
+        _minionType = "modifyfox";
+      }
       if (!bypassDb) {
         await createMessage(
           message as any,
-          (chatRequestOptions?.body as any)?.minionType ?? minionType
+          _minionType
         );
       }
       const id = await chatOptions.append(message, {
@@ -250,8 +258,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
           ...chatRequestOptions?.body,
           clientRequestId: clientRequest?.id,
           userId: clientRequest?.userId,
-          minionType:
-            (chatRequestOptions?.body as any)?.minionType ?? minionType,
+          minionType: _minionType,
         },
       });
       return id;

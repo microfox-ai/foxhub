@@ -22,6 +22,11 @@ import {
 } from "./fetchLogs";
 import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
 import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
+import {
+  MICROFOX_LOGO,
+  MySlackChannels,
+  slackBotSdk,
+} from "@/utils/services/slackBotSdk";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -78,7 +83,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   await new Promise((resolve) => {
     setTimeout(() => {
       resolve(undefined);
-    }, 35000);
+    }, 10000);
   });
 
   const runId = await getRunforClientRequestbySha({
@@ -138,6 +143,14 @@ export const deployFoxRouter: ServerStreamingFunction<
   // }
 
   // const clientDeployment = await getClientDeployment(clientRequestId);
+  await slackBotSdk.sendMessage({
+    icon_url: MICROFOX_LOGO,
+    channel: MySlackChannels.microfox_updates,
+    text: `Deployfox triggered a deployment for ${clientRequest.title} ${
+      runId ? `with runId ${runId}` : ""
+    }`,
+  });
+
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "deploymentsInfo",

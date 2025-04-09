@@ -196,6 +196,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
         type: "confirm",
         className: "bg-green-500 text-white hover:bg-green-600",
         value: "Yes, Everything looks good to me.",
+        minionType: "convertfox",
       },
     ],
   });

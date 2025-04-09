@@ -44,7 +44,7 @@ export const convertfoxRouter: ServerStreamingFunction<
     requestBody.messages,
     (m: any) => m.role === "assistant"
   );
-  const lastAssistantJob = lastAssistantMessage.annotations.find(
+  let lastAssistantJob = lastAssistantMessage.annotations.find(
     (a: any) => a.persona === "taskManager"
   )?.objectType;
   const lastUserMessage = findLastElementWith(
@@ -86,6 +86,9 @@ export const convertfoxRouter: ServerStreamingFunction<
     schema: z.object({
       reasoning: z.string(),
       intent: z.enum(["confirmation", "modification", "question"]), // answer, query
+      modificationType: z
+        .enum(["taskInfo", "taskIntegrations", "taskStructure"])
+        .optional(),
       //complexity: z.enum(["simple", "complex"]),
       //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
     }),
@@ -94,7 +97,8 @@ export const convertfoxRouter: ServerStreamingFunction<
     
     Determine:
     1. User intent (confirmation, modification, query)
-    2. Brief reasoning for classification`,
+    2. Brief reasoning for classification
+    3. If modification, specify the type of modification (taskInfo - change some task level details, taskIntegrations - change the integrations, taskStructure - change the structure/pattern of the task)`,
   });
   TokenUsageAnalyticsTracker.trackUsage({
     ...props.requestBody,
@@ -117,9 +121,25 @@ export const convertfoxRouter: ServerStreamingFunction<
     }
   }
 
+  if (!lastAssistantJob && classification.modificationType) {
+    lastAssistantJob = classification.modificationType;
+    dataStream.writeMessageAnnotation({
+      type: "loading",
+      text: "Modifying the task " + lastAssistantJob,
+      data: classification,
+    });
+  } else if (!lastAssistantJob) {
+    dataStream.writeMessageAnnotation({
+      type: "error",
+      text: "Unknown intent observered. Please try again.",
+      data: classification,
+    });
+  }
+
   dataStream.writeMessageAnnotation({
     type: "loading",
     text: classification.intent + " observered. Processing...",
+    data: classification,
   });
 
   switch (classification.intent) {

@@ -2,6 +2,11 @@ import { UIMessage } from "ai";
 import { Button } from "@/components/ui/button";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { PrintCode } from "./PrintCode";
+import {
+  constructMessageFromButton,
+  constructShiftMinionMessage,
+  constructAppendBody
+} from "@/components/screens/Chat/message/messageHelpers";
 
 type MessagePartType = UIMessage["parts"][number];
 
@@ -74,31 +79,9 @@ export const ToolInvocationPart = ({
                   if (button.action === "shiftMinion") {
                     setMinionType(button.value);
                     setInput("");
-                    append({
-                      id: crypto.randomUUID(),
-                      content: button.text,
-                      role: "user",
-                      parts: [
-                        {
-                          type: "text",
-                          text:
-                            button.actionText ??
-                            button.text ??
-                            "Changing gears..",
-                        },
-                      ],
-                      annotations: [
-                        {
-                          type: "minion",
-                          value: button.value,
-                        },
-                      ],
-                    },
-                      {
-                        body: {
-                          minionType: button.value,
-                        },
-                      }
+                    append(
+                      constructShiftMinionMessage(button),
+                      constructAppendBody(button.value)
                     );
                     removeThisPart();
                   }
@@ -107,17 +90,10 @@ export const ToolInvocationPart = ({
                   }
                   if (button.action === "appendMessage") {
                     setInput("");
-                    append({
-                      id: crypto.randomUUID(),
-                      content: button.value,
-                      role: "user",
-                      parts: [
-                        {
-                          type: "text",
-                          text: button.value,
-                        },
-                      ],
-                    });
+                    append(
+                      constructMessageFromButton(button),
+                      constructAppendBody(button.minionType)
+                    );
                     removeThisPart();
                   }
                 }}

@@ -10,8 +10,8 @@ export const PlaygroundPage = () => {
         return null;
     }
     return (
-        <ClientSecretProvider botProjectId={""} userId={user.id}>
-            <ChatWindow userId={user.id} />
+        <ClientSecretProvider botProjectId={""} >
+            <ChatWindow userId={user.id} isLoading={false} />
         </ClientSecretProvider>
     )
 }

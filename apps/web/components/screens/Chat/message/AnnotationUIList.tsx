@@ -68,6 +68,7 @@ import {
   constructShiftMinionMessage,
   constructAppendBody
 } from "@/components/screens/Chat/message/messageHelpers";
+import { DEPLOY_STAGE } from "@prisma/client";
 
 dayjs.extend(duration);
 
@@ -1249,35 +1250,99 @@ const DeploymentsInfo = ({
       }, [{
         type: "attachment",
         key: "stage",
-        value: "production",
+        value: DEPLOY_STAGE.PROD,
       },
       ]),
-      constructAppendBody("deployToProduction", {
-        stage: "production",
+      constructAppendBody("deployfox", {
+        stage: DEPLOY_STAGE.PROD,
       })
     );
   };
 
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedTime(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   if (!finalData) {
     return null;
   }
 
   if (!finalData?.shouldBreak) {
+
+    const formatTime = (seconds: number) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins > 0 ? `${mins}m ` : ''}${secs}s`;
+    };
+
     return (
       <motion.div
-        className="flex items-center  gap-3  p-4 bg-white rounded-xl border border-gray-100 shadow-sm"
+        className="flex flex-col gap-4 p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.3 }}
       >
-        <Cube size={14} color="#2b7fff" />
-        <p className="text-sm text-gray-600 loading-text">
-          Deploying to{" "}
-          <span className="font-medium text-transparent">{stage}</span>{" "}
-          environment...
-        </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Cube size={16} color="#2b7fff" />
+            <h3 className="text-base font-medium text-gray-800">
+              Deploying to <span className="font-semibold text-blue-600">{stage}</span> environment
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-gray-500" />
+            <span className="text-sm font-medium text-gray-600">{formatTime(elapsedTime)}</span>
+          </div>
+        </div>
+
+        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+          <motion.div
+            className="h-full bg-blue-500 rounded-full"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Package size={14} color="#2b7fff" />
+              <span className="text-gray-500">Environment</span>
+            </div>
+            <div className="font-medium text-gray-800">{stage}</div>
+          </div>
+
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <GitFork size={14} color="#2b7fff" />
+              <span className="text-gray-500">Branch</span>
+            </div>
+            <div className="font-medium text-gray-800 truncate">
+              {finalData?.clientDeployment?.branch || "main"}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Rocket size={14} color="#2b7fff" />
+              <span className="text-gray-500">Status</span>
+            </div>
+            <div className="font-medium text-yellow-600">In Progress</div>
+          </div>
+        </div>
+
+        <div className="text-xs text-gray-500 flex items-center gap-2">
+          <Loader2 size={12} className="animate-spin" />
+          <span>Preparing deployment resources and configuring environment...</span>
+        </div>
       </motion.div>
     );
   }

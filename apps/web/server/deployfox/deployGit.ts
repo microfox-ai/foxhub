@@ -18,7 +18,8 @@ import dayjs from "dayjs";
 export const deployViaGit = async (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
-  taskInstanceMeta: TaskInstanceMetaType
+  taskInstanceMeta: TaskInstanceMetaType,
+  stage: DEPLOY_STAGE
 ) => {
   const { dataStream } = props;
 
@@ -31,14 +32,14 @@ export const deployViaGit = async (
   }
 
   dataStream.writeMessageAnnotation({
-    type: "thinking",
-    value: "Deploying a test version of automation",
+    type: "loading",
+    content: `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation`,
   });
 
   const { sha } = await triggerDeployment(
     clientRequest,
     taskInstanceMeta,
-    DEPLOY_STAGE.STAGING
+    stage ?? DEPLOY_STAGE.STAGING
   );
 
   return { sha };
@@ -107,10 +108,10 @@ export const triggerDeployment = async (
       message: `${stage}: deployfox: Update CHANGELOG.md to trigger deployment`,
       content: Buffer.from(
         `# Deployment Log\n\n` +
-        `## Latest Deployment\n` +
-        `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
-        `- Details:\n` +
-        `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
+          `## Latest Deployment\n` +
+          `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
+          `- Details:\n` +
+          `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
       ).toString("base64"),
       branch: clientRequest.prBranch,
       ...(sha ? { sha } : {}),

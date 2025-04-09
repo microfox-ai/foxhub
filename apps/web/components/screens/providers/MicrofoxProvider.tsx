@@ -285,6 +285,9 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
     const messageMinion = message?.annotations?.find(
       (annotation: any) => annotation.type === "minion"
     );
+    const messageAttachments = message?.annotations?.filter(
+      (annotation: any) => annotation.type === "attachment"
+    );
     // bypass the createMessage by using the original append method (as we did not delete the last message from the db)
     // if doing edit, we should also delete the last message from the db
     if (message) {
@@ -292,6 +295,7 @@ export const MicrofoxProvider: React.FC<MicrofoxProviderProps> = ({
         await appendMessage(message as Message, {
           body: {
             minionType: (message as any)?.minionType ?? (messageMinion as any)?.value,
+            ...(messageAttachments?.reduce((acc: any, attachment: any) => ({ ...acc, [attachment.key]: attachment.value }), {}) ?? {}),
           },
         }, true);
       } catch (error) {

@@ -13,22 +13,23 @@ import { IN_DEV } from "@/utils/constants/appInfo";
 import { AnnotationUIList } from "./AnnotationUIList";
 import { ToolInvocationPart } from "./ToolInvocationPart";
 import { AnimatePresence, motion } from "framer-motion";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 // Define types for annotations
-type ThinkingAnnotation = {
+export type ThinkingAnnotation = {
   type: "thinking";
   contents: string;
   content: string;
 };
 
-type LoadingAnnotation = {
+export type LoadingAnnotation = {
   type: "loading";
   text: string;
   content: string;
   contents: string;
 };
 
-type StatusAnnotation = ThinkingAnnotation | LoadingAnnotation;
+export type StatusAnnotation = ThinkingAnnotation | LoadingAnnotation;
 
 // TODO: error boundary for ui annotations
 //import { ErrorBoundary } from "react-error-boundary";
@@ -102,16 +103,6 @@ export const MessageWrapper = ({
     await handleRefresh(index);
   };
 
-  // Get the latest thinking or loading annotation
-  const getLatestStatusAnnotation = (): StatusAnnotation | null => {
-    if (!message.annotations) return null;
-    const statusAnnotations = message.annotations.filter(
-      (a: any): a is StatusAnnotation =>
-        a.type === "thinking" || a.type === "loading"
-    );
-    return statusAnnotations[statusAnnotations.length - 1] || null;
-  };
-
   return (
     <div key={message.id}>
       {renderDateSeperator(new Date(message.createdAt!).toISOString()!)}
@@ -155,36 +146,7 @@ export const MessageWrapper = ({
               !message.content &&
               (!toolInvocations || toolInvocations.length === 0) &&
               (!uiAnnotations || uiAnnotations.length === 0) && (
-                <div className="flex gap-2 items-center">
-                  <div className="bg-black/80 animate-bounce h-4 w-4 rounded-full p-0 text-xs text-white"></div>
-                  {(() => {
-                    const latestAnnotation = getLatestStatusAnnotation();
-                    if (!latestAnnotation) return null;
-
-                    const content =
-                      latestAnnotation.type === "thinking"
-                        ? (latestAnnotation.contents ??
-                          latestAnnotation.content)
-                        : (latestAnnotation.text ??
-                          latestAnnotation.content ??
-                          latestAnnotation.contents);
-
-                    return (
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={content}
-                          className="loading-text"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          {content}
-                        </motion.div>
-                      </AnimatePresence>
-                    );
-                  })()}
-                </div>
+                <LoadingIndicator message={message} />
               )}
             {IN_DEV && (
               <div className="text-xs bg-red-800">
@@ -205,9 +167,8 @@ export const MessageWrapper = ({
               <div className="w-[400px] p-0 bg-transparent">
                 <div className="flex gap-1 mb-3 bg-transparent">
                   <ChevronLeft
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
-                      activeTab > 0 ? "opacity-100" : "opacity-50"
-                    }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab > 0 ? "opacity-100" : "opacity-50"
+                      }`}
                     onClick={() => setActiveTab(activeTab - 1)}
                   />
                   <div
@@ -216,11 +177,10 @@ export const MessageWrapper = ({
                     Step {activeTab + 1}
                   </div>
                   <ChevronRight
-                    className={`h-4 w-4 text-gray-500 cursor-pointer ${
-                      activeTab < displayParts?.length - 1
-                        ? "opacity-100"
-                        : "opacity-50"
-                    }`}
+                    className={`h-4 w-4 text-gray-500 cursor-pointer ${activeTab < displayParts?.length - 1
+                      ? "opacity-100"
+                      : "opacity-50"
+                      }`}
                     onClick={() => setActiveTab(activeTab + 1)}
                   />
                 </div>

@@ -1216,6 +1216,7 @@ const DeploymentsInfo = ({
 
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const { setDeploymentInfo } = useTaskInstanceMetaContext();
+  const { append } = useMicrofox();
   const {
     data: DeploymentData,
     isLoading,
@@ -1238,6 +1239,25 @@ const DeploymentsInfo = ({
       setDeploymentInfo(DeploymentData.clientDeployment);
     }
   }, [DeploymentData]);
+
+  const deployToProduction = () => {
+    console.log("deployToProduction");
+    append(
+      constructMessageFromButton({
+        text: "Deploy to Production !",
+        minionType: "deployfox",
+      }, [{
+        type: "attachment",
+        key: "stage",
+        value: "production",
+      },
+      ]),
+      constructAppendBody("deployToProduction", {
+        stage: "production",
+      })
+    );
+  };
+
 
   if (!finalData) {
     return null;
@@ -1359,13 +1379,15 @@ const DeploymentsInfo = ({
               <span className="font-medium text-gray-900">Production</span>
             </div>
             <div className="flex gap-2 mt-4">
-              <Button
+              {stage === "STAGING" && <Button
                 variant="outline"
                 className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+                onClick={deployToProduction}
               >
                 <Rocket className="w-4 h-4" />
                 Deploy to Production
               </Button>
+              }
               <Button
                 onClick={() => {
                   setDeploymentInfo(finalData.clientDeployment);

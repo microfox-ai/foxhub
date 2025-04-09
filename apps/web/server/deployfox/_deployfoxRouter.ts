@@ -53,7 +53,7 @@ export const deployFoxRouter: ServerStreamingFunction<
 
   dataStream.writeMessageAnnotation({
     type: "loading",
-    content: `Deploying Automation to ${stage}`,
+    content: `Deploying Automation to ${stage ?? DEPLOY_STAGE.STAGING}`,
   });
 
   await updateTaskInstanceMeta({

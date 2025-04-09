@@ -162,7 +162,7 @@ export const genFinalCode = async (
       serverlessYmlFInal?.filePath,
       "utf8"
     );
-    console.log("serverlessYmlContent", serverlessYmlContent);
+    //console.log("serverlessYmlContent", serverlessYmlContent);
 
     // Parse serverless.yml to get function paths
     const serverlessConfig = YAML.parse(serverlessYmlContent);

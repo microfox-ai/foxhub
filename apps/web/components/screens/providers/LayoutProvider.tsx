@@ -25,8 +25,12 @@ interface LayoutContextType {
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
 export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
-  const [isRightCollapsed, setIsRightCollapsed] = useState(true);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(
+    localStorage.getItem("isLeftCollapsed") === "true"
+  );
+  const [isRightCollapsed, setIsRightCollapsed] = useState(
+    localStorage.getItem("isRightCollapsed") === "true"
+  );
   const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
   const [isRightTransitioning, setIsRightTransitioning] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
@@ -52,6 +56,7 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     setIsLeftCollapsed(collapsed);
+    localStorage.setItem("isLeftCollapsed", collapsed.toString());
 
     transitionTimeoutRef.current = setTimeout(() => {
       setIsLeftTransitioning(false);
@@ -72,6 +77,7 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     setIsRightCollapsed(collapsed);
+    localStorage.setItem("isRightCollapsed", collapsed.toString());
 
     transitionTimeoutRef.current = setTimeout(() => {
       setIsRightTransitioning(false);

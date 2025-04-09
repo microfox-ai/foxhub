@@ -71,6 +71,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // if (clientFunction.stage === DEPLOY_STAGE.PROD) {
+    //   await sesSdk.sendEmail({
+    //     sender: "notifications@microfox.app",
+    //     recipient: clientFunction.userId,
+    //     subject: `Function "${clientFunction.name}" has been updated.`,
+    //     bodyHtml: generateMicrofoxEmailTemplate({
+    //       title: `Congrats! Your automation has been published.`,
+    //       content: `"${clientFunction.name}" has been published. You can now expect your automation to be running clockwise, untill you decide to stop it. You can stop it by visiting the dashboard.`,
+    //       // ctaText: "Test it out",
+    //       // ctaLink: `https://microfox.app/test/${updatedFunction.id}`,
+    //     }),
+    //   });
+    // }
+
     const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
       where: {
         id: originClientRequestId,
@@ -161,84 +175,6 @@ export async function GET(req: NextRequest) {
     console.error("Error fetching ClientDeployment:", error);
     return NextResponse.json(
       { error: "Error fetching ClientDeployment" },
-      { status: 500 }
-    );
-  }
-}
-
-// Update ClientDeployment
-export async function PUT(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { id, name, type, stage, baseUrl, endpoints, schedules, metadata } =
-      body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Missing function ID" },
-        { status: 400 }
-      );
-    }
-
-    const clientFunction = await prisma.clientDeployment.findUnique({
-      where: { id },
-    });
-
-    if (!clientFunction) {
-      return NextResponse.json(
-        { error: "Function not found" },
-        { status: 404 }
-      );
-    }
-
-    // Only update fields that are provided
-    const updateData: any = {};
-
-    if (name !== undefined) updateData.name = name;
-    if (type !== undefined) updateData.type = type as FUNCTIONTYPE;
-    if (stage !== undefined) updateData.stage = stage as DEPLOY_STAGE;
-    if (baseUrl !== undefined) updateData.baseUrl = baseUrl;
-    if (metadata !== undefined) updateData.metadata = metadata;
-
-    const updatedFunction = await prisma.clientDeployment.update({
-      where: { id },
-      data: updateData,
-    });
-
-    if (updatedFunction.stage === DEPLOY_STAGE.PROD) {
-      await sesSdk.sendEmail({
-        sender: "notifications@microfox.app",
-        recipient: updatedFunction.userId,
-        subject: `Function "${updatedFunction.name}" has been updated.`,
-        bodyHtml: generateMicrofoxEmailTemplate({
-          title: `Congrats! Your automation has been published.`,
-          content: `"${updatedFunction.name}" has been published. You can now expect your automation to be running clockwise, untill you decide to stop it. You can stop it by visiting the dashboard.`,
-          // ctaText: "Test it out",
-          // ctaLink: `https://microfox.app/test/${updatedFunction.id}`,
-        }),
-      });
-    }
-
-    // Notify in chat about the update
-    if (Object.keys(updateData).length > 0) {
-      // await prisma.chatUIMessage.create({
-      //   data: {
-      //     originClientRequestId: clientFunction.originClientRequestId,
-      //     userId: clientFunction.userId,
-      //     content: `Function "${updatedFunction.name}" has been updated.`,
-      //     context: `server`,
-      //     role: `assistant`,
-      //     minionType: `other`,
-      //     createdAt: new Date(),
-      //   },
-      // });
-    }
-
-    return NextResponse.json(updatedFunction, { status: 200 });
-  } catch (error) {
-    console.error("Error updating ClientDeployment:", error);
-    return NextResponse.json(
-      { error: "Error updating ClientDeployment" },
       { status: 500 }
     );
   }

@@ -1,6 +1,7 @@
 import { Octokit } from "octokit";
 import {
   GITHUB_TOKEN,
+  TEMPLATE_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { ClientRequest } from "@prisma/client";
@@ -28,7 +29,7 @@ export const recloneTemplateStuffToClientRequest = async (
     value: "Template stuff cloning..",
   });
   await cloneTemplate({
-    sourceRepo: "shard-template",
+    sourceRepo: TEMPLATE_REPO,
     targetRepo: clientRequest.repoName,
     sourcePath: "",
     targetPath: "",

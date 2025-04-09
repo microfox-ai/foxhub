@@ -18,6 +18,7 @@ import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import path from "path";
 import fs from "fs/promises";
 import { INTERNAL_TEMPLATE_UPSTASH_ROOT } from "@/server/buildfox/tool/writeToFile";
+import { getTemplateVersion } from "../github_functions/getTemplateVersion";
 
 export async function createNewBotProject({
   userId,
@@ -126,6 +127,7 @@ export async function createNewBotProject({
     throw new Error("Failed to create new pull request");
   }
   console.log("prResult", prResult);
+  const templateVersion = await getTemplateVersion();
 
   // Save botProject to DB
   const botProject = await prisma.botProject.create({
@@ -139,6 +141,7 @@ export async function createNewBotProject({
       prUrl: prResult.data.html_url,
       prNumber: prResult.data.number,
       description: projectDescription,
+      templateVersion,
       metadata: {
         repo: repoResult.data as any,
         pr: prResult.data as any,

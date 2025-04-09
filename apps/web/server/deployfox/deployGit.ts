@@ -10,11 +10,15 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { uploadToRepo } from "../buildfox/helper/uploadToGit";
 import {
   GITHUB_TOKEN,
+  TEMPLATE_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { TaskInstanceMetaType } from "../convertfox/types";
 import dayjs from "dayjs";
+import { getTemplateVersion } from "@/utils/services/github_functions/getTemplateVersion";
+import { cloneTemplate } from "./cloneTemplate";
+import { prisma } from "@/prisma/prisma";
 export const deployViaGit = async (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
@@ -65,6 +69,29 @@ export const triggerDeployment = async (
   });
 
   try {
+    const latestTemplateVersion = await getTemplateVersion();
+    console.log("Latest Template Version:", latestTemplateVersion);
+    console.log("Client Request Template Version:", clientRequest.templateVersion);
+    if (clientRequest.templateVersion !== latestTemplateVersion) {
+      console.log(
+        "Template version mismatch, cloning template",
+      );
+      await cloneTemplate({
+        sourceRepo: TEMPLATE_REPO,
+        targetRepo: clientRequest.repoName,
+        sourcePath: "",
+        targetPath: "",
+        sourceBranch: "main",
+        targetBranch: clientRequest.prBranch,
+      });
+      await prisma.clientRequest.update({
+        where: { id: clientRequest.id },
+        data: {
+          templateVersion: latestTemplateVersion,
+        },
+      });
+      console.log("Client Request Template Version updated to", latestTemplateVersion);
+    }
     console.log(
       "Creating clientRequest.json update to trigger deployment",
       clientRequest.repoName,

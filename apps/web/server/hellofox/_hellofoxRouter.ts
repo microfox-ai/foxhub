@@ -69,7 +69,7 @@ export const hellofoxRouter: ServerStreamingFunction<
       : requestBody.messages;
   dataStream.writeMessageAnnotation({
     type: "loading",
-    text: "Thinking...",
+    content: "Analyzing your message...",
   });
   const { object: classification } = await generateObject({
     model: models.googleGeminiFlash,
@@ -99,6 +99,15 @@ export const hellofoxRouter: ServerStreamingFunction<
     type: "metadata",
     object: classification,
     objectType: "classification",
+  });
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content:
+      classification.type === "task-query"
+        ? "Thinking about your task..."
+        : classification.type === "task-confirmation"
+          ? "Confirming your task..."
+          : "Hmm, let me think...",
   });
 
   let result = null;

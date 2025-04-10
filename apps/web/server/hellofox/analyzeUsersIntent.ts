@@ -20,7 +20,7 @@ export const analyseUserIntent = (props: StreamingFucntionProps<any, any>) => {
         type: "thinking",
         toolName: "analyseUserIntent",
         toolCallId: options.toolCallId,
-        content: `Analyse & understand the user's intent & confirm the user's goal`,
+        content: `Deep-Thinking about the user's intent...`,
       });
       const response = streamText({
         model: models.googleGeminiPro,

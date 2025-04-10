@@ -52,6 +52,11 @@ export const convertfoxRouter: ServerStreamingFunction<
     (m: any) => m.role === "user"
   );
 
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: "Checking up on the task progress...",
+  });
+
   let taskInstanceMeta = await getTaskInstanceMeta(requestBody.clientRequestId);
   if (!taskInstanceMeta) {
     taskInstanceMeta = {
@@ -80,6 +85,10 @@ export const convertfoxRouter: ServerStreamingFunction<
     value: "convertfox",
   });
 
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: "Understanding users intent...",
+  });
   // classify the users query
   const { object: classification, usage } = await generateObject({
     model: models.googleGeminiFlash,
@@ -111,7 +120,7 @@ export const convertfoxRouter: ServerStreamingFunction<
     if (clientRequest && !clientRequest.prUrl) {
       dataStream.writeMessageAnnotation({
         type: "thinking",
-        content: "Creating the pull request if not yet created",
+        content: "Building a new codebase for your task...",
       });
       await createPullRequest({
         clientRequestId: requestBody.clientRequestId,
@@ -139,6 +148,7 @@ export const convertfoxRouter: ServerStreamingFunction<
         text: "Unknown intent observered. Please try again.",
         data: classification,
       });
+      throw new Error("Unknown intent observered. Please try again.");
     }
   }
 

@@ -44,7 +44,7 @@ export const createTaskStructure = async (
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    contents: "Thinking on how to structure the task    ",
+    content: "Thinking on how to structure your task",
   });
 
   const result = streamObject({
@@ -100,7 +100,7 @@ export const createTaskStructure = async (
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    contents: "Task Structure Generated   ",
+    content: "Task Structure Generated.",
   });
   //   result.mergeIntoDataStream(dataStream, {
   //     experimental_sendFinish: false,

@@ -29,15 +29,19 @@ export const genEnvCollector = async (
   let envs = envVariablesUsed;
   let templatedEnvs: any[] = [];
   try {
+    props.dataStream.writeMessageAnnotation({
+      type: "thinking",
+      content: "Securely Generating Internal Secrets..",
+    });
     templatedEnvs = await templateEnvsFromTaskIntegrations(templateType);
     console.log(
       "rootEnvs Used",
       templatedEnvs.map((env) => env.key)
     );
+
     envs = envs.filter(
       (env) => !templatedEnvs.some((envJson: any) => envJson.key === env)
     );
-
     const packageBasedEnvs: Record<
       string,
       { variables: any[]; constructorFunction: string }

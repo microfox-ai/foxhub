@@ -102,7 +102,7 @@ export const usageTrackerRouter: ServerStreamingFunction<
   return {
     responseBody: {
       ...props.responseBody,
-      blockNextSteps: isBlock,
+      blockNextSteps: false,
     },
     appendRequestBody: props.requestBody,
   };

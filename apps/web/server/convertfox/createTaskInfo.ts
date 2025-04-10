@@ -17,7 +17,7 @@ export const createTaskInfo = async (
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    contents: "Creating your automation task",
+    content: "Creating your automation task",
   });
   //console.log("taskInstanceMeta", taskInstanceMeta);
   const result = await generateObject({
@@ -48,6 +48,10 @@ export const createTaskInfo = async (
       : `
         task summary: ${taskInstanceMeta.initialSummary}
         `,
+  });
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: "Task info generated !",
   });
   //console.log("result", result);
   await updateTaskInstanceMeta({

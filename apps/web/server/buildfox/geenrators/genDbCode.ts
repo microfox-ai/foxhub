@@ -29,6 +29,11 @@ export const genDbCode = async (
   if (taskInstanceMeta.taskStructure?.templateType === "upstash") {
     // write helpers/redis.txt for upstash
     // modify the serverless.yml file to support all the functions & cron jobs
+    props.dataStream.writeMessageAnnotation({
+      type: "thinking",
+      content: "Generating redis db setups..",
+    });
+
     const redisHelper = await fs.readFile(
       path.join(
         process.cwd(),
@@ -80,6 +85,7 @@ export const genDbCode = async (
       },
     });
     console.log("result", result.usage);
+
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
       model: models.claude35Sonnet.modelId,

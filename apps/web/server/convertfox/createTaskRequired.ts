@@ -14,7 +14,7 @@ export const createTaskRequiredInfo = async (
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    contents: "Searching for related existing packages",
+    content: "Searching for related existing packages",
   });
 
   // SEARCH FOR PACKAGES & CLIENT SECRETS
@@ -60,6 +60,8 @@ Task Platforms: ${taskIntegrations.platforms}
     type: "ui",
     objectType: "taskRequiredInfo",
     object: _taskRequiredInfo,
+    persona: "taskManager",
+    text: "Here are the details we need from you to build the task",
   });
 
   return _taskRequiredInfo;

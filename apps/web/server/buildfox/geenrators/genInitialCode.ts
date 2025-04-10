@@ -17,7 +17,7 @@ export const genInitialCode = async (
 ) => {
   props.dataStream.writeMessageAnnotation({
     type: "thinking",
-    content: "Generating initial code",
+    content: "Generating initial code..",
   });
 
   // TODO: Instead of hardcoding, fetch from the template repo.

@@ -36,7 +36,7 @@ export const getMicrofoxCapabilitiesTool = (
         type: "thinking",
         toolName: "getMicrofoxCapabilities",
         toolCallId: options.toolCallId,
-        content: `Thinking about the capabilities of Microfox to build the user's task`,
+        content: `Analysing my capabilities to cross-verify the user's goal...`,
       });
       return getMicrofoxCapabilities();
     },

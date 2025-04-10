@@ -31,6 +31,7 @@ import {
   Rocket,
   ArrowRight,
   CatIcon,
+  Settings,
 } from "lucide-react";
 import {
   Tooltip,
@@ -711,143 +712,172 @@ const TaskStructure = ({
         </p>
       </div>
 
-      <Tabs defaultValue="lambdaFunctions" className="w-full">
-        <TabsList className="grid grid-cols-3 gap-2 justify-start items-center bg-gray-50/50 p-1 rounded-lg">
-          <TabsTrigger
-            value="lambdaFunctions"
-            className="data-[state=active]:bg-white !px-2"
+      {object && (
+        <Tabs
+          defaultValue={
+            (object.lambdaFunctions && object.lambdaFunctions.length > 0) ? "lambdaFunctions" :
+              (object.cronJobs && object.cronJobs.length > 0) ? "cronJobs" :
+                (object.dbSchemas && object.dbSchemas.length > 0) ? "schemas" : undefined
+          }
+          className="w-full"
+        >
+          <TabsList
+            className="grid gap-2 justify-start items-center bg-gray-50/50 p-1 rounded-lg"
+            style={{
+              gridTemplateColumns: `repeat(${(object.lambdaFunctions && object.lambdaFunctions.length > 0 ? 1 : 0) +
+                (object.cronJobs && object.cronJobs.length > 0 ? 1 : 0) +
+                (object.dbSchemas && object.dbSchemas.length > 0 ? 1 : 0)
+                }, minmax(0, 1fr))`
+            }}
           >
-            <Package className="w-4 h-4" />
-            Webhooks
-          </TabsTrigger>
-          <TabsTrigger
-            value="cronJobs"
-            className="data-[state=active]:bg-white !px-2"
-          >
-            <GitFork className="w-4 h-4" />
-            Scheduled-Jobs
-          </TabsTrigger>
-          <TabsTrigger
-            value="schemas"
-            className="data-[state=active]:bg-white !px-2"
-          >
-            <FileText className="w-4 h-4" />
-            Datatstore
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="schemas" className="mt-4">
-          <div className="grid gap-4">
-            {object?.dbSchemas?.map((schema) => (
-              <div
-                key={schema.modelName}
-                className="bg-gray-50 rounded-lg p-4 space-y-2"
+            {object.lambdaFunctions && object.lambdaFunctions.length > 0 && (
+              <TabsTrigger
+                value="lambdaFunctions"
+                className="data-[state=active]:bg-white !px-2"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm text-gray-900">
-                    {schema.modelName}
-                  </span>
-                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                    Schema
-                  </span>
-                </div>
-                <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto">
-                  {JSON.stringify(schema.jsonSchema, null, 2)}
-                </pre>
-              </div>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="lambdaFunctions" className="mt-4">
-          <div className="grid gap-4">
-            {object?.lambdaFunctions?.map((fn) => (
-              <div
-                key={fn.name}
-                className="bg-gray-50 rounded-lg p-4 space-y-3"
+                <Package className="w-4 h-4" />
+                Webhooks
+              </TabsTrigger>
+            )}
+            {object.cronJobs && object.cronJobs.length > 0 && (
+              <TabsTrigger
+                value="cronJobs"
+                className="data-[state=active]:bg-white !px-2"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{fn.name}</span>
-                    <span
-                      className={cn(
-                        "text-xs px-2 py-1 rounded-full font-bold font-mono",
-                        fn.method === "GET" && "bg-blue-100 text-blue-700",
-                        fn.method === "POST" && "bg-green-100 text-green-700",
-                        fn.method === "PUT" && "bg-amber-100 text-amber-700",
-                        fn.method === "DELETE" && "bg-red-100 text-red-700"
-                      )}
-                    >
-                      {fn.method}
-                    </span>
-                  </div>
-                  <pre className="text-xs flex items-center text-gray-600 bg-gray-100 px-1 rounded-md border w-fit">
-                    {fn.path}
-                  </pre>
-                </div>
-                <Separator className="my-2" />
-                <div className="space-y-2">
-                  <div className="flex gap-2 items-start">
-                    <Target className="w-4 h-4 mt-1 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {fn.description}
-                    </span>
-                  </div>
-                  <div className="flex gap-2 items-start">
-                    <CheckCircle className="w-4 h-4 mt-1 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {fn.endResult}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="cronJobs" className="mt-4">
-          <div className="grid gap-4">
-            {object?.cronJobs?.map((job) => (
-              <div
-                key={job.name}
-                className="bg-gray-50 rounded-lg p-4 space-y-3"
+                <GitFork className="w-4 h-4" />
+                Scheduled-Jobs
+              </TabsTrigger>
+            )}
+            {object.dbSchemas && object.dbSchemas.length > 0 && (
+              <TabsTrigger
+                value="schemas"
+                className="data-[state=active]:bg-white !px-2"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">
-                      {job.name}
-                    </span>
-                    <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                      Scheduled
-                    </span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-2 opacity-50" />
-                    {job.cronExpression}
-                  </div>
-                </div>
-                <Separator className="my-2" />
-                <div className="space-y-2">
-                  <div className="flex gap-2 items-start">
-                    <div className="">
-                      <Target className="w-4 h-4 mt-1 text-gray-400" />
+                <FileText className="w-4 h-4" />
+                Datatstore
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          {object.dbSchemas && object.dbSchemas.length > 0 && (
+            <TabsContent value="schemas" className="mt-4">
+              <div className="grid gap-4">
+                {object.dbSchemas.map((schema) => (
+                  <div
+                    key={schema.modelName}
+                    className="bg-gray-50 rounded-lg p-4 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm text-gray-900">
+                        {schema.modelName}
+                      </span>
+                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                        Schema
+                      </span>
                     </div>
-                    <span className="text-sm text-gray-600">
-                      {job.description}
-                    </span>
+                    <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto">
+                      {JSON.stringify(schema.jsonSchema, null, 2)}
+                    </pre>
                   </div>
-                  <div className="flex gap-2 items-start">
-                    <CheckCircle className="w-4 h-4 mt-1 text-gray-400" />
-                    <span className="text-sm text-gray-600">
-                      {job.endResult}
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+          )}
+
+          {object.lambdaFunctions && object.lambdaFunctions.length > 0 && (
+            <TabsContent value="lambdaFunctions" className="mt-4">
+              <div className="grid gap-4">
+                {object.lambdaFunctions.map((fn) => (
+                  <div
+                    key={fn.name}
+                    className="bg-gray-50 rounded-lg p-4 space-y-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-gray-900">{fn.name}</span>
+                        <span
+                          className={cn(
+                            "text-xs px-2 py-1 rounded-full font-bold font-mono",
+                            fn.method === "GET" && "bg-blue-100 text-blue-700",
+                            fn.method === "POST" && "bg-green-100 text-green-700",
+                            fn.method === "PUT" && "bg-amber-100 text-amber-700",
+                            fn.method === "DELETE" && "bg-red-100 text-red-700"
+                          )}
+                        >
+                          {fn.method}
+                        </span>
+                      </div>
+                      <pre className="text-xs flex items-center text-gray-600 bg-gray-100 px-1 rounded-md border w-fit">
+                        {fn.path}
+                      </pre>
+                    </div>
+                    <Separator className="my-2" />
+                    <div className="space-y-2">
+                      <div className="flex gap-2 items-start">
+                        <Target className="w-4 h-4 mt-1 text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {fn.description}
+                        </span>
+                      </div>
+                      <div className="flex gap-2 items-start">
+                        <CheckCircle className="w-4 h-4 mt-1 text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {fn.endResult}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          )}
+
+          {object.cronJobs && object.cronJobs.length > 0 && (
+            <TabsContent value="cronJobs" className="mt-4">
+              <div className="grid gap-4">
+                {object.cronJobs.map((job) => (
+                  <div
+                    key={job.name}
+                    className="bg-gray-50 rounded-lg p-4 space-y-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-gray-900">
+                          {job.name}
+                        </span>
+                        <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                          Scheduled
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="w-4 h-4 mr-2 opacity-50" />
+                        {job.cronExpression}
+                      </div>
+                    </div>
+                    <Separator className="my-2" />
+                    <div className="space-y-2">
+                      <div className="flex gap-2 items-start">
+                        <div className="">
+                          <Target className="w-4 h-4 mt-1 text-gray-400" />
+                        </div>
+                        <span className="text-sm text-gray-600">
+                          {job.description}
+                        </span>
+                      </div>
+                      <div className="flex gap-2 items-start">
+                        <CheckCircle className="w-4 h-4 mt-1 text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {job.endResult}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          )}
+        </Tabs>
+      )}
       <ActionButtons buttons={uiAnnotation.buttons} />
     </motion.div>
   );
@@ -1261,13 +1291,32 @@ const DeploymentsInfo = ({
   };
 
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [statusMessageIndex, setStatusMessageIndex] = useState(0);
+
+  // Rotating status messages to keep the user engaged
+  const statusMessages = [
+    "Preparing deployment resources and configuring environment...",
+    "Building application packages and dependencies...",
+    "Optimizing assets and code bundles...",
+    "Setting up infrastructure and services...",
+    "Configuring environment variables and secrets...",
+    "Almost there! Finalizing deployment process..."
+  ];
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const timeInterval = setInterval(() => {
       setElapsedTime(prev => prev + 1);
     }, 1000);
 
-    return () => clearInterval(interval);
+    // Rotate status messages every 15 seconds
+    const messageInterval = setInterval(() => {
+      setStatusMessageIndex(prev => (prev + 1) % statusMessages.length);
+    }, 15000);
+
+    return () => {
+      clearInterval(timeInterval);
+      clearInterval(messageInterval);
+    };
   }, []);
 
   if (!finalData) {
@@ -1275,12 +1324,14 @@ const DeploymentsInfo = ({
   }
 
   if (!finalData?.shouldBreak) {
-
     const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
       const secs = seconds % 60;
       return `${mins > 0 ? `${mins}m ` : ''}${secs}s`;
     };
+
+    // Calculate progress percentage (assuming 2 minutes = 120 seconds)
+    const progressPercentage = Math.min(Math.floor((elapsedTime / 120) * 100), 95);
 
     return (
       <motion.div
@@ -1303,13 +1354,26 @@ const DeploymentsInfo = ({
           </div>
         </div>
 
-        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-          <motion.div
-            className="h-full bg-blue-500 rounded-full"
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
+        {/* Estimated time message */}
+        <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex items-center gap-2">
+          <Info size={14} />
+          <span>This deployment typically takes about 2 minutes to complete.</span>
+        </div>
+
+        {/* Progress bar with percentage */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>Progress</span>
+            <span>{progressPercentage}%</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+            <motion.div
+              className="h-full bg-blue-500 rounded-full"
+              initial={{ width: "0%" }}
+              animate={{ width: `${progressPercentage}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 text-sm">
@@ -1342,7 +1406,7 @@ const DeploymentsInfo = ({
 
         <div className="text-xs text-gray-500 flex items-center gap-2">
           <Loader2 size={12} className="animate-spin" />
-          <span>Preparing deployment resources and configuring environment...</span>
+          <span>{statusMessages[statusMessageIndex]}</span>
         </div>
       </motion.div>
     );

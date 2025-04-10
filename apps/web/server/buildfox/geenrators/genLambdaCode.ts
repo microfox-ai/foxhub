@@ -62,7 +62,7 @@ export const genLambdaCode = async (
       });
       props.dataStream.writeMessageAnnotation({
         type: "thinking",
-        content: "Finished - " + _function.name,
+        content: "Finished coding - " + _function.name,
       });
 
       console.log("result", result.usage);

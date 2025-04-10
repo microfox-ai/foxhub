@@ -62,7 +62,7 @@ export const genCronJobs = async (
 
       props.dataStream.writeMessageAnnotation({
         type: "thinking",
-        content: "Finished - " + cronJob.name,
+        content: "Finished coding - " + cronJob.name,
       });
 
       console.log("result", result.usage);

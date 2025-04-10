@@ -181,6 +181,11 @@ export const genFinalCode = async (
     );
     console.log("Parsed function paths:", functionPaths);
 
+    props.dataStream.writeMessageAnnotation({
+      type: "thinking",
+      content: "Writing the function & cron job mapper..",
+    });
+
     const result2 = await generateText({
       model: models.claude35Sonnet,
       system: codingSystemPrompt("backend"),

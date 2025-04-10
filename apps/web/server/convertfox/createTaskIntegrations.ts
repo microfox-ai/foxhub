@@ -27,7 +27,7 @@ export const createTaskIntegrations = async (
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    contents: "I am searching for platforms we need to integrate with",
+    content: "Searching for platforms we need to integrate with",
   });
 
   // first, get a text of all the platforms we need to integrate with for this task
@@ -85,7 +85,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    contents: `searching for packages...`,
+    content: `searching for related packages...`,
   });
   // serach internal packages for each platform & attach them to the platform
   const internalPackages = await getInternalPackages();
@@ -106,8 +106,9 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
         Use Action to run one of the actions available to you - then return PAUSE.
         Observation will be the result of running those actions.
         At the end of the loop you output an Answer
-         ---
+     ---
         Exclude the following platforms from the list:
+        - Website Webhooks (as we provide documentation fr this, & user can just copy paste the code)
         - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
         - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
     `,
@@ -160,6 +161,11 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     ...props.requestBody,
     model: models.googleGeminiPro.modelId,
     usage: packageResult.usage,
+  });
+
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: `Analysed ${internalPackages.length} internal packages & found ${finalPlatforms.length} platforms to integrate with`,
   });
 
   await updateTaskInstanceMeta({

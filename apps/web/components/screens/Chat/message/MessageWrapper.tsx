@@ -14,6 +14,7 @@ import { AnnotationUIList } from "./AnnotationUIList";
 import { ToolInvocationPart } from "./ToolInvocationPart";
 import { AnimatePresence, motion } from "framer-motion";
 import { LoadingIndicator } from "./LoadingIndicator";
+import { MessageMarkdown } from "./MessageThoughtWrapper";
 
 // Define types for annotations
 export type ThinkingAnnotation = {
@@ -46,20 +47,22 @@ type MessagePartType = UIMessage["parts"][number];
 const MessagePart = ({
   part,
   messageId,
+  isStreaming,
 }: {
   part: MessagePartType;
   messageId: string;
+  isStreaming: boolean;
 }) => {
   if (part.type === "text") {
-    return <Markdown>{part.text}</Markdown>;
+    return <MessageMarkdown isStreaming={isStreaming}>{part.text}</MessageMarkdown>;
   }
 
   if (part.type === "reasoning") {
-    return <Markdown>{part.reasoning}</Markdown>;
+    return <MessageMarkdown isStreaming={isStreaming}>{part.reasoning}</MessageMarkdown>;
   }
 
   if (part.type === "source") {
-    return <Markdown>{part.source.url}</Markdown>;
+    return <MessageMarkdown isStreaming={isStreaming}>{part.source.url}</MessageMarkdown>;
   }
 };
 
@@ -161,7 +164,11 @@ export const MessageWrapper = ({
             {message.content &&
               message.content.length > 0 &&
               displayParts.length === 1 && (
-                <Markdown>{message.content}</Markdown>
+                <MessagePart
+                  part={displayParts?.[0] as any}
+                  messageId={message.id}
+                  isStreaming={isStreaming}
+                />
               )}
             {displayParts.length > 1 && (
               <div className="w-[400px] p-0 bg-transparent">
@@ -188,6 +195,7 @@ export const MessageWrapper = ({
                   <MessagePart
                     part={displayParts?.[activeTab]}
                     messageId={message.id}
+                    isStreaming={isStreaming}
                   />
                 )}
                 {toolInvocations?.map((toolInvocation, idx) => (

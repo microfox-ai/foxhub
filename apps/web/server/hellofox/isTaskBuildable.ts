@@ -30,6 +30,10 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
       { task, capabilities, platforms },
       { messages, toolCallId }
     ) => {
+      props.dataStream.writeMessageAnnotation({
+        type: "loading",
+        content: "Let me verify if this is possible...",
+      });
       const result = await generateObject({
         model: models.googleGeminiPro,
         schema: z.object({
@@ -56,6 +60,10 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
       });
 
       if (result.object.isBuildable) {
+        props.dataStream.writeMessageAnnotation({
+          type: "loading",
+          content: "Just confirmed it is possible.",
+        });
         await updateTaskInstanceMeta({
           clientRequestId: props.requestBody.clientRequestId,
           taskInstanceMeta: {
@@ -81,9 +89,9 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
           type: "ui",
           objectType: "buttons",
           persona: "hellofox",
-          text: `Yes, we can build the task. Do you wish to proceed ?`,
+          text: `Yes, I can build this task. Do you wish to proceed ?`,
           buttonHeaderText:
-            "Yes, we can build the task. Do you wish to proceed ?",
+            "Yes, I can build this task. Do you wish to proceed ?",
           buttons: [
             {
               action: "removeThisPart",
@@ -102,6 +110,10 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
           ],
         });
       } else {
+        props.dataStream.writeMessageAnnotation({
+          type: "loading",
+          content: "Its not possible, but I will let my makers know.",
+        });
         const clientRequest = await getClientRequest(
           props.requestBody.clientRequestId
         );
@@ -115,7 +127,7 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
           type: "ui",
           objectType: "isTaskBuildable",
           persona: "hellofox",
-          text: `I am sorry, at this moment we cannot build the task. But worry not, Your requested features will be added within 24-48 hrs.`,
+          text: `I am sorry, at this moment I cannot build the task. But worry not, Your requested features will be added within 24-48 hrs by makers. I've passed on the details to them. \n\n Reason: ${result.object.reason}`,
           description: result.object.taskSummary,
           reason: result.object.reason,
         });

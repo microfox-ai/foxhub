@@ -254,6 +254,10 @@ export const writeToFile = (
           filePath,
           fileType
         );
+        props.dataStream.writeMessageAnnotation({
+          type: "thinking",
+          content: `Coding ${fileName}`,
+        });
         await writeToFileSystemAndUpdateSteps(
           {
             fileName,

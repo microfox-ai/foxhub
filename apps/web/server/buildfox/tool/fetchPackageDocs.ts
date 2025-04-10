@@ -42,6 +42,10 @@ export const fetchPackageDocs = (
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;
+          props.dataStream.writeMessageAnnotation({
+            type: "loading",
+            content: `Fetching documentation for ${pkg}`,
+          });
           try {
             let mainReadme = await fetchGithubText(
               "microfox-ai",

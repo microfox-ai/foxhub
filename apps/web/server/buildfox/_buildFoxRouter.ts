@@ -49,6 +49,11 @@ export const buildFoxRouter: ServerStreamingFunction<
     (m: any) => m.role === "user"
   );
 
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: "Thinking about the user's intent...",
+  });
+
   // classify the users query
   const { object: classification, usage } = await generateObject({
     model: models.googleGeminiFlash,
@@ -66,6 +71,12 @@ export const buildFoxRouter: ServerStreamingFunction<
     1. User intent (confirmation, modification, question)
     2. Brief reasoning for classification`,
   });
+
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: `${classification.intent} observed.`,
+  });
+
   TokenUsageAnalyticsTracker.trackUsage({
     ...requestBody,
     model: models.googleGeminiFlash.modelId,
@@ -99,7 +110,7 @@ export const buildFoxRouter: ServerStreamingFunction<
 
     const result = streamText({
       model: models.googleGeminiFlash,
-      system: `${getMicrofoxCharacter()}, Tell the user kindlythat you don't support modification at this step. User can scroll up to make changes before the building has began. and retry building your automation by cliecking refresh!`,
+      system: `${getMicrofoxCharacter()}, Tell the user kindly that you don't support modification at this step. User can scroll up to make changes before the building has began. and retry building your automation by cliecking refresh!`,
       messages: [lastUserMessage],
     });
     result.mergeIntoDataStream(dataStream, {
@@ -119,7 +130,7 @@ export const buildFoxRouter: ServerStreamingFunction<
   if (!clientRequest.prUrl) {
     dataStream.writeMessageAnnotation({
       type: "thinking",
-      content: "Creating the pull request if not yet created",
+      content: "Creating a new codebase for your task",
     });
     clientRequest = await createPullRequest({
       clientRequestId,
@@ -240,28 +251,30 @@ export const buildFoxRouter: ServerStreamingFunction<
     ],
   });
 
-  dataStream.writeMessageAnnotation({
-    type: "ui",
-    objectType: "buttons",
-    persona: "buildfox",
-    text: `All Done !`,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Make changes",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
-      },
-      {
-        action: "shiftMinion",
-        actionText: "Test Automation !",
-        text: "Test Automation !",
-        type: "confirm",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "deployfox",
-      },
-    ],
-  });
+  if (envVariables.length === 0) {
+    dataStream.writeMessageAnnotation({
+      type: "ui",
+      objectType: "buttons",
+      persona: "buildfox",
+      text: `All Done !`,
+      buttons: [
+        {
+          action: "highlightInput",
+          text: "Make changes",
+          type: "deny",
+          className: "bg-neutral-200 text-black hover:bg-neutral-300",
+        },
+        {
+          action: "shiftMinion",
+          actionText: "Test Automation !",
+          text: "Test Automation !",
+          type: "confirm",
+          className: "bg-green-500 text-white hover:bg-green-600",
+          value: "deployfox",
+        },
+      ],
+    });
+  }
   // TODO: require a router for further file modifications if needed (means changing the prompts & input Data should be the file)
   // TODO: shiftMinion to deployfox
   try {
@@ -292,7 +305,7 @@ export const buildFoxRouter: ServerStreamingFunction<
   }
 
   // delete the files in local directory
-  //await deleteAllGenFiles(clientRequest);
+  await deleteAllGenFiles(clientRequest);
 
   return {
     responseBody: { ...responseBody },

@@ -25,7 +25,7 @@ export const confirmSpecifics = (props: StreamingFucntionProps<any, any>) => {
         type: "thinking",
         toolName: "confirmSpecifics",
         toolCallId: options.toolCallId,
-        content: `Confirm specifics of the user's goals - make assumptions if needed.`,
+        content: `Confirming the users needs & specifics...`,
       });
       const response = streamText({
         model: models.googleGeminiPro,

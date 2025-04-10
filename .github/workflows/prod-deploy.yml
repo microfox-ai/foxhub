@@ -48,7 +48,7 @@ jobs:
         if: ${{steps.install.outputs.install-status == 1 }}
         run: |
           export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
-          npx prisma migrate deploy
+          npm run prisma:migrate-deploy
 
       - name: Build project
         id: build

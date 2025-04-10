@@ -143,10 +143,9 @@ export const MessageWrapper = ({
                 </div>
               )}
             {message.role === "assistant" &&
-              status !== "ready" &&
-              status !== "error" &&
+              status === "streaming" &&
               index === length - 1 &&
-              !message.content &&
+              (!message.content || message.content?.trim()?.length === 0) &&
               (!toolInvocations || toolInvocations.length === 0) &&
               (!uiAnnotations || uiAnnotations.length === 0) && (
                 <LoadingIndicator message={message} />

@@ -357,7 +357,7 @@ const TaskIntegrations = ({
 
       // Check API Keys
       if (platform.packageInfo?.constructors.some((c) => c.auth === "apiKey")) {
-        const existingSecret = secretsData?.clientSecrets?.find((secret) => {
+        const existingSecret = secretsData?.clientSecrets?.filter((secret) => secret != undefined).find((secret) => {
           const platformNameMatch = secret.type
             .toLowerCase()
             .includes(platform.name.toLowerCase());

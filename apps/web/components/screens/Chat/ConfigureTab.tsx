@@ -422,7 +422,7 @@ const ConfigureTab = () => {
   );
 
   const platformSecrets =
-    allSecrets?.clientSecrets?.filter((secret) => secret.type !== "custom") ||
+    allSecrets?.clientSecrets?.filter((secret) => secret?.type !== "custom") ||
     [];
 
   const { data: clientDeployment } = useSWR<ClientDeployment[]>(

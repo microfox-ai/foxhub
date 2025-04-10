@@ -1,14 +1,9 @@
 import OAuthConnectCallback from "@/components/screens/connect/OAuthConnectCallback";
-import { GoogleOAuthInstance } from "@repo/oauth-google/src";
 import { cookies } from "next/headers";
 import { notFound, redirect, RedirectType } from "next/navigation";
-
-// NOTE:edit this whenever new provider is added
-type Provider = "google";
-
-const mapProviderToAuthFunction: Record<string, any> = {
-  google: GoogleOAuthInstance,
-};
+import { mapProviderToAuthFunction } from "./providerInstances";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 const AuthPopupWindow = async ({
   params,
@@ -27,12 +22,39 @@ const AuthPopupWindow = async ({
   ) {
     notFound();
   }
-  const provider = segment[0];
-  if (!provider) {
+
+  const packageName = segment[0];
+  // const providerName = packageName?.split("-")[0];
+
+  if (!packageName) {
     return <div>Invalid Provider</div>;
   }
 
-  if (provider && !mapProviderToAuthFunction[provider]) {
+  // get DOCUMENT_ID from cookie
+  const cookieStore = await cookies();
+  const DOCUMENT_ID = cookieStore.get(`connect/${packageName}`)?.value;
+
+  if (!DOCUMENT_ID) {
+    return <div>Authorization Failed!</div>;
+  }
+
+  const clientSecretData = await PortalSdk.getData(
+    `${APP_BASE_URL}/api/client-secrets?id=${DOCUMENT_ID}`,
+    {}
+  );
+
+  const clientSecret = clientSecretData.clientSecrets[0];
+
+  const scopes = clientSecret.variables.find(
+    (variable: any) => variable.key === "SCOPES"
+  )?.value;
+
+  const providerInstance = mapProviderToAuthFunction(
+    packageName,
+    scopes ? scopes.split(",") : null
+  );
+
+  if (!providerInstance) {
     return <div>Invalid Provider</div>;
   }
 
@@ -43,22 +65,46 @@ const AuthPopupWindow = async ({
       throw new Error("Authorization code not found in URL");
     }
 
-    const tokenResponse =
-      await mapProviderToAuthFunction[provider].exchangeCodeForTokens(code);
-
-    // get DOCUMENT_ID from cookie
-    const cookieStore = await cookies();
-    const DOCUMENT_ID = cookieStore.get(`connect/${provider}`)?.value;
+    const tokenResponse = await providerInstance.exchangeCodeForTokens(code);
 
     if (!DOCUMENT_ID) {
       return <div>Authorization Failed!</div>;
     }
 
-    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={tokenResponse} />;
+    const keyValuePairs = clientSecret.variables.map((variable: any) => {
+      if ((variable.key as string).includes("_ACCESS_TOKEN")) {
+        return {
+          key: variable.key,
+          value: tokenResponse.accessToken,
+          isOptional: false,
+        };
+      }
+      if ((variable.key as string).includes("_REFRESH_TOKEN")) {
+        return {
+          key: variable.key,
+          value: tokenResponse.refreshToken,
+          isOptional: false,
+        };
+      }
+      if (variable.key === "SCOPES") {
+        return {
+          key: variable.key,
+          value: scopes,
+          isOptional: false,
+        };
+      }
+      return {
+        key: variable.key,
+        value: process.env[variable.key],
+        isOptional: false,
+      };
+    });
+
+    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} />;
   }
 
   if (segment.length === 1) {
-    const authUrl = await mapProviderToAuthFunction[provider].getAuthUrl();
+    const authUrl = providerInstance.getAuthUrl();
     if (!authUrl) {
       throw new Error("Invalid provider");
     }

@@ -8,7 +8,7 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Custom Bots",
+  title: "Microfox",
   description: "Enter the new age of AI-first, custom made, branded bots",
   keywords: ["AI", "Microfox", "chatbots", "automation", "branded bots"],
   authors: [{ name: "Microfox AI" }],
@@ -21,13 +21,13 @@ export const metadata: Metadata = {
     url: "https://microfox.app",
     title: "Microfox",
     description: "Enter the new age of AI-first, custom made, branded bots",
-    siteName: "FoxHub",
+    siteName: "Microfox",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "FoxHub - Custom AI Bots",
+        alt: "Microfox - Custom AI Bots",
       },
     ],
   },
@@ -43,8 +43,7 @@ export const metadata: Metadata = {
     initialScale: 1,
     maximumScale: 1,
   },
-  themeColor: "#000000",
-  manifest: "/manifest.json",
+  themeColor: "#FFFFFF",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-16x16.png",

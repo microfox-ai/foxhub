@@ -99,3 +99,31 @@ Learn more about the power of Turborepo:
 - [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
 - [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
 - [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+
+## Database Migrations with Prisma
+
+### Important Guidelines for Schema Changes
+
+When making changes to the Prisma schema, please follow these critical guidelines:
+
+1. **Migration Process**
+   - Run the migration command from the project root:
+     ```
+     npm run prisma:migrate-dev
+     ```
+   - This will generate migration files that should be committed to the repository
+
+2. **Migration Safety Considerations**
+   - ⚠️ **Avoid Breaking Changes**:
+     - Do not convert optional fields to required fields if existing data might have null values
+     - Carefully consider schema modifications that could cause data loss or migration failures
+
+3. **Production Deployment**
+   - When merged to the main branch, migrations will automatically update the production database
+   - Migrations are applied sequentially to maintain data integrity
+
+### Troubleshooting
+If you encounter migration issues:
+- Check for null values in fields being modified
+- Ensure backward compatibility of schema changes
+- Consult with the team before making significant schema modifications

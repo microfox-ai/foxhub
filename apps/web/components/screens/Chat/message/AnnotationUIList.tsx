@@ -68,7 +68,7 @@ import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProv
 import {
   constructMessageFromButton,
   constructShiftMinionMessage,
-  constructAppendBody
+  constructAppendBody,
 } from "@/components/screens/Chat/message/messageHelpers";
 import { DEPLOY_STAGE } from "@prisma/client";
 
@@ -86,11 +86,7 @@ interface ClientSecret {
   id: string;
   name: string;
   type: string;
-  variables: Array<{
-    key: string;
-    value: string;
-    isOptional: boolean;
-  }>;
+  variables: Array<any>;
 }
 
 interface RequiredKey {
@@ -103,9 +99,13 @@ interface Constructor {
   name: string;
   description: string;
   zodSecretSchema: string;
-  auth: "apiKey" | "oauth";
+  auth: "apiKey" | "oauth2";
   requiredKeys?: RequiredKey[];
-  internalKeys: string[];
+  internalKeys: Array<{
+    key: string;
+    displayName: string;
+    description: string;
+  }>;
 }
 
 interface Package {
@@ -117,7 +117,13 @@ interface Package {
   dependencies: string[];
   status: string;
   documentation: string;
+  oauth2Scopes: string[];
   authEndpoint: string;
+  internalKeys: Array<{
+    key: string;
+    displayName: string;
+    description: string;
+  }>;
 
   constructors: Constructor[];
 }
@@ -155,7 +161,7 @@ const ActionButtons = (props: any) => {
               disabled:opacity-50 disabled:cursor-not-allowed
             `,
               button.type === "confirm" &&
-              "bg-black text-white hover:bg-black/80 hover:text-white"
+                "bg-black text-white hover:bg-black/80 hover:text-white"
             )}
             disabled={
               !IN_DEV &&
@@ -389,20 +395,24 @@ const TaskIntegrations = ({
       }
 
       // Check OAuth
-      if (platform.packageInfo?.constructors.some((c) => c.auth === "oauth")) {
+      if (platform.packageInfo?.constructors.some((c) => c.auth === "oauth2")) {
         const oauthConstructor = platform.packageInfo.constructors.find(
-          (c) => c.auth === "oauth"
+          (c) => c.auth === "oauth2"
         );
         if (oauthConstructor && oauthSecrets) {
           const oauthSecret = oauthSecrets.find(
             (secret) =>
               secret.type ===
-              `${platform.packageInfo.name}/${platform.packageInfo.constructors.find((c) => c.auth === "oauth")?.name}`
+              `${platform.packageInfo.name}/${oauthConstructor.name}`
           );
           authStatus[platform.name] = oauthSecret
             ? oauthSecret.variables.every(
-              (variable) => variable.value?.trim() !== ""
-            )
+                (variable) =>
+                  variable.value?.trim() !== "" &&
+                  oauthConstructor.internalKeys.some(
+                    (key) => key.key === variable.key
+                  )
+              )
             : false;
         }
       }
@@ -421,7 +431,7 @@ const TaskIntegrations = ({
         (c) => c.auth === "apiKey"
       );
       const requiresOauth = platform.packageInfo?.constructors.some(
-        (c) => c.auth === "oauth"
+        (c) => c.auth === "oauth2"
       );
 
       // Check both API key and OAuth status if required
@@ -434,14 +444,28 @@ const TaskIntegrations = ({
       }
       // Check only OAuth status if required
       if (requiresOauth) {
-        const getMatchingOAuthSecret = oauthSecrets?.find(
+        const oauthConstructor = platform.packageInfo.constructors.find(
+          (c) => c.auth === "oauth2"
+        );
+        const matchingOAuthSecret = oauthSecrets?.find(
           (secret) =>
             secret.type ===
-            `${platform.packageInfo.name}/${platform.packageInfo.constructors.find((c) => c.auth === "oauth")?.name}`
+            `${platform.packageInfo.name}/${oauthConstructor?.name}`
         );
-        return getMatchingOAuthSecret?.variables.every(
+
+        const doKeysHaveValues = matchingOAuthSecret?.variables.every(
           (variable: any) => variable.value?.trim() !== ""
         );
+
+        const areKeysMatchingwithInternalKeys =
+          matchingOAuthSecret?.variables.every((variable: any) =>
+            oauthConstructor?.internalKeys.some((key) => {
+              if (variable.key === "SCOPES") return true;
+              return key.key === variable.key;
+            })
+          );
+
+        return doKeysHaveValues && areKeysMatchingwithInternalKeys;
       }
       return true;
     });
@@ -465,8 +489,26 @@ const TaskIntegrations = ({
           botProjectId: projectParamId,
           name: platform.packageInfo?.title,
           userId: user?.id,
-          type: `${platform.packageInfo?.name}/${platform.packageInfo?.constructors.filter((c) => c.auth === "oauth")[0]?.name}`,
-          variables: [],
+          type: `${platform.packageInfo?.name}/${platform.packageInfo?.constructors.filter((c) => c.auth === "oauth2")[0]?.name}`,
+          variables: [
+            ...platform.packageInfo?.constructors
+              .filter((c) => c.auth === "oauth2")
+              .flatMap((c) => c.internalKeys)
+              .map((key) => ({
+                key: key.key,
+                value: "",
+                isOptional: false,
+              })),
+            ...(platform.packageInfo?.oauth2Scopes?.length > 0
+              ? [
+                  {
+                    key: "SCOPES",
+                    value: platform.packageInfo?.oauth2Scopes.join(","),
+                    isOptional: false,
+                  },
+                ]
+              : []),
+          ],
         }),
       });
 
@@ -525,25 +567,33 @@ const TaskIntegrations = ({
             (constructor: Constructor) => constructor.auth === "apiKey"
           );
           const areOAuthRequired = pkg?.constructors.some(
-            (constructor: Constructor) => constructor.auth === "oauth"
+            (constructor: Constructor) => constructor.auth === "oauth2"
           );
 
-          const authEndpoint = "/connect/google";
+          const authEndpoint = platform.packageInfo?.authEndpoint;
 
           // console.log(docIdCreatedOnConnectData, "docIdCreatedOnConnectData");
+          const oauthConstructor = pkg.constructors.find(
+            (c) => c.auth === "oauth2"
+          );
           const getMatchingOAuthSecret =
             oauthSecrets &&
             oauthSecrets?.length > 0 &&
             oauthSecrets?.find(
               (secret) =>
-                secret.type ===
-                `${pkg.name}/${pkg.constructors.find((c) => c.auth === "oauth")?.name}`
+                secret.type === `${pkg.name}/${oauthConstructor?.name}`
             );
 
           const hasAllAuthRelatedKeys = getMatchingOAuthSecret
             ? getMatchingOAuthSecret?.variables.every((variable: any) => {
-              return variable.value?.trim() !== "";
-            })
+                return (
+                  variable.value?.trim() !== "" &&
+                  oauthConstructor?.internalKeys.some((key) => {
+                    if (variable.key === "SCOPES") return true;
+                    return key.key === variable.key;
+                  })
+                );
+              })
             : false;
 
           return (
@@ -677,7 +727,7 @@ const TaskIntegrations = ({
               (c: Constructor) => c.auth === "apiKey"
             ) ||
               p.packageInfo?.constructors.some(
-                (c: Constructor) => c.auth === "oauth"
+                (c: Constructor) => c.auth === "oauth2"
               ))
         )}
         areKeysFilled={areKeysFilled}
@@ -715,19 +765,26 @@ const TaskStructure = ({
       {object && (
         <Tabs
           defaultValue={
-            (object.lambdaFunctions && object.lambdaFunctions.length > 0) ? "lambdaFunctions" :
-              (object.cronJobs && object.cronJobs.length > 0) ? "cronJobs" :
-                (object.dbSchemas && object.dbSchemas.length > 0) ? "schemas" : undefined
+            object.lambdaFunctions && object.lambdaFunctions.length > 0
+              ? "lambdaFunctions"
+              : object.cronJobs && object.cronJobs.length > 0
+                ? "cronJobs"
+                : object.dbSchemas && object.dbSchemas.length > 0
+                  ? "schemas"
+                  : undefined
           }
           className="w-full"
         >
           <TabsList
             className="grid gap-2 justify-start items-center bg-gray-50/50 p-1 rounded-lg"
             style={{
-              gridTemplateColumns: `repeat(${(object.lambdaFunctions && object.lambdaFunctions.length > 0 ? 1 : 0) +
+              gridTemplateColumns: `repeat(${
+                (object.lambdaFunctions && object.lambdaFunctions.length > 0
+                  ? 1
+                  : 0) +
                 (object.cronJobs && object.cronJobs.length > 0 ? 1 : 0) +
                 (object.dbSchemas && object.dbSchemas.length > 0 ? 1 : 0)
-                }, minmax(0, 1fr))`
+              }, minmax(0, 1fr))`,
             }}
           >
             {object.lambdaFunctions && object.lambdaFunctions.length > 0 && (
@@ -794,13 +851,17 @@ const TaskStructure = ({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-gray-900">{fn.name}</span>
+                        <span className="font-medium text-gray-900">
+                          {fn.name}
+                        </span>
                         <span
                           className={cn(
                             "text-xs px-2 py-1 rounded-full font-bold font-mono",
                             fn.method === "GET" && "bg-blue-100 text-blue-700",
-                            fn.method === "POST" && "bg-green-100 text-green-700",
-                            fn.method === "PUT" && "bg-amber-100 text-amber-700",
+                            fn.method === "POST" &&
+                              "bg-green-100 text-green-700",
+                            fn.method === "PUT" &&
+                              "bg-amber-100 text-amber-700",
                             fn.method === "DELETE" && "bg-red-100 text-red-700"
                           )}
                         >
@@ -937,34 +998,34 @@ const EnvCollector = ({
 
       const body = existingSecret
         ? {
-          id: existingSecret.id,
-          variables: Object.entries(values)
-            .filter(([_, value]) => value.trim())
-            .map(([key, value]) => ({
-              key,
-              value: value.trim(),
-              isOptional: false,
-            })),
-          clientRequestId: requestParamId,
-          botProjectId: projectParamId,
-          userId: user?.id,
-          name: "custom_keys",
-          type: "custom",
-        }
+            id: existingSecret.id,
+            variables: Object.entries(values)
+              .filter(([_, value]) => value.trim())
+              .map(([key, value]) => ({
+                key,
+                value: value.trim(),
+                isOptional: false,
+              })),
+            clientRequestId: requestParamId,
+            botProjectId: projectParamId,
+            userId: user?.id,
+            name: "custom_keys",
+            type: "custom",
+          }
         : {
-          clientRequestId: requestParamId,
-          botProjectId: projectParamId,
-          name: "custom_keys",
-          userId: user?.id,
-          type: "custom",
-          variables: Object.entries(values)
-            .filter(([_, value]) => value.trim())
-            .map(([key, value]) => ({
-              key,
-              value: value.trim(),
-              isOptional: false,
-            })),
-        };
+            clientRequestId: requestParamId,
+            botProjectId: projectParamId,
+            name: "custom_keys",
+            userId: user?.id,
+            type: "custom",
+            variables: Object.entries(values)
+              .filter(([_, value]) => value.trim())
+              .map(([key, value]) => ({
+                key,
+                value: value.trim(),
+                isOptional: false,
+              })),
+          };
 
       const response = await fetch(endpoint, {
         method,
@@ -1275,15 +1336,19 @@ const DeploymentsInfo = ({
   const deployToProduction = () => {
     console.log("deployToProduction");
     append(
-      constructMessageFromButton({
-        text: "Deploy to Production !",
-        minionType: "deployfox",
-      }, [{
-        type: "attachment",
-        key: "stage",
-        value: DEPLOY_STAGE.PROD,
-      },
-      ]),
+      constructMessageFromButton(
+        {
+          text: "Deploy to Production !",
+          minionType: "deployfox",
+        },
+        [
+          {
+            type: "attachment",
+            key: "stage",
+            value: DEPLOY_STAGE.PROD,
+          },
+        ]
+      ),
       constructAppendBody("deployfox", {
         stage: DEPLOY_STAGE.PROD,
       })
@@ -1300,17 +1365,17 @@ const DeploymentsInfo = ({
     "Optimizing assets and code bundles...",
     "Setting up infrastructure and services...",
     "Configuring environment variables and secrets...",
-    "Almost there! Finalizing deployment process..."
+    "Almost there! Finalizing deployment process...",
   ];
 
   useEffect(() => {
     const timeInterval = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
+      setElapsedTime((prev) => prev + 1);
     }, 1000);
 
     // Rotate status messages every 15 seconds
     const messageInterval = setInterval(() => {
-      setStatusMessageIndex(prev => (prev + 1) % statusMessages.length);
+      setStatusMessageIndex((prev) => (prev + 1) % statusMessages.length);
     }, 15000);
 
     return () => {
@@ -1327,11 +1392,14 @@ const DeploymentsInfo = ({
     const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
       const secs = seconds % 60;
-      return `${mins > 0 ? `${mins}m ` : ''}${secs}s`;
+      return `${mins > 0 ? `${mins}m ` : ""}${secs}s`;
     };
 
     // Calculate progress percentage (assuming 2 minutes = 120 seconds)
-    const progressPercentage = Math.min(Math.floor((elapsedTime / 120) * 100), 95);
+    const progressPercentage = Math.min(
+      Math.floor((elapsedTime / 120) * 100),
+      95
+    );
 
     return (
       <motion.div
@@ -1345,19 +1413,25 @@ const DeploymentsInfo = ({
           <div className="flex items-center gap-3">
             <Cube size={16} color="#2b7fff" />
             <h3 className="text-base font-medium text-gray-800">
-              Deploying to <span className="font-semibold text-blue-600">{stage}</span> environment
+              Deploying to{" "}
+              <span className="font-semibold text-blue-600">{stage}</span>{" "}
+              environment
             </h3>
           </div>
           <div className="flex items-center gap-2">
             <Clock size={14} className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-600">{formatTime(elapsedTime)}</span>
+            <span className="text-sm font-medium text-gray-600">
+              {formatTime(elapsedTime)}
+            </span>
           </div>
         </div>
 
         {/* Estimated time message */}
         <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex items-center gap-2">
           <Info size={14} />
-          <span>This deployment typically takes about 2 minutes to complete.</span>
+          <span>
+            This deployment typically takes about 2 minutes to complete.
+          </span>
         </div>
 
         {/* Progress bar with percentage */}
@@ -1508,21 +1582,25 @@ const DeploymentsInfo = ({
                 <span className="font-medium text-gray-900">Staging </span>
                 environment is ready to be promoted to{" "}
                 <span className="font-medium text-gray-900">Production</span>
-              </div>) : (
+              </div>
+            ) : (
               <div className="text-md text-gray-500">
-                <span className="font-medium text-gray-900">Automation Published !</span>
+                <span className="font-medium text-gray-900">
+                  Automation Published !
+                </span>
               </div>
             )}
             <div className="flex gap-2 mt-4">
-              {deployStep.stage === DEPLOY_STAGE.STAGING && <Button
-                variant="outline"
-                className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-                onClick={deployToProduction}
-              >
-                <Rocket className="w-4 h-4" />
-                Deploy to Production
-              </Button>
-              }
+              {deployStep.stage === DEPLOY_STAGE.STAGING && (
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+                  onClick={deployToProduction}
+                >
+                  <Rocket className="w-4 h-4" />
+                  Deploy to Production
+                </Button>
+              )}
               {deployStep.stage === DEPLOY_STAGE.PROD && (
                 <Button
                   variant="outline"
@@ -1625,4 +1703,3 @@ export const AnnotationUIList = ({
     }
   });
 };
-

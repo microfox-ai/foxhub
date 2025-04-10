@@ -1,4 +1,7 @@
 .env
 .env.local
+.env.prod
 package.json
 **/*.env
+**/*.env.prod
+**/.env.dev

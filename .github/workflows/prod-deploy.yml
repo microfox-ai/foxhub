@@ -44,6 +44,12 @@ jobs:
           fi
           echo "install-status=1" >> $GITHUB_OUTPUT
 
+      - name: Apply Prisma Migrations
+        if: ${{steps.install.outputs.install-status == 1 }}
+        run: |
+          export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
+          npx prisma migrate deploy
+
       - name: Build project
         id: build
         run: |

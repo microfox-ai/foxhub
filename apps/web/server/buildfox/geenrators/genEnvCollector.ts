@@ -75,6 +75,7 @@ export const genEnvCollector = async (
         })),
         name: `${packageName}/${packageEnvs.constructorFunction}`,
         clientRequestId: clientRequest.id,
+        mustCreateNewClientSecret: false,
       });
       console.log("clientSecret-created", clientSecret);
     }

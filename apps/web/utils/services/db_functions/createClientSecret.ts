@@ -20,6 +20,7 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
   variables: ClientSecreVariable[];
   name: string;
   clientRequestId?: string;
+  mustCreateNewClientSecret?: boolean;
 }) => {
   const { botProjectId, userId, type, variables, clientRequestId, name } =
     _clientSecret;
@@ -40,13 +41,17 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
   let existingClientSecret;
 
   if (type !== "custom") {
-    // fetch from the bot-project-id
-    existingClientSecret = await prisma.clientSecret.findFirst({
-      where: {
-        botProjectId,
-        type,
-      },
-    });
+    if (!_clientSecret.mustCreateNewClientSecret) {
+      // fetch from the bot-project-id
+      // fi the bot project has multiple clientSecrets, ITS AN ISSUE - as there is no reason client secrets are unique
+      // maybe theese variables are new instance the client wanted. this entire existing loop might be wrong
+      existingClientSecret = await prisma.clientSecret.findFirst({
+        where: {
+          botProjectId,
+          type,
+        },
+      });
+    }
   } else {
     // fetch from the clientRequestId (because custom secrets are created per request)
     existingClientSecret = await prisma.clientSecret.findFirst({

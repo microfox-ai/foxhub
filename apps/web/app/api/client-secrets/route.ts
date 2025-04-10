@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       variables,
       name,
       clientRequestId,
+      mustCreateNewClientSecret: true,
     });
     return NextResponse.json(clientSecret, { status: 201 });
   } catch (error) {

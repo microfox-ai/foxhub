@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Box,
+  Plus,
 } from "lucide-react";
 import {
   Tooltip,
@@ -29,6 +30,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 // Interface for package data
 interface PackageData {
@@ -53,6 +66,12 @@ const fetcher = async (url: string) => {
 };
 
 const Status = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [requestForm, setRequestForm] = useState({
+    platform: "",
+    description: "",
+  });
+
   // Use SWR for data fetching
   const { data, error, isLoading } = useSWR<{ packages: PackageData[] }>(
     "/api/packages",
@@ -120,14 +139,86 @@ const Status = () => {
     }
   };
 
+  const handleSubmitRequest = async () => {
+    try {
+      const response = await fetch("/api/integration-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestForm),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit request");
+      }
+
+      setIsDialogOpen(false);
+      setRequestForm({ platform: "", description: "" });
+      // You might want to add a toast notification here
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      // Handle error (show error message to user)
+    }
+  };
+
   return (
     <div className="flex flex-col h-full w-full ">
       <div className="max-w-screen-2xl overflow-y-auto max-h-screen">
-        <div className="flex items-center gap-2 mb-6 sticky top-0 bg-white/20 backdrop-blur-sm z-10 p-6">
-          <div className="relative w-6 h-6">
-            <Box className="w-6 h-6 animate-spin" style={{ animationDuration: '3s' }} />
+        <div className="mx-auto max-w-screen-xl flex items-center justify-between gap-2 mb-6 sticky top-0 bg-white/20 backdrop-blur-sm z-10 p-6">
+          <div className="flex items-center gap-2">
+            <div className="relative w-6 h-6">
+              <Box className="w-6 h-6 animate-spin" style={{ animationDuration: '3s' }} />
+            </div>
+            <h1 className="text-2xl font-bold">Status</h1>
           </div>
-          <h1 className="text-2xl font-bold">Status</h1>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Request Integration
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Request Platform Integration</DialogTitle>
+                <DialogDescription>
+                  Tell us about the platform you'd like to integrate with our system.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="platform">Platform Name</Label>
+                  <Input
+                    id="platform"
+                    value={requestForm.platform}
+                    onChange={(e) =>
+                      setRequestForm({ ...requestForm, platform: e.target.value })
+                    }
+                    placeholder="e.g., Slack, Discord, GitHub"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={requestForm.description}
+                    onChange={(e) =>
+                      setRequestForm({ ...requestForm, description: e.target.value })
+                    }
+                    placeholder="Describe what you'd like to achieve with this integration..."
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSubmitRequest}>Submit Request</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {isLoading ? (

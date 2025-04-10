@@ -32,7 +32,7 @@ export const pushToGit = async (
 
   dataStream.writeMessageAnnotation({
     type: "thinking",
-    value: "Pushing to git",
+    content: "Pushing to codebase...",
   });
 
   const octo = new Octokit({
@@ -54,9 +54,9 @@ export const pushToGit = async (
     clientRequest.repoName,
     clientRequest.prBranch,
     "nodeploy: microcode: " +
-    taskInstanceMeta.taskInfo?.name +
-    " -  by Microfox on " +
-    dayjs().format(`YYYY-MM-DD HH:mm`)
+      taskInstanceMeta.taskInfo?.name +
+      " -  by Microfox on " +
+      dayjs().format(`YYYY-MM-DD HH:mm`)
   );
 
   // TODO: push to git file by file (if above doesn't work)

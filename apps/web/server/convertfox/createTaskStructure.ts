@@ -47,10 +47,11 @@ export const createTaskStructure = async (
     content: "Thinking on how to structure your task",
   });
 
-  const result = streamObject({
-    model: models.claude35Sonnet,
-    system: taskPlanningPrompt(),
-    prompt: `
+  try {
+    const result = generateObject({
+      model: models.claude35Sonnet,
+      system: taskPlanningPrompt(),
+      prompt: `
         You are a sr. developer, who is tasked with creating a plan of action for a task.
         Task Goal: ${taskInstanceMeta.taskInfo.goal}
         Task Summary: ${taskInstanceMeta.taskInfo.summary}
@@ -77,71 +78,73 @@ export const createTaskStructure = async (
         some rules
         - Never use theese packages - axios
         `,
-    schema: taskStructure,
-    onFinish: (result) => {
-      TokenUsageAnalyticsTracker.trackUsage({
-        ...props.requestBody,
-        model: models.claude35Sonnet.modelId,
-        usage: result.usage,
-      });
-    },
-    onError: (error) => {
-      console.error("Error creating task structure", error);
-    },
-  });
-  for await (const chunk of result.partialObjectStream) {
-    //console.log("chunk", chunk);
-    //const object = chunk.;
-    //dataStream.write(chunk as any);
+      schema: taskStructure,
+    });
+
+    // for await (const chunk of result.partialObjectStream) {
+    //   //console.log("chunk", chunk);
+    //   //const object = chunk.;
+    //   //dataStream.write(chunk as any);
+    // }
+    const response = await result;
+    const object = response.object;
+
+    TokenUsageAnalyticsTracker.trackUsage({
+      ...props.requestBody,
+      model: models.claude35Sonnet.modelId,
+      usage: response.usage,
+    });
+
+    console.log("result", response.object);
+
+    dataStream.writeMessageAnnotation({
+      type: "thinking",
+      content: "Task Structure Generated.",
+    });
+    //   result.mergeIntoDataStream(dataStream, {
+    //     experimental_sendFinish: false,
+    //   });
+    //result.toTextStreamResponse();
+    //result.textStream.pipeTo(dataStream);
+
+    //dataStream.merge(result.fullStream)
+
+    //const object = await result.object;
+    // console.log("object", object);
+    await updateTaskInstanceMeta({
+      clientRequestId: requestBody.clientRequestId,
+      taskInstanceMeta: {
+        ...taskInstanceMeta,
+        taskStructure: object,
+      },
+    });
+    dataStream.writeMessageAnnotation({
+      type: "ui",
+      objectType: "taskStructure",
+      object: object as any,
+      persona: "taskManager",
+      text: `Ready to Build ?`,
+      buttons: [
+        {
+          action: "highlightInput",
+          text: "Not Yet",
+          type: "deny",
+          className: "bg-neutral-200 text-black hover:bg-neutral-300",
+        },
+        {
+          action: "shiftMinion",
+          actionText: "Start Building !",
+          text: "Start Building !",
+          type: "confirm",
+          className: "bg-green-500 text-white hover:bg-green-600",
+          value: "buildfox",
+        },
+      ],
+    });
+
+    return object;
+  } catch (error) {
+    console.error("Error creating task structure", error);
+    return null;
   }
-  const object = await result.object;
-
-  console.log("result", result.object);
-
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Task Structure Generated.",
-  });
-  //   result.mergeIntoDataStream(dataStream, {
-  //     experimental_sendFinish: false,
-  //   });
-  //result.toTextStreamResponse();
-  //result.textStream.pipeTo(dataStream);
-
-  //dataStream.merge(result.fullStream)
-
-  //const object = await result.object;
-  // console.log("object", object);
-  await updateTaskInstanceMeta({
-    clientRequestId: requestBody.clientRequestId,
-    taskInstanceMeta: {
-      ...taskInstanceMeta,
-      taskStructure: object,
-    },
-  });
-  dataStream.writeMessageAnnotation({
-    type: "ui",
-    objectType: "taskStructure",
-    object: object as any,
-    persona: "taskManager",
-    text: `Ready to Build ?`,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Not Yet",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
-      },
-      {
-        action: "shiftMinion",
-        actionText: "Start Building !",
-        text: "Start Building !",
-        type: "confirm",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "buildfox",
-      },
-    ],
-  });
-
-  return object;
 };

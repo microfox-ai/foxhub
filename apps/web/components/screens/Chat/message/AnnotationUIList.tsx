@@ -161,7 +161,7 @@ const ActionButtons = (props: any) => {
               disabled:opacity-50 disabled:cursor-not-allowed
             `,
               button.type === "confirm" &&
-                "bg-black text-white hover:bg-black/80 hover:text-white"
+              "bg-black text-white hover:bg-black/80 hover:text-white"
             )}
             disabled={
               !IN_DEV &&
@@ -407,12 +407,12 @@ const TaskIntegrations = ({
           );
           authStatus[platform.name] = oauthSecret
             ? oauthSecret.variables.every(
-                (variable) =>
-                  variable.value?.trim() !== "" &&
-                  oauthConstructor.internalKeys.some(
-                    (key) => key.key === variable.key
-                  )
-              )
+              (variable) =>
+                variable.value?.trim() !== "" &&
+                oauthConstructor.internalKeys.some(
+                  (key) => key.key === variable.key
+                )
+            )
             : false;
         }
       }
@@ -501,12 +501,12 @@ const TaskIntegrations = ({
               })),
             ...(platform.packageInfo?.oauth2Scopes?.length > 0
               ? [
-                  {
-                    key: "SCOPES",
-                    value: platform.packageInfo?.oauth2Scopes.join(","),
-                    isOptional: false,
-                  },
-                ]
+                {
+                  key: "SCOPES",
+                  value: platform.packageInfo?.oauth2Scopes.join(","),
+                  isOptional: false,
+                },
+              ]
               : []),
           ],
         }),
@@ -586,14 +586,14 @@ const TaskIntegrations = ({
 
           const hasAllAuthRelatedKeys = getMatchingOAuthSecret
             ? getMatchingOAuthSecret?.variables.every((variable: any) => {
-                return (
-                  variable.value?.trim() !== "" &&
-                  oauthConstructor?.internalKeys.some((key) => {
-                    if (variable.key === "SCOPES") return true;
-                    return key.key === variable.key;
-                  })
-                );
-              })
+              return (
+                variable.value?.trim() !== "" &&
+                oauthConstructor?.internalKeys.some((key) => {
+                  if (variable.key === "SCOPES") return true;
+                  return key.key === variable.key;
+                })
+              );
+            })
             : false;
 
           return (
@@ -778,13 +778,12 @@ const TaskStructure = ({
           <TabsList
             className="grid gap-2 justify-start items-center bg-gray-50/50 p-1 rounded-lg"
             style={{
-              gridTemplateColumns: `repeat(${
-                (object.lambdaFunctions && object.lambdaFunctions.length > 0
+              gridTemplateColumns: `repeat(${(object.lambdaFunctions && object.lambdaFunctions.length > 0
                   ? 1
                   : 0) +
                 (object.cronJobs && object.cronJobs.length > 0 ? 1 : 0) +
                 (object.dbSchemas && object.dbSchemas.length > 0 ? 1 : 0)
-              }, minmax(0, 1fr))`,
+                }, minmax(0, 1fr))`,
             }}
           >
             {object.lambdaFunctions && object.lambdaFunctions.length > 0 && (
@@ -859,9 +858,9 @@ const TaskStructure = ({
                             "text-xs px-2 py-1 rounded-full font-bold font-mono",
                             fn.method === "GET" && "bg-blue-100 text-blue-700",
                             fn.method === "POST" &&
-                              "bg-green-100 text-green-700",
+                            "bg-green-100 text-green-700",
                             fn.method === "PUT" &&
-                              "bg-amber-100 text-amber-700",
+                            "bg-amber-100 text-amber-700",
                             fn.method === "DELETE" && "bg-red-100 text-red-700"
                           )}
                         >
@@ -998,34 +997,34 @@ const EnvCollector = ({
 
       const body = existingSecret
         ? {
-            id: existingSecret.id,
-            variables: Object.entries(values)
-              .filter(([_, value]) => value.trim())
-              .map(([key, value]) => ({
-                key,
-                value: value.trim(),
-                isOptional: false,
-              })),
-            clientRequestId: requestParamId,
-            botProjectId: projectParamId,
-            userId: user?.id,
-            name: "custom_keys",
-            type: "custom",
-          }
+          id: existingSecret.id,
+          variables: Object.entries(values)
+            .filter(([_, value]) => value.trim())
+            .map(([key, value]) => ({
+              key,
+              value: value.trim(),
+              isOptional: false,
+            })),
+          clientRequestId: requestParamId,
+          botProjectId: projectParamId,
+          userId: user?.id,
+          name: "custom_keys",
+          type: "custom",
+        }
         : {
-            clientRequestId: requestParamId,
-            botProjectId: projectParamId,
-            name: "custom_keys",
-            userId: user?.id,
-            type: "custom",
-            variables: Object.entries(values)
-              .filter(([_, value]) => value.trim())
-              .map(([key, value]) => ({
-                key,
-                value: value.trim(),
-                isOptional: false,
-              })),
-          };
+          clientRequestId: requestParamId,
+          botProjectId: projectParamId,
+          name: "custom_keys",
+          userId: user?.id,
+          type: "custom",
+          variables: Object.entries(values)
+            .filter(([_, value]) => value.trim())
+            .map(([key, value]) => ({
+              key,
+              value: value.trim(),
+              isOptional: false,
+            })),
+        };
 
       const response = await fetch(endpoint, {
         method,
@@ -1633,7 +1632,7 @@ const DeploymentsInfo = ({
         isOpen={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
         jobId={deployStep.metadata.job_id}
-        repoName={finalData.clientDeployment.repoName}
+        repoName={finalData?.clientDeployment?.repoName}
       />
     </>
   );

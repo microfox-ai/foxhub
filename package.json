@@ -11,6 +11,8 @@
     "check-types": "turbo run check-types",
     "prisma:generate": "prisma generate --schema=./apps/web/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-dev": "prisma migrate dev --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-deploy": "prisma migrate --schema=./apps/web/prisma/schema.prisma",
     "postinstall": "npm run prisma:generate"
   },
   "devDependencies": {

@@ -65,12 +65,12 @@ model BotProject {
   name             String
   githubRepoName   String          @unique
   githubRepoUrl    String
-  githubRepoBranch String?         @default("main")
+  githubRepoBranch String          @default("main")
   prUrl            String?
   prNumber         Int?
   description      String?
   projectDir       String
-  templateVersion  String?
+  templateVersion  String
   metadata         Json?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt

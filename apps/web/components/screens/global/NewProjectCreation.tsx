@@ -57,45 +57,7 @@ export default function NewProjectCreation({
 
   return (
     <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-      <div className="w-full max-w-lg">
-        <h2 className="text-2xl font-semibold">New Project</h2>
-        <p className="mt-2 text-sm text-gray-500">
-          Please provide a title and describe your project in detail.
-        </p>
-        <input
-          type="text"
-          placeholder="Project Title"
-          value={projectTitle}
-          onChange={(e) => setProjectTitle(e.target.value)}
-          className="mt-4 w-full rounded-lg border p-3 text-lg outline-none"
-          disabled={sending}
-        />
-        <textarea
-          className="mt-4 h-32 w-full resize-none rounded-lg border p-3 text-lg outline-none"
-          placeholder="Describe your project..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleCreateProject();
-            }
-          }}
-          disabled={sending}
-        />
-        <ButtonSCN
-          className="mt-4 w-full"
-          onClick={handleCreateProject}
-          disabled={sending || !projectTitle.trim() || !description.trim()}
-        >
-          {sending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="mr-2 h-4 w-4" />
-          )}
-          Create Project
-        </ButtonSCN>
-      </div>
+
     </div>
   );
 }

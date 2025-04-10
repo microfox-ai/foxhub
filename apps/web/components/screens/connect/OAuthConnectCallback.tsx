@@ -1,5 +1,6 @@
 "use client";
 
+import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -24,6 +25,7 @@ const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
           body: JSON.stringify({
             id: docId,
             variables: keys,
+            status: CLIENTSECRETSTATUS.FILLED,
           }),
         });
 
@@ -60,4 +62,3 @@ const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
 };
 
 export default OAuthConnectCallback;
-

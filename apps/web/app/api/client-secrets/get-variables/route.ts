@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_FOR_SITES } from "@/utils/constants/appInfo";
+import { CLIENTSECRETSTATUS } from "@prisma/client";
 
 // TODO: also insert UPSTASH envs if this taskInstanceMeta.taskStructure.templateType === "upstash"
 // TODO: also insert MONGODB envs if this taskInstanceMeta.taskStructure.templateType === "mongodb"
@@ -55,6 +56,7 @@ export async function GET(req: NextRequest) {
     // Filter out null values and extract variables with matching mode
     const variables = clientSecrets
       .filter((bot) => bot !== null)
+      .filter((bot) => bot.status === CLIENTSECRETSTATUS.FILLED)
       .flatMap((bot) => {
         let _botVariables =
           typeof bot.variables === "string"

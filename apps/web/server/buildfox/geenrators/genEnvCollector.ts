@@ -15,7 +15,7 @@ import {
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
 import { createOrUpdateClientSecret } from "@/utils/services/db_functions/createClientSecret";
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, CLIENTSECRETSTATUS } from "@prisma/client";
 import { coreEnvsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
 
@@ -77,6 +77,7 @@ export const genEnvCollector = async (
           //mode: ["DEV", "PROD", "STAGING"],
           isOptional: false,
         })),
+        status: CLIENTSECRETSTATUS.FILLED,
         name: `${packageName}/${packageEnvs.constructorFunction}`,
         clientRequestId: clientRequest.id,
         mustCreateNewClientSecret: false,

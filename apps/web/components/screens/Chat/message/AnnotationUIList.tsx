@@ -70,7 +70,7 @@ import {
   constructShiftMinionMessage,
   constructAppendBody,
 } from "@/components/screens/Chat/message/messageHelpers";
-import { DEPLOY_STAGE } from "@prisma/client";
+import { CLIENTSECRETSTATUS, DEPLOY_STAGE } from "@prisma/client";
 
 dayjs.extend(duration);
 
@@ -489,6 +489,7 @@ const TaskIntegrations = ({
           botProjectId: projectParamId,
           name: platform.packageInfo?.title,
           userId: user?.id,
+          status: CLIENTSECRETSTATUS.EMPTY,
           type: `${platform.packageInfo?.name}/${platform.packageInfo?.constructors.filter((c) => c.auth === "oauth2")[0]?.name}`,
           variables: [
             ...platform.packageInfo?.constructors
@@ -779,8 +780,8 @@ const TaskStructure = ({
             className="grid gap-2 justify-start items-center bg-gray-50/50 p-1 rounded-lg"
             style={{
               gridTemplateColumns: `repeat(${(object.lambdaFunctions && object.lambdaFunctions.length > 0
-                  ? 1
-                  : 0) +
+                ? 1
+                : 0) +
                 (object.cronJobs && object.cronJobs.length > 0 ? 1 : 0) +
                 (object.dbSchemas && object.dbSchemas.length > 0 ? 1 : 0)
                 }, minmax(0, 1fr))`,

@@ -30,6 +30,7 @@ import useSWR from "swr";
 import { useParams } from "next/navigation";
 import { useUser } from "@/utils/hooks/useUser";
 import { toast } from "sonner";
+import { CLIENTSECRETSTATUS } from "@prisma/client";
 
 interface ClientSecret {
   id: string;
@@ -141,22 +142,23 @@ export const APIKeyDialog = ({
 
       const body = existingSecret
         ? {
-          id: existingSecret.id,
-          variables,
-          clientRequestId: requestId,
-          botProjectId: projectId,
-          userId: user?.id,
-          name: pkg.name,
-          type: pkg.type,
-        }
+            id: existingSecret.id,
+            variables,
+            clientRequestId: requestId,
+            botProjectId: projectId,
+            userId: user?.id,
+            name: pkg.name,
+            type: pkg.type,
+          }
         : {
-          botProjectId: projectId,
-          clientRequestId: requestId,
-          userId: user?.id,
-          name: pkg.name,
-          type: pkg.type,
-          variables,
-        };
+            botProjectId: projectId,
+            clientRequestId: requestId,
+            userId: user?.id,
+            name: pkg.name,
+            type: pkg.type,
+            status: CLIENTSECRETSTATUS.FILLED,
+            variables,
+          };
 
       const response = await fetch(endpoint, {
         method,
@@ -256,10 +258,11 @@ export const APIKeyDialog = ({
                   onChange={(e) =>
                     handleInputChange(keyInfo.key, e.target.value)
                   }
-                  className={`h-11 px-4 ${apiKeys[keyInfo.key] ? "pr-11" : ""} ${validationErrors[keyInfo.key]
+                  className={`h-11 px-4 ${apiKeys[keyInfo.key] ? "pr-11" : ""} ${
+                    validationErrors[keyInfo.key]
                       ? "border-red-500 focus-visible:ring-red-200"
                       : ""
-                    }`}
+                  }`}
                   placeholder={`Enter your ${keyInfo.displayName}`}
                   aria-label={keyInfo.displayName}
                 />

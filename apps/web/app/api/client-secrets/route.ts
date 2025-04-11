@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, variables, clientRequestId, status } = body;
+    const { id, variables, clientRequestId, status, name, type } = body;
 
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
@@ -183,6 +183,8 @@ export async function PUT(req: NextRequest) {
           },
           ...(variables ? { variables } : {}),
           ...(status ? { status } : {}),
+          ...(name ? { name } : {}),
+          ...(type ? { type } : {}),
         },
       });
 
@@ -277,7 +279,12 @@ ${modeMapString}`;
       // Just update variables if clientRequestId not provided or already exists
       updatedBot = await prisma.clientSecret.update({
         where: { id },
-        data: { variables: variables || clientSecret.variables },
+        data: {
+          variables: variables || clientSecret.variables,
+          ...(status ? { status } : {}),
+          ...(name ? { name } : {}),
+          ...(type ? { type } : {}),
+        },
       });
     }
 

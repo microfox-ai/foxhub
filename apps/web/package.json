@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port 3000",
+    "start": "next start",
     "build": "next build",
     "build:ci": "dotenv -- next build",
     "start:ci": "node -r dotenv/config ./server.js",

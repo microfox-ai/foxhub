@@ -3,7 +3,7 @@ import {
   GITHUB_TOKEN,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
-import { ClientSecret } from "@prisma/client";
+import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { GithubSdk } from "../githubSdk";
 
 export interface ClientSecreVariable {
@@ -20,10 +20,18 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
   variables: ClientSecreVariable[];
   name: string;
   clientRequestId?: string;
+  status?: CLIENTSECRETSTATUS;
   mustCreateNewClientSecret?: boolean;
 }) => {
-  const { botProjectId, userId, type, variables, clientRequestId, name } =
-    _clientSecret;
+  const {
+    botProjectId,
+    userId,
+    type,
+    variables,
+    clientRequestId,
+    name,
+    status,
+  } = _clientSecret;
   if (
     !botProjectId ||
     !userId ||
@@ -74,6 +82,7 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
     clientSecret = await prisma.clientSecret.update({
       where: { id: existingClientSecret.id },
       data: {
+        status,
         variables: variables as any,
         clientRequestIds: existingClientSecret.clientRequestIds.includes(
           clientRequestId
@@ -93,6 +102,7 @@ export const createOrUpdateClientSecret = async (_clientSecret: {
         variables: variables as any,
         name,
         clientRequestIds: [clientRequestId],
+        status,
       },
     });
   }

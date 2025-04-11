@@ -25,13 +25,31 @@ async function fetchGithubJson(
  * Get the internal packages from the microfox-ai repository
  * @returns {Promise<any>} The internal packages
  */
-export async function getInternalPackages() {
+export async function getPackageList(): Promise<{
+  stablePackages: string[];
+  partialPackages: string[];
+  semiStablePackages: string[];
+  deprecatedPackages?: string[];
+}> {
   const packages = await fetchGithubJson(
     "microfox-ai",
     "microfox",
-    "/refs/heads/main/packages-info.json"
+    "/refs/heads/main/packages-list.json"
   );
-  return packages;
+  return {
+    stablePackages: packages.stablePackages.map((pkg: string) =>
+      pkg.replaceAll("packages/", "@microfox/")
+    ),
+    partialPackages: packages.partialPackages.map((pkg: string) =>
+      pkg.replaceAll("packages/", "@microfox/")
+    ),
+    semiStablePackages: packages.semiStablePackages.map((pkg: string) =>
+      pkg.replaceAll("packages/@ext_", "").replaceAll("#", "/")
+    ),
+    // deprecatedPackages: packages.deprecatedPackages.map((pkg: string) =>
+    //   pkg.replaceAll("packages/", "@microfox/")
+    // ),
+  };
 }
 export async function getOnlyPackageNames(packages: any[]) {
   return packages.map((pkg: any) => pkg.name);

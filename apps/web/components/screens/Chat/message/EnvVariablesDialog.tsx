@@ -29,6 +29,7 @@ interface EnvVariablesDialogProps {
   envVariables: EnvVariable[];
   onSave: (values: Record<string, string>) => Promise<void>;
   initialValues?: Record<string, string>;
+  encryptByDefault?: boolean;
 }
 
 export const EnvVariablesDialog = ({
@@ -37,12 +38,19 @@ export const EnvVariablesDialog = ({
   envVariables,
   onSave,
   initialValues = {},
+  encryptByDefault = true,
 }: EnvVariablesDialogProps) => {
   const [envValues, setEnvValues] =
     useState<Record<string, string>>(initialValues);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>(() => {
+    // Initialize all keys to the same visibility based on encryptByDefault
+    return envVariables.reduce((acc, env) => {
+      acc[env.env] = !encryptByDefault;
+      return acc;
+    }, {} as Record<string, boolean>);
+  });
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
     {}
   );
@@ -174,11 +182,10 @@ export const EnvVariablesDialog = ({
                   onBlur={() =>
                     setTouchedFields((prev) => ({ ...prev, [env.env]: true }))
                   }
-                  className={`h-11 px-4 ${envValues[env.env] ? "pr-11" : ""} ${
-                    touchedFields[env.env] && !envValues[env.env]?.trim()
-                      ? "border-red-500 focus-visible:ring-red-200"
-                      : ""
-                  }`}
+                  className={`h-11 px-4 ${envValues[env.env] ? "pr-11" : ""} ${touchedFields[env.env] && !envValues[env.env]?.trim()
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : ""
+                    }`}
                   placeholder={`Enter value for ${env.name}`}
                   aria-label={env.name}
                 />

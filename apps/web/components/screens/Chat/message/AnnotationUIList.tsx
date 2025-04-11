@@ -563,6 +563,7 @@ const TaskIntegrations = ({
       <div className="grid gap-4">
         {platforms.map((platform, index) => {
           const pkg = platform.packageInfo;
+          if (!pkg) return null;
           const areKeysRequired = pkg?.constructors.some(
             (constructor: Constructor) => constructor.auth === "apiKey"
           );
@@ -779,8 +780,8 @@ const TaskStructure = ({
             className="grid gap-2 justify-start items-center bg-gray-50/50 p-1 rounded-lg"
             style={{
               gridTemplateColumns: `repeat(${(object.lambdaFunctions && object.lambdaFunctions.length > 0
-                  ? 1
-                  : 0) +
+                ? 1
+                : 0) +
                 (object.cronJobs && object.cronJobs.length > 0 ? 1 : 0) +
                 (object.dbSchemas && object.dbSchemas.length > 0 ? 1 : 0)
                 }, minmax(0, 1fr))`,
@@ -1081,18 +1082,18 @@ const EnvCollector = ({
           </p>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <div className=" rounded-lg p-4 space-y-4">
           {envVariables?.map((env: any) => (
             <div
               key={env.env + env.name}
-              className="flex items-center justify-between  pb-3 last:border-b-0 last:pb-0"
+              className="flex items-center justify-between last:border-b-0 last:pb-0"
             >
               <div className="flex items-center gap-2">
                 <Key className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-900">{env.name}</span>
+                <span className="font-medium text-sm text-gray-900">{env.name}</span>
               </div>
               <div className="flex items-center gap-2">
-                <TooltipProvider delayDuration={3000}>
+                {/* <TooltipProvider delayDuration={3000}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
@@ -1114,7 +1115,7 @@ const EnvCollector = ({
                       <p>Click for detailed documentation</p>
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
+                </TooltipProvider> */}
               </div>
             </div>
           ))}
@@ -1151,6 +1152,7 @@ const EnvCollector = ({
         envVariables={envVariables}
         onSave={handleSaveEnv}
         initialValues={envValues}
+        encryptByDefault={false}
       />
 
       <Dialog open={showDocDialog} onOpenChange={setShowDocDialog}>

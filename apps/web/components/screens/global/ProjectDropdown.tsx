@@ -41,6 +41,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useClientProject } from "../providers/ClientProjectProvider";
 
 export const ProjectDropdown = ({
   className,
@@ -49,14 +50,13 @@ export const ProjectDropdown = ({
   className?: string;
   isCollapsed?: boolean;
 }) => {
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const {
+    setSelectedProject,
+    selectedProject,
+    projectId: projectParamId,
+  } = useClientProject();
   const { user } = useUser();
   const router = useRouter();
-
-  const params = useParams<{
-    project_id?: string;
-  }>();
-  const projectParamId = params?.project_id;
 
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -78,8 +78,9 @@ export const ProjectDropdown = ({
       setSelectedProject(project);
       setValue(projectParamId);
     } else {
-      setSelectedProject(null);
-      setValue("");
+      const project = projects?.find((p: any) => p.name === "Personal Space");
+      setSelectedProject(project);
+      setValue(project?.id || "");
     }
   }, [projectParamId, projects]);
 

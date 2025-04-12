@@ -11,6 +11,7 @@ import BotConfigUI from "@/components/screens/mybots/BotConfigUI";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { ArrowLeft, ChevronLeft, Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -88,6 +89,7 @@ const BotForm = ({ mode }: BotFormProps) => {
   const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Find the bot to edit or package to create from
   const botToEdit =
@@ -102,6 +104,18 @@ const BotForm = ({ mode }: BotFormProps) => {
     mode === "create"
       ? packageInfo?.constructors[0]
       : botToEdit?.otherInfos?.constructors[0];
+
+  // Set initial loading to false once data is available
+  useEffect(() => {
+    if (mode === "edit" && (bots.length > 0 || !botId)) {
+      setIsInitialLoading(false);
+    } else if (
+      mode === "create" &&
+      (nonOauthPackages.length > 0 || !packageName)
+    ) {
+      setIsInitialLoading(false);
+    }
+  }, [bots, nonOauthPackages, mode, botId, packageName]);
 
   const form = useForm<BotFormValues>({
     resolver: zodResolver(botFormSchema),
@@ -270,6 +284,19 @@ const BotForm = ({ mode }: BotFormProps) => {
     }
   };
 
+  if (isInitialLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            Loading bot information...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if ((mode === "edit" && !botToEdit) || (mode === "create" && !packageInfo)) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -306,7 +333,16 @@ const BotForm = ({ mode }: BotFormProps) => {
       >
         <div className="max-w-3xl mx-auto">
           <Card className="shadow-none border-none">
-            <CardHeader>
+            <CardHeader className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <CardTitle className="text-lg font-medium">
                 {mode === "create" ? "Bot Information" : "Edit Bot"}
               </CardTitle>

@@ -8,8 +8,8 @@ export default function MyBotsLayout({
 }) {
   return (
     <BotProvider>
-      <div className="overflow-hidden p-4">
-        <div className="mb-6 border-b border-neutral-200 pb-4">
+      <div className="p-4 pb-0 h-screen">
+        <div className="border-b border-neutral-200 pb-4">
           <h1 className="text-2xl flex items-center font-semibold text-neutral-900">
             <div className="flex items-center border border-neutral-200 justify-center w-10 h-10 rounded-full">
               <Bot className="w-6 h-6 " />

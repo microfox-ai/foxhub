@@ -90,7 +90,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             <AnalyticsProvider>
-              <div className="flex-1">{children}</div>
+              <div className="flex-1 overflow-hidden">{children}</div>
             </AnalyticsProvider>
           </AuthProvider>
         </Suspense>

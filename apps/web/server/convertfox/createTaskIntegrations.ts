@@ -4,10 +4,7 @@ import { models } from "../models";
 import { TaskInfo, taskIntegrations, TaskInstanceMetaType } from "./types";
 import { object, z } from "zod";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import {
-  getInternalPackages,
-  getOnlyPackageNames,
-} from "./getInternalPackages";
+import { getPackageList, getOnlyPackageNames } from "./getInternalPackages";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { fetchGithubJson, fetchPackageInfo } from "./gitFetchers";
 
@@ -88,34 +85,114 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     content: `searching for related packages...`,
   });
   // serach internal packages for each platform & attach them to the platform
-  const internalPackages = await getInternalPackages();
-  const onlyPackageNames = await getOnlyPackageNames(internalPackages);
+  const packageList = await getPackageList();
+  const stablePackageNames = packageList.stablePackages;
+  const externalPackageNames = packageList.semiStablePackages;
+
+  // Filter down all packages from both stablePackageNames and externalPackageNames
+  // that have any remote relation to the platforms in textOfPlatforms
+  const filteredPackagesResult = await generateObject({
+    model: models.googleGeminiPro,
+    system: `
+    You are an expert fullstack developer.
+    You are given a list of platforms and two lists of packages (internal and external).
+    Your task is to identify ALL packages from both lists that have ANY remote relation to the platforms.
+    This means:
+    1. Include packages that directly integrate with any of the platforms
+    2. Include packages that could be used as alternatives for any of the platforms
+    3. Include packages that have any functional overlap with the platforms
+    4. Include packages that could be used in conjunction with the platforms
+    
+    Be thorough and include packages even if they have only a tangential relationship.
+    If a package appears in both lists, include it in both output arrays.
+    `,
+    schema: z.object({
+      internalPackages: z
+        .array(z.string())
+        .describe("Internal packages related to the platforms"),
+      externalPackages: z
+        .array(z.string())
+        .describe("External packages related to the platforms"),
+    }),
+    prompt: `
+    platforms: ${textOfPlatforms}
+    internal packages: ${stablePackageNames}
+    external packages: ${externalPackageNames}
+    `,
+  });
+
+  console.log(
+    "filteredPackagesResult token Usage",
+    filteredPackagesResult.usage
+  );
+  const filteredInternalPackages =
+    filteredPackagesResult.object?.internalPackages || [];
+  const filteredExternalPackages =
+    filteredPackagesResult.object?.externalPackages || [];
+
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: `Fetching functionalities for  ${filteredInternalPackages.length} packages`,
+  });
+
+  // Fetch package information for internal packages
+  const internalPackagesWithInfo = await Promise.all(
+    filteredInternalPackages.map(async (packageName) => {
+      const packageInfo = await fetchPackageInfo(packageName);
+      // console.log(
+      //   "packageInfo for ",
+      //   packageName,
+      //   packageInfo?.readme_map?.functionalities
+      // );
+      return {
+        name: packageName,
+        functionalities: packageInfo?.readme_map?.functionalities || [],
+        packageInfo: packageInfo || null,
+      };
+    })
+  );
+
+  // Filter out packages with null packageInfo
+  const validInternalPackagesWithInfo = internalPackagesWithInfo.filter(
+    (pkg) => pkg.packageInfo !== null
+  );
+
+  dataStream.writeMessageAnnotation({
+    type: "loading",
+    content: `Analysing ${validInternalPackagesWithInfo.length} internal & ${filteredExternalPackages.length} external packages`,
+  });
+
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.googleGeminiPro.modelId,
+    usage: filteredPackagesResult.usage,
+  });
+
+  // TODO: pick all packages as relatedPackages, not just one, & then select at a second step.
   const packageResult = await generateObject({
     model: models.googleGeminiPro,
     system: `
     You are an expert fullstack developer.
     You are given a list of platforms & thier alternative.
     Search for existing internal packages that can be used to integrate with the platforms.
+    If internal package does not have the required functionalities for the task, search for external packages.
+    If no internal package is found, search for external packages.
     package - If you find any, attach the package name.
     package - If you dont find any even in alternatives, attach @microfox/null.
     Ignore all conditional platforms.
-    ____
-    You run in a loop of Thought, Action, PAUSE, Observation.
-        At the end of the loop you output an Answer
-        Use Thought to describe your thoughts about the question you have been asked.
-        Use Action to run one of the actions available to you - then return PAUSE.
-        Observation will be the result of running those actions.
-        At the end of the loop you output an Answer
-     ---
-        Exclude the following platforms from the list:
-        - Website Webhooks (as we provide documentation fr this, & user can just copy paste the code)
-        - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
-        - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
-    `,
+    ---
+    Exclude the following platforms from the list:
+    - Website Webhooks (as we provide documentation fr this, & user can just copy paste the code)
+    - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
+    - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, Redis etc.`,
     schema: taskIntegrations,
     prompt: `
+    ----
+    task summary: ${taskInfo.summary}
     platforms: ${textOfPlatforms}
-    internal packages: ${onlyPackageNames}
+    ----
+    internal packages: ${validInternalPackagesWithInfo.map((pkg) => `Name: ${pkg.name}\nFunctionalities: ${pkg.functionalities.join(", ")}`).join("\n")}
+    external packages: ${filteredExternalPackages}
     `,
   });
   console.log("packageResult token Usage", packageResult.usage);
@@ -146,15 +223,16 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
 
   finalPlatforms = await Promise.all(
     platforms.map(async (platform) => {
-      if (
-        platform?.package?.startsWith("@microfox/") &&
-        platform?.package !== "@microfox/null"
-      ) {
-        const packageInfo = await fetchPackageInfo(platform?.package);
-        return { ...platform, packageInfo };
-      }
-      return platform;
+      const packageInfo = await fetchPackageInfo(
+        platform?.package ?? "@microfox/null"
+      );
+      console.log("packageInfo for ", platform.package, packageInfo);
+      return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
     })
+  );
+
+  finalPlatforms = finalPlatforms.filter(
+    (platform) => (platform as any).packageInfo !== null
   );
 
   TokenUsageAnalyticsTracker.trackUsage({
@@ -165,7 +243,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
 
   dataStream.writeMessageAnnotation({
     type: "loading",
-    content: `Analysed ${internalPackages.length} internal packages & found ${finalPlatforms.length} platforms to integrate with`,
+    content: `Found ${finalPlatforms.length} platforms to integrate with`,
   });
 
   await updateTaskInstanceMeta({
@@ -178,6 +256,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
       },
     },
   });
+
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "taskIntegrations",

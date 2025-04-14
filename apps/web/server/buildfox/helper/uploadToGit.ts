@@ -32,9 +32,16 @@ export const uploadToRepo = async (
         ) : lastCommit;
 
     const filesPaths = await glob(coursePath);
-    const filesBlobs = await Promise.all(
-      filesPaths.map(createBlobForFile(octo, org, repo))
+    let filesBlobs = await Promise.all(
+      filesPaths.map((filePath) => {
+        if (filePath.includes("node_modules") || filePath.includes("env.json") || filePath.includes("dist") || filePath.includes(".build")) {
+          return null
+        } else {
+          return createBlobForFile(octo, org, repo)(filePath)
+        }
+      })
     );
+    filesBlobs = filesBlobs.filter((blob) => blob !== null)
     const pathsForBlobs = filesPaths.map((fullPath) =>
       //path.relative(coursePath, fullPath)
       fullPath.replace(internalPath, "")

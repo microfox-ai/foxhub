@@ -1527,10 +1527,10 @@ const DeploymentsInfo = ({
           <GitPullRequest className="w-4 h-4 text-gray-500 mt-px" />
           <div className="flex flex-col gap-1">
             <div className="font-medium text-gray-900">
-              {deployStep.metadata.display_title}
+              {deployStep?.metadata?.display_title}
             </div>
             <div className="text-gray-500 mt-1">
-              PR #{deployStep.metadata.pull_requests[0].number}
+              PR #{deployStep?.metadata?.pull_requests[0]?.number}
             </div>
           </div>
         </div>
@@ -1634,7 +1634,7 @@ const DeploymentsInfo = ({
       <LogsDialog
         isOpen={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
-        jobId={deployStep.metadata.job_id}
+        jobId={deployStep?.metadata?.job_id}
         repoName={finalData?.clientDeployment?.repoName}
       />
     </>

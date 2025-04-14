@@ -12,8 +12,15 @@ import { createOrUpdateClientSecret } from "@/utils/services/db_functions/create
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { botProjectId, userId, type, variables, clientRequestId, name } =
-      body;
+    const {
+      botProjectId,
+      userId,
+      type,
+      variables,
+      clientRequestId,
+      name,
+      status,
+    } = body;
 
     console.log("body", body);
 
@@ -31,6 +38,7 @@ export async function POST(req: NextRequest) {
       variables,
       name,
       clientRequestId,
+      status,
       mustCreateNewClientSecret: true,
     });
     return NextResponse.json(clientSecret, { status: 201 });
@@ -133,7 +141,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, variables, clientRequestId } = body;
+    const { id, variables, clientRequestId, status, name, type } = body;
 
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
@@ -174,6 +182,9 @@ export async function PUT(req: NextRequest) {
             push: clientRequestId,
           },
           ...(variables ? { variables } : {}),
+          ...(status ? { status } : {}),
+          ...(name ? { name } : {}),
+          ...(type ? { type } : {}),
         },
       });
 
@@ -268,7 +279,12 @@ ${modeMapString}`;
       // Just update variables if clientRequestId not provided or already exists
       updatedBot = await prisma.clientSecret.update({
         where: { id },
-        data: { variables: variables || clientSecret.variables },
+        data: {
+          variables: variables || clientSecret.variables,
+          ...(status ? { status } : {}),
+          ...(name ? { name } : {}),
+          ...(type ? { type } : {}),
+        },
       });
     }
 

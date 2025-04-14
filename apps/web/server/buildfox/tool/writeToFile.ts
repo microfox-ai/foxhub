@@ -118,12 +118,19 @@ export const readAllGenFilesList = async (
   });
   let filesList = files
     .filter((file) => !file.isDirectory())
-    .map((file) => ({
-      fileName: file.name,
-      filePath: path.join(file.parentPath, file.name),
-      fileType: file.name.split(".").pop(),
-      meta: {},
-    }));
+    .map((file) => {
+      if (file.parentPath.includes("node_modules") || file.name.includes("env.json") || file.parentPath.includes("dist") || file.parentPath.includes(".build")) {
+        return null
+      } else {
+        return {
+          fileName: file.name,
+          filePath: path.join(file.parentPath, file.name),
+          fileType: file.name.split(".").pop(),
+          meta: {},
+        }
+      }
+    })
+    .filter((file) => file !== null)
   filesList = await Promise.all(
     filesList.map(async (file) => {
       if (

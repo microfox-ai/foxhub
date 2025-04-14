@@ -1,12 +1,15 @@
 service: template-function-plain
 package:
-  exclude:
-    - venv/**
-    - src/**
+  patterns:
+    - "!venv/**"
+    - "!src/**"
 # Configuration
 custom:
   # Get environment from env or default to dev
   stage: ${env:ENVIRONMENT, 'dev'}
+  serverless-offline:
+    lambdaPort: null
+    timeout: 600
 
 provider:
   name: aws
@@ -17,6 +20,7 @@ provider:
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-offline
 
 functions:
   # External API Endpoints

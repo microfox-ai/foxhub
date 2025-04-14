@@ -12,7 +12,7 @@
     "remove": "serverless remove",
     "remove:preview": "serverless remove --stage preview",
     "remove:prod": "serverless remove --stage prod",
-    "start": "serverless offline start",
+    "start": "serverless offline --stage staging --noAuth --noTimeout --disableCookieValidation",
     "lint": "eslint  --ignore-path .gitignore ."
   },
   "dependencies": {
@@ -28,6 +28,7 @@
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.31.0",
     "serverless": "^3.38.0",
+    "serverless-offline": "^13.9.0",
     "serverless-plugin-typescript": "^2.1.5",
     "typescript": "^5.3.3"
   },

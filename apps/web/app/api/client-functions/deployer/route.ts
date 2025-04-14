@@ -72,7 +72,8 @@ export async function GET(req: NextRequest) {
     const runIdStr = req.nextUrl.searchParams.get("runId");
     const runId = runIdStr ? parseInt(runIdStr, 10) : null;
 
-    if (!clientRequestId || !stage || !runId) {
+
+    if (!clientRequestId || !stage || (stage === DEPLOY_STAGE.PROD && !runId)) {
       return NextResponse.json(
         { error: "Missing required query parameters" },
         { status: 400 }
@@ -100,7 +101,6 @@ export async function GET(req: NextRequest) {
     }
 
     const clientDeployment = await getClientDeployment(clientRequestId);
-
     if (taskInstanceMeta.deployStep?.shouldBreak) {
       return NextResponse.json(
         {
@@ -113,19 +113,30 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const lastRun = await fetchWorkflowActionRun(
-      clientRequest,
-      taskInstanceMeta,
-      stage,
-      runId
-    );
+    if (runId) {
+      const lastRun = await fetchWorkflowActionRun(
+        clientRequest,
+        taskInstanceMeta,
+        stage,
+        runId
+      );
 
+      return NextResponse.json(
+        {
+          shouldBreak: lastRun?.shouldBreak,
+          clientDeployment: clientDeployment,
+          deployStep: lastRun?.taskInstanceMeta?.deployStep,
+          taskInstanceMeta: lastRun?.taskInstanceMeta,
+        },
+        { status: 200 }
+      );
+    }
     return NextResponse.json(
       {
-        shouldBreak: lastRun?.shouldBreak,
-        clientDeployment: clientDeployment,
-        deployStep: lastRun?.taskInstanceMeta?.deployStep,
-        taskInstanceMeta: lastRun?.taskInstanceMeta,
+        shouldBreak: taskInstanceMeta.deployStep?.shouldBreak ?? false,
+        clientDeployment: clientDeployment ?? null,
+        deployStep: taskInstanceMeta?.deployStep ?? null,
+        taskInstanceMeta: taskInstanceMeta ?? null,
       },
       { status: 200 }
     );

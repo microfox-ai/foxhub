@@ -5,5 +5,11 @@ export const maxDuration = 120;
 export async function POST(req: Request) {
   const body = await req.json();
   //console.log("body", body);
-  return microfoxRouter.execute(body);
+  return microfoxRouter.execute(body, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }

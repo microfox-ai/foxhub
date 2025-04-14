@@ -26,6 +26,7 @@ coverage
 out/
 build
 dist
+.build
 
 
 # Debug
@@ -41,3 +42,4 @@ yarn-error.log*
 .flaskenv*
 !.env.project
 !.env.vault
+env.json

@@ -140,6 +140,7 @@ model ClientSecret {
   name             String
   type             String // kind of secret eg google, github, etc
   variables        Json[] // this will be in the format of { key: "apiKey", value: "1234567890", isOptional: false}
+  status           CLIENTSECRETSTATUS @default(FILLED)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   botProject       BotProject @relation(fields: [botProjectId], references: [id])
@@ -176,6 +177,11 @@ model RequestUpdate {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
+}
+
+enum CLIENTSECRETSTATUS {
+  EMPTY
+  FILLED
 }
 
 enum DEPLOY_STAGE {

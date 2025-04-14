@@ -216,7 +216,9 @@ export const convertfoxRouter: ServerStreamingFunction<
             taskInstanceMeta,
             lastUserMessage.content
           );
-          taskInstanceMeta.taskStructure = taskStructure;
+          if (taskStructure) {
+            taskInstanceMeta.taskStructure = taskStructure;
+          }
           break;
       }
       break;

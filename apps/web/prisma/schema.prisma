@@ -136,9 +136,11 @@ model ClientSecret {
   id               String     @id @default(uuid())
   botProjectId     String
   clientRequestIds String[]
+  clientDeploymentIds String[]
   userId           String
   name             String
-  type             String // kind of secret eg google, github, etc
+  packageType      String // template / custom / oauth
+  type             String // packageName/constructor
   variables        Json[] // this will be in the format of { key: "apiKey", value: "1234567890", isOptional: false}
   status           CLIENTSECRETSTATUS @default(FILLED)
   botConfig        Json[]             @default([])
@@ -152,6 +154,7 @@ model ClientDeployment {
   userId                String
   botProjectId          String
   originClientRequestId String
+  clientSecretIds       String[]
   name                  String        @unique
   baseUrl               String
   stage                 DEPLOY_STAGE

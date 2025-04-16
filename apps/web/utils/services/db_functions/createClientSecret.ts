@@ -5,19 +5,13 @@ import {
 } from "@/utils/constants/githubInfo";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { GithubSdk } from "../githubSdk";
-
-export interface ClientSecreVariable {
-  mode?: Array<"DEV" | "PROD" | "STAGING">;
-  key: string;
-  value: string;
-  isOptional: boolean;
-}
+import { ClientSecretVariable } from "@/server/types";
 
 export const createOrUpdateClientSecret = async (_clientSecret: {
   botProjectId?: string;
   userId?: string;
   type: string;
-  variables: ClientSecreVariable[];
+  variables: ClientSecretVariable[];
   name: string;
   clientRequestId?: string;
   status?: CLIENTSECRETSTATUS;

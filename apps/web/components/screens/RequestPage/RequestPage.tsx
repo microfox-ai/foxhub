@@ -1,21 +1,18 @@
 "use client";
+import {
+  ResizableHandle,
+  ResizablePanel
+} from "@/components/ui/resizable";
+import { cn } from "@/lib/utils";
 import { useUser } from "@/utils/hooks/useUser";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import ChatWindow from "../Chat/ChatWindow";
-import Sidebar from "../global/Sidebar";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
-import { ClientSecretProvider } from "../providers/ClientSecretProvider";
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
-import { useLayout } from "../providers/LayoutProvider";
 import { ApiDocProvider } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { useLayout } from "../providers/LayoutProvider";
+import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 
 export const RequestPage = () => {
   const [tab, setTab] = useState("requests");
@@ -49,7 +46,7 @@ export const RequestPage = () => {
   }
 
   return (
-    <ClientSecretProvider botProjectId={selectedProject?.id}>
+    <div>
       <ResizableHandle
         className="cursor-pointer hidden"
         onClick={handleLeftResizeHandleClick}
@@ -94,7 +91,7 @@ export const RequestPage = () => {
           </ResizablePanel>
         </ApiDocProvider>
       </TaskInstanceMetaProvider>
-    </ClientSecretProvider>
+    </div>
   );
 };
 

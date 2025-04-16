@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_FOR_SITES } from "@/utils/constants/appInfo";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
+import { ClientSecretVariable } from "@/server/types";
 
 // TODO: also insert UPSTASH envs if this taskInstanceMeta.taskStructure.templateType === "upstash"
 // TODO: also insert MONGODB envs if this taskInstanceMeta.taskStructure.templateType === "mongodb"
@@ -34,24 +35,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get the client request
-    const clientRequest = await prisma.clientRequest.findUnique({
-      where: { id: clientRequestId },
-    });
-
-    if (!clientRequest) {
-      return NextResponse.json(
-        { error: "Client request not found" },
-        { status: 404 }
-      );
-    }
-
     // Get all mentioned client bots
-    const clientSecrets = await Promise.all(
-      clientRequest.mentionedClientSecretIds.map((id) =>
-        prisma.clientSecret.findUnique({ where: { id } })
-      )
-    );
+    const clientSecrets = await prisma.clientSecret.findMany({
+      where: {
+        clientRequestIds: {
+          has: clientRequestId,
+        },
+      },
+    });
 
     // Filter out null values and extract variables with matching mode
     const variables = clientSecrets
@@ -62,22 +53,9 @@ export async function GET(req: NextRequest) {
           typeof bot.variables === "string"
             ? JSON.parse(bot.variables)
             : bot.variables;
-        return (
-          _botVariables as {
-            stage: string;
-            key: string;
-            value: string;
-            isOptional: boolean;
-          }[]
-        )
-          .filter((variable) => {
-            return variable.stage === stage || !variable.stage;
-          })
-          .map((variable) => ({
-            key: variable.key,
-            value: variable.value,
-            isOptional: variable.isOptional,
-          }));
+        return (_botVariables as ClientSecretVariable[]).filter(
+          (variable) => variable.stage === stage || !variable.stage
+        );
       });
 
     return NextResponse.json({ variables }, { status: 200 });

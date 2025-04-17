@@ -26,7 +26,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import useSWR from "swr";
+import useSWR, { KeyedMutator } from "swr";
 import { useParams } from "next/navigation";
 import { useUser } from "@/utils/hooks/useUser";
 import { toast } from "sonner";
@@ -41,7 +41,9 @@ interface APIKeyDialogProps {
   pkg: Package;
   platformName: string;
   apiKeySecret?: ClientSecret;
-  mutateSecrets?: () => void;
+  mutateSecrets?: KeyedMutator<{
+    clientSecrets: ClientSecret[];
+  }>
 }
 
 export const APIKeyDialog = ({
@@ -80,6 +82,7 @@ export const APIKeyDialog = ({
         keyMap[variable.key] = variable.value;
       });
       setApiKeys(keyMap);
+      setNickName(apiKeySecret.name);
     }
   }, [apiKeySecret]);
 
@@ -133,6 +136,7 @@ export const APIKeyDialog = ({
         ? {
           id: apiKeySecret.id,
           variables,
+          name: nickName ?? pkg.name,
           clientRequestId: requestParamId,
           status: CLIENTSECRETSTATUS.FILLED,
         }
@@ -140,12 +144,13 @@ export const APIKeyDialog = ({
           botProjectId: projectParamId,
           clientRequestId: requestParamId,
           userId: user?.id,
-          name: pkg.name,
+          name: nickName ?? pkg.name,
           packageName: pkg?.name,
           packageConstructor: constructor?.name,
           packageType: ClientSecretPackageType.APIKEY,
           status: CLIENTSECRETSTATUS.FILLED,
           variables,
+          addToClientRequest: true,
         };
 
       const response = await fetch(endpoint, {
@@ -180,39 +185,57 @@ export const APIKeyDialog = ({
     <Dialog open={isOpen} onOpenChange={() => onClose(false)}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader className="space-y-2">
-          <DialogTitle className="flex items-start gap-2 text-xl font-semibold">
-            <Key className="h-5 w-5 mt-1" />
-            {apiKeySecret ? "Update" : "Configure"} API Keys for{" "}
-            {platformName}
+          <DialogTitle className="flex items-center gap-4 mb-4 text-xl font-semibold">
+            <img src={pkg.icon} className="h-8 w-8" />
+            <div className="flex flex-col">
+              <span className="text-xl font-medium">
+                {apiKeySecret ? "Update" : "Setup"} your{" "}
+                {platformName} Bot
+              </span>
+              <span className="text-xs text-gray-500">
+                {apiKeySecret
+                  ? `Update your ${platformName} Bot configurations below`
+                  : "Enter your API keys below. These will be stored securely and used to authenticate your requests."}
+              </span>
+            </div>
           </DialogTitle>
-          <DialogDescription className="text-sm text-gray-500">
-            {apiKeySecret
-              ? "Update your existing API keys below."
-              : "Enter your API keys below. These will be stored securely and used to authenticate your requests."}
-          </DialogDescription>
-          <DialogDescription className="text-sm text-gray-500 w-fit">
-            <Link
-              href={pkg.documentation ?? ""}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-600 text-xs flex gap-1 items-center"
-            >
-              <span>View Package Documentation</span>
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          </DialogDescription>
+          <Link
+            href={pkg.documentation ?? ""}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:text-blue-600 text-xs flex gap-1 items-center -mt-2"
+          >
+            <span>View How to get API keys</span>
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
         </DialogHeader>
 
-        <div className="space-y-4 pl-2 py-6 min-h-[200px] max-h-[400px] overflow-y-auto pr-4 -mr-4 scrollbar-thin">
+        <div className="space-y-4 pl-2 pb-6 min-h-[200px] max-h-[400px] overflow-y-auto pr-4 -mr-4 scrollbar-thin">
+          <div className="flex flex-col items-start gap-2">
+            <span className="text-sm font-medium text-gray-700">
+              Bot Name
+            </span>
+            <Input
+              id="nickName"
+              value={nickName}
+              onChange={(e) =>
+                setNickName(e.target.value)
+              }
+              className={`h-11 px-4`}
+              placeholder={`Enter a nickname for this API key`}
+              aria-label={`Enter a nickname for this API key`}
+            />
+          </div>
           {constructor?.requiredKeys?.map((keyInfo) => (
             <div
               key={keyInfo.key}
-              className="space-y-3"
+              className=""
               ref={(el) => {
                 inputRefs.current[keyInfo.key] = el;
               }}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-start">
+                <Key className="h-4 w-4 mr-2" />
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-700">
                     {keyInfo.displayName}
@@ -229,7 +252,7 @@ export const APIKeyDialog = ({
                       </TooltipTrigger>
                       <TooltipContent
                         side="right"
-                        className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
+                        className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 [&>svg]:hidden"
                         showArrow={false}
                       >
                         <p>{keyInfo.description}</p>
@@ -238,7 +261,10 @@ export const APIKeyDialog = ({
                   </TooltipProvider>
                 </div>
               </div>
-              <div className="relative">
+              {/* <p className="text-xs text-gray-400">
+                {keyInfo.description}
+              </p> */}
+              <div className="relative mt-2">
                 <Input
                   id={keyInfo.key}
                   type={visibleKeys[keyInfo.key] ? "text" : "password"}

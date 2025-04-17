@@ -110,9 +110,11 @@ export const ProjectDropdown = ({
                 aria-expanded={open}
                 className="w-full justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
               >
-                {value
-                  ? projects?.find((_project) => _project.id === value)?.name
-                  : "Select project..."}
+                <span className="flex-1">
+                  {value
+                    ? projects?.find((_project) => _project.id === value)?.name
+                    : "Select project..."}
+                </span>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             ) : (

@@ -17,7 +17,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <FileUploadProvider>
       <ClientProjectProvider>
         <LayoutProvider>
-          <main className="relative flex h-screen flex-col bg-background">
+          <main className="relative flex max-h-screen overflow-hidden flex-col bg-background">
             {/* {!isPlayground && !isProject && <CustomBotsHeader />} */}
             <Toaster position="top-right" richColors duration={3000} />
             <FeebackModal />

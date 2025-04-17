@@ -5,7 +5,10 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import {
+  updateClientRequest,
+  updateTaskInstanceMeta,
+} from "@/utils/services/db_functions/updateClientRequest";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
@@ -32,6 +35,7 @@ import { octokitSdk } from "./helper/gitHelpers";
 import { pushToGit } from "./helper/pushToGit";
 import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
 import { addGithubSecretsToRepo } from "@/utils/services/db_functions/createNewBotProject";
+import { getServiceName } from "./helper/getServiceName";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -167,6 +171,11 @@ export const buildFoxRouter: ServerStreamingFunction<
 
   // push to git
   await pushToGit(props, clientRequest, taskInstanceMeta);
+
+  await updateClientRequest({
+    id: clientRequestId,
+    serviceName: getServiceName(clientRequest, taskInstanceMeta),
+  });
 
   // record the changes in the build fox steps taken so far using taskInstanceMeta.
   const filesList = await readAllGenFilesList(clientRequest, true);

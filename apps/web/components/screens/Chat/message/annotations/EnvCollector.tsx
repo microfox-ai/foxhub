@@ -66,19 +66,20 @@ export const EnvCollector = ({
             return res.json();
         }
     );
+    const customSecret = secretsData?.clientSecrets?.[0];
 
     // Populate form with existing values when secret is found
     useEffect(() => {
-        if (secretsData?.clientSecrets?.[0]?.variables) {
+        if (customSecret?.variables) {
             const keyMap: Record<string, string> = {};
-            (secretsData.clientSecrets[0].variables as any[]).forEach((variable: ClientSecretVariable) => {
+            (customSecret.variables as any[]).forEach((variable: ClientSecretVariable) => {
                 keyMap[variable.key] = variable.value;
             });
             setEnvValues(keyMap);
         }
-    }, [secretsData]);
+    }, [customSecret]);
 
-    const clientSecretKeys = (secretsData?.clientSecrets?.[0]?.variables as any[]);
+    const clientSecretKeys = (customSecret?.variables as any[]);
     const envVariables = annotation.envVariablesCollect;
     // .filter((env: any) =>
     //   clientSecretKeys?.some((key) => key.key !== env.env && !env.isSameAs)
@@ -100,18 +101,17 @@ export const EnvCollector = ({
                             value: value.trim(),
                             isOptional: false,
                         })),
-                    clientRequestId: requestParamId,
-                    botProjectId: projectParamId,
-                    userId: user?.id,
-                    name: "custom_keys",
-                    type: "custom",
                 }
                 : {
+                    addToClientRequest: true,
                     clientRequestId: requestParamId,
                     botProjectId: projectParamId,
                     name: "custom_keys",
                     userId: user?.id,
                     type: "custom",
+                    packageName: ClientSecretPackageType.CUSTOM,
+                    packageConstructor: ClientSecretPackageType.CUSTOM,
+                    packageType: ClientSecretPackageType.CUSTOM,
                     variables: Object.entries(values)
                         .filter(([_, value]) => value.trim())
                         .map(([key, value]) => ({
@@ -148,7 +148,7 @@ export const EnvCollector = ({
 
     const hasAllRequiredKeys = envVariables.every((env: any) => {
         // Only check if the key exists in backend data
-        return (secretsData?.clientSecrets?.[0]?.variables as any[])?.some(
+        return (customSecret?.variables as any[])?.some(
             (variable) => variable.key === env.env && variable.value?.trim()
         );
     });
@@ -233,11 +233,13 @@ export const EnvCollector = ({
                     </div>
                 </div>
 
-                <ActionButtons
-                    buttons={uiAnnotation.buttons}
-                    areKeysRequired={envVariables.length > 0}
-                    areKeysFilled={hasAllRequiredKeys}
-                />
+                {hasAllRequiredKeys && (
+                    <ActionButtons
+                        buttons={uiAnnotation.buttons}
+                        areKeysRequired={envVariables.length > 0}
+                        areKeysFilled={hasAllRequiredKeys}
+                    />
+                )}
             </motion.div>
 
             <EnvVariablesDialog

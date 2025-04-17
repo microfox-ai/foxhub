@@ -1,12 +1,13 @@
 import {
   LambdaClient,
   UpdateFunctionConfigurationCommand,
+  GetFunctionConfigurationCommand,
 } from "@aws-sdk/client-lambda";
 
 interface UpdateLambdaEnvVarsParams {
   functionName: string;
   environmentVariables: Record<string, string>;
-  region: string;
+  region?: string;
 }
 
 /**
@@ -21,13 +22,30 @@ export async function updateLambdaEnvironmentVariables({
 }: UpdateLambdaEnvVarsParams): Promise<void> {
   try {
     const lambdaClient = new LambdaClient({
-      region: region ?? process.env.AWS_REGION,
+      region: region ?? process.env.AWS_REGION ?? "us-east-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+      },
     });
+
+    // Get current configuration
+    const getConfigCommand = new GetFunctionConfigurationCommand({
+      FunctionName: functionName,
+    });
+    const currentConfig = await lambdaClient.send(getConfigCommand);
+    const currentVariables = currentConfig.Environment?.Variables ?? {};
+
+    // Merge variables
+    const mergedVariables = {
+      ...currentVariables,
+      ...environmentVariables, // New variables overwrite existing ones
+    };
 
     const command = new UpdateFunctionConfigurationCommand({
       FunctionName: functionName,
       Environment: {
-        Variables: environmentVariables,
+        Variables: mergedVariables, // Use merged variables
       },
     });
 

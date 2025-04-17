@@ -79,22 +79,29 @@ export const createNewClientSecret = async (
     throw new Error("Missing required fields");
   }
 
-  // Create a new clientSecret in the database
-  const clientSecret = await prisma.clientSecret.create({
-    data: {
-      ...(_clientSecret as any),
-      botProjectId,
-      userId,
-      type:
-        _clientSecret.packageType === "custom"
-          ? "custom"
-          : _clientSecret.packageName + "/" + _clientSecret.packageConstructor,
-      clientRequestIds: _clientSecret.clientRequestIds ?? [],
-      clientDeploymentIds: _clientSecret.clientDeploymentIds ?? [],
-    },
-  });
+  try {
+    // Create a new clientSecret in the database
+    const clientSecret = await prisma.clientSecret.create({
+      data: {
+        ...(_clientSecret as any),
+        botProjectId,
+        userId,
+        type:
+          _clientSecret.packageType === "custom"
+            ? "custom"
+            : _clientSecret.packageName +
+              "/" +
+              _clientSecret.packageConstructor,
+        clientRequestIds: _clientSecret.clientRequestIds ?? [],
+        clientDeploymentIds: _clientSecret.clientDeploymentIds ?? [],
+      },
+    });
 
-  return clientSecret;
+    return clientSecret;
+  } catch (error) {
+    console.error("Error creating client secret", error);
+    throw new Error("Error creating client secret");
+  }
 };
 
 export const updateClientSecret = async (

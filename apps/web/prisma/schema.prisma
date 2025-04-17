@@ -85,6 +85,7 @@ model ClientRequest {
   mentionedClientSecretIds String[]
   title                    String             @default("Untitled")
   description              String?
+  serviceName              String?
   repoName                 String?
   prUrl                    String?
   prNumber                 Int?

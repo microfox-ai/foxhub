@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
+      addToClientRequest,
       botProjectId,
       userId,
       type,
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     console.log("body", body);
 
-    if (!botProjectId || !userId || !type || !variables || !name) {
+    if (!botProjectId || !userId || !variables) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -55,7 +56,12 @@ export async function POST(req: NextRequest) {
       packageType,
       botConfig,
     });
-    return NextResponse.json(clientSecret, { status: 201 });
+
+    if (addToClientRequest) {
+      await addClientSecretToClientRequest(clientSecret.id, clientRequestId);
+    }
+
+    return NextResponse.json(clientSecret, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { error: "Error creating ClientSecret" },

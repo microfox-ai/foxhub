@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { APIKeyDialog } from "./APIKeyDialog";
 import { ClientSecret } from "@prisma/client";
 import { ClientSecretVariable } from "@/server/types";
-import { Constructor } from "../types";
+import { Constructor, KeyVariableConfig } from "../types";
 import { KeyedMutator } from "swr";
 
 export const ApiKeyButton = ({
@@ -34,8 +34,9 @@ export const ApiKeyButton = ({
             secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === constructor?.name
         );
         if (apiKeySecret && constructor && constructor.requiredKeys) {
+            //console.log("apiKeySecret", apiKeySecret, constructor.requiredKeys);
             return apiKeySecret ? constructor.requiredKeys.every(
-                (keyInfo: ClientSecretVariable) =>
+                (keyInfo: KeyVariableConfig) =>
                     (apiKeySecret.variables as any[]).some(
                         (variable: ClientSecretVariable) =>
                             variable.key === keyInfo.key && variable.value?.trim()
@@ -43,7 +44,7 @@ export const ApiKeyButton = ({
             ) : false;
         }
         return false;
-    }, [platform])
+    }, [platform, secretsData, constructor])
 
     return (
         <>

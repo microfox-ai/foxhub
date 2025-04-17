@@ -8,10 +8,47 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Custom Bots",
-  description: `Enter the new age 
-      of Ai-first, custom made, 
-      branded bots`,
+  title: "Microfox",
+  description: "Enter the new age of AI-first, custom made, branded bots",
+  keywords: ["AI", "Microfox", "chatbots", "automation", "branded bots"],
+  authors: [{ name: "Microfox AI" }],
+  creator: "Microfox AI",
+  publisher: "Microfox AI",
+  robots: "index, follow",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://microfox.app",
+    title: "Microfox",
+    description: "Enter the new age of AI-first, custom made, branded bots",
+    siteName: "Microfox",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Microfox - Custom AI Bots",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Microfox",
+    description: "Enter the new age of AI-first, custom made, branded bots",
+    images: ["/og-image.png"],
+    creator: "@microfoxai",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  themeColor: "#FFFFFF",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 // Initialize analytics once on the server side
@@ -53,7 +90,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             <AnalyticsProvider>
-              <div className="flex-1">{children}</div>
+              <div className="flex-1 overflow-hidden">{children}</div>
             </AnalyticsProvider>
           </AuthProvider>
         </Suspense>

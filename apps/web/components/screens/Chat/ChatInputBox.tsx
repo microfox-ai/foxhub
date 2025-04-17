@@ -1,21 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
-import { ButtonSCN } from "@/components/elements/Button";
+import { cn } from "@/lib/utils";
+import { UIMessage } from "ai";
 import {
-  FilePlus,
-  Search,
-  Lightbulb,
-  Send,
-  RefreshCw,
   FileText,
   Plus,
+  RefreshCw,
+  Send
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
-import { useClientSecrets } from "../providers/ClientSecretProvider";
-import { ChatUIMessageWithTypes } from "../hooks/convertors";
 import { useMicrofox } from "../providers/MicrofoxProvider";
-import { cn } from "@/lib/utils";
-import { UIMessage } from "ai";
 interface ChatInputBoxProps {
   input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
@@ -36,7 +30,6 @@ export default function ChatInputBox({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
-  const { setShowSlashModal } = useClientSecrets();
   const { handleSubmit } = useMicrofox();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -64,11 +57,6 @@ export default function ChatInputBox({
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
     handleInputChange(e);
-    if (e.target.value?.startsWith("/")) {
-      setShowSlashModal(true);
-    } else {
-      setShowSlashModal(false);
-    }
   };
 
   return (

@@ -8,6 +8,7 @@ import {
   useCallback,
 } from "react";
 import * as ResizablePrimitive from "react-resizable-panels";
+import useLocalState from "../hooks/useLocalState";
 
 interface LayoutContextType {
   isLeftCollapsed: boolean;
@@ -27,11 +28,11 @@ interface LayoutContextType {
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
 export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(
-    localStorage.getItem("isLeftCollapsed") === "true"
+  const [isLeftCollapsed, setIsLeftCollapsed] = useLocalState(
+    "isLeftCollapsed", true
   );
-  const [isRightCollapsed, setIsRightCollapsed] = useState(
-    localStorage.getItem("isRightCollapsed") === "true"
+  const [isRightCollapsed, setIsRightCollapsed] = useLocalState(
+    "isRightCollapsed", true
   );
   const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
   const [isRightTransitioning, setIsRightTransitioning] = useState(false);

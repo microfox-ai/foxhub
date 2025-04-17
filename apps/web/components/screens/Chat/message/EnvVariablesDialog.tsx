@@ -122,10 +122,10 @@ export const EnvVariablesDialog = ({
         <DialogHeader className="space-y-2">
           <DialogTitle className="flex items-start gap-2 text-xl font-semibold">
             <Key className="h-5 w-5 mt-1" />
-            Add Environment Variables
+            Add Information
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-500">
-            Enter your environment variables below. These will be stored
+            Enter your information below. These will be stored
             securely and used in your application.
           </DialogDescription>
         </DialogHeader>
@@ -174,11 +174,10 @@ export const EnvVariablesDialog = ({
                   onBlur={() =>
                     setTouchedFields((prev) => ({ ...prev, [env.env]: true }))
                   }
-                  className={`h-11 px-4 ${envValues[env.env] ? "pr-11" : ""} ${
-                    touchedFields[env.env] && !envValues[env.env]?.trim()
+                  className={`h-11 px-4 ${envValues[env.env] ? "pr-11" : ""} ${touchedFields[env.env] && !envValues[env.env]?.trim()
                       ? "border-red-500 focus-visible:ring-red-200"
                       : ""
-                  }`}
+                    }`}
                   placeholder={`Enter value for ${env.name}`}
                   aria-label={env.name}
                 />

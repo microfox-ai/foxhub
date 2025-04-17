@@ -18,7 +18,7 @@ import { promises as fs } from "fs";
 import dedent from "dedent";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 import YAML from "yaml";
-
+import { getServiceName } from "../helper/getServiceName";
 // IMPROTANT TODO: serverless.yml being written has no idea what env variables are needed..
 export const genFinalCode = async (
   props: StreamingFucntionProps<any, any>,
@@ -62,7 +62,7 @@ export const genFinalCode = async (
             ${taskInstanceMeta?.taskInfo?.summary}
 
             The service name should be:
-            service: ${taskInstanceMeta?.taskStructure?.templateType.substring(0, 1)}-${clientRequest?.requestDir?.split("-").pop()?.replaceAll("/", "-")}
+            service: ${getServiceName(clientRequest, taskInstanceMeta)}
 
             your workflow should be as follows:
             1. read the serverless.yml file

@@ -1,6 +1,8 @@
 import { prisma } from "@/prisma/prisma";
 import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
+import { addClientSecretToClientDeployment } from "@/utils/services/db_functions/secrets_helper";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
 import { generateMicrofoxEmailTemplate, sesSdk } from "@/utils/services/sesSdk";
 import { slackBotSdk } from "@/utils/services/slackBotSdk";
 import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
@@ -43,6 +45,11 @@ export async function POST(req: NextRequest) {
 
     const { userId, botProjectId } = clientRequest;
 
+    const serverlessLog = metadata.serverless.output;
+    const functions = parseServerlessLogs(serverlessLog);
+    let newMetadata = { ...metadata };
+    newMetadata.serverless.functions = functions;
+
     // Create the ClientDeployment
     // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),
     const clientFunction = await prisma.clientDeployment.upsert({
@@ -52,7 +59,7 @@ export async function POST(req: NextRequest) {
         name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
-        metadata,
+        metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
       },
@@ -65,7 +72,7 @@ export async function POST(req: NextRequest) {
         baseUrl,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
-        metadata,
+        metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
       },
@@ -126,7 +133,9 @@ export async function POST(req: NextRequest) {
     await slackBotSdk.sendMessage({
       icon_url: MICROFOX_LOGO,
       channel: MySlackChannels.microfox_updates,
-      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${endpoints?.length}. Total time taken since hellofox started conversation: ${timeTaken} seconds`,
+      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${newMetadata?.serverless?.functions?.length}. 
+      Functions Deployed: ${newMetadata?.serverless?.functions?.map((f: any) => f.functionName + " (" + f.size + ")").join(", ")}.
+      Total time taken since hellofox started conversation: ${timeTaken} seconds`,
     });
 
     return NextResponse.json(clientFunction, { status: 201 });

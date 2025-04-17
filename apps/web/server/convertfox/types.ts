@@ -12,29 +12,28 @@ export const taskInfo = z.object({
 });
 export type TaskInfo = z.infer<typeof taskInfo>;
 
+export const taskIntegrationPlatform = z.object({
+  name: z.string().describe("The name of the platform"),
+  reason: z.string().describe("why this platform is needed for the task"),
+  optional: z
+    .boolean()
+    .default(false)
+    .describe("Whether this platform is optional"),
+  // TODO: this is better done post the platforms are created.
+  preferredAuth: z
+    .enum(["oauth", "apiKey"])
+    .describe(
+      "The preferred auth method for the platform based on the given task"
+    )
+    .optional(),
+  package: z.string().describe("The package name of the platform").optional(),
+  packageInfo: z.any().optional(),
+});
+export type TaskIntegrationPlatform = z.infer<typeof taskIntegrationPlatform>;
+
 // step2. get information about the integrations required for the task
 export const taskIntegrations = z.object({
-  platforms: z.array(
-    z.object({
-      name: z.string().describe("The name of the platform"),
-      reason: z.string().describe("why this platform is needed for the task"),
-      optional: z
-        .boolean()
-        .default(false)
-        .describe("Whether this platform is optional"),
-      // TODO: this is better done post the platforms are created.
-      preferredAuth: z
-        .enum(["oauth", "apiKey"])
-        .describe(
-          "The preferred auth method for the platform based on the given task"
-        )
-        .optional(),
-      package: z
-        .string()
-        .describe("The package name of the platform")
-        .optional(),
-    })
-  ),
+  platforms: z.array(taskIntegrationPlatform.omit({ packageInfo: true })),
   alternativePlatforms: z.array(
     z.object({
       alternativeFor: z
@@ -84,32 +83,34 @@ export const taskStructure = z.object({
     .describe(
       "The schemas of the models that are needed for the task (Optional)"
     ),
-  lambdaFunctions: z.array(
-    z.object({
-      name: z.string().describe("The name of this lambda function"),
-      interactionType: z
-        .array(z.enum(["ui", "api"]))
-        .describe(
-          "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
-        ),
-      description: z.string().describe("What does this lambda function do"),
-      brief: z
-        .string()
-        .describe(
-          "A brief step by step description of what does this lambda function does"
-        ),
-      endResult: z
-        .string()
-        .describe("What is the end result of this lambda function"),
-      method: z
-        .enum(["GET", "POST", "PUT", "DELETE"])
-        .describe("The method of the end point"),
-      path: z.string().describe("The path of the end point"),
-      packagesUsed: z
-        .array(z.string())
-        .describe("The packages used in this lambda function"),
-    })
-  ),
+  lambdaFunctions: z
+    .array(
+      z.object({
+        name: z.string().describe("The name of this lambda function"),
+        interactionType: z
+          .array(z.enum(["ui", "api"]))
+          .describe(
+            "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
+          ),
+        description: z.string().describe("What does this lambda function do"),
+        brief: z
+          .string()
+          .describe(
+            "A brief step by step description of what does this lambda function does"
+          ),
+        endResult: z
+          .string()
+          .describe("What is the end result of this lambda function"),
+        method: z
+          .enum(["GET", "POST", "PUT", "DELETE"])
+          .describe("The method of the end point"),
+        path: z.string().describe("The path of the end point"),
+        packagesUsed: z
+          .array(z.string())
+          .describe("The packages used in this lambda function"),
+      })
+    )
+    .describe("An array of lambda functions that are needed for the task"),
   cronJobs: z.array(
     z.object({
       name: z.string().describe("The name of this cron job"),

@@ -1,20 +1,17 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientRequest, TaskInstanceMeta } from "@prisma/client";
-import { useEffect, useRef, useState } from "react";
+import { ButtonSCN } from "@/components/elements/Button";
+import { Tabs } from "@/components/ui/tabs";
+import { ClientRequest } from "@prisma/client";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronsRight, Loader2, PanelRightIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
-import { AddClientSecretModal } from "./AddClientSecretModal";
+import { useLayout } from "../providers/LayoutProvider";
+import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
-import { SlashModal } from "./SlashModal";
 import TabMessages from "./TabMessages";
-import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
-import { ButtonSCN } from "@/components/elements/Button";
-import { ChevronsRight, Loader2, PanelRightIcon } from "lucide-react";
-import ConfigureTab from "./ConfigureTab";
-import { motion, AnimatePresence } from "framer-motion";
-import { useLayout } from "../providers/LayoutProvider";
 
 export type AttachedMedia = {
   file: File;
@@ -196,27 +193,6 @@ function ChatWindow({
                     </div>
                   </motion.div>
                 )}
-
-                {activeTab === "dashboard" && (
-                  <motion.div
-                    key="dashboard"
-                    initial={{ x: getSlideDirection("dashboard") }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                      duration: 0.1,
-                      exit: { duration: 0 },
-                    }}
-                    className=" w-full h-full overflow-y-auto thin-scrollbar"
-                  >
-                    <div className="max-w-[800px] mx-auto">
-                      <ConfigureTab />
-                    </div>
-                  </motion.div>
-                )}
               </div>
 
               <motion.div
@@ -258,23 +234,6 @@ function ChatWindow({
           )
         )}
       </Tabs>
-      {/* Slash Modal: Opened when input starts with '/' */}
-      {clientRequest && (
-        <SlashModal
-          clientRequest={clientRequest}
-          onSuccess={reloadClientData}
-          onClose={() => { }}
-        />
-      )}
-
-      {/* Global Add ClientSecret Modal */}
-      {clientRequest && (
-        <AddClientSecretModal
-          clientRequest={clientRequest}
-          userId={userId}
-          onSuccess={reloadClientData}
-        />
-      )}
     </div>
   );
 }

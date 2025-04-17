@@ -1,22 +1,20 @@
 "use client";
 
+import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface OAuthConnectCallbackProps {
   docId: string;
-  keys: {
-    GOOGLE_ACCESS_TOKEN: string;
-    GOOGLE_REFRESH_TOKEN: string;
-    GOOGLE_CLIENT_ID: string;
-    GOOGLE_CLIENT_SECRET: string;
-    GOOGLE_REDIRECT_URI: string;
-    GOOGLE_SCOPES: string;
-  };
+  keys: Array<{
+    key: string;
+    value: string;
+    isOptional: boolean;
+  }>;
 }
 
 const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
+
   useEffect(() => {
     const updateClientSecret = async () => {
       try {
@@ -27,38 +25,8 @@ const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
           },
           body: JSON.stringify({
             id: docId,
-            variables: [
-              {
-                key: "GOOGLE_ACCESS_TOKEN",
-                value: keys.GOOGLE_ACCESS_TOKEN,
-                isOptional: false,
-              },
-              {
-                key: "GOOGLE_REFRESH_TOKEN",
-                value: keys.GOOGLE_REFRESH_TOKEN,
-                isOptional: false,
-              },
-              {
-                key: "GOOGLE_CLIENT_ID",
-                value: keys.GOOGLE_CLIENT_ID,
-                isOptional: false,
-              },
-              {
-                key: "GOOGLE_CLIENT_SECRET",
-                value: keys.GOOGLE_CLIENT_SECRET,
-                isOptional: false,
-              },
-              {
-                key: "GOOGLE_REDIRECT_URI",
-                value: keys.GOOGLE_REDIRECT_URI,
-                isOptional: false,
-              },
-              {
-                key: "GOOGLE_SCOPES",
-                value: keys.GOOGLE_SCOPES,
-                isOptional: false,
-              },
-            ],
+            variables: keys,
+            status: CLIENTSECRETSTATUS.FILLED,
           }),
         });
 
@@ -95,4 +63,3 @@ const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
 };
 
 export default OAuthConnectCallback;
-

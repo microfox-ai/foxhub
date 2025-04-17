@@ -12,6 +12,7 @@ import { updateLambdaEnvironmentVariables } from "./aws_helper";
 // RULE 2 - 1 CLIENT SECRET CAN BE USED IN MULTIPLE CLIENT REQUESTS & VICE VERCA (Many-to-Many)
 // RULE 3 - 1 CLIENT SECRET CAN BE USED IN MULTIPLE CLIENT DEPLOYMENTS (Many-to-Many)
 // RULE 4 - 1 PROJECT MIGHT HAVE MULTIPLE CLIENT SECRETS OF THE SAME TYPE
+// RULE 5 - CLIENTSECRETSTATUS.EMPTY means ITs a wasted Document (untill it becomes filled), do not use it anywhere, ignore it by default
 
 /**
  * 1. createClientSecret - Creates a new client secret

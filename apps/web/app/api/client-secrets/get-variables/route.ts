@@ -12,17 +12,9 @@ export async function GET(req: NextRequest) {
     const apiKey = req.headers.get("microfox-api-key");
     const origin = req.nextUrl.origin;
 
-    //console.log("lambda function triggers", origin, apiKey);
-    // TODO: Need to enable checkers for internal requests & ybgpasss internal requests
-    // Skip validation in dev mode or if request is from APP_DOMAIN
-    // if (
-    //   process.env.NODE_ENV !== "development" &&
-    //   !origin.startsWith(APP_BASE_FOR_SITES)
-    // ) {
     if (apiKey !== process.env.MICROFOX_API_KEY) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    // }
 
     const { searchParams } = new URL(req.url);
     const clientRequestId = searchParams.get("clientRequestId");

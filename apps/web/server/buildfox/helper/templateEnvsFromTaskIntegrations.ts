@@ -50,6 +50,8 @@ export const getClientSecretsFromTemplateEnvs = async (
   for (const [packageName, packageEnvs] of Object.entries(packageBasedEnvs)) {
     templateSecrets.push({
       packageType: "template",
+      packageName: packageName,
+      packageConstructor: packageEnvs.constructorFunction,
       type: `${packageName}/${packageEnvs.constructorFunction}`,
       variables: packageEnvs.variables.map((env) => ({
         key: env.key,
@@ -59,6 +61,7 @@ export const getClientSecretsFromTemplateEnvs = async (
       })),
       status: CLIENTSECRETSTATUS.FILLED,
       name: `${packageName}/${packageEnvs.constructorFunction}`,
+      botConfig: [],
     });
   }
   return templateSecrets;

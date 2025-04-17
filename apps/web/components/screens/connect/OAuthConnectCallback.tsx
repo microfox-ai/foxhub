@@ -14,6 +14,7 @@ interface OAuthConnectCallbackProps {
 }
 
 const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
+
   useEffect(() => {
     const updateClientSecret = async () => {
       try {

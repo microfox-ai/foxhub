@@ -1,38 +1,20 @@
 /* eslint-disable @next/next/no-img-element */
-import { Button } from "@/components/ui/button";
-import { useMicrofox } from "../../providers/MicrofoxProvider";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { motion } from "framer-motion";
 import {
-  Target,
-  TextQuote,
-  FileText,
-  Package,
-  GitFork,
-  ExternalLink,
-  Key,
-  Link,
-  CheckCircle,
-  CheckCircle2,
-  Clock,
-  HelpCircle,
-  Info,
-  AlertCircle,
-  Loader2,
-  Eye,
-  EyeOff,
-  Plus,
-  Container,
-  Boxes,
-  Package2,
-  PackageOpen,
-  GitPullRequest,
-  Rocket,
-  ArrowRight,
-  CatIcon,
-  Settings,
-} from "lucide-react";
+  constructAppendBody,
+  constructMessageFromButton,
+  constructShiftMinionMessage,
+} from "@/components/screens/Chat/message/messageHelpers";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import Cube from "@/components/ui/spinners/cube";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -40,37 +22,50 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef, useMemo } from "react";
-import { APIKeyDialog } from "@/components/screens/Chat/message/APIKeyDialog";
-import useSWR from "swr";
-import { useParams } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
+import { TaskInstanceMetaType, TaskIntegrationPlatform } from "@/server/convertfox/types";
+import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
 import { IN_DEV } from "@/utils/constants/appInfo";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Markdown } from "./markdown";
+import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 import { useUser } from "@/utils/hooks/useUser";
-import { Input } from "@/components/ui/input";
-import { EnvVariablesDialog } from "./EnvVariablesDialog";
-import { toast } from "sonner";
+import { ClientSecret, DEPLOY_STAGE } from "@prisma/client";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
-import Cube from "@/components/ui/spinners/cube";
-import { useLayout } from "../../providers/LayoutProvider";
-import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
+import { motion } from "framer-motion";
 import {
-  constructMessageFromButton,
-  constructShiftMinionMessage,
-  constructAppendBody,
-} from "@/components/screens/Chat/message/messageHelpers";
-import { CLIENTSECRETSTATUS, DEPLOY_STAGE } from "@prisma/client";
+  AlertCircle,
+  ArrowRight,
+  CatIcon,
+  CheckCircle,
+  CheckCircle2,
+  Clock,
+  FileText,
+  GitFork,
+  GitPullRequest,
+  HelpCircle,
+  Info,
+  Key,
+  Loader2,
+  PackageIcon,
+  Plus,
+  Rocket,
+  Target,
+  TextQuote
+} from "lucide-react";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import useSWR from "swr";
+import { useLayout } from "../../providers/LayoutProvider";
+import { useMicrofox } from "../../providers/MicrofoxProvider";
+import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
+import { EnvVariablesDialog } from "./EnvVariablesDialog";
+import { Markdown } from "./markdown";
+import { ApiKeyButton } from "./secrets/ApiKeyButton";
+import { OAuthButton } from "./secrets/OAuthButton";
+import {
+  Constructor,
+  Package
+} from "./types";
 
 dayjs.extend(duration);
 
@@ -82,58 +77,6 @@ interface UIAnnotation {
   buttons?: any[];
 }
 
-interface ClientSecret {
-  id: string;
-  name: string;
-  type: string;
-  variables: Array<any>;
-}
-
-interface RequiredKey {
-  key: string;
-  displayName: string;
-  description: string;
-}
-
-interface Constructor {
-  name: string;
-  description: string;
-  zodSecretSchema: string;
-  auth: "apiKey" | "oauth2";
-  requiredKeys?: RequiredKey[];
-  internalKeys: Array<{
-    key: string;
-    displayName: string;
-    description: string;
-  }>;
-}
-
-interface Package {
-  name: string;
-  title: string;
-  description: string;
-  path: string;
-  icon: string;
-  dependencies: string[];
-  status: string;
-  documentation: string;
-  oauth2Scopes: string[];
-  authEndpoint: string;
-  internalKeys: Array<{
-    key: string;
-    displayName: string;
-    description: string;
-  }>;
-
-  constructors: Constructor[];
-}
-
-interface Platform {
-  name: string;
-  reason: string;
-  packageInfo: Package;
-  optional: boolean;
-}
 
 const ActionButtons = (props: any) => {
   const { status, append, setInput, setMinionType } = useMicrofox();
@@ -288,20 +231,13 @@ const TaskIntegrations = ({
   uiAnnotation: UIAnnotation;
   idx: number;
 }) => {
-  const platforms = uiAnnotation.object.platforms as Platform[];
+  const platforms = uiAnnotation.object.platforms as TaskIntegrationPlatform[];
   const params = useParams<{
     project_id?: string;
     request_id?: string;
   }>();
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
-
-  const { user } = useUser();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(
-    null
-  );
-  const [connecting, setConnecting] = useState<Record<string, boolean>>({});
 
   const { data: secretsData, mutate: mutateSecrets } = useSWR<{
     clientSecrets: ClientSecret[];
@@ -313,41 +249,13 @@ const TaskIntegrations = ({
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch secrets");
       return res.json();
-    }
-  );
-
-  const getOAuthCookies = () => {
-    const cookies = document.cookie
-      .split("; ")
-      .filter((row) => row.startsWith("connect/"))
-      .map((row) => row.split("=")[1])
-      .filter((value): value is string => value !== undefined);
-    return cookies;
-  };
-
-  const { data: oauthSecrets } = useSWR<ClientSecret[]>(
-    getOAuthCookies().length > 0
-      ? getOAuthCookies().map((id) => `/api/client-secrets?id=${id}`)
-      : null,
-    async (urls: string[]) => {
-      const responses = await Promise.all(
-        urls.map(async (url) => {
-          const res = await fetch(url);
-          const data = await res.json();
-          return data.clientSecrets;
-        })
-      );
-      return responses
-        .flat()
-        .filter(
-          (secret): secret is ClientSecret =>
-            secret !== null && secret !== undefined
-        );
     },
     {
       revalidateOnFocus: true,
     }
   );
+  const oauthSecrets = secretsData?.clientSecrets?.filter((secret) => secret.packageType === ClientSecretPackageType.OAUTH2);
+
 
   // Compute platform statuses using useMemo to avoid unnecessary recalculations
   const { platformKeyStatus, oauthStatus } = useMemo(() => {
@@ -360,57 +268,35 @@ const TaskIntegrations = ({
         keyStatus[platform.name] = false;
         authStatus[platform.name] = false;
       }
-
       // Check API Keys
-      if (platform.packageInfo?.constructors.some((c) => c.auth === "apiKey")) {
-        const existingSecret = secretsData?.clientSecrets?.filter((secret) => secret != undefined).find((secret) => {
-          const platformNameMatch = secret.type
-            .toLowerCase()
-            .includes(platform.name.toLowerCase());
-          const constructorTypeMatch = platform.packageInfo?.constructors.some(
-            (constructor) => {
-              const fullType =
-                `${platform.packageInfo.name}/${constructor.name}`.toLowerCase();
-              return secret.type.toLowerCase() === fullType;
-            }
-          );
-          return platformNameMatch || constructorTypeMatch;
-        });
-
-        if (existingSecret && platform.packageInfo?.constructors) {
-          const constructor = platform.packageInfo.constructors.find(
-            (c) => c.auth === "apiKey"
-          );
-
-          if (constructor && constructor.requiredKeys) {
-            keyStatus[platform.name] = constructor.requiredKeys.every(
-              (keyInfo) =>
-                existingSecret.variables.some(
-                  (variable) =>
-                    variable.key === keyInfo.key && variable.value?.trim()
-                )
-            );
-          }
+      if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === "apiKey")) {
+        const constructor = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === "apiKey");
+        const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
+          secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === constructor?.name
+        );
+        if (apiKeySecret && constructor && constructor.requiredKeys) {
+          keyStatus[platform.name] = apiKeySecret ? constructor.requiredKeys.every(
+            (keyInfo: ClientSecretVariable) =>
+              (apiKeySecret.variables as any[]).some(
+                (variable: ClientSecretVariable) =>
+                  variable.key === keyInfo.key && variable.value?.trim()
+              )
+          ) : false;
         }
       }
-
       // Check OAuth
-      if (platform.packageInfo?.constructors.some((c) => c.auth === "oauth2")) {
-        const oauthConstructor = platform.packageInfo.constructors.find(
-          (c) => c.auth === "oauth2"
+      if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === "oauth2")) {
+        const oauthConstructor = platform.packageInfo.constructors.find((c: Constructor) => c.auth === "oauth2");
+        const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
+          secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
         );
-        if (oauthConstructor && oauthSecrets) {
-          const oauthSecret = oauthSecrets.find(
-            (secret) =>
-              secret.type ===
-              `${platform.packageInfo.name}/${oauthConstructor.name}`
-          );
+        if (oauthConstructor && oauthSecret && oauthConstructor.internalKeys) {
           authStatus[platform.name] = oauthSecret
-            ? oauthSecret.variables.every(
-              (variable) =>
+            ? (oauthSecret.variables as any[]).every(
+              (variable: ClientSecretVariable) =>
                 variable.value?.trim() !== "" &&
                 oauthConstructor.internalKeys.some(
-                  (key) => key.key === variable.key
+                  (key: ClientSecretVariable) => key.key === variable.key
                 )
             )
             : false;
@@ -428,10 +314,10 @@ const TaskIntegrations = ({
       if (platform.optional) return true;
 
       const requiresApiKey = platform.packageInfo?.constructors.some(
-        (c) => c.auth === "apiKey"
+        (c: Constructor) => c.auth === "apiKey"
       );
       const requiresOauth = platform.packageInfo?.constructors.some(
-        (c) => c.auth === "oauth2"
+        (c: Constructor) => c.auth === "oauth2"
       );
 
       // Check both API key and OAuth status if required
@@ -445,7 +331,7 @@ const TaskIntegrations = ({
       // Check only OAuth status if required
       if (requiresOauth) {
         const oauthConstructor = platform.packageInfo.constructors.find(
-          (c) => c.auth === "oauth2"
+          (c: Constructor) => c.auth === "oauth2"
         );
         const matchingOAuthSecret = oauthSecrets?.find(
           (secret) =>
@@ -459,7 +345,7 @@ const TaskIntegrations = ({
 
         const areKeysMatchingwithInternalKeys =
           matchingOAuthSecret?.variables.every((variable: any) =>
-            oauthConstructor?.internalKeys.some((key) => {
+            oauthConstructor?.internalKeys.some((key: ClientSecretVariable) => {
               if (variable.key === "SCOPES") return true;
               return key.key === variable.key;
             })
@@ -471,72 +357,6 @@ const TaskIntegrations = ({
     });
   }, [platforms, platformKeyStatus, oauthStatus, oauthSecrets]);
 
-  const handleConnect = async (platform: Platform, authEndpoint: string) => {
-    try {
-      setConnecting((prevState: Record<string, boolean>) => ({
-        ...prevState,
-        [platform.name]: true,
-      }));
-
-      // Create empty DB client secret doc
-      const response = await fetch("/api/client-secrets", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          clientRequestId: requestParamId,
-          botProjectId: projectParamId,
-          name: platform.packageInfo?.title,
-          userId: user?.id,
-          status: CLIENTSECRETSTATUS.EMPTY,
-          type: `${platform.packageInfo?.name}/${platform.packageInfo?.constructors.filter((c) => c.auth === "oauth2")[0]?.name}`,
-          variables: [
-            ...platform.packageInfo?.constructors
-              .filter((c) => c.auth === "oauth2")
-              .flatMap((c) => c.internalKeys)
-              .map((key) => ({
-                key: key.key,
-                value: "",
-                isOptional: false,
-              })),
-            ...(platform.packageInfo?.oauth2Scopes?.length > 0
-              ? [
-                {
-                  key: "SCOPES",
-                  value: platform.packageInfo?.oauth2Scopes.join(","),
-                  isOptional: false,
-                },
-              ]
-              : []),
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create client secret");
-      }
-
-      const data = await response.json();
-      document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;
-      localStorage.setItem(authEndpoint.replace(/^\//, ""), data.id);
-
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
-
-      window.open(authEndpoint, "_blank", features);
-    } catch (error) {
-      console.error("Error connecting:", error);
-    } finally {
-      setConnecting((prevState: Record<string, boolean>) => ({
-        ...prevState,
-        [platform.name]: false,
-      }));
-    }
-  };
 
   // If no platforms available, don't render anything
   if (!platforms || platforms.length === 0) {
@@ -563,47 +383,20 @@ const TaskIntegrations = ({
 
       <div className="grid gap-4">
         {platforms.map((platform, index) => {
-          const pkg = platform.packageInfo;
-          const areKeysRequired = pkg?.constructors.some(
+          const packageInfo = platform.packageInfo as Package;
+          const areApiKeysRequired = packageInfo?.constructors.some(
             (constructor: Constructor) => constructor.auth === "apiKey"
           );
-          const areOAuthRequired = pkg?.constructors.some(
+          const areOAuthRequired = packageInfo?.constructors.some(
             (constructor: Constructor) => constructor.auth === "oauth2"
           );
-
-          const authEndpoint = platform.packageInfo?.authEndpoint;
-
-          // console.log(docIdCreatedOnConnectData, "docIdCreatedOnConnectData");
-          const oauthConstructor = pkg.constructors.find(
-            (c) => c.auth === "oauth2"
-          );
-          const getMatchingOAuthSecret =
-            oauthSecrets &&
-            oauthSecrets?.length > 0 &&
-            oauthSecrets?.find(
-              (secret) =>
-                secret.type === `${pkg.name}/${oauthConstructor?.name}`
-            );
-
-          const hasAllAuthRelatedKeys = getMatchingOAuthSecret
-            ? getMatchingOAuthSecret?.variables.every((variable: any) => {
-              return (
-                variable.value?.trim() !== "" &&
-                oauthConstructor?.internalKeys.some((key) => {
-                  if (variable.key === "SCOPES") return true;
-                  return key.key === variable.key;
-                })
-              );
-            })
-            : false;
-
           return (
             <div
               key={platform.name}
               className="flex rounded-lg border p-4 flex-col gap-2"
             >
               <div className="flex items-start gap-3">
-                <img src={pkg?.icon} alt={pkg?.name} className="w-5 h-5 mt-2" />
+                <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />
                 <div className="flex-1">
                   <div className="flex gap-2 items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -614,62 +407,30 @@ const TaskIntegrations = ({
                         <Tooltip delayDuration={500}>
                           <TooltipTrigger asChild>
                             <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                              {pkg?.name}
+                              {packageInfo?.name}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{pkg?.name}</p>
+                            <p>{packageInfo?.name}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>
                     <div className="flex items-center gap-2 rounded-lg border border-gray-200">
-                      {areOAuthRequired ? (
-                        hasAllAuthRelatedKeys ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-3 text-xs font-medium bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
-                            disabled={true}
-                          >
-                            Connected
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-3 text-xs font-medium"
-                            onClick={() =>
-                              handleConnect(platform, authEndpoint)
-                            }
-                            disabled={connecting[platform.name]}
-                          >
-                            {connecting[platform.name]
-                              ? "Connecting..."
-                              : "Connect"}
-                          </Button>
-                        )
-                      ) : areKeysRequired ? (
-                        <div className="relative">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-0 hover:bg-gray-100 relative"
-                            onClick={() => {
-                              setSelectedPlatform(platform);
-                              setIsDialogOpen(true);
-                            }}
-                          >
-                            <Key className="h-4 w-4" />
-                            Add API Keys
-                          </Button>
-                          {!platformKeyStatus[platform.name] ? (
-                            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 animate-pulse" />
-                          ) : (
-                            <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-4 w-4 rounded-full text-green-500" />
-                          )}
-                        </div>
-                      ) : null}
+                      {areOAuthRequired && (
+                        <OAuthButton
+                          platform={platform}
+                          secretsData={secretsData}
+                          mutateSecrets={mutateSecrets}
+                        />
+                      )}
+                      {areApiKeysRequired && (
+                        <ApiKeyButton
+                          platform={platform}
+                          secretsData={secretsData}
+                          mutateSecrets={mutateSecrets}
+                        />
+                      )}
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
@@ -682,43 +443,6 @@ const TaskIntegrations = ({
         })}
       </div>
 
-      {selectedPlatform && (
-        <APIKeyDialog
-          mutateSecrets={mutateSecrets}
-          isOpen={isDialogOpen}
-          onClose={async (submitted) => {
-            setIsDialogOpen(false);
-            setSelectedPlatform(null);
-            if (submitted) {
-              await mutateSecrets();
-            }
-          }}
-          platformName={selectedPlatform.name}
-          pkg={{
-            name: selectedPlatform.packageInfo?.title ?? "",
-            type: `${selectedPlatform.packageInfo?.name}/${selectedPlatform.packageInfo?.constructors.find((c) => c.auth === "apiKey")?.name}`,
-            requiredKeys:
-              selectedPlatform.packageInfo?.constructors.find(
-                (c) => c.auth === "apiKey"
-              )?.requiredKeys ?? [],
-            packageDocumentation: selectedPlatform.packageInfo?.documentation,
-          }}
-          existingSecret={secretsData?.clientSecrets?.find((secret) => {
-            const platformNameMatch = secret.type
-              .toLowerCase()
-              .includes(selectedPlatform.name.toLowerCase());
-            const constructorTypeMatch =
-              selectedPlatform.packageInfo?.constructors.some((constructor) => {
-                const fullType =
-                  `${selectedPlatform.packageInfo.name}/${constructor.name}`.toLowerCase();
-                return secret.type.toLowerCase() === fullType;
-              });
-            return platformNameMatch || constructorTypeMatch;
-          })}
-          projectId={projectParamId}
-          requestId={requestParamId}
-        />
-      )}
       <ActionButtons
         buttons={uiAnnotation.buttons}
         areKeysRequired={platforms.some(
@@ -792,7 +516,7 @@ const TaskStructure = ({
                 value="lambdaFunctions"
                 className="data-[state=active]:bg-white !px-2"
               >
-                <Package className="w-4 h-4" />
+                <PackageIcon className="w-4 h-4" />
                 Webhooks
               </TabsTrigger>
             )}
@@ -964,7 +688,7 @@ const EnvCollector = ({
     clientSecrets: ClientSecret[];
   }>(
     requestParamId
-      ? `/api/client-secrets?clientRequestId=${requestParamId}&type=custom`
+      ? `/api/client-secrets?clientRequestId=${requestParamId}&packageType=${ClientSecretPackageType.CUSTOM}`
       : null,
     async (url: string) => {
       const res = await fetch(url);
@@ -977,14 +701,14 @@ const EnvCollector = ({
   useEffect(() => {
     if (secretsData?.clientSecrets?.[0]?.variables) {
       const keyMap: Record<string, string> = {};
-      secretsData.clientSecrets[0].variables.forEach((variable) => {
+      (secretsData.clientSecrets[0].variables as any[]).forEach((variable: ClientSecretVariable) => {
         keyMap[variable.key] = variable.value;
       });
       setEnvValues(keyMap);
     }
   }, [secretsData]);
 
-  const clientSecretKeys = secretsData?.clientSecrets[0]?.variables;
+  const clientSecretKeys = (secretsData?.clientSecrets?.[0]?.variables as any[]);
   const envVariables = annotation.envVariablesCollect;
   // .filter((env: any) =>
   //   clientSecretKeys?.some((key) => key.key !== env.env && !env.isSameAs)
@@ -1054,7 +778,7 @@ const EnvCollector = ({
 
   const hasAllRequiredKeys = envVariables.every((env: any) => {
     // Only check if the key exists in backend data
-    return secretsData?.clientSecrets?.[0]?.variables?.some(
+    return (secretsData?.clientSecrets?.[0]?.variables as any[])?.some(
       (variable) => variable.key === env.env && variable.value?.trim()
     );
   });
@@ -1453,7 +1177,7 @@ const DeploymentsInfo = ({
         <div className="grid grid-cols-3 gap-4 text-sm">
           <div className="bg-gray-50 p-3 rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <Package size={14} color="#2b7fff" />
+              <PackageIcon size={14} color="#2b7fff" />
               <span className="text-gray-500">Environment</span>
             </div>
             <div className="font-medium text-gray-800">{stage}</div>
@@ -1537,7 +1261,7 @@ const DeploymentsInfo = ({
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <div className="flex items-center gap-2">
-              <Package size={14} color="#2b7fff" />
+              <PackageIcon size={14} color="#2b7fff" />
               <div className="text-gray-500">Environment</div>
             </div>
             <div className="font-medium text-gray-900 mt-1">

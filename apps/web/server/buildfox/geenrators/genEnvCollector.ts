@@ -14,7 +14,12 @@ import {
   fetchTemplateRoot,
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
-import { createOrUpdateClientSecret } from "@/utils/services/db_functions/createClientSecret";
+import {
+  clientSecretExists,
+  clientSecretExistsInProject,
+  createNewClientSecret,
+  updateClientSecret,
+} from "@/utils/services/db_functions/secrets_helper";
 import { ClientRequest, CLIENTSECRETSTATUS } from "@prisma/client";
 import { coreEnvsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
@@ -44,13 +49,25 @@ export const genEnvCollector = async (
       await getClientSecretsFromTemplateEnvs(templateType);
 
     for (const secret of templateSecrets) {
-      const clientSecret = await createOrUpdateClientSecret({
-        botProjectId: clientRequest.botProjectId,
-        userId: clientRequest.userId,
-        clientRequestId: clientRequest.id,
-        mustCreateNewClientSecret: false,
-        ...secret,
-      });
+      const existingClientSecret = await clientSecretExists(
+        clientRequest.botProjectId,
+        clientRequest.id,
+        secret.type
+      );
+      if (existingClientSecret) {
+        await updateClientSecret(existingClientSecret.id, {
+          ...secret,
+        });
+      } else {
+        await createNewClientSecret({
+          ...secret,
+          botProjectId: clientRequest.botProjectId,
+          userId: clientRequest.userId,
+          clientRequestIds: [clientRequest.id],
+          clientDeploymentIds: [],
+          botConfig: secret.botConfig ?? [],
+        });
+      }
     }
 
     // also filter out the env variables from the taskInstanceMeta.taskIntegrations.platforms.packages

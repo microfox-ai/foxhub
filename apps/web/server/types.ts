@@ -19,4 +19,12 @@ export interface ClientSecretVariable {
   key: string;
   value: string;
   isOptional?: boolean;
+  defaultValue?: string | string[];
+}
+
+export enum ClientSecretPackageType {
+  TEMPLATE = "template",
+  CUSTOM = "custom",
+  OAUTH2 = "oauth2",
+  APIKEY = "apikey",
 }

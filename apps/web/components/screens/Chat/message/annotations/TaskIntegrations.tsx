@@ -201,22 +201,13 @@ export const TaskIntegrations = ({
                                 <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />
                                 <div className="flex-1">
                                     <div className="flex gap-2 items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium w-fit text-gray-900">
+                                        <div className="flex flex-col items-start gap-2">
+                                            <span className="leading-none font-medium w-fit text-gray-900">
                                                 {platform.name}
                                             </span>
-                                            <TooltipProvider>
-                                                <Tooltip delayDuration={500}>
-                                                    <TooltipTrigger asChild>
-                                                        <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
-                                                            {packageInfo?.name}
-                                                        </span>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>{packageInfo?.name}</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
+                                            <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
+                                                {packageInfo?.name}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg border border-gray-200">
                                             {areOAuthRequired && (
@@ -235,7 +226,7 @@ export const TaskIntegrations = ({
                                             )}
                                         </div>
                                     </div>
-                                    <p className="text-sm text-gray-600 mt-1">
+                                    <p className="text-sm text-gray-600 mt-3">
                                         {platform.reason}
                                     </p>
                                 </div>

@@ -80,6 +80,8 @@ export async function GET(req: NextRequest) {
     const clientRequestId = searchParams.get("clientRequestId");
     const type = searchParams.get("type");
     const packageType = searchParams.get("packageType");
+    const packageName = searchParams.get("packageName");
+    const packageConstructor = searchParams.get("packageConstructor");
 
     const whereClause = {
       ...(id ? { id } : {}),
@@ -90,6 +92,8 @@ export async function GET(req: NextRequest) {
         : {}),
       ...(type ? { type } : {}),
       ...(packageType ? { packageType } : {}),
+      ...(packageName ? { packageName } : {}),
+      ...(packageConstructor ? { packageConstructor } : {}),
     };
 
     const clientSecrets = await prisma.clientSecret.findMany({

@@ -28,3 +28,8 @@ export enum ClientSecretPackageType {
   OAUTH2 = "oauth2",
   APIKEY = "apikey",
 }
+
+export enum ClientSecretApiType {
+  BOT_TOKEN = "bot_token",
+  API_KEY = "api_key",
+}

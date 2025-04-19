@@ -84,11 +84,11 @@ function getStatusDisplay(status: string): string {
 
 // Helper function to find the first constructor with oauth2 or apiKey auth
 function findAuthConstructor(constructors?: Constructor[]): string {
-  if (!constructors || constructors.length === 0) {
+  if (!constructors || constructors?.length === 0) {
     return "-";
   }
 
-  const authConstructor = constructors.find(
+  const authConstructor = constructors?.find(
     (constructor) =>
       constructor.auth === "oauth2" || constructor.auth === "apiKey"
   );

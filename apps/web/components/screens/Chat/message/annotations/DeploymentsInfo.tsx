@@ -7,7 +7,7 @@ import {
     DialogTitle
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { DEPLOY_STAGE } from "@prisma/client";
+import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { motion } from "framer-motion";
 import {
     AlertCircle,
@@ -31,6 +31,8 @@ import Cube from "@/components/ui/spinners/cube";
 import { useLayout } from "@/components/screens/providers/LayoutProvider";
 import { useMicrofox } from "@/components/screens/providers/MicrofoxProvider";
 import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
+import Link from "next/link";
+import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 
 interface UIAnnotation {
     objectType: string;
@@ -65,6 +67,11 @@ export const DeploymentsInfo = ({
     const { isRightCollapsed, handleRightCollapse } = useLayout();
     const { setDeploymentInfo } = useTaskInstanceMetaContext();
     const { append, setActiveTab } = useMicrofox();
+    const { data: clientRequest } = useSWR<ClientRequest>(
+        requestParamId ? `/api/client-requests/${requestParamId}` : null,
+        (url: string) => fetch(url).then((res) => res.json())
+    );
+
     const {
         data: DeploymentData,
         isLoading,
@@ -282,8 +289,9 @@ export const DeploymentsInfo = ({
                         <div className="font-medium text-gray-900">
                             {deployStep.metadata.display_title}
                         </div>
-                        <div className="text-gray-500 mt-1">
+                        <div className="text-gray-500 mt-1 flex items-center gap-2">
                             PR #{deployStep.metadata.pull_requests[0].number}
+                            <Link href={`https://github.com/${TEMPLATE_REPO_OWNER}/${clientRequest?.repoName}/actions/runs/${runId}`} target="_blank" className="text-blue-500 hover:text-blue-600"> View Action</Link>
                         </div>
                     </div>
                 </div>

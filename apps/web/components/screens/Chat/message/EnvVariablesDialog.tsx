@@ -125,7 +125,7 @@ export const EnvVariablesDialog = ({
             Add Information
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-500">
-            Enter your information below. These will be stored
+            Please enter your information below. This information will be stored
             securely and used in your application.
           </DialogDescription>
         </DialogHeader>
@@ -168,20 +168,20 @@ export const EnvVariablesDialog = ({
               <div className="relative">
                 <Input
                   id={env.env}
-                  type={visibleKeys[env.env] ? "text" : "password"}
+                  type={"text"}
                   value={envValues[env.env] || ""}
                   onChange={(e) => handleInputChange(env.env, e.target.value)}
                   onBlur={() =>
                     setTouchedFields((prev) => ({ ...prev, [env.env]: true }))
                   }
                   className={`h-11 px-4 ${envValues[env.env] ? "pr-11" : ""} ${touchedFields[env.env] && !envValues[env.env]?.trim()
-                      ? "border-red-500 focus-visible:ring-red-200"
-                      : ""
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : ""
                     }`}
                   placeholder={`Enter value for ${env.name}`}
                   aria-label={env.name}
                 />
-                {envValues[env.env] && (
+                {/* {envValues[env.env] && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -195,7 +195,7 @@ export const EnvVariablesDialog = ({
                       <Eye className="h-4 w-4 text-gray-500" />
                     )}
                   </Button>
-                )}
+                )} */}
                 {touchedFields[env.env] && !envValues[env.env]?.trim() && (
                   <div className="flex items-center gap-1 text-red-500 text-sm">
                     <AlertCircle className="h-4 w-4" />
@@ -229,7 +229,7 @@ export const EnvVariablesDialog = ({
                 Saving...
               </>
             ) : (
-              "Save Environment Variables"
+              "Save Information"
             )}
           </Button>
         </DialogFooter>

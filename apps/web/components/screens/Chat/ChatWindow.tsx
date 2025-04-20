@@ -12,7 +12,7 @@ import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
 import TabMessages from "./TabMessages";
-import ConfigureTab from "./ConfigureTab";
+import ConfigureTab from "./dashboard/ConfigureTab";
 
 export type AttachedMedia = {
   file: File;

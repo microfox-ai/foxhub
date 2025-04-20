@@ -33,6 +33,7 @@ import { useMicrofox } from "@/components/screens/providers/MicrofoxProvider";
 import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
 import Link from "next/link";
 import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { useDeployStatus } from "@/components/screens/providers/useDeployStatus";
 
 interface UIAnnotation {
     objectType: string;
@@ -55,45 +56,16 @@ export const DeploymentsInfo = ({
     const pingerInterval = annotation.pingerInterval;
     const stage = annotation.stage;
     const runId = annotation.runId;
-    const [finalData, setFinalData] = useState<any>(null);
     const [showLogsDialog, setShowLogsDialog] = useState(false);
-    const params = useParams<{
-        project_id?: string;
-        request_id?: string;
-    }>();
-    const projectParamId = params?.project_id;
-    const requestParamId = params?.request_id;
 
     const { isRightCollapsed, handleRightCollapse } = useLayout();
     const { setDeploymentInfo } = useTaskInstanceMetaContext();
     const { append, setActiveTab } = useMicrofox();
-    const { data: clientRequest } = useSWR<ClientRequest>(
-        requestParamId ? `/api/client-requests/${requestParamId}` : null,
-        (url: string) => fetch(url).then((res) => res.json())
-    );
-
-    const {
-        data: DeploymentData,
-        isLoading,
-        isValidating,
-    } = useSWR(
-        finalData?.shouldBreak
-            ? null
-            : `/api/client-functions/deployer?stage=${stage}&runId=${runId}&clientRequestId=${requestParamId}`,
-        (url: string) => fetch(url).then((res) => res.json()),
-        {
-            refreshInterval: pingerInterval,
-        }
-    );
-
-    const deployStep = finalData?.deployStep;
-    useEffect(() => {
-        if (DeploymentData) {
-            console.log(DeploymentData, "DeploymentData");
-            setFinalData(DeploymentData);
-            setDeploymentInfo(DeploymentData.clientDeployment);
-        }
-    }, [DeploymentData]);
+    const { finalData, deployStep, clientRequest } = useDeployStatus({
+        stage,
+        runId,
+        pingerInterval
+    });
 
     const deployToProduction = () => {
         console.log("deployToProduction");

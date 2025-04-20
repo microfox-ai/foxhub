@@ -20,7 +20,9 @@ import { Key, Info, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 interface EnvVariable {
   env: string;
   name: string;
-  what: string;
+  what?: string;
+  how?: string;
+  why?: string;
 }
 
 interface EnvVariablesDialogProps {
@@ -167,7 +169,7 @@ export const EnvVariablesDialog = ({
                         className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
                         showArrow={false}
                       >
-                        <p>{env.what}</p>
+                        <p>{env.what ?? "No information provided"}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

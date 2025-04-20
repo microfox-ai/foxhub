@@ -139,6 +139,7 @@ export const APIKeyDialog = ({
           name: nickName ?? pkg.name,
           clientRequestId: requestParamId,
           status: CLIENTSECRETSTATUS.FILLED,
+          updateDeployments: true,
         }
         : {
           botProjectId: projectParamId,
@@ -151,6 +152,7 @@ export const APIKeyDialog = ({
           status: CLIENTSECRETSTATUS.FILLED,
           variables,
           addToClientRequest: true,
+          updateDeployments: true,
         };
 
       const response = await fetch(endpoint, {

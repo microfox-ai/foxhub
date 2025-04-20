@@ -13,7 +13,10 @@ import {
   removeClientSecretFromClientRequest,
   removeClientSecretFromClientDeployment,
   updateClientSecret,
+  updateDeploymentsOfClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
+import { ClientSecretPackageType } from "@/server/types";
+import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
 
 // Create ClientSecret
 export async function POST(req: NextRequest) {
@@ -32,6 +35,7 @@ export async function POST(req: NextRequest) {
       packageConstructor,
       packageType,
       botConfig,
+      updateDeployments,
     } = body;
 
     console.log("body", body);
@@ -49,7 +53,7 @@ export async function POST(req: NextRequest) {
       variables,
       name,
       status,
-      clientRequestIds: [clientRequestId],
+      clientRequestIds: clientRequestId ? [clientRequestId] : [],
       clientDeploymentIds: [],
       packageName,
       packageConstructor,
@@ -59,6 +63,10 @@ export async function POST(req: NextRequest) {
 
     if (addToClientRequest) {
       await addClientSecretToClientRequest(clientSecret.id, clientRequestId);
+    }
+
+    if (updateDeployments) {
+      await updateDeploymentsOfClientSecret(clientSecret);
     }
 
     return NextResponse.json(clientSecret, { status: 200 });
@@ -82,6 +90,7 @@ export async function GET(req: NextRequest) {
     const packageType = searchParams.get("packageType");
     const packageName = searchParams.get("packageName");
     const packageConstructor = searchParams.get("packageConstructor");
+    const withPackageInfos = searchParams.get("withPackageInfos");
 
     const whereClause = {
       ...(id ? { id } : {}),
@@ -99,8 +108,28 @@ export async function GET(req: NextRequest) {
     const clientSecrets = await prisma.clientSecret.findMany({
       where: whereClause,
     });
+    const finalClientSecrets = [];
 
-    return NextResponse.json({ clientSecrets }, { status: 200 });
+    for (const clientSecret of clientSecrets) {
+      let packageInfo = null;
+      if (
+        withPackageInfos === "true" &&
+        clientSecret.packageName &&
+        (clientSecret.packageType === ClientSecretPackageType.APIKEY ||
+          clientSecret.packageType === ClientSecretPackageType.OAUTH2)
+      ) {
+        packageInfo = await fetchPackageInfo(clientSecret.packageName);
+      }
+      finalClientSecrets.push({
+        ...clientSecret,
+        packageInfo,
+      });
+    }
+
+    return NextResponse.json(
+      { clientSecrets: finalClientSecrets },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: "Error fetching ClientSecret" },
@@ -113,7 +142,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, clientRequestId, ...secretData } = body;
+    const { id, clientRequestId, updateDeployments, ...secretData } = body;
 
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
@@ -125,6 +154,10 @@ export async function PUT(req: NextRequest) {
     ) {
       const updates = await addClientSecretToClientRequest(id, clientRequestId);
       updatedSecret = updates.clientSecret!;
+    }
+
+    if (updateDeployments) {
+      await updateDeploymentsOfClientSecret(updatedSecret);
     }
 
     return NextResponse.json(updatedSecret, { status: 200 });

@@ -1,4 +1,4 @@
-import { DEPLOY_STAGE } from "@prisma/client";
+import { ClientSecret, DEPLOY_STAGE } from "@prisma/client";
 
 export interface IMediaPayloadType {
   mediaName: string;
@@ -34,6 +34,10 @@ export enum ClientSecretApiType {
   API_KEY = "api_key",
 }
 
+export interface ClientSecretWithPackageInfo extends ClientSecret {
+  packageInfo?: any;
+}
+
 export interface ClientDeploymentMetadata {
   title?: string;
   version?: string;
@@ -51,5 +55,7 @@ export interface ClientDeploymentMetadata {
       functionName: string;
       size: string;
     }[];
+    serviceName?: string;
+    functionBase?: string;
   };
 }

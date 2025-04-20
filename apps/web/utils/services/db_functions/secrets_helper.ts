@@ -5,7 +5,7 @@ import {
 } from "@/utils/constants/githubInfo";
 import { ClientSecret, CLIENTSECRETSTATUS } from "@prisma/client";
 import { GithubSdk } from "../githubSdk";
-import { ClientSecretVariable } from "@/server/types";
+import { ClientDeploymentMetadata, ClientSecretVariable } from "@/server/types";
 import { updateLambdaEnvironmentVariables } from "./aws_helper";
 
 // RULE 1 - CLIENT SECRETS ARE SCOPED TO BOT PROJECTS
@@ -412,6 +412,44 @@ export const updateClientSecretVariablesInDeployments = async (
         environmentVariables: envVars,
         region: process.env.AWS_REGION ?? "us-east-1",
       });
+    }
+  }
+};
+
+export const updateDeploymentsOfClientSecret = async (
+  clientSecret?: ClientSecret | null,
+  onlyRequestIds?: string[]
+) => {
+  if (clientSecret && clientSecret?.variables?.length > 0) {
+    const clientDeployments = await prisma.clientDeployment.findMany({
+      where: {
+        originClientRequestId: {
+          in: onlyRequestIds ?? clientSecret?.clientRequestIds,
+        },
+      },
+    });
+
+    for (const deployment of clientDeployments) {
+      const serverlessMetadata = (
+        deployment?.metadata as unknown as ClientDeploymentMetadata
+      ).serverless;
+      for (const functionInfo of serverlessMetadata?.functions) {
+        await updateLambdaEnvironmentVariables({
+          functionName:
+            serverlessMetadata?.functionBase?.toLowerCase() +
+            "-" +
+            functionInfo.functionName,
+          region: "us-east-1",
+          environmentVariables:
+            clientSecret?.variables.reduce(
+              (acc: Record<string, string>, curr: any) => {
+                acc[curr.key] = curr.value;
+                return acc;
+              },
+              {}
+            ) ?? {},
+        });
+      }
     }
   }
 };

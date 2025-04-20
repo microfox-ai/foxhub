@@ -10,8 +10,8 @@ import { useParams } from "next/navigation";
 import { KeyedMutator } from "swr";
 
 
-export const OAuthButton = ({ platform, secretsData, mutateSecrets }: {
-    platform: TaskIntegrationPlatform,
+export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
+    packageInfo: any,
     secretsData?: {
         clientSecrets: ClientSecret[],
     },
@@ -28,21 +28,21 @@ export const OAuthButton = ({ platform, secretsData, mutateSecrets }: {
     const requestParamId = params?.request_id;
     const { user } = useUser();
     const [connecting, setConnecting] = useState<Record<string, boolean>>({});
-    const constructor: Constructor = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2");
+    const constructor: Constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2");
 
-    const handleConnect = async (platform: TaskIntegrationPlatform, authEndpoint: string) => {
+    const handleConnect = async (packageInfo: any, authEndpoint: string) => {
         try {
             setConnecting((prevState: Record<string, boolean>) => ({
                 ...prevState,
-                [platform.name]: true,
+                [packageInfo.name]: true,
             }));
 
             // Create empty DB client secret doc
             const data = await PortalSdk.postData(`/api/client-secrets`, {
                 clientRequestId: requestParamId,
                 botProjectId: projectParamId,
-                name: platform.packageInfo?.title,
-                packageName: platform.packageInfo?.name,
+                name: packageInfo?.title,
+                packageName: packageInfo?.name,
                 packageConstructor: constructor?.name,
                 packageType: ClientSecretPackageType.OAUTH2,
                 userId: user?.id,
@@ -73,17 +73,17 @@ export const OAuthButton = ({ platform, secretsData, mutateSecrets }: {
         } finally {
             setConnecting((prevState: Record<string, boolean>) => ({
                 ...prevState,
-                [platform.name]: false,
+                [packageInfo.name]: false,
             }));
         }
     };
 
 
-    const oauthConstructor = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2");
+    const oauthConstructor = packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2");
     const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
-        secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
+        secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
     );
-    const authEndpoint = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2")?.authEndpoint;
+    const authEndpoint = packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2")?.authEndpoint;
 
     const hasAllAuthRelatedKeys = oauthSecret
         ? (oauthSecret?.variables as any[]).every((variable: ClientSecretVariable) =>
@@ -114,11 +114,11 @@ export const OAuthButton = ({ platform, secretsData, mutateSecrets }: {
                     size="sm"
                     className="h-8 px-3 text-xs font-medium"
                     onClick={() =>
-                        handleConnect(platform, authEndpoint)
+                        handleConnect(packageInfo, authEndpoint)
                     }
-                    disabled={connecting[platform.name]}
+                    disabled={connecting[packageInfo.name]}
                 >
-                    {connecting[platform.name]
+                    {connecting[packageInfo.name]
                         ? "Connecting..."
                         : "Connect"}
                 </Button>

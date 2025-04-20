@@ -14,7 +14,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
+import { ClientSecretApiType, ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
 
 interface UIAnnotation {
     objectType: string;
@@ -187,11 +187,11 @@ export const TaskIntegrations = ({
             <div className="grid gap-4">
                 {platforms.map((platform, index) => {
                     const packageInfo = platform.packageInfo as Package;
-                    const areApiKeysRequired = packageInfo?.constructors.some(
-                        (constructor: Constructor) => constructor.auth === "apiKey"
+                    const isApiKeyRequired = packageInfo?.constructors.some(
+                        (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
                     );
-                    const areOAuthRequired = packageInfo?.constructors.some(
-                        (constructor: Constructor) => constructor.auth === "oauth2"
+                    const isOAuthRequired = packageInfo?.constructors.some(
+                        (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.OAUTH2
                     );
                     return (
                         <div
@@ -211,16 +211,16 @@ export const TaskIntegrations = ({
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg border border-gray-200">
-                                            {areOAuthRequired && (
+                                            {isOAuthRequired && (
                                                 <OAuthButton
-                                                    platform={platform}
+                                                    packageInfo={packageInfo}
                                                     secretsData={secretsData}
                                                     mutateSecrets={mutateSecrets}
                                                 />
                                             )}
-                                            {areApiKeysRequired && (
+                                            {isApiKeyRequired && (
                                                 <ApiKeyButton
-                                                    platform={platform}
+                                                    packageInfo={packageInfo}
                                                     secretsData={secretsData}
                                                     mutateSecrets={mutateSecrets}
                                                 />

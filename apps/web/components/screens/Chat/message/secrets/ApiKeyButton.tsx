@@ -18,11 +18,11 @@ import {
 import { PortalSdk } from "@/utils/services/PortalSdk";
 
 export const ApiKeyButton = ({
-    platform,
+    packageInfo,
     mutateSecrets,
-    secretsData,
+    secretsData
 }: {
-    platform: TaskIntegrationPlatform,
+    packageInfo: any,
     secretsData?: {
         clientSecrets: ClientSecret[],
     },
@@ -43,7 +43,7 @@ export const ApiKeyButton = ({
         clientSecrets: ClientSecret[];
     }>(
         projectParamId
-            ? `/api/client-secrets?botProjectId=${projectParamId}&packageType=${ClientSecretPackageType.APIKEY}&packageName=${platform.packageInfo?.name}`
+            ? `/api/client-secrets?botProjectId=${projectParamId}&packageType=${ClientSecretPackageType.APIKEY}&packageName=${packageInfo?.name}`
             : null,
         async (url: string) => {
             const res = await fetch(url);
@@ -57,21 +57,21 @@ export const ApiKeyButton = ({
     const botSecrets = botSecretsData?.clientSecrets;
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [selectedPlatform, setSelectedPlatform] = useState<TaskIntegrationPlatform | null>(
+    const [selectedPlatform, setSelectedPlatform] = useState<any | null>(
         null
     );
     const [selectedBotSecret, setSelectedBotSecret] = useState<string | null>(null);
 
-    const constructor = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === "apiKey");
-    const packageApiType = platform.packageInfo?.apiType as ClientSecretApiType;
+    const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === "apiKey");
+    const packageApiType = constructor?.apiType as ClientSecretApiType;
     const [isLoading, setIsLoading] = useState(false);
 
     // Find the current API key secret from secretsData
     const currentApiKeySecret = useMemo(() => {
         return secretsData?.clientSecrets?.find((secret) =>
-            secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === constructor?.name
+            secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === constructor?.name
         );
-    }, [secretsData, platform, constructor]);
+    }, [secretsData, packageInfo, constructor]);
 
     // Set the selected bot secret to the current API key secret when it changes
     useMemo(() => {
@@ -81,7 +81,7 @@ export const ApiKeyButton = ({
     }, [currentApiKeySecret]);
 
     const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
-        secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === constructor?.name
+        secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === constructor?.name
     );
     const isAllRequiredKeysFilled = useMemo(() => {
         if (apiKeySecret && constructor && constructor.requiredKeys) {
@@ -95,7 +95,7 @@ export const ApiKeyButton = ({
             ) : false;
         }
         return false;
-    }, [platform, apiKeySecret, constructor]);
+    }, [packageInfo, apiKeySecret, constructor]);
 
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {
@@ -111,7 +111,7 @@ export const ApiKeyButton = ({
             mutateBotSecrets();
             await mutateSecrets();
             setIsLoading(false);
-            setSelectedPlatform(platform);
+            setSelectedPlatform(packageInfo);
             setIsDialogOpen(true);
         } else {
             setIsLoading(true);
@@ -240,7 +240,7 @@ export const ApiKeyButton = ({
                         }
                     }}
                     platformName={selectedPlatform.name}
-                    pkg={selectedPlatform.packageInfo}
+                    pkg={selectedPlatform}
                     apiKeySecret={apiKeySecret}
                 />
             )}

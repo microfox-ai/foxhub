@@ -1,7 +1,10 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata } from "@/server/types";
 import { updateLambdaEnvironmentVariables } from "@/utils/services/db_functions/aws_helper";
-import { updateClientSecret } from "@/utils/services/db_functions/secrets_helper";
+import {
+  updateClientSecret,
+  updateDeploymentsOfClientSecret,
+} from "@/utils/services/db_functions/secrets_helper";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,37 +18,7 @@ export async function PUT(req: NextRequest) {
 
     let updatedSecret = await updateClientSecret(id, secretData);
 
-    if (
-      updatedSecret.variables.length > 0 &&
-      updatedSecret.status === CLIENTSECRETSTATUS.FILLED
-    ) {
-      const clientDeployments = await prisma.clientDeployment.findMany({
-        where: {
-          originClientRequestId: {
-            in: updatedSecret.clientRequestIds,
-          },
-        },
-      });
-
-      for (const deployment of clientDeployments) {
-        for (const functionInfo of (
-          deployment?.metadata as unknown as ClientDeploymentMetadata
-        )?.serverless?.functions) {
-          await updateLambdaEnvironmentVariables({
-            functionName:
-              "u-1745054734317-omega-staging-" + functionInfo.functionName,
-            region: "us-east-1",
-            environmentVariables: updatedSecret.variables.reduce(
-              (acc: Record<string, string>, curr: any) => {
-                acc[curr.key] = curr.value;
-                return acc;
-              },
-              {}
-            ),
-          });
-        }
-      }
-    }
+    await updateDeploymentsOfClientSecret(updatedSecret);
 
     return NextResponse.json(updatedSecret, { status: 200 });
   } catch (error) {

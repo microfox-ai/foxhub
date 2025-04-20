@@ -12,9 +12,13 @@ import { SecretCard } from "./SecretCard";
 import { EnvVariablesDialog } from "../message/EnvVariablesDialog";
 import { APIKeyDialog } from "../message/secrets/APIKeyDialog";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialogue";
-import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
+import { ClientSecretPackageType, ClientSecretVariable, ClientSecretWithPackageInfo } from "@/server/types";
 import { useTaskInstanceMeta, useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { OAuthButton } from "../message/secrets/OAuthButton";
+import { ApiKeyButton } from "../message/secrets/ApiKeyButton";
+import { Constructor } from "../message/types";
+
 
 
 export const SecretVault = () => {
@@ -41,10 +45,10 @@ export const SecretVault = () => {
     };
 
     const { data: allSecrets, mutate: mutateSecrets } = useSWR<{
-        clientSecrets: ClientSecret[];
+        clientSecrets: ClientSecretWithPackageInfo[];
     }>(
         clientRequestId
-            ? `/api/client-secrets?clientRequestId=${clientRequestId}`
+            ? `/api/client-secrets?clientRequestId=${clientRequestId}&withPackageInfos=true`
             : null,
         async (url: string) => {
             const res = await fetch(url);
@@ -61,9 +65,8 @@ export const SecretVault = () => {
     const templateVariables = templateSecrets?.map((secret) => secret.variables).flat() || [];
 
     const platformSecrets =
-        allSecrets?.clientSecrets?.filter((secret) => secret?.packageType !== ClientSecretPackageType.CUSTOM && secret?.packageType !== ClientSecretPackageType.TEMPLATE) ||
+        allSecrets?.clientSecrets?.filter((secret) => secret?.packageType === ClientSecretPackageType.APIKEY || secret?.packageType === ClientSecretPackageType.OAUTH2) ||
         [];
-
 
 
     const handleDeleteSecret = async (secret: ClientSecret) => {
@@ -120,7 +123,7 @@ export const SecretVault = () => {
     };
 
     const envsToCollect = (taskInstanceMeta?.buildingStep as any)?.envsToCollect;
-
+    const platforms = taskInstanceMeta?.taskIntegrations?.platforms as any[];
 
 
     return (
@@ -137,6 +140,58 @@ export const SecretVault = () => {
 
                     </span>
                 </div>
+
+                {platforms?.map((platform) => {
+                    const packageInfo = platform.packageInfo as any;
+                    const isApiKeyRequired = packageInfo?.constructors.some(
+                        (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
+                    );
+                    const isOAuthRequired = packageInfo?.constructors.some(
+                        (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.OAUTH2
+                    );
+                    const secret = allSecrets?.clientSecrets?.find((secret) => secret?.packageName === platform?.packageInfo?.name && secret?.packageConstructor === platform?.packageInfo?.constructor);
+                    return (
+                        <div
+                            key={platform?.name + "-" + platform?.package}
+                            className="flex rounded-lg border p-4 flex-col gap-2"
+                        >
+                            <div className="flex items-start gap-3">
+                                <img src={platform?.packageInfo?.icon} alt={platform?.packageInfo?.name} className="w-5 h-5 mt-2" />
+                                <div className="flex-1">
+                                    <div className="flex gap-2 items-center justify-between">
+                                        <div className="flex flex-col items-start gap-2">
+                                            <span className="leading-none font-medium w-fit text-gray-900">
+                                                {secret?.name ?? platform.packageInfo.title ?? platform.packageInfo?.name}
+                                            </span>
+                                            <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
+                                                {platform.packageInfo?.name}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 rounded-lg border border-gray-200">
+                                            {isOAuthRequired && (
+                                                <OAuthButton
+                                                    packageInfo={platform?.packageInfo}
+                                                    secretsData={allSecrets}
+                                                    mutateSecrets={mutateSecrets}
+                                                />
+                                            )}
+                                            {isApiKeyRequired && (
+                                                <ApiKeyButton
+                                                    packageInfo={platform?.packageInfo}
+                                                    secretsData={allSecrets}
+                                                    mutateSecrets={mutateSecrets}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-3">
+                                        {platform?.packageInfo?.description}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
 
 
                 {/* <div className=" shadow-none border-none">
@@ -261,14 +316,14 @@ export const SecretVault = () => {
                 isOpen={!!showAddEnvModal}
                 onClose={() => setShowAddEnvModal(false)}
                 // attach how,what & why from taskInstanceMeta
-                envVariables={(customSecret?.variables as any[]).map((secret) => {
+                envVariables={(customSecret?.variables as any[])?.map((secret) => {
                     const _env = envsToCollect?.find((env: any) => env.env === secret.key);
                     return _env ? _env :
                         {
                             env: secret.key,
                             name: secret.key,
                         }
-                })}
+                }) ?? []}
                 onSave={handleSaveCustomEnv}
                 // needed to map it to Record<string, string>
                 initialValues={(customSecret?.variables as any[])?.reduce((acc: Record<string, string>, secret: ClientSecretVariable) => {

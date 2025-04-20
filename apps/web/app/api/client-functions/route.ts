@@ -43,12 +43,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId, botProjectId } = clientRequest;
+    const { userId, botProjectId, serviceName } = clientRequest;
 
     const serverlessLog = metadata.serverless.output;
     const functions = parseServerlessLogs(serverlessLog);
     let newMetadata = { ...metadata };
     newMetadata.serverless.functions = functions;
+    newMetadata.serverless.serviceName = serviceName;
+    newMetadata.serverless.functionBase = serviceName + "-" + stage;
 
     // Create the ClientDeployment
     // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),

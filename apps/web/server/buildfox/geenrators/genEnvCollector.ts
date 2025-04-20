@@ -15,6 +15,7 @@ import {
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
 import {
+  addClientSecretToClientRequest,
   clientSecretExists,
   clientSecretExistsInProject,
   createNewClientSecret,
@@ -55,9 +56,14 @@ export const genEnvCollector = async (
         secret.type
       );
       if (existingClientSecret) {
+        // in case if they are updated
         await updateClientSecret(existingClientSecret.id, {
           ...secret,
         });
+        await addClientSecretToClientRequest(
+          existingClientSecret.id,
+          clientRequest.id
+        );
       } else {
         await createNewClientSecret({
           ...secret,

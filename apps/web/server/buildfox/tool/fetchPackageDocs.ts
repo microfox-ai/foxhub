@@ -1,6 +1,7 @@
 import {
   fetchGithubJson,
   fetchGithubText,
+  fetchPackageReadme,
 } from "@/server/convertfox/gitFetchers";
 import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import { models } from "@/server/models";
@@ -32,10 +33,15 @@ export const fetchPackageDocs = (
       microfoxPackages: z
         .array(z.string())
         .describe(
-          "The exact names of the packages to fetch docs for (@microfox/core , @microfox/aws-ses etc..)"
+          "The exact names of the microfox packages to fetch docs for (@microfox/core , @microfox/aws-ses etc..)"
+        ),
+      externalPackages: z
+        .array(z.string())
+        .describe(
+          "The exact names of the external packages to fetch docs for (@slack/web-api google-api-nodejs-client, stripe etc..)"
         ),
     }),
-    execute: async ({ microfoxPackages }, options) => {
+    execute: async ({ microfoxPackages, externalPackages }, options) => {
       const fetchReadMePackages = microfoxPackages.filter((pkg) =>
         pkg.includes("@microfox/")
       );
@@ -47,11 +53,7 @@ export const fetchPackageDocs = (
             content: `Fetching documentation for ${pkg}`,
           });
           try {
-            let mainReadme = await fetchGithubText(
-              "microfox-ai",
-              "microfox",
-              `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/README.md`
-            );
+            let mainReadme = await fetchPackageReadme(pkg);
             readme = mainReadme;
             // let packageInfo = await fetchGithubJson(
             //   "microfox-ai",

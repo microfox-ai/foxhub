@@ -3,8 +3,9 @@ export async function fetchGithubJson(
   repo: string,
   path: string
 ): Promise<any> {
-  // GitHub raw content URL format
-  const url = `https://raw.githubusercontent.com/${owner}/${repo}${path}`;
+  // GitHub raw content URL format with proper encoding
+  const encodedPath = encodeURIComponent(path);
+  const url = `https://raw.githubusercontent.com/${owner}/${repo}${encodedPath}`;
 
   console.log("fetching", url);
   try {
@@ -27,8 +28,9 @@ export async function fetchGithubText(
   repo: string,
   path: string
 ): Promise<any> {
-  // GitHub raw content URL format
-  const url = `https://raw.githubusercontent.com/${owner}/${repo}${path}`;
+  // GitHub raw content URL format with proper encoding
+  const encodedPath = encodeURIComponent(path);
+  const url = `https://raw.githubusercontent.com/${owner}/${repo}${encodedPath}`;
 
   console.log("fetching", url);
   try {
@@ -70,10 +72,17 @@ export async function fetchJson(url: string) {
 
 export async function fetchPackageInfo(packageName: string) {
   try {
+    if (packageName === "@microfox/null") {
+      return null;
+    }
+    const path = packageName.startsWith("@microfox/")
+      ? packageName.replaceAll("@microfox/", "packages/")
+      : `packages/@ext_${packageName.replaceAll("/", "#")}`;
+
     const packageInfo = await fetchGithubJson(
       "microfox-ai",
       "microfox",
-      `/refs/heads/main/packages/${packageName.replaceAll("@microfox/", "")}/package-info.json`
+      `/refs/heads/main/${path}/package-info.json`
     );
     return packageInfo;
   } catch (error) {
@@ -84,10 +93,13 @@ export async function fetchPackageInfo(packageName: string) {
 
 export async function fetchPackageReadme(packageName: string) {
   try {
-    const readme = await fetchGithubJson(
+    const path = packageName.startsWith("@microfox/")
+      ? packageName.replaceAll("@microfox/", "packages/")
+      : `packages/@ext_${packageName.replaceAll("/", "#")}`;
+    const readme = await fetchGithubText(
       "microfox-ai",
       "microfox",
-      `/refs/heads/main/packages/${packageName.replaceAll("@microfox/", "")}/README.md`
+      `/refs/heads/main/${path}/README.md`
     );
     return readme;
   } catch (error) {

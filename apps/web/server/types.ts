@@ -28,3 +28,28 @@ export enum ClientSecretPackageType {
   OAUTH2 = "oauth2",
   APIKEY = "apikey",
 }
+
+export enum ClientSecretApiType {
+  BOT_TOKEN = "bot_token",
+  API_KEY = "api_key",
+}
+
+export interface ClientDeploymentMetadata {
+  title?: string;
+  version?: string;
+  description?: string;
+  docData?: {
+    openapi?: string;
+    info?: any;
+    paths?: any;
+    servers?: any[];
+  };
+  serverless: {
+    output?: string;
+    stage?: DEPLOY_STAGE;
+    functions: {
+      functionName: string;
+      size: string;
+    }[];
+  };
+}

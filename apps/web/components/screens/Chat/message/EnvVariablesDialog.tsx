@@ -20,7 +20,9 @@ import { Key, Info, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 interface EnvVariable {
   env: string;
   name: string;
-  what: string;
+  what?: string;
+  how?: string;
+  why?: string;
 }
 
 interface EnvVariablesDialogProps {
@@ -29,6 +31,7 @@ interface EnvVariablesDialogProps {
   envVariables: EnvVariable[];
   onSave: (values: Record<string, string>) => Promise<void>;
   initialValues?: Record<string, string>;
+  encryptByDefault?: boolean;
 }
 
 export const EnvVariablesDialog = ({
@@ -37,12 +40,19 @@ export const EnvVariablesDialog = ({
   envVariables,
   onSave,
   initialValues = {},
+  encryptByDefault = true,
 }: EnvVariablesDialogProps) => {
   const [envValues, setEnvValues] =
     useState<Record<string, string>>(initialValues);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>(() => {
+    // Initialize all keys to the same visibility based on encryptByDefault
+    return envVariables.reduce((acc, env) => {
+      acc[env.env] = !encryptByDefault;
+      return acc;
+    }, {} as Record<string, boolean>);
+  });
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
     {}
   );
@@ -125,7 +135,7 @@ export const EnvVariablesDialog = ({
             Add Information
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-500">
-            Enter your information below. These will be stored
+            Please enter your information below. This information will be stored
             securely and used in your application.
           </DialogDescription>
         </DialogHeader>
@@ -159,7 +169,7 @@ export const EnvVariablesDialog = ({
                         className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
                         showArrow={false}
                       >
-                        <p>{env.what}</p>
+                        <p>{env.what ?? "No information provided"}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -168,20 +178,20 @@ export const EnvVariablesDialog = ({
               <div className="relative">
                 <Input
                   id={env.env}
-                  type={visibleKeys[env.env] ? "text" : "password"}
+                  type={"text"}
                   value={envValues[env.env] || ""}
                   onChange={(e) => handleInputChange(env.env, e.target.value)}
                   onBlur={() =>
                     setTouchedFields((prev) => ({ ...prev, [env.env]: true }))
                   }
                   className={`h-11 px-4 ${envValues[env.env] ? "pr-11" : ""} ${touchedFields[env.env] && !envValues[env.env]?.trim()
-                      ? "border-red-500 focus-visible:ring-red-200"
-                      : ""
+                    ? "border-red-500 focus-visible:ring-red-200"
+                    : ""
                     }`}
                   placeholder={`Enter value for ${env.name}`}
                   aria-label={env.name}
                 />
-                {envValues[env.env] && (
+                {/* {envValues[env.env] && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -195,7 +205,7 @@ export const EnvVariablesDialog = ({
                       <Eye className="h-4 w-4 text-gray-500" />
                     )}
                   </Button>
-                )}
+                )} */}
                 {touchedFields[env.env] && !envValues[env.env]?.trim() && (
                   <div className="flex items-center gap-1 text-red-500 text-sm">
                     <AlertCircle className="h-4 w-4" />
@@ -229,7 +239,7 @@ export const EnvVariablesDialog = ({
                 Saving...
               </>
             ) : (
-              "Save Environment Variables"
+              "Save Information"
             )}
           </Button>
         </DialogFooter>

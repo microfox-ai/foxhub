@@ -172,10 +172,13 @@ export const buildFoxRouter: ServerStreamingFunction<
   // push to git
   await pushToGit(props, clientRequest, taskInstanceMeta);
 
-  await updateClientRequest({
-    id: clientRequestId,
-    serviceName: getServiceName(clientRequest, taskInstanceMeta),
-  });
+  if (clientRequestId) {
+    console.log("Updating client request", clientRequestId);
+    await updateClientRequest({
+      clientRequestId: clientRequestId,
+      serviceName: getServiceName(clientRequest, taskInstanceMeta),
+    });
+  }
 
   // record the changes in the build fox steps taken so far using taskInstanceMeta.
   const filesList = await readAllGenFilesList(clientRequest, true);

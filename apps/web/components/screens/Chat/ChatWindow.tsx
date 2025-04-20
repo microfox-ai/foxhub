@@ -12,6 +12,7 @@ import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
 import TabMessages from "./TabMessages";
+import ConfigureTab from "./dashboard/ConfigureTab";
 
 export type AttachedMedia = {
   file: File;
@@ -190,6 +191,26 @@ function ChatWindow({
                         messagesEndRef={messagesEndRef}
                         isStreaming={status === "streaming"}
                       />
+                    </div>
+                  </motion.div>
+                )}
+                {activeTab === "dashboard" && (
+                  <motion.div
+                    key="dashboard"
+                    initial={{ x: getSlideDirection("dashboard") }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 30,
+                      duration: 0.1,
+                      exit: { duration: 0 },
+                    }}
+                    className=" w-full h-full overflow-y-auto thin-scrollbar"
+                  >
+                    <div className="max-w-[800px] mx-auto">
+                      <ConfigureTab />
                     </div>
                   </motion.div>
                 )}

@@ -63,7 +63,7 @@ export const ApiKeyButton = ({
     const [selectedBotSecret, setSelectedBotSecret] = useState<string | null>(null);
 
     const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === "apiKey");
-    const packageApiType = packageInfo?.apiType as ClientSecretApiType;
+    const packageApiType = constructor?.apiType as ClientSecretApiType;
     const [isLoading, setIsLoading] = useState(false);
 
     // Find the current API key secret from secretsData

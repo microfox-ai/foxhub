@@ -16,20 +16,22 @@ export const uploadToRepo = async (
     // gets commit's AND its tree's SHA
 
     const lastCommit = await getCurrentCommit(octo, org, repo, branch);
+    // TODO: revert not working because the last commit maybe a deployed commit, so it should check back untill it finds a microcode commit , revert it and then continue
     const currentCommit = lastCommit.commitMessage.includes(
       "clientRequest.json"
     )
       ? lastCommit
       : lastCommit.commitMessage.includes("microcode")
         ? await revertCommit(
-          octo,
-          org,
-          repo,
-          branch,
-          lastCommit.commitSha,
-          lastCommit.treeSha,
-          lastCommit.parentSha
-        ) : lastCommit;
+            octo,
+            org,
+            repo,
+            branch,
+            lastCommit.commitSha,
+            lastCommit.treeSha,
+            lastCommit.parentSha
+          )
+        : lastCommit;
 
     const filesPaths = await glob(coursePath);
     const filesBlobs = await Promise.all(

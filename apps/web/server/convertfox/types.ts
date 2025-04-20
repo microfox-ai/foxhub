@@ -12,29 +12,28 @@ export const taskInfo = z.object({
 });
 export type TaskInfo = z.infer<typeof taskInfo>;
 
+export const taskIntegrationPlatform = z.object({
+  name: z.string().describe("The name of the platform"),
+  reason: z.string().describe("why this platform is needed for the task"),
+  optional: z
+    .boolean()
+    .default(false)
+    .describe("Whether this platform is optional"),
+  // TODO: this is better done post the platforms are created.
+  preferredAuth: z
+    .enum(["oauth", "apiKey"])
+    .describe(
+      "The preferred auth method for the platform based on the given task"
+    )
+    .optional(),
+  package: z.string().describe("The package name of the platform").optional(),
+  packageInfo: z.any().optional(),
+});
+export type TaskIntegrationPlatform = z.infer<typeof taskIntegrationPlatform>;
+
 // step2. get information about the integrations required for the task
 export const taskIntegrations = z.object({
-  platforms: z.array(
-    z.object({
-      name: z.string().describe("The name of the platform"),
-      reason: z.string().describe("why this platform is needed for the task"),
-      optional: z
-        .boolean()
-        .default(false)
-        .describe("Whether this platform is optional"),
-      // TODO: this is better done post the platforms are created.
-      preferredAuth: z
-        .enum(["oauth", "apiKey"])
-        .describe(
-          "The preferred auth method for the platform based on the given task"
-        )
-        .optional(),
-      package: z
-        .string()
-        .describe("The package name of the platform")
-        .optional(),
-    })
-  ),
+  platforms: z.array(taskIntegrationPlatform.omit({ packageInfo: true })),
   alternativePlatforms: z.array(
     z.object({
       alternativeFor: z

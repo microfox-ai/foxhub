@@ -40,6 +40,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
   const [selectedMethod, setSelectedMethod] = useState<HttpMethod | null>(null);
 
   useEffect(() => {
+    console.log("deploymentInfo", deploymentInfo);
     const fetchApiDocs = async () => {
       if (!deploymentInfo?.baseUrl || !deploymentInfo?.stage) return;
 

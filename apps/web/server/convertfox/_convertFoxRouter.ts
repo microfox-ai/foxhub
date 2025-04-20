@@ -134,15 +134,15 @@ export const convertfoxRouter: ServerStreamingFunction<
 
   // if the last message of assistant is not t=convertfox, then in the case that taskInstanceMeta.taskInfo already exists,
   // then we can confirm that this is a modification at a later point.
-  if (taskInstanceMeta.taskStructure) {
-    if (!lastAssistantJob && classification.modificationType) {
-      lastAssistantJob = classification.modificationType;
+  if (taskInstanceMeta.taskStructure && !lastAssistantJob) {
+    if (classification.modificationType) {
+      lastAssistantJob = "taskInfo";
       dataStream.writeMessageAnnotation({
         type: "loading",
         text: "Modifying the task " + lastAssistantJob,
         data: classification,
       });
-    } else if (!lastAssistantJob) {
+    } else {
       dataStream.writeMessageAnnotation({
         type: "error",
         text: "Unknown intent observered. Please try again.",

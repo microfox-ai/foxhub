@@ -4,6 +4,7 @@ import { notFound, redirect, RedirectType } from "next/navigation";
 import { mapProviderToAuthFunction } from "./providerInstances";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { ClientSecretVariable } from "@/server/types";
 
 const AuthPopupWindow = async ({
   params,
@@ -45,13 +46,13 @@ const AuthPopupWindow = async ({
 
   const clientSecret = clientSecretData.clientSecrets[0];
 
-  const scopes = clientSecret.variables.find(
+  const scopes = (clientSecret.variables as ClientSecretVariable[]).find(
     (variable: any) => variable.key === "SCOPES"
   )?.value;
 
   const providerInstance = mapProviderToAuthFunction(
     packageName,
-    scopes ? scopes.split(",") : null
+    scopes ? scopes.split(",") : []
   );
 
   if (!providerInstance) {
@@ -71,7 +72,7 @@ const AuthPopupWindow = async ({
       return <div>Authorization Failed!</div>;
     }
 
-    const keyValuePairs = clientSecret.variables.map((variable: any) => {
+    const keyValuePairs = clientSecret.variables.map((variable: ClientSecretVariable) => {
       if ((variable.key as string).includes("_ACCESS_TOKEN")) {
         return {
           key: variable.key,

@@ -202,6 +202,9 @@ export const hellofoxRouter: ServerStreamingFunction<
       - you communicate complex technical jargon in a easy to understand manner.
       - ALWAYS speak in the first person (as if you are microfox).
       ----
+      About yourself
+      ${getMicrofoxCapabilities()}
+      ----
       Tool usage:
       ${toolUsage}
       ----

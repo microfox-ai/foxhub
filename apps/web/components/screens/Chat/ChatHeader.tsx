@@ -1,16 +1,11 @@
-import { ButtonSCN } from "@/components/elements/Button";
-import { ChatUIMessage, ClientRequest } from "@prisma/client";
+import { ClientRequest } from "@prisma/client";
 import { UIMessage } from "ai";
 import {
   MessageSquare,
-  RefreshCw,
   History,
   Settings,
   LogOut,
-  Slash,
-  Home,
   LayoutDashboard,
-  Loader2,
 } from "lucide-react";
 import { useMicrofox } from "../providers/MicrofoxProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
@@ -19,18 +14,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useUser } from "@/utils/hooks/useUser";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import {
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Dialog } from "@/components/ui/dialog";
 import { TabsTrigger } from "@/components/ui/tabs";
 import { TabsList } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
@@ -44,6 +30,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Skeleton } from "@/components/ui/skeleton";
 import LogoutConfirmationDialog from "@/components/auth/LogoutConfirmationDialog";
+import { useAuth } from "@/components/auth/AuthProvider";
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
   mutate: () => void;
@@ -76,16 +63,12 @@ const tabList = [
 const ChatHeader = ({
   messages,
   clientRequest,
-  mutate,
-  isLoading,
   isChatLoading,
-  isValidating,
   activeTab,
-  setActiveTab,
   projectTitle,
 }: IChatHeaderProps) => {
   const { minionType } = useMicrofox();
-  const { user, handleLogout, loggingOut } = useUser();
+  const { user, handleLogout, logoutStatus } = useAuth();
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -230,7 +213,7 @@ const ChatHeader = ({
         </Popover>
       </div>
       <LogoutConfirmationDialog
-        loggingOut={loggingOut}
+        loggingOut={logoutStatus.isLoggingOut}
         showLogoutDialog={showLogoutDialog}
         setShowLogoutDialog={setShowLogoutDialog}
         handleConfirmLogout={handleConfirmLogout}

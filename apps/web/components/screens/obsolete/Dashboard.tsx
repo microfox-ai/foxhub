@@ -1,7 +1,6 @@
 "use client";
 
 import { ButtonSCN } from "@/components/elements/Button";
-import { useUser } from "@/utils/hooks/useUser";
 import { Skeleton } from "@mui/material";
 import { REQUESTSTATUS } from "@prisma/client";
 import { PanelRight, PanelRightClose, PlusCircle } from "lucide-react";
@@ -15,10 +14,10 @@ import NewProjectCreation from "../global/NewProjectCreation";
 import ProjectConfigModal from "../global/ProjectConfigModal";
 import Sidebar from "../global/Sidebar";
 import { ClientSecretProvider } from "../providers/ClientSecretProvider";
-
+import { useAuth } from "@/components/auth/AuthProvider";
 /** DEPRECATED - copied all functionality except config modal */
 export default function Dashboard() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams: any = useSearchParams();
   const requestParam = searchParams.get("request");
@@ -214,7 +213,11 @@ export default function Dashboard() {
               }}
             />
           ) : selectedRequest ? (
-            <ChatWindow userId={user.id} clientRequest={selectedRequest} isLoading={false} />
+            <ChatWindow
+              userId={user.id}
+              clientRequest={selectedRequest}
+              isLoading={false}
+            />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
               <p>

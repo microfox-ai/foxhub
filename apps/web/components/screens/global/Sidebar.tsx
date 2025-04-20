@@ -26,7 +26,6 @@ import {
   useSearchParams,
 } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
-import { useUser } from "@/utils/hooks/useUser";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -66,8 +65,6 @@ export default function Sidebar({
   const requestParamId = params?.request_id;
   const searchParams: any = useSearchParams();
   const { setIsFeedbackModalOpen } = useLayout();
-
-  // const { user, handleLogout } = useUser();
 
   return (
     <div
@@ -337,7 +334,7 @@ export default function Sidebar({
                         key={request?.id}
                         href={`/project/${selectedProject?.id}/request/${request?.id}`}
                         className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId ? "bg-gray-200 text-black" : "hover:bg-gray-100"}`}
-                      // onClick={() => onSelectRequest(request)}
+                        // onClick={() => onSelectRequest(request)}
                       >
                         {request.id === requestParamId ? (
                           <ChevronRight
@@ -358,8 +355,9 @@ export default function Sidebar({
                           />
                         )}
                         <span
-                          className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""
-                            }`}
+                          className={`flex-1 truncate text-left ${
+                            request.id === requestParamId ? "font-semibold" : ""
+                          }`}
                         >
                           {request.title}
                         </span>

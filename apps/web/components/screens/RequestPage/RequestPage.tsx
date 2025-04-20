@@ -1,25 +1,20 @@
 "use client";
-import { useUser } from "@/utils/hooks/useUser";
 import { useState } from "react";
 import ChatWindow from "../Chat/ChatWindow";
-import Sidebar from "../global/Sidebar";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ClientSecretProvider } from "../providers/ClientSecretProvider";
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
+import { ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 import { useLayout } from "../providers/LayoutProvider";
 import { ApiDocProvider } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export const RequestPage = () => {
   const [tab, setTab] = useState("requests");
-  const { user } = useUser();
+  const { user } = useAuth();
   const {
     isLeftCollapsed,
     isRightCollapsed,
@@ -97,4 +92,3 @@ export const RequestPage = () => {
     </ClientSecretProvider>
   );
 };
-

@@ -28,9 +28,9 @@ import {
 import Link from "next/link";
 import useSWR from "swr";
 import { useParams } from "next/navigation";
-import { useUser } from "@/utils/hooks/useUser";
 import { toast } from "sonner";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface ClientSecret {
   id: string;
@@ -81,7 +81,7 @@ export const APIKeyDialog = ({
   >({});
   const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const { user } = useUser();
+  const { user } = useAuth();
 
   // Populate form with existing values when secret is found
   useEffect(() => {

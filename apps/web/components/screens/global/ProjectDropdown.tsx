@@ -19,7 +19,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/utils/hooks/useUser";
 import { Skeleton } from "@mui/material";
 import { BotProject } from "@prisma/client";
 import { CommandInput } from "cmdk";
@@ -41,6 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export const ProjectDropdown = ({
   className,
@@ -50,7 +50,7 @@ export const ProjectDropdown = ({
   isCollapsed?: boolean;
 }) => {
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const { user } = useUser();
+  const { user } = useAuth();
   const router = useRouter();
 
   const params = useParams<{

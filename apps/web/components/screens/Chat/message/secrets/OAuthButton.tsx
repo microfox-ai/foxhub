@@ -56,7 +56,8 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
                             value: key.defaultValue ? Array.isArray(key.defaultValue) ? key.defaultValue.join(",") : key.defaultValue : "",
                             isOptional: false,
                         }))
-                ] as ClientSecretVariable[]
+                ] as ClientSecretVariable[],
+                addToClientRequest: true,
             });
 
             document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;
@@ -108,7 +109,10 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
                     variant="outline"
                     size="sm"
                     className=" h-8 px-3 text-xs font-medium bg-white text-black"
-                    disabled={true}
+                    onClick={() =>
+                        handleConnect(packageInfo, authEndpoint)
+                    }
+                    disabled={connecting[packageInfo.name]}
                 >
                     Connected
                 </Button>

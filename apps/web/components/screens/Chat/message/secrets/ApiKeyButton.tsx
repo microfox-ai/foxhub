@@ -97,7 +97,7 @@ export const ApiKeyButton = ({
         return false;
     }, [packageInfo, apiKeySecret, constructor]);
 
-    console.log("apiKeySecret", packageInfo, secretsData);
+    //console.log("apiKeySecret", packageInfo, secretsData);
 
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {

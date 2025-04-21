@@ -41,10 +41,9 @@ export async function GET(req: NextRequest) {
       .filter((bot) => bot !== null)
       .filter((bot) => bot.status === CLIENTSECRETSTATUS.FILLED)
       .flatMap((bot) => {
-        let _botVariables =
-          typeof bot.variables === "string"
-            ? JSON.parse(bot.variables)
-            : bot.variables;
+        let _botVariables = (bot.variables as any[]).filter(
+          (variable: ClientSecretVariable) => variable.key !== "SCOPES"
+        );
         let _botConfig: any[] = [];
         if (bot.packageType === ClientSecretPackageType.APIKEY) {
           _botConfig = (bot.botConfig as any[]).map(

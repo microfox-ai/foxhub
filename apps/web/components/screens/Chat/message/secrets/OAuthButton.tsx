@@ -56,7 +56,8 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
                             value: key.defaultValue ? Array.isArray(key.defaultValue) ? key.defaultValue.join(",") : key.defaultValue : "",
                             isOptional: false,
                         }))
-                ] as ClientSecretVariable[]
+                ] as ClientSecretVariable[],
+                addToClientRequest: true,
             });
 
             document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;

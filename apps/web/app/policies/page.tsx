@@ -78,7 +78,7 @@ const PoliciesIndex = () => {
       <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-8">
         <h2 className="text-xl font-semibold mb-3">Need Help?</h2>
         <p className="text-gray-600 mb-2">
-          If you have questions about our policies or need assistance with compliance matters, please contact our legal team at legal@yourapp.com or our privacy team at privacy@yourapp.com.
+          If you have questions about our policies or need assistance with compliance matters, please contact our legal team at admin@themoondevs.com or our privacy team at support@themoondevs.com.
         </p>
         <p className="text-gray-600">
           For urgent matters, enterprise customers should contact their dedicated account manager directly.

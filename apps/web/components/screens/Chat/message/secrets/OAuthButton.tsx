@@ -8,6 +8,7 @@ import { useUser } from "@/utils/hooks/useUser";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useParams } from "next/navigation";
 import { KeyedMutator } from "swr";
+import { CheckCircle2 } from "lucide-react";
 
 
 export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
@@ -98,15 +99,15 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
         )
         : false;
 
-    console.log(packageInfo, secretsData?.clientSecrets);
+
 
     return (
-        <>
+        <div className="relative">
             {hasAllAuthRelatedKeys ? (
                 <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-3 text-xs font-medium bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
+                    className=" h-8 px-3 text-xs font-medium bg-white text-black"
                     disabled={true}
                 >
                     Connected
@@ -124,8 +125,14 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
                     {connecting[packageInfo.name]
                         ? "Connecting..."
                         : "Connect"}
+
                 </Button>
             )}
-        </>
+            {!hasAllAuthRelatedKeys ? (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400" />
+            ) : (
+                <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-4 w-4 rounded-full text-green-500" />
+            )}
+        </div>
     )
 }

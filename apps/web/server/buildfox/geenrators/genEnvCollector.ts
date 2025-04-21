@@ -22,7 +22,7 @@ import {
   updateClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
 import { ClientRequest, CLIENTSECRETSTATUS } from "@prisma/client";
-import { coreEnvsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
+import { envsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
 import { getClientSecretsFromTemplateEnvs } from "../helper/templateEnvsFromTaskIntegrations";
 export const genEnvCollector = async (
@@ -79,7 +79,7 @@ export const genEnvCollector = async (
     // also filter out the env variables from the taskInstanceMeta.taskIntegrations.platforms.packages
     // NOTE: packageInfo exists even though it is not in type
     const coreEnvs = taskInstanceMeta.taskIntegrations
-      ? coreEnvsFromTaskIntegrations(taskInstanceMeta.taskIntegrations)
+      ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "allKeys")
       : [];
 
     // filter out template envs & corepackage based envs - only keep custom envs

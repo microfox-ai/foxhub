@@ -71,8 +71,8 @@ export const TaskIntegrations = ({
                 authStatus[platform.name] = false;
             }
             // Check API Keys
-            if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === "apiKey")) {
-                const constructor = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === "apiKey");
+            if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY)) {
+                const constructor = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
                 const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
                     secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === constructor?.name
                 );
@@ -87,8 +87,8 @@ export const TaskIntegrations = ({
                 }
             }
             // Check OAuth
-            if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === "oauth2")) {
-                const oauthConstructor = platform.packageInfo.constructors.find((c: Constructor) => c.auth === "oauth2");
+            if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2)) {
+                const oauthConstructor = platform.packageInfo.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2);
                 const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
                     secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
                 );
@@ -116,10 +116,10 @@ export const TaskIntegrations = ({
             if (platform.optional) return true;
 
             const requiresApiKey = platform.packageInfo?.constructors.some(
-                (c: Constructor) => c.auth === "apiKey"
+                (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
             );
             const requiresOauth = platform.packageInfo?.constructors.some(
-                (c: Constructor) => c.auth === "oauth2"
+                (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
             );
 
             // Check both API key and OAuth status if required
@@ -243,10 +243,10 @@ export const TaskIntegrations = ({
                     (p) =>
                         !p.optional &&
                         (p.packageInfo?.constructors.some(
-                            (c: Constructor) => c.auth === "apiKey"
+                            (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
                         ) ||
                             p.packageInfo?.constructors.some(
-                                (c: Constructor) => c.auth === "oauth2"
+                                (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
                             ))
                 )}
                 areKeysFilled={areKeysFilled}

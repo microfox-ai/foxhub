@@ -58,15 +58,6 @@ export const EnvVariablesDialog = ({
   );
   const inputRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Reset form when dialog is closed
-  useEffect(() => {
-    if (!isOpen) {
-      setEnvValues(initialValues);
-      setValidationError(null);
-      setTouchedFields({});
-    }
-  }, [isOpen, initialValues]);
-
   const handleInputChange = (key: string, value: string) => {
     setEnvValues((prev) => ({ ...prev, [key]: value }));
     setTouchedFields((prev) => ({ ...prev, [key]: true }));
@@ -121,9 +112,14 @@ export const EnvVariablesDialog = ({
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (_open: boolean) => {
     setValidationError(null);
     onClose();
+    if (!_open) {
+      setEnvValues(initialValues);
+      setValidationError(null);
+      setTouchedFields({});
+    }
   };
 
   return (
@@ -226,7 +222,7 @@ export const EnvVariablesDialog = ({
         <DialogFooter className="flex items-center justify-end gap-3 pt-2">
           <Button
             variant="outline"
-            onClick={handleCancel}
+            onClick={() => handleCancel(false)}
             className="h-11"
             disabled={isSubmitting}
           >

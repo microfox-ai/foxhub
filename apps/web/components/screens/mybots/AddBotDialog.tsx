@@ -12,13 +12,13 @@ import { useRouter } from "next/navigation";
 interface AddBotDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  nonOauthPackages: any[];
+  stableBotPackages: any[];
 }
 
 const AddBotDialog = ({
   isOpen,
   onOpenChange,
-  nonOauthPackages,
+  stableBotPackages,
 }: AddBotDialogProps) => {
   const router = useRouter();
 
@@ -35,7 +35,7 @@ const AddBotDialog = ({
         </DialogHeader>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
-            {nonOauthPackages.map((pkg) => (
+            {stableBotPackages.map((pkg) => (
               <div
                 key={pkg.name}
                 onClick={() => handlePackageSelect(pkg)}
@@ -50,9 +50,12 @@ const AddBotDialog = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-medium text-gray-900">
-                    {pkg.name}
+                    {pkg.title}
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
+                    <span className="font-bold bg-gray-100 px-1 rounded-md">
+                      {pkg.name}
+                    </span>
                     {pkg.description}
                   </p>
                 </div>

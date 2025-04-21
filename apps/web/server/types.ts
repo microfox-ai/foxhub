@@ -14,12 +14,37 @@ export enum dataStreamType {
   LOG = "log",
 }
 
+export interface ConfigUi {
+  label?: string;
+  type:
+    | "text"
+    | "number"
+    | "boolean"
+    | "select"
+    | "textarea"
+    | "multiSelect"
+    | "image";
+  placeholder?: string;
+  options?: { label: string; value: string }[];
+  required?: boolean;
+  disabled?: boolean;
+}
+
 export interface ClientSecretVariable {
   stage?: "DEV" | "PROD" | "STAGING";
   key: string;
-  value: string;
+  value: any;
   isOptional?: boolean;
-  defaultValue?: string | string[];
+  defaultValue?: string | string[] | any | any[];
+  description?: string;
+  ui: ConfigUi;
+}
+
+export enum PackageStatus {
+  STABLE = "stable",
+  SEMISTABLE = "semiStable",
+  PARTIAL = "partial",
+  OAUTHCONNECTOR = "oauthConnector",
 }
 
 export enum ClientSecretPackageType {

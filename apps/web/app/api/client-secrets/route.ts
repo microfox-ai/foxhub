@@ -91,6 +91,7 @@ export async function GET(req: NextRequest) {
     const packageName = searchParams.get("packageName");
     const packageConstructor = searchParams.get("packageConstructor");
     const withPackageInfos = searchParams.get("withPackageInfos");
+    const packageTypes = searchParams.get("packageTypes");
 
     const whereClause = {
       ...(id ? { id } : {}),
@@ -103,6 +104,7 @@ export async function GET(req: NextRequest) {
       ...(packageType ? { packageType } : {}),
       ...(packageName ? { packageName } : {}),
       ...(packageConstructor ? { packageConstructor } : {}),
+      ...(packageTypes ? { packageType: { in: packageTypes.split(",") } } : {}),
     };
 
     const clientSecrets = await prisma.clientSecret.findMany({
@@ -187,13 +189,9 @@ export async function DELETE(req: NextRequest) {
         { status: 404 }
       );
 
-    for (const clientRequestId of clientSecret.clientRequestIds) {
-      await removeClientSecretFromClientRequest(id, clientRequestId);
-    }
-
-    for (const clientDeploymentId of clientSecret.clientDeploymentIds) {
-      await removeClientSecretFromClientDeployment(id, clientDeploymentId);
-    }
+    // for (const clientRequestId of clientSecret.clientRequestIds) {
+    //   await removeClientSecretFromClientRequest(id, clientRequestId);
+    // }
 
     await prisma.clientSecret.delete({
       where: { id },

@@ -12,51 +12,42 @@ import {
 } from "react";
 import useSWR from "swr";
 import { ClientSecret } from "@prisma/client";
+import { ClientSecretApiType, ClientSecretPackageType, ClientSecretVariable, ClientSecretWithPackageInfo, PackageStatus } from "@/server/types";
+import { Constructor } from "../../Chat/message/types";
 
-interface Bot {
-  botName: string;
-  botImage: string;
-  botPackageName: string;
-  savedBotConfig: any;
-  botInfoInDb: ClientSecret;
-  botConfig: any;
-  otherInfos: any;
+interface Bot extends ClientSecretWithPackageInfo {
+  botConfigMapped: Record<string, any>;
+  defaultConfig: ClientSecretVariable[];
+  image?: string;
 }
 
-interface BotContextType {
-  bots: Bot[];
-  isLoading: boolean;
-  error: any;
-  nonOauthPackages: any[];
-  refreshBots: () => void;
-}
-
-const BotContext = createContext<BotContextType | undefined>(undefined);
-
-export function BotProvider({ children }: { children: ReactNode }) {
+const useBotsCOntext = () => {
   const [bots, setBots] = useState<Bot[]>([]);
-  const [nonOauthPackages, setNonOauthPackages] = useState<any[]>([]);
   const { selectedProject } = useClientProject();
   const { user } = useUser();
 
   // Fetch stable packages info
   const { data: stablePackages, error: stablePackagesError } = useSWR(
-    "/api/packages/get-stable-package-info",
+    `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.SEMISTABLE}`,
     async (url: string) => {
       const response = await fetch(url);
       return response.json();
     }
   );
+  const stableBotPackages = stablePackages
+    ?.filter(
+      (pkg: any) => pkg.constructors.some((constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
+      )) ?? [];
 
   // Fetch project secrets
   const {
-    data: selectedProjectSecrets,
+    data: selectedProjectSecretsData,
     error,
     isLoading,
     mutate: refreshBots,
-  } = useSWR(
+  } = useSWR<{ clientSecrets: ClientSecretWithPackageInfo[] }>(
     selectedProject?.id && user?.id
-      ? `/api/client-secrets/project-secrets?projectId=${selectedProject?.id}&userId=${user?.id}`
+      ? `/api/client-secrets?botProjectId=${selectedProject?.id}&userId=${user?.id}&withPackageInfos=true&packageTypes=${ClientSecretPackageType.APIKEY}`
       : null,
     async (url: string) => {
       const response = await PortalSdk.getData(url, {});
@@ -64,68 +55,39 @@ export function BotProvider({ children }: { children: ReactNode }) {
     }
   );
 
-  // Filter non-oauth packages when stable packages are loaded
   useEffect(() => {
-    if (stablePackages) {
-      const filteredPackages = stablePackages.filter((pkg: any) => {
-        return pkg.constructors.some(
-          (constructor: any) => constructor.auth !== "oauth2"
-        );
-      });
-      setNonOauthPackages(filteredPackages);
+    if (selectedProjectSecretsData?.clientSecrets) {
+      setBots(selectedProjectSecretsData.clientSecrets.map((d) => ({
+        ...d,
+        image: (d.botConfig as any[]).find((c: ClientSecretVariable) => c?.ui?.type === "image")?.value as string,
+        botConfigMapped: (d.botConfig as any[]).reduce((acc, curr: ClientSecretVariable) => {
+          acc[curr.key] = curr.value;
+          return acc;
+        }, {} as Record<string, any>),
+        defaultConfig: (d.packageInfo?.constructors.find((c: Constructor) => c.auth.toLowerCase() === ClientSecretPackageType.APIKEY)?.botConfig as any[]) ?? [],
+      })));
     }
-  }, [stablePackages]);
+  }, [selectedProjectSecretsData]);
 
-  // Get package info for each bot
-  useEffect(() => {
-    const getPackageInfos = async () => {
-      if (!selectedProjectSecrets) return;
+  return {
+    bots,
+    setBots,
+    isLoading,
+    error: error || stablePackagesError,
+    stableBotPackages,
+    refreshBots,
+  }
+}
 
-      const packageInfosPromises = selectedProjectSecrets.map(
-        async (secret: any) => {
-          const packageName = (secret.type as string).split("/")[1];
-          const constructorName = (secret.type as string).split("/")[2];
-          const packageUrl = `/api/client-secrets/with-infos?packageName=${packageName}`;
-          const response = await fetch(packageUrl);
-          const packageInfo = await response.json();
-          const nonOauthType = packageInfo.constructors.find(
-            (constructor: any) =>
-              constructor.auth !== "oauth2" &&
-              constructor.name === constructorName
-          );
 
-          if (!nonOauthType) {
-            return null;
-          }
+const BotContext = createContext<ReturnType<typeof useBotsCOntext> | undefined>(undefined);
 
-          return {
-            botName: secret.name,
-            botInfoInDb: secret,
-            botImage: packageInfo.icon,
-            botPackageName: packageInfo.name,
-            savedBotConfig: secret?.botConfig || null,
-            botConfig: nonOauthType.botConfig,
-            otherInfos: packageInfo,
-          };
-        }
-      );
-
-      const packageInfos = await Promise.all(packageInfosPromises);
-      setBots(packageInfos.filter((bot): bot is Bot => bot !== null));
-    };
-
-    getPackageInfos();
-  }, [selectedProjectSecrets]);
+export function BotProvider({ children }: { children: ReactNode }) {
+  const context = useBotsCOntext();
 
   return (
     <BotContext.Provider
-      value={{
-        bots,
-        isLoading,
-        error: error || stablePackagesError,
-        nonOauthPackages,
-        refreshBots,
-      }}
+      value={context}
     >
       {children}
     </BotContext.Provider>

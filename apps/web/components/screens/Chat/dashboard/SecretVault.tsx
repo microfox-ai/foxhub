@@ -161,7 +161,7 @@ export const SecretVault = () => {
                                     <div className="flex gap-2 items-center justify-between">
                                         <div className="flex flex-col items-start gap-2">
                                             <span className="leading-none font-medium w-fit text-gray-900">
-                                                {secret?.name ?? platform.packageInfo.title ?? platform.packageInfo?.name}
+                                                {secret?.name ?? platform.packageInfo?.title ?? platform.packageInfo?.name}
                                             </span>
                                             <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
                                                 {platform.packageInfo?.name}
@@ -237,26 +237,26 @@ export const SecretVault = () => {
                     )}
                 </div> */}
 
-                <div className="rounded-sm border border-gray-200">
-                    <div className="flex items-center justify-between px-4 pt-4">
-                        <div className="flex items-center gap-2">
-                            <RouteIcon className="w-4 h-4 text-yellow-500" />
-                            <h1 className="text-xs uppercase tracking-widest text-gray-700">Configuration</h1>
-                            {/* <p className="text-xs text-gray-300">
+                {customSecret && (
+                    <div className="rounded-sm border border-gray-200">
+                        <div className="flex items-center justify-between px-4 pt-4">
+                            <div className="flex items-center gap-2">
+                                <RouteIcon className="w-4 h-4 text-yellow-500" />
+                                <h1 className="text-xs uppercase tracking-widest text-gray-700">Configuration</h1>
+                                {/* <p className="text-xs text-gray-300">
                                 Add/Edit variables for this request
                             </p> */}
+                            </div>
+                            <Button
+                                variant="ghost"
+                                className="border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                onClick={() => setShowAddEnvModal(true)}
+                                size="sm"
+                            >
+                                <Edit className="w-2 h-2" />
+                            </Button>
                         </div>
-                        <Button
-                            variant="ghost"
-                            className="border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                            onClick={() => setShowAddEnvModal(true)}
-                            size="sm"
-                        >
-                            <Edit className="w-2 h-2" />
-                        </Button>
-                    </div>
 
-                    {customSecret && (
                         <ul className="grid gap-4 p-4">
                             {(customSecret?.variables as any[]).map((secret: ClientSecretVariable) => (
                                 <li className="flex justify-between items-center px-3 rounded-lg">
@@ -267,24 +267,9 @@ export const SecretVault = () => {
                                 </li>
                             ))}
                         </ul>
-                    )}
 
-                    {!customSecret && (
-                        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="p-3 bg-gray-100 rounded-full">
-                                    <Key className="w-6 h-6 text-gray-500" />
-                                </div>
-                                <h4 className="text-lg font-medium text-gray-800">
-                                    No Custom Keys
-                                </h4>
-                                <p className="text-gray-500 max-w-md">
-                                    You haven&apos;t added any custom keys yet.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
 
                 {templateVariables.length > 0 && (
                     <div className="rounded-sm border border-gray-200">

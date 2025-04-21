@@ -62,7 +62,7 @@ export const ApiKeyButton = ({
     );
     const [selectedBotSecret, setSelectedBotSecret] = useState<string | null>(null);
 
-    const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === "apiKey");
+    const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
     const packageApiType = constructor?.apiType as ClientSecretApiType;
     const [isLoading, setIsLoading] = useState(false);
 
@@ -96,6 +96,8 @@ export const ApiKeyButton = ({
         }
         return false;
     }, [packageInfo, apiKeySecret, constructor]);
+
+    console.log("apiKeySecret", packageInfo, secretsData);
 
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {

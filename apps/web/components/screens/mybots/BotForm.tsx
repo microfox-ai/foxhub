@@ -177,7 +177,7 @@ const BotForm = ({ mode }: BotFormProps) => {
         userId: user?.id,
         status: CLIENTSECRETSTATUS.FILLED,
         packageName: packageInfo?.name,
-        packageConstructor: selectedConstructor.title,
+        packageConstructor: (selectedConstructor as Constructor).name,
         packageType: (selectedConstructor as Constructor).auth,
         botConfig,
       };

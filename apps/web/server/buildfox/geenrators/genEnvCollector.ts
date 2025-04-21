@@ -79,7 +79,10 @@ export const genEnvCollector = async (
     // also filter out the env variables from the taskInstanceMeta.taskIntegrations.platforms.packages
     // NOTE: packageInfo exists even though it is not in type
     const coreEnvs = taskInstanceMeta.taskIntegrations
-      ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "allKeys")
+      ? envsFromTaskIntegrations(
+          taskInstanceMeta.taskIntegrations,
+          "requiredKeys"
+        )
       : [];
 
     // filter out template envs & corepackage based envs - only keep custom envs

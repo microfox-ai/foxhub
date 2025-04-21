@@ -15,7 +15,7 @@ export interface KeyVariableConfig {
 export interface Constructor {
   name: string;
   description: string;
-  auth: "apiKey" | "oauth2";
+  auth: "apikey" | "oauth2";
   apiType?: ClientSecretApiType;
   requiredKeys?: KeyVariableConfig[];
   internalKeys: KeyVariableConfig[];

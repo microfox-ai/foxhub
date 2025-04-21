@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_FOR_SITES } from "@/utils/constants/appInfo";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
-import { ClientSecretVariable } from "@/server/types";
+import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
 
 // TODO: also insert UPSTASH envs if this taskInstanceMeta.taskStructure.templateType === "upstash"
 // TODO: also insert MONGODB envs if this taskInstanceMeta.taskStructure.templateType === "mongodb"
@@ -45,6 +45,16 @@ export async function GET(req: NextRequest) {
           typeof bot.variables === "string"
             ? JSON.parse(bot.variables)
             : bot.variables;
+        let _botConfig: any[] = [];
+        if (bot.packageType === ClientSecretPackageType.APIKEY) {
+          _botConfig = (bot.botConfig as any[]).map(
+            (config: ClientSecretVariable) => ({
+              key: config.key,
+              value: config.value,
+            })
+          );
+        }
+        _botVariables = [..._botVariables, ..._botConfig];
         return (_botVariables as ClientSecretVariable[]).filter(
           (variable) => variable.stage === stage || !variable.stage
         );

@@ -10,7 +10,7 @@ import {
 } from "./tool/writeToFile";
 import fs from "fs/promises";
 import { ClientRequest } from "@prisma/client";
-import { coreEnvsFromTaskIntegrations } from "./helper/coreEnvsFromTaskIntegrations";
+import { envsFromTaskIntegrations } from "./helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "./helper/templateEnvsFromTaskIntegrations";
 
 export const codingSystemPrompt = (
@@ -152,8 +152,11 @@ export const codingFunctionPrompt = async ({
 
   const templateEnvs = await templateEnvsFromTaskIntegrations(template_type);
   const coreEnvs = taskInstanceMeta.taskIntegrations
-    ? coreEnvsFromTaskIntegrations(taskInstanceMeta.taskIntegrations)
+    ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "allKeys")
     : [];
+
+  //console.log("templateEnvs", templateEnvs);
+  //console.log("coreEnvs", coreEnvs);
 
   return dedent`You are requested to write a serverless function for the following requirement:
             Task Summary: ${taskInstanceMeta?.taskInfo?.summary}
@@ -196,7 +199,7 @@ export const codingFunctionPrompt = async ({
               /** TODO: this requires improving because cron would still add new variables, as it doesnt have a way to collect them,  so use redis as env var storage across all functions */
               type === "cron"
                 ? "if new env variables are needed, other than theese, you can add them to the project."
-                : "if new variables are needed, other than theese, you can either add new env variables in the same format as above, or use input parameters or request body from the event object to get theese variables from user side."
+                : "if new variables are needed, other than theese, you can either add new env variables in the same format as above, or use input parameters or request body from the incoming aws event object to get theese variables from user side."
             }
             only create/use process.env variables, if absolutely needed security wise, otherwise use input parameters or request body from the event object to get theese variables from user side.
 

@@ -62,7 +62,7 @@ export const APIKeyDialog = ({
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
 
-  const constructor = pkg.constructors.find((c: Constructor) => c.auth === "apiKey");
+  const constructor = pkg.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
 
   const [nickName, setNickName] = useState<string>(apiKeySecret?.name ?? "");
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});

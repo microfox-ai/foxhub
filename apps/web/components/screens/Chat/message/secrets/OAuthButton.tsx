@@ -109,10 +109,7 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
                     variant="outline"
                     size="sm"
                     className=" h-8 px-3 text-xs font-medium bg-white text-black"
-                    onClick={() =>
-                        handleConnect(packageInfo, authEndpoint)
-                    }
-                    disabled={connecting[packageInfo.name]}
+                    disabled={true}
                 >
                     Connected
                 </Button>

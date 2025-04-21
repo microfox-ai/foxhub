@@ -9,7 +9,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import SecretVariable from "./SecretVariable";
-
+import { ClientSecretVariable } from "@/server/types";
 // Define the ActionButton component if it's not imported
 interface ActionButtonProps {
     icon: React.ReactNode;
@@ -61,7 +61,7 @@ export const SecretCard = ({
     <div className="bg-white">
         <div className="p-1 space-y-1">
             <div className="grid gap-2">
-                {(secret.variables as Array<{ key: string; value: string; isOptional?: boolean }>).map((variable) => (
+                {(secret.variables as any[] as Array<ClientSecretVariable>).map((variable) => (
                     <div key={variable.key} className="flex items-center gap-2">
                         <div className="flex-1">
                             <SecretVariable variable={variable} isVisible={showSecret} />

@@ -1,13 +1,13 @@
 import { prisma } from "@/prisma/prisma";
-import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
-import { addClientSecretToClientDeployment } from "@/utils/services/db_functions/secrets_helper";
+import { DeployStep } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
-import { generateMicrofoxEmailTemplate, sesSdk } from "@/utils/services/sesSdk";
-import { slackBotSdk } from "@/utils/services/slackBotSdk";
-import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
-import { MySlackChannels } from "@/utils/services/slackBotSdk";
-import { FUNCTIONTYPE, DEPLOY_STAGE } from "@prisma/client";
+import {
+  MICROFOX_LOGO,
+  MySlackChannels,
+  slackBotSdk,
+} from "@/utils/services/slackBotSdk";
+import { DEPLOY_STAGE, FUNCTIONTYPE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create ClientDeployment

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 
 const MyBots = () => {
   const [isAddBotDialogOpen, setIsAddBotDialogOpen] = useState(false);
-  const { bots, isLoading, error, nonOauthPackages } = useBots();
+  const { bots, isLoading, error, stableBotPackages } = useBots();
   const router = useRouter();
 
   const handleAddBot = () => {
@@ -49,43 +49,41 @@ const MyBots = () => {
 
       {isLoading
         ? [1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex flex-col items-center">
-              <Skeleton className="w-full aspect-square rounded-3xl" />
-              <Skeleton className="mt-3 h-4 w-16" />
-            </div>
-          ))
+          <div key={i} className="flex flex-col items-center">
+            <Skeleton className="w-full aspect-square rounded-3xl" />
+            <Skeleton className="mt-3 h-4 w-16" />
+          </div>
+        ))
         : bots.map((bot) => (
-            <div
-              key={bot.botName}
-              onClick={() => handleBotClick(bot.botInfoInDb.id)}
-              className="flex relative flex-col items-center cursor-pointer bg-neutral-100 hover:translate-y-[-4px] hover:bg-neutral-200 hover:shadow-lg transition-all duration-200 p-2 rounded-2xl"
-            >
-              <div className="w-full aspect-square rounded-3xl p-1 bg-white overflow-hidden">
+          <div
+            key={bot.name}
+            onClick={() => handleBotClick(bot.id)}
+            className="flex relative flex-col items-center cursor-pointer bg-neutral-100 hover:translate-y-[-4px] hover:bg-neutral-200 hover:shadow-lg transition-all duration-200 p-2 rounded-2xl"
+          >
+            <div className="w-full aspect-square rounded-3xl p-1 bg-white overflow-hidden">
+              <img
+                src={bot?.image ?? bot?.botConfigMapped?.botImage ?? "/images/default-bot-avatar.png"}
+                alt={bot.botConfigMapped?.botName}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-4 left-4 bg-white/80 rounded-full p-1">
                 <img
-                  src={bot.savedBotConfig?.image || bot.botImage}
-                  alt={bot.botName}
-                  className="w-full h-full object-contain"
+                  src={bot.packageInfo?.icon ?? "/default-bot-platform.png"}
+                  alt={bot.packageInfo?.name}
+                  className="w-8 h-8 p-1 object-contain"
                 />
               </div>
-              {bot.savedBotConfig && bot.savedBotConfig.length > 0 && (
-                <div className="absolute border-2 p-1 rounded-full -top-2 -right-2">
-                  <img
-                    src={bot.botImage || "/default-bot-avatar.png"}
-                    alt={bot.botName}
-                    className="w-5 h-5 z-30 object-cover"
-                  />
-                </div>
-              )}
-              <span className="mt-3 text-sm text-center text-neutral-700">
-                {bot.botName}
-              </span>
             </div>
-          ))}
+            <span className="mt-3 text-sm text-center text-neutral-700">
+              {bot?.name}
+            </span>
+          </div>
+        ))}
 
       <AddBotDialog
         isOpen={isAddBotDialogOpen}
         onOpenChange={setIsAddBotDialogOpen}
-        nonOauthPackages={nonOauthPackages}
+        stableBotPackages={stableBotPackages}
       />
     </div>
   );

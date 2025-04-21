@@ -2,78 +2,26 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useBots } from "@/components/screens/mybots/providers/BotProvider";
-import BotConfigUI from "@/components/screens/mybots/BotConfigUI";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { ArrowLeft, ChevronLeft, Loader2 } from "lucide-react";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { ArrowLeft, Loader2, Plus, CheckIcon } from "lucide-react";
+import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import { CLIENTSECRETSTATUS, ClientSecret } from "@prisma/client";
 import { useUser } from "@/utils/hooks/useUser";
-
-// Define the form schema
-const botFormSchema = z.object({
-  botName: z
-    .string()
-    .min(3, "Bot name must be at least 3 characters long")
-    .max(10, "Bot name must be less than 20 characters long"),
-  keys: z.record(z.string().optional()).optional(),
-  config: z.any().optional(),
-});
-
-type BotFormValues = z.infer<typeof botFormSchema>;
-
-interface RequiredKeyInfo {
-  key: string;
-  displayName: string;
-  type?: string;
-  description?: string;
-  isOptional?: boolean;
-}
-
-interface BotInfo {
-  botInfoInDb: {
-    id: string;
-    type: string;
-    variables?: Array<{ key: string; value: string }>;
-  };
-  botName: string;
-  botImage?: string;
-  botPackageName: string;
-  savedBotConfig?: any[];
-  otherInfos?: {
-    constructors: Array<{
-      requiredKeys?: RequiredKeyInfo[];
-      botConfig?: any[];
-    }>;
-  };
-}
-
-interface PackageInfo {
-  name: string;
-  icon?: string;
-  constructors: Array<{
-    name: string;
-    requiredKeys?: RequiredKeyInfo[];
-    botConfig?: any[];
-    auth?: string;
-  }>;
-}
+import { ClientSecretVariable } from "@/server/types";
+import { Constructor, Package } from "../Chat/message/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import GeneralTab from "./tabs/GeneralTab";
+import ConfigurationTab from "./tabs/ConfigurationTab";
+import JobsTab from "./tabs/JobsTab";
+import { botFormSchema, BotFormValues } from "./types";
 
 interface BotFormProps {
   mode: "create" | "edit";
@@ -84,26 +32,28 @@ const BotForm = ({ mode }: BotFormProps) => {
   const searchParams = useSearchParams();
   const botId = searchParams.get("botId");
   const packageName = searchParams.get("package");
-  const { bots, nonOauthPackages, refreshBots } = useBots();
+  const { bots, stableBotPackages, refreshBots } = useBots();
   const { selectedProject } = useClientProject();
   const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState("general");
 
   // Find the bot to edit or package to create from
   const botToEdit =
     mode === "edit" && botId
-      ? bots.find((bot) => bot.botInfoInDb.id === botId)
+      ? bots.find((bot) => bot.id === botId)
       : null;
   const packageInfo =
     mode === "create"
-      ? nonOauthPackages.find((pkg: PackageInfo) => pkg.name === packageName)
-      : null;
+      ? stableBotPackages.find((pkg: Package) => pkg.name === packageName)
+      : botToEdit?.packageInfo;
   const selectedConstructor =
     mode === "create"
       ? packageInfo?.constructors[0]
-      : botToEdit?.otherInfos?.constructors[0];
+      : botToEdit?.packageInfo?.constructors[0];
 
   // Set initial loading to false once data is available
   useEffect(() => {
@@ -111,11 +61,11 @@ const BotForm = ({ mode }: BotFormProps) => {
       setIsInitialLoading(false);
     } else if (
       mode === "create" &&
-      (nonOauthPackages.length > 0 || !packageName)
+      (stableBotPackages.length > 0 || !packageName)
     ) {
       setIsInitialLoading(false);
     }
-  }, [bots, nonOauthPackages, mode, botId, packageName]);
+  }, [bots, stableBotPackages, mode, botId, packageName]);
 
   const form = useForm<BotFormValues>({
     resolver: zodResolver(botFormSchema),
@@ -130,18 +80,18 @@ const BotForm = ({ mode }: BotFormProps) => {
   // Pre-fill form for edit mode
   useEffect(() => {
     if (mode === "edit" && botToEdit) {
-      const initialConfig = botToEdit.savedBotConfig?.reduce(
-        (acc: Record<string, any>, curr: any) => ({
+      const initialConfig = (botToEdit.botConfig as any[])?.reduce(
+        (acc: Record<string, any>, curr: ClientSecretVariable) => ({
           ...acc,
-          [curr.field]: curr.value || "",
+          [curr.key]: curr.value || curr.defaultValue || "",
         }),
         {} as Record<string, any>
       );
 
       form.reset({
-        botName: botToEdit.botName,
+        botName: botToEdit?.name,
         keys:
-          botToEdit.botInfoInDb.variables?.reduce(
+          botToEdit.variables?.reduce(
             (acc: Record<string, string>, curr: any) => ({
               ...acc,
               [curr.key]: curr.value || "",
@@ -158,15 +108,25 @@ const BotForm = ({ mode }: BotFormProps) => {
   };
 
   const handleDelete = async () => {
-    if (!botToEdit?.botInfoInDb.id) {
+    if (!botToEdit?.id) {
       toast.error("Bot ID not found");
+      return;
+    }
+
+    if (botToEdit.clientRequestIds.length > 0) {
+      toast.error("Bot has running jobs. Please delete them first.");
+      return;
+    }
+
+    if (botToEdit.clientDeploymentIds.length > 0) {
+      toast.error("Bot has running deployments. Please delete them first.");
       return;
     }
 
     try {
       setIsDeleting(true);
       await PortalSdk.deleteData(
-        `/api/client-secrets/project-secrets?id=${botToEdit.botInfoInDb.id}`,
+        `/api/client-secrets/project-secrets?id=${botToEdit.id}`,
         {}
       );
       toast.success("Bot deleted successfully!");
@@ -196,11 +156,17 @@ const BotForm = ({ mode }: BotFormProps) => {
       }));
 
       // Transform config data
-      const configToTransform = selectedConstructor.botConfig;
-      const transformedConfig = configToTransform?.map((configField: any) => ({
-        ...configField,
-        value: data.config?.[configField.field] || "",
-      }));
+      const defaultConfig = selectedConstructor.botConfig || [];
+      let botConfig: ClientSecretVariable[] = [];
+
+      defaultConfig.forEach((configField: ClientSecretVariable) => {
+        if (data.config?.[configField.key]) {
+          botConfig.push({
+            ...configField,
+            value: data.config?.[configField.key] || ""
+          });
+        }
+      });
 
       const clientSecretData = {
         botProjectId: selectedProject.id,
@@ -210,7 +176,10 @@ const BotForm = ({ mode }: BotFormProps) => {
         clientRequestIds: [],
         userId: user?.id,
         status: CLIENTSECRETSTATUS.FILLED,
-        botConfig: transformedConfig,
+        packageName: packageInfo?.name,
+        packageConstructor: selectedConstructor.title,
+        packageType: (selectedConstructor as Constructor).auth,
+        botConfig,
       };
 
       await PortalSdk.postData(
@@ -231,7 +200,7 @@ const BotForm = ({ mode }: BotFormProps) => {
     if (
       !selectedProject?.id ||
       !selectedConstructor ||
-      !botToEdit?.botInfoInDb.id
+      !botToEdit?.id
     ) {
       toast.error("Missing required information");
       return;
@@ -247,23 +216,28 @@ const BotForm = ({ mode }: BotFormProps) => {
       }));
 
       // Transform config data
-      const configToTransform = botToEdit.savedBotConfig;
-      const transformedConfig = configToTransform?.map((configField: any) => ({
-        ...configField,
-        value: data.config?.[configField.field] || "",
-      }));
+      let botConfig = botToEdit.botConfig as any[] as ClientSecretVariable[];
+      const defaultConfig = botToEdit.defaultConfig;
+      defaultConfig.forEach((configField: ClientSecretVariable) => {
+        if (data.config?.[configField.key]) {
+          if (botConfig.find((c: ClientSecretVariable) => c.key === configField.key)) {
+            botConfig = botConfig.map((c: ClientSecretVariable) => c.key === configField.key ? { ...c, value: data.config?.[configField.key] } : c);
+          } else {
+            botConfig.push({ ...configField, value: data.config?.[configField.key] });
+          }
+        }
+      });
 
+      // TODO: also update changed values accroos client deployments if needed.
       const clientSecretData = {
-        id: botToEdit.botInfoInDb.id,
-        botProjectId: selectedProject.id,
+        id: botToEdit.id,
         name: data.botName,
-        type: botToEdit.botInfoInDb.type,
         variables,
-        botConfig: transformedConfig,
+        botConfig,
       };
 
       await PortalSdk.putData(
-        "/api/client-secrets/project-secrets",
+        "/api/client-secrets",
         clientSecretData
       );
       toast.success("Bot updated successfully!");
@@ -282,6 +256,18 @@ const BotForm = ({ mode }: BotFormProps) => {
     } else {
       await handleUpdate(data);
     }
+  };
+
+  const toggleVisibility = (key: string) => {
+    setVisibleFields(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const copyToClipboard = (value: string, fieldName: string) => {
+    navigator.clipboard.writeText(value);
+    toast.success(`${fieldName} copied to clipboard`);
   };
 
   if (isInitialLoading) {
@@ -314,16 +300,17 @@ const BotForm = ({ mode }: BotFormProps) => {
     );
   }
 
-  const botImage = mode === "create" ? packageInfo?.icon : botToEdit?.botImage;
-  const botName = mode === "create" ? packageInfo?.name : botToEdit?.botName;
+  const botImage = mode === "create" ? packageInfo?.icon : botToEdit?.image;
+  const botName = mode === "create" ? packageInfo?.name : botToEdit?.name;
   const requiredKeys =
     mode === "create"
       ? selectedConstructor?.requiredKeys
-      : botToEdit?.otherInfos?.constructors[0]?.requiredKeys;
+      : botToEdit?.packageInfo?.constructors[0]?.requiredKeys;
   const botConfig =
     mode === "create"
       ? selectedConstructor?.botConfig
-      : botToEdit?.savedBotConfig;
+      : botToEdit?.packageInfo?.constructors[0]?.botConfig;
+
 
   return (
     <Form {...form}>
@@ -346,111 +333,87 @@ const BotForm = ({ mode }: BotFormProps) => {
               <CardTitle className="text-lg font-medium">
                 {mode === "create" ? "Bot Information" : "Edit Bot"}
               </CardTitle>
+              <div className="flex gap-2 ml-auto">
+                {(form.formState.isDirty || mode === "create") && (
+                  <Button type="submit" disabled={isLoading} variant="ghost" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 hover:border-green-300">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        {mode === "create" ? "Creating..." : "Saving..."}
+                      </>
+                    ) : (
+                      <>
+                        {mode === "create" ? (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Bot
+                          </>
+                        ) : (
+                          <>
+                            <CheckIcon className="h-4 w-4 mr-2" />
+                            Update Bot
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex gap-6">
-                <div className="h-fit rounded-2xl overflow-hidden border border-neutral-200 p-2">
-                  <img
-                    src={botImage || "/default-bot-avatar.png"}
-                    alt={botName}
-                    className="w-32 h-w-32 object-contain"
-                  />
+                <div className="flex flex-col items-start gap-2">
+                  <div className="h-fit rounded-2xl overflow-hidden border border-neutral-200 p-2">
+                    <img
+                      src={botImage ?? "/images/default-bot-avatar.png"}
+                      alt={botName}
+                      className="w-24 h-24 object-cover"
+                    />
+                  </div>
+                  <h3 className="text-sm font-medium text-neutral-900">{botName}</h3>
                 </div>
-                <div className="flex-1 flex flex-col gap-4">
-                  <FormField
-                    control={form.control}
-                    name="botName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {mode === "create" ? "Name your bot" : "Bot Name"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter bot name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {requiredKeys && (
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-neutral-900">
-                        Required Keys
-                      </h3>
-                      {requiredKeys.map((keyInfo: RequiredKeyInfo) => (
-                        <FormField
-                          key={keyInfo.key}
-                          control={form.control}
-                          name={`keys.${keyInfo.key}`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm font-medium">
-                                {keyInfo.displayName || keyInfo.key}
-                                {keyInfo.isOptional && (
-                                  <span className="ml-1 text-xs text-neutral-500">
-                                    (Optional)
-                                  </span>
-                                )}
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  type={keyInfo.type || "text"}
-                                  placeholder={`Enter ${keyInfo.displayName || keyInfo.key}`}
-                                  className="bg-white"
-                                />
-                              </FormControl>
-                              {keyInfo.description && (
-                                <p className="text-xs text-neutral-500">
-                                  {keyInfo.description}
-                                </p>
-                              )}
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {botConfig && botConfig.length > 0 && (
-                    <div className="border-t border-neutral-200 pt-4">
-                      <h3 className="text-sm uppercase font-medium text-neutral-900 mb-4">
-                        Bot Configuration
-                      </h3>
-                      <div className="space-y-2">
-                        <BotConfigUI
-                          packageName={
-                            mode === "create"
-                              ? packageName?.split("/")[1]
-                              : botToEdit?.botPackageName.split("/")[1]
-                          }
-                          config={botConfig}
-                        />
-                      </div>
-                    </div>
-                  )}
+                <div className="flex-1">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="w-full flex flex-row justify-start gap-2">
+                      <TabsTrigger value="general">General</TabsTrigger>
+                      <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                      <TabsTrigger value="jobs">Jobs</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="general">
+                      <GeneralTab
+                        form={form}
+                        requiredKeys={requiredKeys}
+                        visibleFields={visibleFields}
+                        toggleVisibility={toggleVisibility}
+                        copyToClipboard={copyToClipboard}
+                        mode={mode}
+                        onDeleteBot={handleDelete}
+                        isDeleting={isDeleting}
+                        packageName={packageInfo?.name || ""}
+                        botToEdit={botToEdit}
+                        botConfig={botConfig}
+                        packageInfo={packageInfo}
+                      />
+                    </TabsContent>
+                    <TabsContent value="configuration">
+                      <div></div>
+                    </TabsContent>
+                    <TabsContent value="jobs">
+                      <JobsTab
+                        clientRequestIds={botToEdit?.clientRequestIds}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-between pt-4">
+          {/* <div className="flex justify-between pt-4">
             <Button type="button" variant="outline" onClick={handleBack}>
               Back
             </Button>
             <div className="flex gap-2">
-              {mode === "edit" && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={isLoading || isDeleting}
-                >
-                  {isDeleting ? "Deleting..." : "Delete Bot"}
-                </Button>
-              )}
               <Button type="submit" disabled={isLoading}>
                 {isLoading
                   ? mode === "create"
@@ -461,7 +424,7 @@ const BotForm = ({ mode }: BotFormProps) => {
                     : "Update Bot"}
               </Button>
             </div>
-          </div>
+          </div> */}
         </div>
       </form>
     </Form>

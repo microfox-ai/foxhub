@@ -1,19 +1,26 @@
-import { ClientSecretVariable } from "@/server/types";
+import {
+  ClientSecretApiType,
+  ClientSecretVariable,
+  ConfigUi,
+} from "@/server/types";
 
 export interface KeyVariableConfig {
   key: string;
   displayName: string;
   description: string;
   defaultValue?: string | string[];
+  ui?: ConfigUi;
 }
 
 export interface Constructor {
   name: string;
   description: string;
-  zodSecretSchema: string;
   auth: "apiKey" | "oauth2";
+  apiType?: ClientSecretApiType;
   requiredKeys?: KeyVariableConfig[];
   internalKeys: KeyVariableConfig[];
+  botConfig: KeyVariableConfig[];
+  authEndpoint?: string;
 }
 
 export interface Package {
@@ -25,7 +32,6 @@ export interface Package {
   dependencies: string[];
   status: string;
   documentation: string;
-  authEndpoint: string;
   constructors: Constructor[];
 }
 

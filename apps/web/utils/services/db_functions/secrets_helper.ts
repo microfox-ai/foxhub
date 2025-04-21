@@ -434,20 +434,30 @@ export const updateDeploymentsOfClientSecret = async (
         deployment?.metadata as unknown as ClientDeploymentMetadata
       ).serverless;
       for (const functionInfo of serverlessMetadata?.functions) {
+        let envVarsmap =
+          clientSecret?.variables.reduce(
+            (acc: Record<string, string>, curr: any) => {
+              acc[curr.key] = curr.value;
+              return acc;
+            },
+            {}
+          ) ?? {};
+        if (clientSecret?.botConfig) {
+          (clientSecret?.botConfig as any[]).forEach(
+            (config: ClientSecretVariable) => {
+              if (config.value) {
+                envVarsmap[config.key] = config.value;
+              }
+            }
+          );
+        }
         await updateLambdaEnvironmentVariables({
           functionName:
             serverlessMetadata?.functionBase?.toLowerCase() +
             "-" +
             functionInfo.functionName,
           region: "us-east-1",
-          environmentVariables:
-            clientSecret?.variables.reduce(
-              (acc: Record<string, string>, curr: any) => {
-                acc[curr.key] = curr.value;
-                return acc;
-              },
-              {}
-            ) ?? {},
+          environmentVariables: envVarsmap,
         });
       }
     }

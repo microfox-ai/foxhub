@@ -83,7 +83,8 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
     const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
         secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
     );
-    const authEndpoint = packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2")?.authEndpoint;
+    const authEndpoint = packageInfo?.constructors.find((c: Constructor) => c.auth === "oauth2")?.authEndpoint
+        ?? packageInfo?.authEndpoint;
 
     const hasAllAuthRelatedKeys = oauthSecret
         ? (oauthSecret?.variables as any[]).every((variable: ClientSecretVariable) =>
@@ -96,6 +97,8 @@ export const OAuthButton = ({ packageInfo, secretsData, mutateSecrets }: {
         )
         )
         : false;
+
+    console.log(packageInfo, secretsData?.clientSecrets);
 
     return (
         <>

@@ -155,8 +155,8 @@ export const codingFunctionPrompt = async ({
     ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "allKeys")
     : [];
 
-  console.log("templateEnvs", templateEnvs);
-  console.log("coreEnvs", coreEnvs);
+  //console.log("templateEnvs", templateEnvs);
+  //console.log("coreEnvs", coreEnvs);
 
   return dedent`You are requested to write a serverless function for the following requirement:
             Task Summary: ${taskInstanceMeta?.taskInfo?.summary}

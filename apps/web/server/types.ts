@@ -23,7 +23,8 @@ export interface ConfigUi {
     | "select"
     | "textarea"
     | "multiSelect"
-    | "image";
+    | "image"
+    | "password";
   placeholder?: string;
   options?: { label: string; value: string }[];
   required?: boolean;

@@ -58,7 +58,9 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     }
 
     try {
-      const whatsappVerify = new WhatsAppVerification();
+      const whatsappVerify = new WhatsAppVerification({
+        baseUrl: "https://staging.microfox.app",
+      });
       const existingVerification =
         await whatsappVerify.getInitialVerificationSession(
           clientSecretId,
@@ -89,7 +91,9 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
         return existingVerification;
       }
 
-      const whatsappVerify = new WhatsAppVerification();
+      const whatsappVerify = new WhatsAppVerification({
+        baseUrl: "https://staging.microfox.app",
+      });
       const verification = await whatsappVerify.createVerification(
         clientSecretId,
         userId,

@@ -33,8 +33,9 @@ export class WhatsAppVerification {
   private baseUrl: string;
 
   constructor(options: WhatsAppVerificationOptions = {}) {
-    this.baseUrl =
-      options.baseUrl || "http://localhost:3000/api/whatsapp-verify";
+    this.baseUrl = options.baseUrl
+      ? `${options.baseUrl}/api/whatsapp-verify`
+      : "http://localhost:3000/api/whatsapp/verify";
   }
 
   /**

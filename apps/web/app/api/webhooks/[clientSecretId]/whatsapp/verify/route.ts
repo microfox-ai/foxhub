@@ -5,7 +5,9 @@ export async function POST(request: Request) {
   try {
     const { clientSecretId, code } = await request.json();
     // 1. fetch the verification session
-    const whatsappVerification = new WhatsAppVerification();
+    const whatsappVerification = new WhatsAppVerification({
+      baseUrl: "https://staging.microfox.app",
+    });
     const verification = await whatsappVerification.getVerificationSession(
       clientSecretId,
       code

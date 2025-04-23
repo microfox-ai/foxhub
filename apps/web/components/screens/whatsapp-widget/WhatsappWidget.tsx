@@ -9,7 +9,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { ClientSecret } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
 
-const WhatsappWidget = () => {
+const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isQRLoading, setIsQRLoading] = useState(true);
@@ -18,7 +18,7 @@ const WhatsappWidget = () => {
   const searchParams = useSearchParams();
   const clientSecretId = searchParams.get("clientSecretId");
   const userId = searchParams.get("businessUserId");
-  const [slug, setSlug] = useState<string | null>(null);
+  const callbackUri = searchParams.get("callbackUri");
   const [botImage, setBotImage] = useState<string | null>(null);
   const getClientSecret = async ({
     clientSecretId,
@@ -32,13 +32,7 @@ const WhatsappWidget = () => {
     console.log("response", data);
     const clientSecret = data[0];
     console.log(clientSecret);
-    setSlug(
-      (
-        clientSecret?.botConfig.find(
-          (config: any) => config.key === "WHATSAPP_BUSINESS_NAME"
-        ) as any
-      ).value
-    );
+
     setBotImage(
       (
         clientSecret?.botConfig.find(
@@ -65,11 +59,11 @@ const WhatsappWidget = () => {
 
     try {
       const whatsappVerify = new WhatsAppVerification();
-      const existingVerification = await whatsappVerify.getVerificationSession(
-        clientSecretId,
-        userId,
-        slug || ""
-      );
+      const existingVerification =
+        await whatsappVerify.getInitialVerificationSession(
+          clientSecretId,
+          userId
+        );
 
       if (existingVerification && existingVerification[0]?.code) {
         return existingVerification[0];
@@ -89,7 +83,7 @@ const WhatsappWidget = () => {
     }
 
     try {
-      // First check if verification already exists
+      // First check if verification session already exists
       const existingVerification = await checkExistingVerification();
       if (existingVerification) {
         return existingVerification;
@@ -99,7 +93,8 @@ const WhatsappWidget = () => {
       const verification = await whatsappVerify.createVerification(
         clientSecretId,
         userId,
-        slug || ""
+        slug || "",
+        callbackUri || ""
       );
 
       console.log("Verification created:", verification);
@@ -119,11 +114,11 @@ const WhatsappWidget = () => {
       if (!verification?.code) return;
 
       // Create WhatsApp deep link
-      const message = `Hey, ${verification.slug}! I want to connect with you. This is my verification code ${verification.code}`;
+      const message = `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`;
       const url = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
 
-      // Open WhatsApp in a new tab
-      window.open(url, "_blank");
+      // Open WhatsApp in same page
+      window.location.href = url;
     } catch (err) {
       setError("Failed to create verification. Please try again.");
       console.error(err);
@@ -140,7 +135,7 @@ const WhatsappWidget = () => {
 
       setQrCodeData(
         `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(
-          `Hey, ${verification.slug}! I want to connect with you. This is my verification code ${verification.code}`
+          `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`
         )}`
       );
     } catch (err) {

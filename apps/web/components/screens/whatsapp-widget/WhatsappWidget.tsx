@@ -14,6 +14,8 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isQRLoading, setIsQRLoading] = useState(true);
   const [qrCodeData, setQrCodeData] = useState<string>("");
+  const [whatsappBusinessNumber, setWhatsappBusinessNumber] =
+    useState<string>("");
 
   const searchParams = useSearchParams();
   const clientSecretId = searchParams.get("clientSecretId");
@@ -32,6 +34,14 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     console.log("response", data);
     const clientSecret = data[0];
     console.log(clientSecret);
+
+    setWhatsappBusinessNumber(
+      (
+        clientSecret?.variables.find(
+          (variable: any) => variable.key === "WHATSAPP_BUSINESS_PHONE_NUMBER"
+        ) as any
+      )?.value.trim()
+    );
 
     setBotImage(
       (
@@ -119,7 +129,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
 
       // Create WhatsApp deep link
       const message = `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`;
-      const url = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
+      const url = `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(message)}`;
 
       // Open WhatsApp in same page
       window.location.href = url;
@@ -138,7 +148,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       if (!verification?.code) return;
 
       setQrCodeData(
-        `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_BUSINESS_NUMBER}?text=${encodeURIComponent(
+        `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(
           `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`
         )}`
       );

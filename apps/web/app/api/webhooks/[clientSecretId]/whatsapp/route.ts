@@ -114,23 +114,42 @@ export async function POST(
         if (!code) return;
 
         // 2. forward the message to the verify route
-        const verificationResponse = await PortalSdk.postData(
+        const verificationResponse = await fetch(
           `${APP_BASE_URL}/api/webhooks/${clientSecretId}/whatsapp/verify`,
           {
-            clientSecretId,
-            code,
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              clientSecretId,
+              code,
+            }),
           }
         );
 
-        console.log("verificationResponse", verificationResponse);
-
-        if (!verificationResponse.success) {
-          return new NextResponse("Error", { status: 500 });
+        if (!verificationResponse.ok) {
+          const errorData = await verificationResponse.json();
+          return new NextResponse(
+            JSON.stringify({ error: errorData.error || "Verification failed" }),
+            {
+              status: verificationResponse.status,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
         }
 
-        // 3. if it is verified, get the callback uri from the whatsapp verification object
+        const { data } = await verificationResponse.json();
+        if (!data) {
+          return new NextResponse(
+            JSON.stringify({ error: "Invalid verification response" }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
 
-        const { data } = verificationResponse;
         const { callbackUri, userId } = data;
 
         console.log("callbackUri", callbackUri);
@@ -160,7 +179,7 @@ export async function POST(
         await forwardToApiAgent(message, phoneNumber, endpoint);
       }
 
-      return NextResponse.json({ success: true });
+      return new NextResponse("Success", { status: 200 });
     }
 
     return new NextResponse("Invalid request body", { status: 400 });

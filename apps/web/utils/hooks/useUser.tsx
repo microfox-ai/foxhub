@@ -45,7 +45,7 @@ export function useUser(): UseUserReturn {
   };
 
   useEffect(() => {
-    if (PUBLIC_ROUTES.includes(pathname)) {
+    if (PUBLIC_ROUTES.find((route) => pathname.startsWith(route))) {
       return;
     }
     async function fetchUser() {

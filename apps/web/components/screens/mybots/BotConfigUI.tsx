@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ImageIcon, UploadIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useUser } from "@/utils/hooks/useUser";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface SlackWebTinyConfigUIProps {
   configFields: ClientSecretVariable[];
@@ -34,33 +34,33 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
   const form = useFormContext();
   const [imagePreview, setImagePreview] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const uploadImage = async (file: File, fieldKey: string) => {
     try {
-      setIsUploading(prev => ({ ...prev, [fieldKey]: true }));
+      setIsUploading((prev) => ({ ...prev, [fieldKey]: true }));
 
       // Create FormData with the required fields
       const formData = new FormData();
       // Add the file multiple times to match the API expectation
-      formData.append('file', file);
-      formData.append('userId', user?.id || ''); // Replace with actual user ID
-      formData.append('folderName', 'customBots/botConfigs');
+      formData.append("file", file);
+      formData.append("userId", user?.id || ""); // Replace with actual user ID
+      formData.append("folderName", "customBots/botConfigs");
 
       // Send the request
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      const response = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error("Upload failed");
       }
 
       const data = await response.json();
 
       if (!data.success || !data.media || data.media.length === 0) {
-        throw new Error('Invalid response format');
+        throw new Error("Invalid response format");
       }
 
       // Get the URL from the first media item
@@ -70,15 +70,15 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
       form.setValue(`config.${fieldKey}`, uploadedUrl);
 
       // Show success message
-      toast.success('Image uploaded successfully');
+      toast.success("Image uploaded successfully");
 
       return uploadedUrl;
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload image');
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
       return null;
     } finally {
-      setIsUploading(prev => ({ ...prev, [fieldKey]: false }));
+      setIsUploading((prev) => ({ ...prev, [fieldKey]: false }));
     }
   };
 
@@ -86,11 +86,19 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
     switch (field.ui.type) {
       case "text":
         return (
-          <Input {...formField} placeholder={field.ui.placeholder} type="text" />
+          <Input
+            {...formField}
+            placeholder={field.ui.placeholder}
+            type="text"
+          />
         );
       case "number":
         return (
-          <Input {...formField} placeholder={field.ui.placeholder} type="number" />
+          <Input
+            {...formField}
+            placeholder={field.ui.placeholder}
+            type="number"
+          />
         );
       case "boolean":
         return (
@@ -145,7 +153,10 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
                     const reader = new FileReader();
                     reader.onloadend = () => {
                       const base64String = reader.result as string;
-                      setImagePreview(prev => ({ ...prev, [field.key]: base64String }));
+                      setImagePreview((prev) => ({
+                        ...prev,
+                        [field.key]: base64String,
+                      }));
                     };
                     reader.readAsDataURL(file);
 
@@ -162,7 +173,9 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => document.getElementById(`image-upload-${field.key}`)?.click()}
+                onClick={() =>
+                  document.getElementById(`image-upload-${field.key}`)?.click()
+                }
                 disabled={isUploading[field.key]}
               >
                 {isUploading[field.key] ? (
@@ -181,12 +194,12 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    setImagePreview(prev => {
+                    setImagePreview((prev) => {
                       const newState = { ...prev };
                       delete newState[field.key];
                       return newState;
                     });
-                    formField.onChange('');
+                    formField.onChange("");
                   }}
                 >
                   <XIcon className="h-4 w-4" />

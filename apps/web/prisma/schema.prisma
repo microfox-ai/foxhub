@@ -186,6 +186,24 @@ model RequestUpdate {
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
+model WhatsAppVerification {
+  id        String   @id @default(uuid())
+  clientSecretId  String   // clientSecretId of the whatsapp bot
+  userId    String // userId of the user who is connecting the whatsapp bot (provided by the client)
+  code      String // verification code for the whatsapp bot
+  slug      String    // slug provided by the client (provider)
+  phoneNumber String? 
+  isVerified Boolean @default(false)
+  callbackUri String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientSecretId, code])
+  @@index([userId])
+  @@index([clientSecretId])
+  @@index([slug])
+}
+
 enum CLIENTSECRETSTATUS {
   EMPTY
   FILLED

@@ -8,7 +8,7 @@ export async function updateClientRequest({
   const clientRequest =
     (await prisma.clientRequest.update({
       where: {
-        id: options.clientRequestId,
+        id: clientRequestId,
       },
       data: {
         ...options,

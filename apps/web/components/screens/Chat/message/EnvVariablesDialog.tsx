@@ -20,7 +20,9 @@ import { Key, Info, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 interface EnvVariable {
   env: string;
   name: string;
-  what: string;
+  what?: string;
+  how?: string;
+  why?: string;
 }
 
 interface EnvVariablesDialogProps {
@@ -55,15 +57,6 @@ export const EnvVariablesDialog = ({
     {}
   );
   const inputRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // Reset form when dialog is closed
-  useEffect(() => {
-    if (!isOpen) {
-      setEnvValues(initialValues);
-      setValidationError(null);
-      setTouchedFields({});
-    }
-  }, [isOpen, initialValues]);
 
   const handleInputChange = (key: string, value: string) => {
     setEnvValues((prev) => ({ ...prev, [key]: value }));
@@ -119,9 +112,14 @@ export const EnvVariablesDialog = ({
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (_open: boolean) => {
     setValidationError(null);
     onClose();
+    if (!_open) {
+      setEnvValues(initialValues);
+      setValidationError(null);
+      setTouchedFields({});
+    }
   };
 
   return (
@@ -130,10 +128,10 @@ export const EnvVariablesDialog = ({
         <DialogHeader className="space-y-2">
           <DialogTitle className="flex items-start gap-2 text-xl font-semibold">
             <Key className="h-5 w-5 mt-1" />
-            Add Environment Variables
+            Add Information
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-500">
-            Enter your environment variables below. These will be stored
+            Please enter your information below. This information will be stored
             securely and used in your application.
           </DialogDescription>
         </DialogHeader>
@@ -167,7 +165,7 @@ export const EnvVariablesDialog = ({
                         className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
                         showArrow={false}
                       >
-                        <p>{env.what}</p>
+                        <p>{env.what ?? "No information provided"}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -176,7 +174,7 @@ export const EnvVariablesDialog = ({
               <div className="relative">
                 <Input
                   id={env.env}
-                  type={visibleKeys[env.env] ? "text" : "password"}
+                  type={"text"}
                   value={envValues[env.env] || ""}
                   onChange={(e) => handleInputChange(env.env, e.target.value)}
                   onBlur={() =>
@@ -189,7 +187,7 @@ export const EnvVariablesDialog = ({
                   placeholder={`Enter value for ${env.name}`}
                   aria-label={env.name}
                 />
-                {envValues[env.env] && (
+                {/* {envValues[env.env] && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -203,7 +201,7 @@ export const EnvVariablesDialog = ({
                       <Eye className="h-4 w-4 text-gray-500" />
                     )}
                   </Button>
-                )}
+                )} */}
                 {touchedFields[env.env] && !envValues[env.env]?.trim() && (
                   <div className="flex items-center gap-1 text-red-500 text-sm">
                     <AlertCircle className="h-4 w-4" />
@@ -224,7 +222,7 @@ export const EnvVariablesDialog = ({
         <DialogFooter className="flex items-center justify-end gap-3 pt-2">
           <Button
             variant="outline"
-            onClick={handleCancel}
+            onClick={() => handleCancel(false)}
             className="h-11"
             disabled={isSubmitting}
           >
@@ -237,7 +235,7 @@ export const EnvVariablesDialog = ({
                 Saving...
               </>
             ) : (
-              "Save Environment Variables"
+              "Save Information"
             )}
           </Button>
         </DialogFooter>

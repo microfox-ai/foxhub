@@ -218,29 +218,9 @@ const ChatHeader = ({
         setShowLogoutDialog={setShowLogoutDialog}
         handleConfirmLogout={handleConfirmLogout}
       />
-      {/* <ButtonSCN
-        variant="outline"
-        size="sm"
-        onClick={() => mutate()}
-        disabled={isLoading}
-      >
-        <RefreshCw
-          className={`my-auto h-4 w-4 ${isValidating ? "animate-spin" : ""}`}
-        />
-      </ButtonSCN> */}
     </div>
   );
 
-  {
-    /* Button to open Add ClientSecret modal manually (if not using slash) */
-  }
-  {
-    /* <div className="border-b px-4 py-2">
-    <ButtonSCN onClick={() => setShowAddBotModal(true)}>
-      + Add New ClientSecret
-    </ButtonSCN>
-  </div> */
-  }
 };
 
 export default ChatHeader;

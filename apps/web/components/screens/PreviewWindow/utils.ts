@@ -14,6 +14,8 @@ export const getMethodColor = (method: string) => {
       return "bg-red-100 text-red-700";
     case "PATCH":
       return "bg-purple-100 text-purple-700";
+    case "CRON":
+      return "bg-violet-100 text-violet-700";
     default:
       return "bg-gray-100 text-gray-700";
   }

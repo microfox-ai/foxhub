@@ -1,16 +1,15 @@
 "use client";
+import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import ChatWindow from "../Chat/ChatWindow";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
-import { ClientSecretProvider } from "../providers/ClientSecretProvider";
-import { ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
-import { useLayout } from "../providers/LayoutProvider";
 import { ApiDocProvider } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useLayout } from "../providers/LayoutProvider";
+import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 
 export const RequestPage = () => {
   const [tab, setTab] = useState("requests");
@@ -44,51 +43,49 @@ export const RequestPage = () => {
   }
 
   return (
-    <ClientSecretProvider botProjectId={selectedProject?.id}>
+    <TaskInstanceMetaProvider clientRequestId={clientRequestId!}>
       <ResizableHandle
         className="cursor-pointer hidden"
         onClick={handleLeftResizeHandleClick}
       />
-      <TaskInstanceMetaProvider clientRequestId={clientRequestId!}>
-        <ApiDocProvider>
-          <ResizablePanel defaultSize={84}>
-            <div className="h-full">
-              <ChatWindow
-                userId={user.id}
-                onCollapse={handleLeftCollapse}
-                isCollapsed={isLeftCollapsed}
-                isLoading={isLoading}
-                clientRequest={selectedRequest}
-                projectTitle={selectedProject?.name}
-              />
-            </div>
-          </ResizablePanel>
-          {!isRightCollapsed && (
-            <ResizableHandle
-              className="cursor-pointer w-[2px] ml-2 opacity-0 hover:opacity-100 transition-opacity duration-300"
-              onClick={handleRightResizeHandleClick}
+      <ApiDocProvider>
+        <ResizablePanel defaultSize={84}>
+          <div className="h-full">
+            <ChatWindow
+              userId={user.id}
+              onCollapse={handleLeftCollapse}
+              isCollapsed={isLeftCollapsed}
+              isLoading={isLoading}
+              clientRequest={selectedRequest}
+              projectTitle={selectedProject?.name}
             />
+          </div>
+        </ResizablePanel>
+        {!isRightCollapsed && (
+          <ResizableHandle
+            className="cursor-pointer w-[2px] ml-2 opacity-0 hover:opacity-100 transition-opacity duration-300"
+            onClick={handleRightResizeHandleClick}
+          />
+        )}
+        <ResizablePanel
+          ref={rightPanelRef}
+          defaultSize={0}
+          minSize={30}
+          maxSize={50}
+          collapsible={true}
+          collapsedSize={0}
+          onCollapse={() => handleRightCollapse(true)}
+          className={cn(
+            isRightTransitioning && "transition-all  duration-200 linear"
           )}
-          <ResizablePanel
-            ref={rightPanelRef}
-            defaultSize={0}
-            minSize={30}
-            maxSize={50}
-            collapsible={true}
-            collapsedSize={0}
-            onCollapse={() => handleRightCollapse(true)}
-            className={cn(
-              isRightTransitioning && "transition-all  duration-200 linear"
-            )}
-          >
-            <div className="h-full py-4 px-2">
-              <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
-                <PreviewWindow />
-              </div>
+        >
+          <div className="h-full py-4 px-2">
+            <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
+              <PreviewWindow />
             </div>
-          </ResizablePanel>
-        </ApiDocProvider>
-      </TaskInstanceMetaProvider>
-    </ClientSecretProvider>
+          </div>
+        </ResizablePanel>
+      </ApiDocProvider>
+    </TaskInstanceMetaProvider>
   );
 };

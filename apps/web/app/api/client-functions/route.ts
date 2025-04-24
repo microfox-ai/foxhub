@@ -1,11 +1,13 @@
 import { prisma } from "@/prisma/prisma";
-import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
+import { DeployStep } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import { generateMicrofoxEmailTemplate, sesSdk } from "@/utils/services/sesSdk";
-import { slackBotSdk } from "@/utils/services/slackBotSdk";
-import { MICROFOX_LOGO } from "@/utils/services/slackBotSdk";
-import { MySlackChannels } from "@/utils/services/slackBotSdk";
-import { FUNCTIONTYPE, DEPLOY_STAGE } from "@prisma/client";
+import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
+import {
+  MICROFOX_LOGO,
+  MySlackChannels,
+  slackBotSdk,
+} from "@/utils/services/slackBotSdk";
+import { DEPLOY_STAGE, FUNCTIONTYPE } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create ClientDeployment
@@ -41,7 +43,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId, botProjectId } = clientRequest;
+    const { userId, botProjectId, serviceName } = clientRequest;
+
+    const serverlessLog = metadata.serverless.output;
+    const functions = parseServerlessLogs(serverlessLog);
+    let newMetadata = { ...metadata };
+    newMetadata.serverless.functions = functions;
+    newMetadata.serverless.serviceName = serviceName;
+    newMetadata.serverless.functionBase =
+      serviceName + "-" + stage?.toLowerCase();
 
     // Create the ClientDeployment
     // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),
@@ -52,7 +62,7 @@ export async function POST(req: NextRequest) {
         name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
-        metadata,
+        metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
       },
@@ -65,7 +75,7 @@ export async function POST(req: NextRequest) {
         baseUrl,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
-        metadata,
+        metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
       },
@@ -126,7 +136,9 @@ export async function POST(req: NextRequest) {
     await slackBotSdk.sendMessage({
       icon_url: MICROFOX_LOGO,
       channel: MySlackChannels.microfox_updates,
-      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${endpoints?.length}. Total time taken since hellofox started conversation: ${timeTaken} seconds`,
+      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${newMetadata?.serverless?.functions?.length}. 
+      Functions Deployed: ${newMetadata?.serverless?.functions?.map((f: any) => f.functionName + " (" + f.size + ")").join(", ")}.
+      Total time taken since hellofox started conversation: ${timeTaken} seconds`,
     });
 
     return NextResponse.json(clientFunction, { status: 201 });

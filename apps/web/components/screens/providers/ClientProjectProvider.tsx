@@ -14,6 +14,7 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { analytics } from "@/utils/services/analytics/client";
 import { REQUESTSTATUS } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { IN_DEV } from "@/utils/constants/appInfo";
 
 interface ClientProjectContextType {
   clientRequestId: string | null;
@@ -106,9 +107,9 @@ export function ClientProjectProvider({
         request?.requestStatus !== REQUESTSTATUS.CLOSED
     );
 
-    if (openRequests?.length >= 5) {
+    if (openRequests?.length >= 5 && !IN_DEV) {
       toast.warning(
-        "At the moment we only support 3 concurrent requests. You can create new requests once your open requests are resolved."
+        "At the moment we only support 5 concurrent requests. You can create new requests once your open requests are resolved."
       );
       return;
     }

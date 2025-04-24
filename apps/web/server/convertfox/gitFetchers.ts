@@ -79,6 +79,7 @@ export async function fetchPackageInfo(packageName: string) {
       ? packageName.replaceAll("@microfox/", "packages/")
       : `packages/@ext_${packageName.replaceAll("/", "#")}`;
 
+    console.log("fetching", `/refs/heads/main/${path}/package-info.json`);
     const packageInfo = await fetchGithubJson(
       "microfox-ai",
       "microfox",

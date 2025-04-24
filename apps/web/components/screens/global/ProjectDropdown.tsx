@@ -41,6 +41,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useClientProject } from "../providers/ClientProjectProvider";
 
 export const ProjectDropdown = ({
   className,
@@ -49,14 +50,13 @@ export const ProjectDropdown = ({
   className?: string;
   isCollapsed?: boolean;
 }) => {
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const {
+    setSelectedProject,
+    selectedProject,
+    projectId: projectParamId,
+  } = useClientProject();
   const { user } = useAuth();
   const router = useRouter();
-
-  const params = useParams<{
-    project_id?: string;
-  }>();
-  const projectParamId = params?.project_id;
 
   const [open, setOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -78,8 +78,9 @@ export const ProjectDropdown = ({
       setSelectedProject(project);
       setValue(projectParamId);
     } else {
-      setSelectedProject(null);
-      setValue("");
+      const project = projects?.find((p: any) => p.name === "Personal Space");
+      setSelectedProject(project);
+      setValue(project?.id || "");
     }
   }, [projectParamId, projects]);
 
@@ -109,9 +110,11 @@ export const ProjectDropdown = ({
                 aria-expanded={open}
                 className="w-full justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
               >
-                {value
-                  ? projects?.find((_project) => _project.id === value)?.name
-                  : "Select project..."}
+                <span className="flex-1">
+                  {value
+                    ? projects?.find((_project) => _project.id === value)?.name
+                    : "Select project..."}
+                </span>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             ) : (

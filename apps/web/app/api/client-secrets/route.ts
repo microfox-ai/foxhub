@@ -6,13 +6,24 @@ import {
   GITHUB_TOKEN,
 } from "@/utils/constants/githubInfo";
 import { GithubSdk } from "@/utils/services/githubSdk";
-import { createOrUpdateClientSecret } from "@/utils/services/db_functions/createClientSecret";
+import {
+  addClientSecretToClientRequest,
+  createNewClientSecret,
+  createOrUpdateClientSecret,
+  removeClientSecretFromClientRequest,
+  removeClientSecretFromClientDeployment,
+  updateClientSecret,
+  updateDeploymentsOfClientSecret,
+} from "@/utils/services/db_functions/secrets_helper";
+import { ClientSecretPackageType } from "@/server/types";
+import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
 
 // Create ClientSecret
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
+      addToClientRequest,
       botProjectId,
       userId,
       type,
@@ -20,28 +31,45 @@ export async function POST(req: NextRequest) {
       clientRequestId,
       name,
       status,
+      packageName,
+      packageConstructor,
+      packageType,
+      botConfig,
+      updateDeployments,
     } = body;
 
     console.log("body", body);
 
-    if (!botProjectId || !userId || !type || !variables || !name) {
+    if (!botProjectId || !userId || !variables) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const clientSecret = await createOrUpdateClientSecret({
+    const clientSecret = await createNewClientSecret({
       botProjectId,
       userId,
-      type,
       variables,
       name,
-      clientRequestId,
       status,
-      mustCreateNewClientSecret: true,
+      clientRequestIds: clientRequestId ? [clientRequestId] : [],
+      clientDeploymentIds: [],
+      packageName,
+      packageConstructor,
+      packageType,
+      botConfig,
     });
-    return NextResponse.json(clientSecret, { status: 201 });
+
+    if (addToClientRequest) {
+      await addClientSecretToClientRequest(clientSecret.id, clientRequestId);
+    }
+
+    if (updateDeployments) {
+      await updateDeploymentsOfClientSecret(clientSecret);
+    }
+
+    return NextResponse.json(clientSecret, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { error: "Error creating ClientSecret" },
@@ -59,76 +87,51 @@ export async function GET(req: NextRequest) {
     const botProjectId = searchParams.get("botProjectId");
     const clientRequestId = searchParams.get("clientRequestId");
     const type = searchParams.get("type");
-    console.log(id, userId, clientRequestId);
+    const packageType = searchParams.get("packageType");
+    const packageName = searchParams.get("packageName");
+    const packageConstructor = searchParams.get("packageConstructor");
+    const withPackageInfos = searchParams.get("withPackageInfos");
+    const packageTypes = searchParams.get("packageTypes");
 
-    if (clientRequestId && !type) {
-      const clientRequest = await prisma.clientRequest.findUnique({
-        where: { id: clientRequestId },
-      });
-      if (!clientRequest)
-        return NextResponse.json(
-          { error: "ClientRequest not found" },
-          { status: 404 }
-        );
+    const whereClause = {
+      ...(id ? { id } : {}),
+      ...(userId ? { userId } : {}),
+      ...(botProjectId ? { botProjectId } : {}),
+      ...(clientRequestId
+        ? { clientRequestIds: { has: clientRequestId } }
+        : {}),
+      ...(type ? { type } : {}),
+      ...(packageType ? { packageType } : {}),
+      ...(packageName ? { packageName } : {}),
+      ...(packageConstructor ? { packageConstructor } : {}),
+      ...(packageTypes ? { packageType: { in: packageTypes.split(",") } } : {}),
+    };
 
-      if (!clientRequest.mentionedClientSecretIds) {
-        // just initialize the mentionedClientSecretIds array
-        await prisma.clientRequest.update({
-          where: { id: clientRequestId },
-          data: {
-            mentionedClientSecretIds: {
-              set: [],
-            },
-          },
-        });
-        return NextResponse.json({ clientSecrets: [] }, { status: 200 });
+    const clientSecrets = await prisma.clientSecret.findMany({
+      where: whereClause,
+    });
+    const finalClientSecrets = [];
+
+    for (const clientSecret of clientSecrets) {
+      let packageInfo = null;
+      if (
+        withPackageInfos === "true" &&
+        clientSecret.packageName &&
+        (clientSecret.packageType === ClientSecretPackageType.APIKEY ||
+          clientSecret.packageType === ClientSecretPackageType.OAUTH2)
+      ) {
+        packageInfo = await fetchPackageInfo(clientSecret.packageName);
       }
+      finalClientSecrets.push({
+        ...clientSecret,
+        packageInfo,
+      });
+    }
 
-      const mentionedClientSecrets = await Promise.all(
-        clientRequest.mentionedClientSecretIds.map(async (id) => {
-          const clientSecret = prisma.clientSecret.findUnique({
-            where: { id },
-          });
-          return clientSecret;
-        })
-      );
-      return NextResponse.json(
-        { clientSecrets: mentionedClientSecrets },
-        { status: 200 }
-      );
-    }
-    if (type && clientRequestId) {
-      const clientSecrets = await prisma.clientSecret.findMany({
-        where: { type, clientRequestIds: { has: clientRequestId } },
-      });
-      return NextResponse.json({ clientSecrets }, { status: 200 });
-    }
-    if (botProjectId) {
-      const clientSecrets = await prisma.clientSecret.findMany({
-        where: { botProjectId },
-      });
-      return NextResponse.json({ clientSecrets }, { status: 200 });
-    }
-    if (userId) {
-      const clientSecrets = await prisma.clientSecret.findMany({
-        where: { userId },
-      });
-      return NextResponse.json({ clientSecrets }, { status: 200 });
-    }
-    if (id) {
-      const clientSecret = await prisma.clientSecret.findUnique({
-        where: { id },
-      });
-      return NextResponse.json(
-        { clientSecrets: [clientSecret] },
-        { status: 200 }
-      );
-    } else {
-      return NextResponse.json(
-        { error: "Missing id or userId or clientRequestId" },
-        { status: 400 }
-      );
-    }
+    return NextResponse.json(
+      { clientSecrets: finalClientSecrets },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: "Error fetching ClientSecret" },
@@ -141,154 +144,25 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, variables, clientRequestId, status, name, type } = body;
+    const { id, clientRequestId, updateDeployments, ...secretData } = body;
 
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
-    const clientSecret = await prisma.clientSecret.findUnique({
-      where: { id },
-    });
-    if (!clientSecret)
-      return NextResponse.json(
-        { error: "ClientSecret not found" },
-        { status: 404 }
-      );
+    let updatedSecret = await updateClientSecret(id, secretData);
 
-    let updatedBot;
-
-    // If clientRequestId is provided and not already in the array, add it
     if (
       clientRequestId &&
-      !clientSecret.clientRequestIds.includes(clientRequestId)
+      !updatedSecret.clientRequestIds.includes(clientRequestId)
     ) {
-      // Add bot to client request
-      const clientRequest = await prisma.clientRequest.update({
-        where: { id: clientRequestId },
-        data: {
-          mentionedClientSecretIds: {
-            push: id,
-          },
-        },
-        include: {
-          requestUpdates: true,
-        },
-      });
-
-      // Add client request to bot
-      updatedBot = await prisma.clientSecret.update({
-        where: { id },
-        data: {
-          clientRequestIds: {
-            push: clientRequestId,
-          },
-          ...(variables ? { variables } : {}),
-          ...(status ? { status } : {}),
-          ...(name ? { name } : {}),
-          ...(type ? { type } : {}),
-        },
-      });
-
-      // Add comment to GitHub PR if available
-      const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
-      if (TMD_GITHUB_TOKEN && clientRequest.prUrl) {
-        // Create formatted string of variables with modes
-        // Group variables by mode
-        const modeMap: Record<string, string[]> = {};
-
-        clientSecret.variables.forEach((variable: any) => {
-          const key = variable.key;
-
-          if (
-            variable.mode &&
-            Array.isArray(variable.mode) &&
-            variable.mode.length > 0
-          ) {
-            // Add the key to each mode's array
-            variable.mode.forEach((mode: string) => {
-              if (!modeMap[mode]) {
-                modeMap[mode] = [];
-              }
-              modeMap[mode].push(key);
-            });
-          } else {
-            // Handle variables without mode
-            if (!modeMap["default"]) {
-              modeMap["default"] = [];
-            }
-            modeMap["default"].push(key);
-          }
-        });
-
-        const repoName = clientRequest?.prUrl?.split("/")[4];
-
-        if (!repoName) {
-          console.error("No repo name found");
-          return NextResponse.json(
-            { error: "Repo name missing" },
-            { status: 500 }
-          );
-        }
-
-        const appRepoSdk = new GithubSdk({
-          owner: TEMPLATE_REPO_OWNER,
-          repo: repoName,
-          token: TMD_GITHUB_TOKEN,
-        });
-
-        const requestUpdates = clientRequest.requestUpdates;
-
-        // Find the update with the largest prNumber.
-        const lastRequestPrNumber =
-          requestUpdates.length > 0
-            ? requestUpdates.reduce((acc, curr) =>
-                acc.prNumber > curr.prNumber ? acc : curr
-              ).prNumber
-            : null;
-
-        const modeMapString = Object.entries(modeMap)
-          .map(([mode, keys]) => `- **${mode}**: ${keys.join(", ")}`)
-          .join("\n");
-
-        const commentBody = `<Not for Client> **Client has added their bot in this request:**  
-**Bot Name:** ${clientSecret.name}  
-**Updated Environment Variables:**  
-${modeMapString}`;
-
-        await appRepoSdk.createCommentOnPr(
-          lastRequestPrNumber || clientRequest.prNumber || 0,
-          commentBody
-        );
-
-        // Create a simple key string without modes for client-facing message
-        const variablesKeyString = clientSecret.variables
-          .map((variable: any) => variable.key)
-          .join(", ");
-
-        // await prisma.chatUIMessage.create({
-        //   data: {
-        //     originClientRequestId: clientRequest.id,
-        //     userId: clientSecret.userId,
-        //     content: `${clientSecret.name} bot has been added to this request with the following variables: ${variablesKeyString}.`,
-        //     context: "chat",
-        //     role: "sysUpdate",
-        //     minionType: "other",
-        //   },
-        // });
-      }
-    } else {
-      // Just update variables if clientRequestId not provided or already exists
-      updatedBot = await prisma.clientSecret.update({
-        where: { id },
-        data: {
-          variables: variables || clientSecret.variables,
-          ...(status ? { status } : {}),
-          ...(name ? { name } : {}),
-          ...(type ? { type } : {}),
-        },
-      });
+      const updates = await addClientSecretToClientRequest(id, clientRequestId);
+      updatedSecret = updates.clientSecret!;
     }
 
-    return NextResponse.json(updatedBot, { status: 200 });
+    if (updateDeployments) {
+      await updateDeploymentsOfClientSecret(updatedSecret);
+    }
+
+    return NextResponse.json(updatedSecret, { status: 200 });
   } catch (error) {
     console.error("Error updating ClientSecret:", error);
     return NextResponse.json(
@@ -303,164 +177,30 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    const clientRequestId = searchParams.get("clientRequestId");
-    const removeOnly = searchParams.get("removeOnly") === "true";
-
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
     const clientSecret = await prisma.clientSecret.findUnique({
       where: { id },
     });
+
     if (!clientSecret)
       return NextResponse.json(
         { error: "ClientSecret not found" },
         { status: 404 }
       );
 
-    // If clientRequestId is provided and removeOnly is true, just remove the association
-    if (clientRequestId && removeOnly) {
-      // Remove clientRequestId from the bot's clientRequestIds array
-      await prisma.clientSecret.update({
-        where: { id },
-        data: {
-          clientRequestIds: {
-            set: clientSecret.clientRequestIds.filter(
-              (reqId) => reqId !== clientRequestId
-            ),
-          },
-        },
-      });
+    // for (const clientRequestId of clientSecret.clientRequestIds) {
+    //   await removeClientSecretFromClientRequest(id, clientRequestId);
+    // }
 
-      // Remove botId from the clientRequest's mentionedClientSecretIds array
-      const clientRequest = await prisma.clientRequest.findUnique({
-        where: { id: clientRequestId },
-        include: {
-          requestUpdates: true,
-        },
-      });
+    await prisma.clientSecret.delete({
+      where: { id },
+    });
 
-      if (clientRequest) {
-        await prisma.clientRequest.update({
-          where: { id: clientRequestId },
-          data: {
-            mentionedClientSecretIds: {
-              set: clientRequest.mentionedClientSecretIds.filter(
-                (botId) => botId !== id
-              ),
-            },
-          },
-        });
-
-        // Add a message to notify that the key was removed
-        // await prisma.chatUIMessage.create({
-        //   data: {
-        //     originClientRequestId: clientRequestId,
-        //     userId: clientSecret.userId,
-        //     content: `${clientSecret.name} with keys ${clientSecret.variables.map((variable: any) => variable.key).join(", ")} has been removed from this request.`,
-        //     context: "chat",
-        //     role: "sysUpdate",
-        //     minionType: "other",
-        //   },
-        // });
-
-        // Add a comment to GitHub PR if available
-        const TMD_GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
-        if (TMD_GITHUB_TOKEN && clientRequest.prUrl) {
-          const repoName = clientRequest?.prUrl?.split("/")[4];
-
-          if (!repoName) {
-            console.error("No repo name found");
-            return NextResponse.json(
-              { error: "Repo name missing" },
-              { status: 500 }
-            );
-          }
-          const appRepoSdk = new GithubSdk({
-            owner: TEMPLATE_REPO_OWNER,
-            repo: repoName,
-            token: TMD_GITHUB_TOKEN,
-          });
-
-          const requestUpdates = clientRequest.requestUpdates;
-
-          // Find the update with the largest prNumber
-          const lastRequestPrNumber =
-            requestUpdates.length > 0
-              ? requestUpdates.reduce((acc, curr) =>
-                  acc.prNumber > curr.prNumber ? acc : curr
-                ).prNumber
-              : null;
-
-          const modeMap = clientSecret.variables.reduce(
-            (acc: Record<string, string[]>, variable: any) => {
-              if (
-                variable.mode &&
-                Array.isArray(variable.mode) &&
-                variable.mode.length > 0
-              ) {
-                variable.mode.forEach((mode: string) => {
-                  acc[mode] = acc[mode] || [];
-                  acc[mode].push(variable.key);
-                });
-              }
-              return acc;
-            },
-            {}
-          );
-
-          // Format the modeMap into a markdown-friendly string for GitHub comment
-          const modeMapString = Object.entries(modeMap)
-            .map(([mode, keys]) => `- **${mode}**: ${keys.join(", ")}`)
-            .join("\n");
-
-          const commentBody = `<Not for Client> **Client has removed the following bot from their request:**  
-**Bot Name:** ${clientSecret.name}  
-**Environment Variables:**  
-${modeMapString}`;
-
-          await appRepoSdk.createCommentOnPr(
-            lastRequestPrNumber || clientRequest.prNumber || 0,
-            commentBody
-          );
-        }
-      }
-
-      return NextResponse.json(
-        { message: "Bot removed from request successfully" },
-        { status: 200 }
-      );
-    }
-    // Otherwise, delete the bot entirely
-    else {
-      // First remove the bot from all client requests it's associated with
-      await Promise.all(
-        clientSecret.clientRequestIds.map(async (reqId) => {
-          const clientRequest = await prisma.clientRequest.findUnique({
-            where: { id: reqId },
-          });
-          if (clientRequest) {
-            await prisma.clientRequest.update({
-              where: { id: reqId },
-              data: {
-                mentionedClientSecretIds: {
-                  set: clientRequest.mentionedClientSecretIds.filter(
-                    (botId) => botId !== id
-                  ),
-                },
-              },
-            });
-          }
-        })
-      );
-
-      // Then delete the bot
-      await prisma.clientSecret.delete({ where: { id } });
-
-      return NextResponse.json(
-        { message: "Bot deleted successfully" },
-        { status: 200 }
-      );
-    }
+    return NextResponse.json(
+      { message: "Bot deleted successfully" },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error handling ClientSecret deletion:", error);
     return NextResponse.json(

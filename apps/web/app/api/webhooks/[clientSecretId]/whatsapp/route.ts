@@ -52,7 +52,7 @@ export async function GET(
     console.log("clientSecret", clientSecret);
 
     const whatsappVerifyToken = (
-      clientSecret.botConfig as unknown as ClientSecretVariable[]
+      clientSecret.variables as unknown as ClientSecretVariable[]
     ).find((config) => config.key === "WHATSAPP_WEBHOOK_VERIFY_TOKEN")?.value;
 
     console.log("whatsappVerifyToken", whatsappVerifyToken);

@@ -5,13 +5,14 @@ import { Tabs } from "@/components/ui/tabs";
 import { ClientRequest } from "@prisma/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronsRight, Loader2, PanelRightIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { useFileUpload } from "../providers/FileUploadProvider";
+import { useEffect } from "react";
+import { ChatUIProvider, useChatUI } from "../providers/ChatUiProvider";
 import { useLayout } from "../providers/LayoutProvider";
 import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
+import { TabUiProvider, useTabUi } from "../providers/TabUiProvider";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
-import TabMessages from "./TabMessages";
+import MessageList from "./MessageList";
 import ConfigureTab from "./dashboard/ConfigureTab";
 
 export type AttachedMedia = {
@@ -36,23 +37,23 @@ function ChatWindow({
 }) {
   // Chat state
   const {
-    activeTab,
-    setActiveTab,
-    previousTab,
-    setPreviousTab,
-    hasScrolled,
-    setHasScrolled,
     messages,
-    setMessages,
     reload: mutate,
     status,
     isLoading,
     input,
-    setInput,
     handleInputChange,
-    append,
     serverMessages,
   } = useMicrofox();
+
+  const {
+    activeTab,
+    setActiveTab,
+    setPreviousTab,
+    getSlideDirection
+  } = useTabUi();
+
+  const { hasScrolled, setHasScrolled, messagesEndRef, scrollToBottom } = useChatUI();
 
   const { isRightCollapsed, handleRightCollapse } = useLayout();
 
@@ -71,39 +72,11 @@ function ChatWindow({
     }
   };
 
-  const getSlideDirection = (tabValue: string) => {
-    if (!previousTab || previousTab === tabValue) return 0;
-    const tabOrder = ["chat", "history", "dashboard"];
-    const prevIndex = tabOrder.indexOf(previousTab);
-    const currentIndex = tabOrder.indexOf(tabValue);
-    return prevIndex < currentIndex ? 100 : -100;
-  };
-
-  // const [requestStatus, setRequestStatus] = useState(
-  //   clientRequest?.requestStatus,
-  // );
-  // Global add bot modal states (for selecting a template and filling variables)
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const { mediaPayload, resetMedia } = useFileUpload();
-
-  // Reload client data when specific operations are completed
-  const reloadClientData = async () => {
-    try {
-      await mutate();
-    } catch (error) {
-      console.error("Error reloading client data:", error);
-    }
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    if (activeTab === "chat") {
+      scrollToBottom();
+    }
   }, [messages, activeTab]);
-
-  // Scroll to the bottom of the chat window
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
 
   return (
     <div className="relative flex h-full w-full flex-col">
@@ -185,11 +158,8 @@ function ChatWindow({
                     onScroll={handleScroll}
                   >
                     <div className="w-full max-w-[800px] pr-3 mx-auto pt-10">
-                      <TabMessages
-                        messages={messages}
+                      <MessageList
                         isLoading={false}
-                        messagesEndRef={messagesEndRef}
-                        isStreaming={status === "streaming"}
                       />
                     </div>
                   </motion.div>
@@ -276,14 +246,18 @@ export default function ChatWindowWithProvider({
 }) {
   return (
     <MicrofoxProvider clientRequest={clientRequest}>
-      <ChatWindow
-        userId={userId}
-        clientRequest={clientRequest}
-        isCollapsed={isCollapsed}
-        onCollapse={onCollapse}
-        projectTitle={projectTitle}
-        isChatLoading={isLoading}
-      />
+      <TabUiProvider>
+        <ChatUIProvider>
+          <ChatWindow
+            userId={userId}
+            clientRequest={clientRequest}
+            isCollapsed={isCollapsed}
+            onCollapse={onCollapse}
+            projectTitle={projectTitle}
+            isChatLoading={isLoading}
+          />
+        </ChatUIProvider>
+      </TabUiProvider>
     </MicrofoxProvider>
   );
 }

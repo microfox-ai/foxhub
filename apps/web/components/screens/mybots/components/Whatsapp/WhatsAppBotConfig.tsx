@@ -583,6 +583,9 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                 <Copy className="h-4 w-4 text-gray-300" />
                                             </Button>
                                         </div>
+                                        <p className="text-sm text-gray-500">
+                                            Callback URL cannot be a localhost URL, please use a publicly accesible https URL - as it gets called from the whatsapp webhook.
+                                        </p>
                                     </div>
                                 </CardContent>
                             </Card>

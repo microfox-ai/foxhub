@@ -59,7 +59,7 @@ export const RequestPage = () => {
               onCollapse={handleLeftCollapse}
               isCollapsed={isLeftCollapsed}
               isLoading={isLoading}
-              clientRequest={selectedRequest}
+              clientRequest={selectedRequest ?? undefined}
               projectTitle={selectedProject?.name}
             />
           </div>

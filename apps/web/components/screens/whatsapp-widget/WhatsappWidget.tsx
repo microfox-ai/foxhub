@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { ClientSecret } from "@prisma/client";
+import { ClientSecret, WhatsAppVerification } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
@@ -49,6 +49,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [whatsappBusinessNumber, setWhatsappBusinessNumber] =
     useState<string>("");
   const isMobile = useIsMobile();
+  const [verification, setVerification] = useState<WhatsAppVerification | null>(null);
 
   const searchParams = useSearchParams();
   const clientSecretId = searchParams.get("clientSecretId");
@@ -88,7 +89,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   useEffect(() => {
     if (clientSecretId && userId) {
       //get client secret
-      const clientSecret = getClientSecret({
+      getClientSecret({
         clientSecretId: clientSecretId,
       });
     }
@@ -142,6 +143,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
         }
       );
 
+      setVerification(verification);
       console.log("Verification created:", verification);
       return verification;
     } catch (err) {
@@ -155,9 +157,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       setIsLoading(true);
       setError(null);
 
-      const verification = await createVerification();
       if (!verification?.code) return;
-
       // Create WhatsApp deep link
       const message = `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`;
       const url = `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(message)}`;
@@ -177,7 +177,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       setIsQRLoading(true);
       const verification = await createVerification();
       if (!verification?.code) return;
-
+      setVerification(verification);
       setQrCodeData(
         `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(
           `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`

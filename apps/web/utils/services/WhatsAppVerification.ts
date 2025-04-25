@@ -99,19 +99,6 @@ export class WhatsAppVerificationSdk {
     else return true;
   }
 
-  public async getInitialVerificationSession(
-    clientSecretId: string,
-    userId: string
-  ): Promise<WhatsAppVerification[] | null> {
-    const doc = await prisma.whatsAppVerification.findMany({
-      where: {
-        clientSecretId,
-        userId,
-      },
-    });
-    return doc ?? null;
-  }
-
   public async processVerification(
     clientSecretId: string,
     message: string
@@ -177,6 +164,7 @@ export class WhatsAppVerificationSdk {
         verification[0].createdAt < new Date(Date.now() - 3 * 60 * 1000);
 
       if (isExpired) {
+        await this.deleteVerificationSession(verification[0].id);
         return { verified: false, error: "Verification Record expired" };
       }
 

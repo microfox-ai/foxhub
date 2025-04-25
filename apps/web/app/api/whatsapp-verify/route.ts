@@ -19,6 +19,18 @@ export async function POST(req: Request) {
       );
     }
 
+    const codeExists = await prisma.whatsAppVerification.findFirst({
+      where: {
+        code,
+        clientSecretId,
+        userId,
+      },
+    });
+
+    if (codeExists) {
+      return new NextResponse("Code already exists", { status: 400 });
+    }
+
     const record = await prisma.whatsAppVerification.create({
       data: {
         clientSecretId,

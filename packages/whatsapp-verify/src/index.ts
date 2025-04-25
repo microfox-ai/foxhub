@@ -22,7 +22,7 @@ export interface ProcessMessageResult {
 
 // Define the constructor options interface
 export interface WhatsAppVerificationOptions {
-  baseUrl?: string;
+  baseUrl: string;
   authToken?: string;
 }
 
@@ -31,11 +31,13 @@ const generateCode = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
 
 export class WhatsAppVerification {
   private baseUrl: string;
+  private authToken?: string;
 
-  constructor(options: WhatsAppVerificationOptions = {}) {
+  constructor(options: WhatsAppVerificationOptions) {
     this.baseUrl = options.baseUrl
       ? `${options.baseUrl}/api/whatsapp-verify`
       : "http://localhost:3000/api/whatsapp/verify";
+    this.authToken = options.authToken;
   }
 
   /**
@@ -65,6 +67,10 @@ export class WhatsAppVerification {
         code,
         callbackUri,
       }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.authToken}`,
+      },
     });
 
     if (!response.ok) {
@@ -89,6 +95,10 @@ export class WhatsAppVerification {
     const response = await fetch(`${this.baseUrl}`, {
       method: "PUT",
       body: JSON.stringify({ clientSecretId, phoneNumber, code, id }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.authToken}`,
+      },
     });
 
     if (!response.ok) {
@@ -122,7 +132,13 @@ export class WhatsAppVerification {
     userId: string
   ): Promise<VerificationRecord[] | null> {
     const response = await fetch(
-      `${this.baseUrl}?clientSecretId=${clientSecretId}&userId=${userId}`
+      `${this.baseUrl}?clientSecretId=${clientSecretId}&userId=${userId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.authToken}`,
+        },
+      }
     );
     if (!response.ok) return null;
     return response.json();
@@ -133,7 +149,13 @@ export class WhatsAppVerification {
     code: string
   ): Promise<VerificationRecord[] | null> {
     const response = await fetch(
-      `${this.baseUrl}?clientSecretId=${clientSecretId}&code=${code}`
+      `${this.baseUrl}?clientSecretId=${clientSecretId}&code=${code}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.authToken}`,
+        },
+      }
     );
     if (!response.ok) return null;
     return response.json();
@@ -142,6 +164,10 @@ export class WhatsAppVerification {
   public async deleteVerificationSession(id: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}?id=${id}`, {
       method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.authToken}`,
+      },
     });
     if (!response.ok) throw new Error("Failed to delete verification session");
     return response.json();

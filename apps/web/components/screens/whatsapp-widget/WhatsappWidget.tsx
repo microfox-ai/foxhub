@@ -8,6 +8,29 @@ import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { ClientSecret } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
+import { APP_BASE_FOR_SHARD } from "@/utils/constants/appInfo";
+
+// Custom hook to detect mobile devices
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const mobileDevices = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+      setIsMobile(mobileDevices.test(userAgent));
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
+
+  return isMobile;
+};
 
 const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +39,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [qrCodeData, setQrCodeData] = useState<string>("");
   const [whatsappBusinessNumber, setWhatsappBusinessNumber] =
     useState<string>("");
+  const isMobile = useIsMobile();
 
   const searchParams = useSearchParams();
   const clientSecretId = searchParams.get("clientSecretId");
@@ -69,7 +93,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
 
     try {
       const whatsappVerify = new WhatsAppVerification({
-        baseUrl: "https://staging.microfox.app",
+        baseUrl: APP_BASE_FOR_SHARD,
       });
       const existingVerification =
         await whatsappVerify.getInitialVerificationSession(
@@ -102,7 +126,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       }
 
       const whatsappVerify = new WhatsAppVerification({
-        baseUrl: "https://staging.microfox.app",
+        baseUrl: APP_BASE_FOR_SHARD,
       });
       const verification = await whatsappVerify.createVerification(
         clientSecretId,
@@ -168,7 +192,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   }, [slug, clientSecretId]);
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -203,68 +227,72 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6"
+            className="bg-red-50 border-l-4 border-red-500 text-red-700 p-1 rounded mb-6"
           >
-            <p className="font-medium">{error}</p>
+            <p className="font-medium text-xs">{error}</p>
           </motion.div>
         )}
 
         <div className="text-center space-y-6">
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-xs">
             A verification message has been prepared in WhatsApp. To complete
             your account verification, please send the message when WhatsApp
             opens.
           </p>
 
-          <div className="flex justify-center">
-            <div className="p-4 bg-white rounded-lg shadow-lg">
-              {isQRLoading ? (
-                <div className="w-[200px] h-[200px] flex items-center justify-center">
-                  <svg
-                    className="animate-spin h-8 w-8 text-green-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+          {!isMobile && (
+            <>
+              <div className="flex justify-center">
+                <div className="p-4 bg-white rounded-lg shadow-lg">
+                  {isQRLoading ? (
+                    <div className="w-[150px] h-[150px] flex items-center justify-center">
+                      <svg
+                        className="animate-spin h-8 w-8 text-green-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    </div>
+                  ) : (
+                    <QRCodeSVG
+                      value={qrCodeData}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  )}
                 </div>
-              ) : (
-                <QRCodeSVG
-                  value={qrCodeData}
-                  size={200}
-                  level="H"
-                  includeMargin={true}
-                />
-              )}
-            </div>
-          </div>
-          <p className="text-sm text-gray-500">
-            {isQRLoading
-              ? "Generating QR code..."
-              : "Scan the QR code to connect"}
-          </p>
+              </div>
+              <p className="text-sm text-gray-500">
+                {isQRLoading
+                  ? "Generating QR code..."
+                  : "Scan the QR code to connect"}
+              </p>
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or</span>
-            </div>
-          </div>
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or</span>
+                </div>
+              </div>
+            </>
+          )}
 
           {isQRLoading ? (
             <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-400 px-6 py-3 rounded-lg shadow-lg">

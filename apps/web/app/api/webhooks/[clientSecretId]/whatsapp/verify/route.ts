@@ -1,3 +1,8 @@
+import {
+  APP_BASE_FOR_SHARD,
+  APP_BASE_URL,
+  IN_DEV,
+} from "@/utils/constants/appInfo";
 import { WhatsAppVerification } from "@microfox/whatsapp-verify";
 import { NextResponse } from "next/server";
 
@@ -6,7 +11,7 @@ export async function POST(request: Request) {
     const { clientSecretId, code } = await request.json();
     // 1. fetch the verification session
     const whatsappVerification = new WhatsAppVerification({
-      baseUrl: "https://staging.microfox.app",
+      baseUrl: APP_BASE_FOR_SHARD,
     });
     const verification = await whatsappVerification.getVerificationSession(
       clientSecretId,

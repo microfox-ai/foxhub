@@ -8,7 +8,7 @@ const Test = () => {
     const top = window.screen.height / 2 - height / 2;
 
     window.open(
-      "/widget/good-friend/whatsapp?clientSecretId=43f14bd4-0f37-406c-9273-670179d3f3f3&businessUserId=123&callbackUri=https://aidouse.com/api/agent/chat/whatsapp/register",
+      "/widget/good-friend/whatsapp?clientSecretId=dd9e1d30-7922-4871-97f7-d5e5cfdb0596&businessUserId=123&callbackUri=https://aidouse.com/api/agent/chat/whatsapp/register",
       "WhatsApp Widget",
       `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
     );

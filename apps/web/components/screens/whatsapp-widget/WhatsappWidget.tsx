@@ -8,8 +8,11 @@ import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { ClientSecret } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
-import { APP_BASE_FOR_SHARD } from "@/utils/constants/appInfo";
+import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 
+const WHATSAPP_BASE_API_URL = IN_DEV
+  ? "http://localhost:3000"
+  : APP_BASE_FOR_SHARD;
 // Custom hook to detect mobile devices
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -72,9 +75,14 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
         clientSecret?.botConfig.find(
           (config: any) => config.key === "WHATSAPP_ICON_URL"
         ) as any
-      ).value
+      )?.value
     );
   };
+
+  const whatsappVerify = new WhatsAppVerification({
+    baseUrl: WHATSAPP_BASE_API_URL,
+    authToken: process.env.NEXT_PUBLIC_WIDGETS_PROTECTED_API_KEY,
+  });
 
   useEffect(() => {
     if (clientSecretId && userId) {
@@ -92,9 +100,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     }
 
     try {
-      const whatsappVerify = new WhatsAppVerification({
-        baseUrl: APP_BASE_FOR_SHARD,
-      });
+
       const existingVerification =
         await whatsappVerify.getInitialVerificationSession(
           clientSecretId,
@@ -124,10 +130,6 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       if (existingVerification) {
         return existingVerification;
       }
-
-      const whatsappVerify = new WhatsAppVerification({
-        baseUrl: APP_BASE_FOR_SHARD,
-      });
       const verification = await whatsappVerify.createVerification(
         clientSecretId,
         userId,

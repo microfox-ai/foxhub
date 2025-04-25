@@ -12,7 +12,10 @@ export async function POST(request: Request) {
     // 1. fetch the verification session
     const whatsappVerification = new WhatsAppVerification({
       baseUrl: APP_BASE_FOR_SHARD,
+      authToken: process.env.NEXT_PUBLIC_WIDGETS_PROTECTED_API_KEY,
     });
+    console.log("clientSecretId", clientSecretId);
+
     const verification = await whatsappVerification.getVerificationSession(
       clientSecretId,
       code

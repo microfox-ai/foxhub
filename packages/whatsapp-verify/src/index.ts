@@ -36,7 +36,7 @@ export class WhatsAppVerification {
   constructor(options: WhatsAppVerificationOptions) {
     this.baseUrl = options.baseUrl
       ? `${options.baseUrl}/api/whatsapp-verify`
-      : "http://localhost:3000/api/whatsapp/verify";
+      : "http://localhost:3000/api/whatsapp-verify";
     this.authToken = options.authToken;
   }
 
@@ -67,6 +67,7 @@ export class WhatsAppVerification {
         code,
         callbackUri,
       }),
+      mode: "no-cors",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.authToken}`,
@@ -119,12 +120,14 @@ export class WhatsAppVerification {
     code: string
   ): Promise<boolean> {
     const response = await fetch(
-      `${this.baseUrl}?clientSecretId=${clientSecretId}&code=${code}`
+      `${this.baseUrl}/code-exists?clientSecretId=${clientSecretId}&code=${code}`
     );
+    if (!response.ok) return false;
+    const data = await response.json();
+
     // if the code is NOT found, return true
-    if (response.status === 404) return true;
-    // if the code is found, return false
-    return false;
+    if (data.codeExists) return false;
+    else return true;
   }
 
   public async getInitialVerificationSession(

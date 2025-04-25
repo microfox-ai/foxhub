@@ -52,7 +52,7 @@ export async function GET(
     console.log("clientSecret", clientSecret);
 
     const whatsappVerifyToken = (
-      clientSecret.variables as unknown as ClientSecretVariable[]
+      clientSecret.botConfig as unknown as ClientSecretVariable[]
     ).find((config) => config.key === "WHATSAPP_WEBHOOK_VERIFY_TOKEN")?.value;
 
     console.log("whatsappVerifyToken", whatsappVerifyToken);
@@ -64,6 +64,20 @@ export async function GET(
 
     // Verify the webhook
     if (mode === "subscribe" && token === whatsappVerifyToken) {
+      await prisma.clientSecret.update({
+        where: { id: clientSecretId },
+        data: {
+          botConfig: [
+            ...(clientSecret.botConfig
+              ? (clientSecret.botConfig as any[])
+              : []),
+            {
+              key: "WHATSAPP_WEBHOOK_VERIFIED",
+              value: true,
+            },
+          ],
+        },
+      });
       return new NextResponse(challenge, { status: 200 });
     }
 

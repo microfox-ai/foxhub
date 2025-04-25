@@ -1,25 +1,24 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { useBots } from "@/components/screens/mybots/providers/BotProvider";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2, Plus, CheckIcon } from "lucide-react";
-import { Form } from "@/components/ui/form";
-import { toast } from "sonner";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
-import { CLIENTSECRETSTATUS, ClientSecret } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ClientSecretVariable } from "@/server/types";
-import { Constructor, Package } from "../Chat/message/types";
+import { useBots } from "@/components/screens/mybots/providers/BotProvider";
+import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClientSecretVariable } from "@/server/types";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CLIENTSECRETSTATUS } from "@prisma/client";
+import { ArrowLeft, CheckIcon, Loader2, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { Constructor, Package } from "../Chat/message/types";
 import GeneralTab from "./tabs/GeneralTab";
-import ConfigurationTab from "./tabs/ConfigurationTab";
 import JobsTab from "./tabs/JobsTab";
 import { botFormSchema, BotFormValues } from "./types";
 
@@ -32,7 +31,7 @@ const BotForm = ({ mode }: BotFormProps) => {
   const searchParams = useSearchParams();
   const botId = searchParams.get("botId");
   const packageName = searchParams.get("package");
-  const { bots, stableBotPackages, refreshBots } = useBots();
+  const { bots, stableBotPackages, refreshBots, botToEdit, packageInfo, selectedConstructor } = useBots();
   const { selectedProject } = useClientProject();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -43,17 +42,6 @@ const BotForm = ({ mode }: BotFormProps) => {
   );
   const [activeTab, setActiveTab] = useState("general");
 
-  // Find the bot to edit or package to create from
-  const botToEdit =
-    mode === "edit" && botId ? bots.find((bot) => bot.id === botId) : null;
-  const packageInfo =
-    mode === "create"
-      ? stableBotPackages.find((pkg: Package) => pkg.name === packageName)
-      : botToEdit?.packageInfo;
-  const selectedConstructor =
-    mode === "create"
-      ? packageInfo?.constructors[0]
-      : botToEdit?.packageInfo?.constructors[0];
 
   // Set initial loading to false once data is available
   useEffect(() => {
@@ -310,10 +298,6 @@ const BotForm = ({ mode }: BotFormProps) => {
     mode === "create"
       ? selectedConstructor?.requiredKeys
       : botToEdit?.packageInfo?.constructors[0]?.requiredKeys;
-  const botConfig =
-    mode === "create"
-      ? selectedConstructor?.botConfig
-      : botToEdit?.packageInfo?.constructors[0]?.botConfig;
 
   return (
     <Form {...form}>
@@ -407,7 +391,7 @@ const BotForm = ({ mode }: BotFormProps) => {
                         isDeleting={isDeleting}
                         packageName={packageInfo?.name || ""}
                         botToEdit={botToEdit}
-                        botConfig={botConfig}
+                        selectedConstructor={selectedConstructor}
                         packageInfo={packageInfo}
                       />
                     </TabsContent>

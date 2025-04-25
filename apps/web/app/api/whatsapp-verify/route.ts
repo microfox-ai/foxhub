@@ -3,6 +3,7 @@ import { prisma } from "@/prisma/prisma";
 
 /** CRUD FOR whatsAppVerification documents */
 // TODO: Requires security layer (incoming requests should eithe be origined to us, or we should add auth headers)
+// check/authenticate for bearer token with NEXT_PUBLIC_WIDGETS_PROTECTED_API_KEY
 
 export async function POST(req: Request) {
   try {

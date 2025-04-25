@@ -2,14 +2,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WhatsAppVerification } from "@microfox/whatsapp-verify";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { ClientSecret } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
-import { APP_BASE_FOR_SHARD } from "@/utils/constants/appInfo";
-
+import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
+import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
+const WHATSAPP_BASE_API_URL = IN_DEV
+  ? "http://localhost:3000"
+  : APP_BASE_FOR_SHARD;
 // Custom hook to detect mobile devices
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -31,6 +33,8 @@ const useIsMobile = () => {
 
   return isMobile;
 };
+
+const whatsappVerificationSdk = new WhatsAppVerificationSdk();
 
 const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +76,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
         clientSecret?.botConfig.find(
           (config: any) => config.key === "WHATSAPP_ICON_URL"
         ) as any
-      ).value
+      )?.value
     );
   };
 
@@ -92,14 +96,11 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     }
 
     try {
-      const whatsappVerify = new WhatsAppVerification({
-        baseUrl: APP_BASE_FOR_SHARD,
-      });
-      const existingVerification =
-        await whatsappVerify.getInitialVerificationSession(
-          clientSecretId,
-          userId
-        );
+
+      const existingVerification = await whatsappVerificationSdk.getInitialVerificationSession(
+        clientSecretId,
+        userId
+      );
 
       if (existingVerification && existingVerification[0]?.code) {
         return existingVerification[0];
@@ -124,11 +125,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       if (existingVerification) {
         return existingVerification;
       }
-
-      const whatsappVerify = new WhatsAppVerification({
-        baseUrl: APP_BASE_FOR_SHARD,
-      });
-      const verification = await whatsappVerify.createVerification(
+      const verification = await whatsappVerificationSdk.createVerification(
         clientSecretId,
         userId,
         slug || "",

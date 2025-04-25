@@ -3,6 +3,8 @@ import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { ClientSecret } from "@prisma/client";
 import { ClientSecretVariable } from "@/server/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
+import { prisma } from "@/prisma/prisma";
 
 // Helper function to forward data to API agent
 async function forwardToApiAgent(
@@ -14,27 +16,16 @@ async function forwardToApiAgent(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      userMessageFromWhatsapp: message,
-      userNumberFromWhatsapp: phoneNumber,
+      message: message,
+      number: phoneNumber,
+      metadata: {},
     }),
   });
 }
 
+const whatsappVerificationSdk = new WhatsAppVerificationSdk();
 function isVerificationMessage(message: string): boolean {
   return message.includes("verification code");
-}
-
-function extractVerificationCode(message: string): string | null {
-  const match = message.match(/verification code:\s*([a-zA-Z0-9]{6})/i);
-  return match && match[1] ? match[1] : null;
-}
-
-async function getClientSecret({ clientSecretId }: { clientSecretId: string }) {
-  const response = await fetch(
-    `${APP_BASE_URL}/api/client-secrets/project-secrets?id=${clientSecretId}`
-  );
-  const data = await response.json();
-  return data[0];
 }
 
 export async function GET(
@@ -45,9 +36,14 @@ export async function GET(
     const params = await segmentData.params;
     const { clientSecretId } = params;
     // get the verification token from the client secret
-    const clientSecret: ClientSecret = await getClientSecret({
-      clientSecretId,
-    });
+    const clientSecret: ClientSecret | null =
+      await prisma.clientSecret.findUnique({
+        where: { id: clientSecretId },
+      });
+
+    if (!clientSecret) {
+      return new NextResponse("Client secret not found", { status: 404 });
+    }
 
     console.log("clientSecret", clientSecret);
 
@@ -94,63 +90,21 @@ export async function POST(
       const phoneNumber = message.from;
       const messageText = message.text?.body || "";
 
-      console.log("message", message);
-      console.log("messageText", messageText);
-      console.log("phoneNumber", phoneNumber);
-
-      const clientSecret: ClientSecret = await getClientSecret({
-        clientSecretId,
-      });
-
-      console.log("clientSecret", clientSecret);
-
       // 1. if message is verification code, forward to verify route
-      if (
-        isVerificationMessage(messageText) &&
-        extractVerificationCode(messageText)
-      ) {
-        const code = extractVerificationCode(messageText);
-        console.log("code", code);
-        if (!code) return;
-
-        // 2. forward the message to the verify route
-        const verificationResponse = await fetch(
-          `${APP_BASE_URL}/api/webhooks/${clientSecretId}/whatsapp/verify`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              clientSecretId,
-              code,
-            }),
-          }
-        );
-
-        if (!verificationResponse.ok) {
-          const errorData = await verificationResponse.json();
-          return new NextResponse(
-            JSON.stringify({ error: errorData.error || "Verification failed" }),
-            {
-              status: verificationResponse.status,
-              headers: { "Content-Type": "application/json" },
-            }
+      if (isVerificationMessage(messageText)) {
+        const { isVerified, record } =
+          await whatsappVerificationSdk.processVerification(
+            clientSecretId,
+            messageText
           );
+
+        if (!record || !isVerified) {
+          return new NextResponse("Verification record not found", {
+            status: 500,
+          });
         }
 
-        const { data } = await verificationResponse.json();
-        if (!data) {
-          return new NextResponse(
-            JSON.stringify({ error: "Invalid verification response" }),
-            {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        const { callbackUri, userId } = data;
+        const { callbackUri, userId } = record;
 
         console.log("callbackUri", callbackUri);
         console.log("userId", userId);
@@ -170,6 +124,14 @@ export async function POST(
           await forwardToApiAgent(message, phoneNumber, callbackUri);
         }
       } else {
+        const clientSecret: ClientSecret | null =
+          await prisma.clientSecret.findUnique({
+            where: { id: clientSecretId },
+          });
+
+        if (!clientSecret) {
+          return new NextResponse("Client secret not found", { status: 404 });
+        }
         //1. get the endpoint from the client secret
         const endpoint = (
           clientSecret.botConfig as unknown as ClientSecretVariable[]
@@ -188,4 +150,3 @@ export async function POST(
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
-

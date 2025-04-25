@@ -7,14 +7,18 @@ import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
 import { prisma } from "@/prisma/prisma";
 
 // Helper function to forward data to API agent
-async function forwardToApiAgent(
+async function forwardToAiAgent(
   message: any,
   phoneNumber: string,
-  endpoint: string
+  endpoint: string,
+  apiKey?: string
 ): Promise<void> {
   await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey || "",
+    },
     body: JSON.stringify({
       message: message,
       number: phoneNumber,
@@ -90,6 +94,23 @@ export async function POST(
       const phoneNumber = message.from;
       const messageText = message.text?.body || "";
 
+      const clientSecret: ClientSecret | null =
+        await prisma.clientSecret.findUnique({
+          where: { id: clientSecretId },
+        });
+
+      if (!clientSecret) {
+        return new NextResponse("Client secret not found", { status: 404 });
+      }
+      //1. get the endpoint from the client secret
+      const endpoint = (
+        clientSecret.botConfig as unknown as ClientSecretVariable[]
+      ).find((config) => config.key === "WHATSAPP_AGENTCHAT_ENDPOINT")?.value;
+
+      const apiKey = (
+        clientSecret.botConfig as unknown as ClientSecretVariable[]
+      ).find((config) => config.key === "WHATSAPP_AGENTCHAT_API_KEY")?.value;
+
       // 1. if message is verification code, forward to verify route
       if (isVerificationMessage(messageText)) {
         const { isVerified, record } =
@@ -121,24 +142,11 @@ export async function POST(
           });
 
           // 4. forward the message to the api agent
-          await forwardToApiAgent(message, phoneNumber, callbackUri);
+          await forwardToAiAgent(message, phoneNumber, callbackUri, apiKey);
         }
       } else {
-        const clientSecret: ClientSecret | null =
-          await prisma.clientSecret.findUnique({
-            where: { id: clientSecretId },
-          });
-
-        if (!clientSecret) {
-          return new NextResponse("Client secret not found", { status: 404 });
-        }
-        //1. get the endpoint from the client secret
-        const endpoint = (
-          clientSecret.botConfig as unknown as ClientSecretVariable[]
-        ).find((config) => config.key === "WHATSAPP_AGENTCHAT_ENDPOINT")?.value;
-
         //2. forward the message to the api agent
-        await forwardToApiAgent(message, phoneNumber, endpoint);
+        await forwardToAiAgent(message, phoneNumber, endpoint, apiKey);
       }
 
       return new NextResponse("Success", { status: 200 });

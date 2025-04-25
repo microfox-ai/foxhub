@@ -36,6 +36,9 @@ const useIsMobile = () => {
 
 const whatsappVerificationSdk = new WhatsAppVerificationSdk();
 
+/** Note: The listener webhook is still on staging/production branch, to check or verify the webhook functionality is working,
+ * log the foxhub-staging 
+*/
 const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

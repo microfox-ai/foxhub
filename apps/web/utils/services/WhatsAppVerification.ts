@@ -177,6 +177,7 @@ export class WhatsAppVerificationSdk {
         verification[0].createdAt < new Date(Date.now() - 3 * 60 * 1000);
 
       if (isExpired) {
+        await this.deleteVerificationSession(verification[0].id);
         return { verified: false, error: "Verification Record expired" };
       }
 

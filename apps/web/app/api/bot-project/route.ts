@@ -14,7 +14,14 @@ export async function GET(request: Request) {
   try {
     let botProjects = await prisma.botProject?.findMany({
       where: { userId },
-      include: { clientRequests: true },
+      include: {
+        clientRequests: true,
+        permissions: {
+          include: {
+            user: true,
+          },
+        },
+      },
     });
 
     if (!botProjects || botProjects.length === 0) {
@@ -36,6 +43,29 @@ export async function GET(request: Request) {
     return NextResponse.json(botProjects);
   } catch (error) {
     console.error("Error fetching organizations:", error);
+    return NextResponse.error();
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { id, name, description, slug, imageUrl } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Project ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const updatedProject = await prisma.botProject.update({
+      where: { id },
+      data: { name, description, slug, imageUrl },
+    });
+
+    return NextResponse.json(updatedProject);
+  } catch (error) {
+    console.error("Error updating project:", error);
     return NextResponse.error();
   }
 }

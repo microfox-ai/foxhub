@@ -99,19 +99,6 @@ export class WhatsAppVerificationSdk {
     else return true;
   }
 
-  public async getInitialVerificationSession(
-    clientSecretId: string,
-    userId: string
-  ): Promise<WhatsAppVerification[] | null> {
-    const doc = await prisma.whatsAppVerification.findMany({
-      where: {
-        clientSecretId,
-        userId,
-      },
-    });
-    return doc ?? null;
-  }
-
   public async processVerification(
     clientSecretId: string,
     message: string

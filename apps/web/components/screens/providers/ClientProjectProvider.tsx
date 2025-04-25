@@ -15,7 +15,7 @@ import { analytics } from "@/utils/services/analytics/client";
 import { REQUESTSTATUS } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
-import { ClientRequest } from "http";
+import { ClientRequest } from "@prisma/client";
 
 interface ClientProjectContextType {
   clientRequestId: string | null;
@@ -51,7 +51,7 @@ export function ClientProjectProvider({
   children,
 }: ClientProjectProviderProps) {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(null);
   const { user } = useAuth();
   const router = useRouter();
 

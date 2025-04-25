@@ -93,12 +93,18 @@ export const deployFoxRouter: ServerStreamingFunction<
     }, 10000);
   });
 
-  const runId = await getRunforClientRequestbySha({
+  let runId = await getRunforClientRequestbySha({
     head_sha: sha,
     clientRequest,
     stage: stage ?? DEPLOY_STAGE.STAGING,
   });
   console.log("runId", runId);
+
+  // if (!runId) {
+  //   console.log("runId not found, getting latest run");
+  //   runId = await getLatestRunForClientRequest(clientRequest, stage);
+  //   console.log("runId", runId);
+  // }
 
   dataStream.writeMessageAnnotation({
     type: "loading",

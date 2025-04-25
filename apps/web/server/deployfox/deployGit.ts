@@ -19,6 +19,7 @@ import dayjs from "dayjs";
 import { getTemplateVersion } from "@/utils/services/github_functions/getTemplateVersion";
 import { cloneTemplate } from "./cloneTemplate";
 import { prisma } from "@/prisma/prisma";
+
 export const deployViaGit = async (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
@@ -42,19 +43,19 @@ export const deployViaGit = async (
 
   const { sha } = await triggerDeployment(
     clientRequest,
-    taskInstanceMeta,
-    stage ?? DEPLOY_STAGE.STAGING
+    stage ?? DEPLOY_STAGE.STAGING,
+    false,
+    taskInstanceMeta
   );
 
   return { sha };
-
-  // TODO: push to git file by file (if above doesn't work)
 };
 
 export const triggerDeployment = async (
   clientRequest: ClientRequest,
-  taskInstanceMeta: TaskInstanceMetaType,
-  stage: DEPLOY_STAGE
+  stage: DEPLOY_STAGE,
+  isDelete?: boolean,
+  taskInstanceMeta?: TaskInstanceMetaType
 ) => {
   if (
     !clientRequest.repoName ||
@@ -69,29 +70,6 @@ export const triggerDeployment = async (
   });
 
   try {
-    const latestTemplateVersion = await getTemplateVersion();
-    console.log("Latest Template Version:", latestTemplateVersion);
-    console.log("Client Request Template Version:", clientRequest.templateVersion);
-    if (clientRequest.templateVersion !== latestTemplateVersion) {
-      console.log(
-        "Template version mismatch, cloning template",
-      );
-      await cloneTemplate({
-        sourceRepo: TEMPLATE_REPO,
-        targetRepo: clientRequest.repoName,
-        sourcePath: "",
-        targetPath: "",
-        sourceBranch: "main",
-        targetBranch: clientRequest.prBranch,
-      });
-      await prisma.clientRequest.update({
-        where: { id: clientRequest.id },
-        data: {
-          templateVersion: latestTemplateVersion,
-        },
-      });
-      console.log("Client Request Template Version updated to", latestTemplateVersion);
-    }
     console.log(
       "Creating clientRequest.json update to trigger deployment",
       clientRequest.repoName,
@@ -104,9 +82,9 @@ export const triggerDeployment = async (
     if (!uniqueRequestTitle) {
       throw new Error("Unique request title is required");
     }
+    await checkAndUpdateTemplateVersion(clientRequest);
 
     const changelogPath = `apps/${uniqueRequestTitle}/CHANGELOG.md`;
-
     // Get the current SHA of the file
     let sha: string | undefined;
     try {
@@ -119,6 +97,7 @@ export const triggerDeployment = async (
 
       if ("sha" in fileData) {
         sha = fileData.sha;
+        console.log("Changelog SHA:", sha);
       }
     } catch (error) {
       // If file doesn't exist, that's okay - we'll create it
@@ -132,13 +111,13 @@ export const triggerDeployment = async (
       owner: TEMPLATE_REPO_OWNER,
       repo: clientRequest.repoName,
       path: changelogPath,
-      message: `${stage}: deployfox: Update CHANGELOG.md to trigger deployment`,
+      message: `${stage}: deployfox: ${isDelete ? "DELETE: deleting the serverless function" : " Update CHANGELOG.md to trigger deployment"}`,
       content: Buffer.from(
         `# Deployment Log\n\n` +
           `## Latest Deployment\n` +
           `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
           `- Details:\n` +
-          `\`\`\`json\n${JSON.stringify(taskInstanceMeta.deployStep, null, 2)}\n\`\`\`\n`
+          `\`\`\`json\n${taskInstanceMeta ? JSON.stringify(taskInstanceMeta?.deployStep, null, 2) : "{}"}\n\`\`\`\n`
       ).toString("base64"),
       branch: clientRequest.prBranch,
       ...(sha ? { sha } : {}),
@@ -149,5 +128,35 @@ export const triggerDeployment = async (
   } catch (error) {
     console.log("error", error);
     return { sha: undefined };
+  }
+};
+
+const checkAndUpdateTemplateVersion = async (clientRequest: ClientRequest) => {
+  const latestTemplateVersion = await getTemplateVersion();
+  console.log("Latest Template Version:", latestTemplateVersion);
+  console.log(
+    "Client Request Template Version:",
+    clientRequest.templateVersion
+  );
+  if (clientRequest.templateVersion !== latestTemplateVersion) {
+    console.log("Template version mismatch, cloning template");
+    await cloneTemplate({
+      sourceRepo: TEMPLATE_REPO,
+      targetRepo: clientRequest.repoName ?? "",
+      sourcePath: "",
+      targetPath: "",
+      sourceBranch: "main",
+      targetBranch: clientRequest.prBranch ?? "",
+    });
+    await prisma.clientRequest.update({
+      where: { id: clientRequest.id },
+      data: {
+        templateVersion: latestTemplateVersion,
+      },
+    });
+    console.log(
+      "Client Request Template Version updated to",
+      latestTemplateVersion
+    );
   }
 };

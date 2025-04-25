@@ -148,10 +148,11 @@ export const buildFoxRouter: ServerStreamingFunction<
 
   await genDbCode(props, taskInstanceMeta, clientRequest);
 
-  // write/modify lambda functions
-  await genLambdaCode(props, taskInstanceMeta, clientRequest);
   //write/modify cron jobs
   await genCronJobs(props, taskInstanceMeta, clientRequest);
+
+  // write/modify lambda functions
+  await genLambdaCode(props, taskInstanceMeta, clientRequest);
 
   // write/modify root files - index.ts, package.json, serverless.yml, etc.
   await genFinalCode(props, taskInstanceMeta, clientRequest);

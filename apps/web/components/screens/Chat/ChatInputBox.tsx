@@ -32,13 +32,14 @@ export default function ChatInputBox({
     useFileUpload();
   const { handleSubmit } = useMicrofox();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    //console.log("textareaRef", textareaRef.current);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto"; // Reset height
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
-    }
-  }, [input]); // Runs when input changes
+  // useEffect(() => {
+  //   //console.log("textareaRef", textareaRef.current);
+  //   if (textareaRef.current) {
+
+  //     //textareaRef.current.style.height = "auto"; // Reset height
+  //     //textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
+  //   }
+  // }, [input]); // Runs when input changes
 
   const handleFileInputChange = async (
     e: React.ChangeEvent<HTMLInputElement>

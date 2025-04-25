@@ -21,6 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { RequestSettings } from "./RequestSettings";
 
 const ConfigureTab = () => {
     const { clientRequestId } = useClientProject();
@@ -37,30 +38,10 @@ const ConfigureTab = () => {
         setSelectedEndpoint,
         setSelectedMethod,
     } = useApiDoc();
-
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-
     useEffect(() => {
         mutateTaskInstanceMeta();
     }, []);
 
-    const handleDeleteClick = () => {
-        setShowDeleteDialog(true);
-    };
-
-    const handleConfirmDelete = async () => {
-        setIsDeleting(true);
-        try {
-            // Add your delete logic here
-            // await deleteBot();
-            setShowDeleteDialog(false);
-        } catch (error) {
-            console.error("Error deleting bot:", error);
-        } finally {
-            setIsDeleting(false);
-        }
-    };
 
     const handleEndpointClick = (endpoint: {
         path: string;
@@ -96,65 +77,9 @@ const ConfigureTab = () => {
                 <SecretVault />
             </div>
 
-            <div className="col-span-12 border-t border-neutral-200 pt-4 mt-8">
-                <h3 className="text-sm font-medium text-neutral-900 mb-4">
-                    Bot Settings
-                </h3>
-
-                <div className="border border-red-200 rounded-md p-4 bg-red-50">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
-                        <div>
-                            <h3 className="text-sm font-medium text-red-800">Danger Zone</h3>
-                            <p className="text-sm text-red-600 mt-1">
-                                Once you delete a bot, there is no going back. Please be certain.
-                            </p>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-3"
-                                onClick={handleDeleteClick}
-                                disabled={isDeleting}
-                            >
-                                {isDeleting ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Deleting...
-                                    </>
-                                ) : (
-                                    "Delete Bot"
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+            <div className="col-span-12">
+                <RequestSettings />
             </div>
-
-            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete Bot</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete this bot? This action cannot be undone.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-                            Cancel
-                        </Button>
-                        <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
-                            {isDeleting ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    Deleting...
-                                </>
-                            ) : (
-                                "Delete"
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 };

@@ -55,6 +55,9 @@ export const genDbCode = async (
     
                 The following is the task summary:
                 ${taskInstanceMeta?.taskInfo?.summary}
+
+                Db documents suggested by the task:
+                ${taskInstanceMeta?.taskStructure?.dbSchemas?.map((db) => db.modelName + "\n - JSON schema: \n" + JSON.stringify(db.jsonSchema)).join("\n\n - ")}
     
                 The example redis helper file is as follows:
                 ${redisHelper}
@@ -91,7 +94,6 @@ export const genDbCode = async (
       model: models.claude35Sonnet.modelId,
       usage: result.usage,
     });
-  } else if (taskInstanceMeta.taskStructure?.templateType === "mongodb") {
   }
 
   return taskInstanceMeta;

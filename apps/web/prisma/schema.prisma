@@ -22,6 +22,9 @@ model User {
   email     String   @unique
   name      String
   avatar    String?
+  onboardingData Json?
+  isOnboarded Boolean @default(false)
+  projectPermissions ProjectPermission[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -63,19 +66,38 @@ model BotProject {
   id               String          @id @default(uuid())
   userId           String
   name             String
+  imageUrl         String?
   githubRepoName   String          @unique
   githubRepoUrl    String
   githubRepoBranch String?         @default("main")
   prUrl            String?
   prNumber         Int?
+  slug             String?         
   description      String?
   projectDir       String
   templateVersion  String?
+  permissions      ProjectPermission[]
   metadata         Json?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   clientRequests   ClientRequest[]
   clientSecrets    ClientSecret[]
+}
+
+model ProjectPermission {
+  id             String               @id @default(uuid())
+  botProjectId   String               
+  userId         String
+  accessType     PROJECT_ACCESS_TYPE 
+  role           PROJECTROLE
+  botProject     BotProject           @relation(fields: [botProjectId], references: [id])
+  user           User                 @relation(fields: [userId], references: [id])
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([botProjectId, userId])
+  @@index([botProjectId])
+  @@index([userId])
 }
 
 model ClientRequest {
@@ -229,3 +251,16 @@ enum FUNCTIONTYPE {
   CRON
   MIXED
 }
+
+enum PROJECTROLE {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum PROJECT_ACCESS_TYPE {
+  READ
+  WRITE
+}
+

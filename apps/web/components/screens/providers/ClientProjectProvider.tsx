@@ -13,19 +13,19 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { analytics } from "@/utils/services/analytics/client";
-import { REQUESTSTATUS } from "@prisma/client";
+import { ClientRequest, REQUESTSTATUS } from "@prisma/client";
 import { IN_DEV } from "@/utils/constants/appInfo";
 
 interface ClientProjectContextType {
   clientRequestId: string | null;
   projectId: string | null;
   selectedProject: any;
-  selectedRequest: any;
+  selectedRequest: ClientRequest | null;
   projects: any[];
   isLoading: boolean;
   createNewEmptyRequest: () => Promise<void>;
   setSelectedProject: (project: any) => void;
-  setSelectedRequest: (request: any) => void;
+  setSelectedRequest: (request: ClientRequest | null) => void;
 }
 
 const ClientProjectContext = createContext<
@@ -50,7 +50,7 @@ export function ClientProjectProvider({
   children,
 }: ClientProjectProviderProps) {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(null);
   const { user } = useUser();
   const router = useRouter();
 

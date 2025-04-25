@@ -34,6 +34,7 @@ import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskI
 import Link from "next/link";
 import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { useDeployStatus } from "@/components/screens/providers/useDeployStatus";
+import { useTabUi } from "@/components/screens/providers/TabUiProvider";
 
 interface UIAnnotation {
     objectType: string;
@@ -60,7 +61,8 @@ export const DeploymentsInfo = ({
 
     const { isRightCollapsed, handleRightCollapse } = useLayout();
     const { setDeploymentInfo } = useTaskInstanceMetaContext();
-    const { append, setActiveTab } = useMicrofox();
+    const { append } = useMicrofox();
+    const { setActiveTab } = useTabUi();
     const { finalData, deployStep, clientRequest } = useDeployStatus({
         stage,
         runId,

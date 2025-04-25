@@ -64,8 +64,8 @@ export const hellofoxRouter: ServerStreamingFunction<
     value: "hellofox",
   });
   let lastFewMessages =
-    requestBody.messages.length > 3
-      ? requestBody.messages.slice(-3)
+    requestBody.messages.length > 8
+      ? requestBody.messages.slice(-8)
       : requestBody.messages;
   dataStream.writeMessageAnnotation({
     type: "loading",
@@ -212,6 +212,7 @@ export const hellofoxRouter: ServerStreamingFunction<
       - You first think carefully about the users last messages & the tools you have, and analyse what needs to be done.
       - You call the tools given based on your analysis in a pattern that is most likely to give you the best results.
       - The tools will only help you think, & you will have to make the final call on what to respond back to the user.
+      - Your final goal is to call isTaskBuildable tool, to confirm if the users task is buildable.
   
       Critically, you must never ask for any specific details from the user.
       specific details examples:
@@ -219,12 +220,13 @@ export const hellofoxRouter: ServerStreamingFunction<
        - can you provide API keys/tokens/etc of your slack/whatsapp/etc?
 
        You can ask for moderate details, like:
-       - do you wish to integrate you web app / backend with another service ?
        - do you want to integrate with slack/whatsapp/etc ?
+       - what kind of details can you provide later about the webhook/job/api you want to build?
 
       In place of asking for any specific details, you can call tool - isTaskBuildable
 
       DO NOT CALL ANY OTHER TOOL further, if isTaskBuildable is called.
+      ${classification.type === "task-confirmation" && " YOU MUST CALL isTaskBuildable tool "}
       `,
       messages: lastFewMessages,
       toolCallStreaming: true,

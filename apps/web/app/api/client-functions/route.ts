@@ -217,7 +217,21 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Store data before deletion for notifications
-    const { name, originClientRequestId, userId, stage } = clientFunction;
+    // const { name, originClientRequestId, userId, stage } = clientFunction;
+
+    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+      where: { originClientRequestId: clientFunction.originClientRequestId },
+    });
+
+    if (taskInstanceMeta) {
+      // reset deployStep
+      await updateTaskInstanceMeta({
+        clientRequestId: clientFunction.originClientRequestId,
+        otherData: {
+          deployStep: null,
+        },
+      });
+    }
 
     // Delete the function
     await prisma.clientDeployment.delete({

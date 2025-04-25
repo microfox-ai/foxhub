@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await triggerDeployment(clientRequest, taskInstanceMeta, stage);
+    await triggerDeployment(clientRequest, stage, false, taskInstanceMeta);
 
     await new Promise((resolve) => setTimeout(resolve, 20000));
 

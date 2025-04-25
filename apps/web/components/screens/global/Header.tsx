@@ -1,6 +1,5 @@
 "use client";
 
-import { useUser } from "@/utils/hooks/useUser";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -15,9 +14,9 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import LogoutConfirmationDialog from "@/components/auth/LogoutConfirmationDialog";
-
+import { useAuth } from "@/components/auth/AuthProvider";
 const Header: React.FC = () => {
-  const { user, handleLogout, loggingOut } = useUser();
+  const { user, handleLogout, logoutStatus } = useAuth();
   const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -145,7 +144,7 @@ const Header: React.FC = () => {
         showLogoutDialog={showLogoutDialog}
         setShowLogoutDialog={setShowLogoutDialog}
         handleConfirmLogout={handleConfirmLogout}
-        loggingOut={loggingOut}
+        loggingOut={logoutStatus.isLoggingOut}
       />
     </>
   );

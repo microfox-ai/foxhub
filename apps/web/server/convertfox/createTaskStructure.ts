@@ -73,7 +73,7 @@ export const createTaskStructure = async (
         - you also decide the template type to use for the task.
           - plain: for simple tasks that do not require a db or a state in the serverless function.
           - upstash: for tasks that require a state/minor database in the serverless function.
-          - mongodb: for tasks that require a database.
+        - create dbSchemas only if is truly required to share data across the lifecyle or multiple different lambda functions (like cron jobs).
         ---
         some rules
         - Never use theese packages - axios

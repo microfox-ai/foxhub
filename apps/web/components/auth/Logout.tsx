@@ -1,9 +1,9 @@
 "use client";
 
-import { useUser } from "@/utils/hooks/useUser";
+import { useAuth } from "./AuthProvider";
 
 const Logout = () => {
-  const { handleLogout } = useUser();
+  const { handleLogout } = useAuth();
   return (
     <div>
       <button onClick={handleLogout}>Logout</button>

@@ -69,7 +69,7 @@ export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
 export const taskStructure = z.object({
   templateType: z
-    .enum(["plain", "upstash", "mongodb"])
+    .enum(["plain", "upstash"])
     .describe("The type of template to use"),
   dbSchemas: z
     .array(

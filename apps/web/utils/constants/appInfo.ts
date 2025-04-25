@@ -24,4 +24,10 @@ export const APP_BASE_FOR_SHARD = IN_DEV
   ? "https://staging.microfox.app"
   : "https://microfox.app";
 
-export const PUBLIC_ROUTES = ["/login", "/signup", "/auth", "/auth/callback"];
+export const PUBLIC_ROUTES = [
+  "/login",
+  "/signup",
+  "/auth",
+  "/auth/callback",
+  "/widget",
+];

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import { CLIENTSECRETSTATUS, ClientSecret } from "@prisma/client";
-import { useUser } from "@/utils/hooks/useUser";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ClientSecretVariable } from "@/server/types";
 import { Constructor, Package } from "../Chat/message/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,18 +34,18 @@ const BotForm = ({ mode }: BotFormProps) => {
   const packageName = searchParams.get("package");
   const { bots, stableBotPackages, refreshBots } = useBots();
   const { selectedProject } = useClientProject();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
+  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(
+    {}
+  );
   const [activeTab, setActiveTab] = useState("general");
 
   // Find the bot to edit or package to create from
   const botToEdit =
-    mode === "edit" && botId
-      ? bots.find((bot) => bot.id === botId)
-      : null;
+    mode === "edit" && botId ? bots.find((bot) => bot.id === botId) : null;
   const packageInfo =
     mode === "create"
       ? stableBotPackages.find((pkg: Package) => pkg.name === packageName)
@@ -163,7 +163,7 @@ const BotForm = ({ mode }: BotFormProps) => {
         if (data.config?.[configField.key]) {
           botConfig.push({
             ...configField,
-            value: data.config?.[configField.key] || ""
+            value: data.config?.[configField.key] || "",
           });
         }
       });
@@ -197,11 +197,7 @@ const BotForm = ({ mode }: BotFormProps) => {
   };
 
   const handleUpdate = async (data: BotFormValues) => {
-    if (
-      !selectedProject?.id ||
-      !selectedConstructor ||
-      !botToEdit?.id
-    ) {
+    if (!selectedProject?.id || !selectedConstructor || !botToEdit?.id) {
       toast.error("Missing required information");
       return;
     }
@@ -220,10 +216,21 @@ const BotForm = ({ mode }: BotFormProps) => {
       const defaultConfig = botToEdit.defaultConfig;
       defaultConfig.forEach((configField: ClientSecretVariable) => {
         if (data.config?.[configField.key]) {
-          if (botConfig.find((c: ClientSecretVariable) => c.key === configField.key)) {
-            botConfig = botConfig.map((c: ClientSecretVariable) => c.key === configField.key ? { ...c, value: data.config?.[configField.key] } : c);
+          if (
+            botConfig.find(
+              (c: ClientSecretVariable) => c.key === configField.key
+            )
+          ) {
+            botConfig = botConfig.map((c: ClientSecretVariable) =>
+              c.key === configField.key
+                ? { ...c, value: data.config?.[configField.key] }
+                : c
+            );
           } else {
-            botConfig.push({ ...configField, value: data.config?.[configField.key] });
+            botConfig.push({
+              ...configField,
+              value: data.config?.[configField.key],
+            });
           }
         }
       });
@@ -236,10 +243,7 @@ const BotForm = ({ mode }: BotFormProps) => {
         botConfig,
       };
 
-      await PortalSdk.putData(
-        "/api/client-secrets",
-        clientSecretData
-      );
+      await PortalSdk.putData("/api/client-secrets", clientSecretData);
       toast.success("Bot updated successfully!");
       refreshBots();
     } catch (error) {
@@ -259,9 +263,9 @@ const BotForm = ({ mode }: BotFormProps) => {
   };
 
   const toggleVisibility = (key: string) => {
-    setVisibleFields(prev => ({
+    setVisibleFields((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
   };
 
@@ -311,7 +315,6 @@ const BotForm = ({ mode }: BotFormProps) => {
       ? selectedConstructor?.botConfig
       : botToEdit?.packageInfo?.constructors[0]?.botConfig;
 
-
   return (
     <Form {...form}>
       <form
@@ -335,7 +338,12 @@ const BotForm = ({ mode }: BotFormProps) => {
               </CardTitle>
               <div className="flex gap-2 ml-auto">
                 {(form.formState.isDirty || mode === "create") && (
-                  <Button type="submit" disabled={isLoading} variant="ghost" className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 hover:border-green-300">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    variant="ghost"
+                    className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 hover:border-green-300"
+                  >
                     {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -370,13 +378,21 @@ const BotForm = ({ mode }: BotFormProps) => {
                       className="w-24 h-24 object-cover"
                     />
                   </div>
-                  <h3 className="text-sm font-medium text-neutral-900">{botName}</h3>
+                  <h3 className="text-sm font-medium text-neutral-900">
+                    {botName}
+                  </h3>
                 </div>
                 <div className="flex-1">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="w-full"
+                  >
                     <TabsList className="w-full flex flex-row justify-start gap-2">
                       <TabsTrigger value="general">General</TabsTrigger>
-                      <TabsTrigger value="configuration">Configuration</TabsTrigger>
+                      <TabsTrigger value="configuration">
+                        Configuration
+                      </TabsTrigger>
                       <TabsTrigger value="jobs">Jobs</TabsTrigger>
                     </TabsList>
                     <TabsContent value="general">
@@ -399,9 +415,7 @@ const BotForm = ({ mode }: BotFormProps) => {
                       <div></div>
                     </TabsContent>
                     <TabsContent value="jobs">
-                      <JobsTab
-                        clientRequestIds={botToEdit?.clientRequestIds}
-                      />
+                      <JobsTab clientRequestIds={botToEdit?.clientRequestIds} />
                     </TabsContent>
                   </Tabs>
                 </div>

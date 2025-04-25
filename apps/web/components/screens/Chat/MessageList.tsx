@@ -2,20 +2,21 @@ import { Skeleton } from "@mui/material";
 import { UIMessage } from "ai";
 import dayjs from "dayjs";
 import { MessageWrapper } from "./message/MessageWrapper";
+import { useChatUI } from "../providers/ChatUiProvider";
+import { useMicrofox } from "../providers/MicrofoxProvider";
 
 interface TabMessagesProps {
-  messages: UIMessage[];
   isLoading: boolean;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  isStreaming: boolean;
 }
 
-export default function TabMessages({
-  messages,
+export default function MessageList({
   isLoading,
-  messagesEndRef,
-  isStreaming,
 }: TabMessagesProps) {
+
+  const { messages, status } = useMicrofox();
+  const isStreaming = status === "streaming";
+  const { messagesEndRef } = useChatUI();
+
   const renderDateSeparator = (currentDate: string, prevDate?: string) => {
     if (!prevDate || !dayjs(currentDate).isSame(prevDate, "day")) {
       return (
@@ -48,8 +49,8 @@ export default function TabMessages({
                     currDate,
                     index > 0
                       ? new Date(
-                          messages?.[index - 1]?.createdAt!
-                        ).toISOString()!
+                        messages?.[index - 1]?.createdAt!
+                      ).toISOString()!
                       : ""
                   )
                 }

@@ -1,4 +1,3 @@
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useFormContext } from "react-hook-form";
 import {
@@ -19,10 +18,33 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ClientSecretVariable } from "@/server/types";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, UploadIcon, XIcon } from "lucide-react";
+import {
+  ImageIcon,
+  UploadIcon,
+  XIcon,
+  EyeIcon,
+  EyeOffIcon,
+  CopyIcon,
+  RefreshCwIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useUser } from "@/utils/hooks/useUser";
+import { useAuth } from "@/components/auth/AuthProvider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface SlackWebTinyConfigUIProps {
   configFields: ClientSecretVariable[];
@@ -34,33 +56,46 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
   const form = useFormContext();
   const [imagePreview, setImagePreview] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
-  const { user } = useUser();
+  const { user } = useAuth();
+  const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
+  const [dialogOpen, setDialogOpen] = useState<Record<string, boolean>>({});
+
+  const generateSecureToken = () => {
+    // Generate 32 random bytes
+    const array = new Uint8Array(32);
+    window.crypto.getRandomValues(array);
+
+    // Convert to base64 and remove special characters
+    return btoa(String.fromCharCode(...Array.from(array)))
+      .replace(/[+/]/g, "") // Remove + and / characters
+      .substring(0, 32); // Take first 32 characters
+  };
 
   const uploadImage = async (file: File, fieldKey: string) => {
     try {
-      setIsUploading(prev => ({ ...prev, [fieldKey]: true }));
+      setIsUploading((prev) => ({ ...prev, [fieldKey]: true }));
 
       // Create FormData with the required fields
       const formData = new FormData();
       // Add the file multiple times to match the API expectation
-      formData.append('file', file);
-      formData.append('userId', user?.id || ''); // Replace with actual user ID
-      formData.append('folderName', 'customBots/botConfigs');
+      formData.append("file", file);
+      formData.append("userId", user?.id || ""); // Replace with actual user ID
+      formData.append("folderName", "customBots/botConfigs");
 
       // Send the request
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      const response = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error("Upload failed");
       }
 
       const data = await response.json();
 
       if (!data.success || !data.media || data.media.length === 0) {
-        throw new Error('Invalid response format');
+        throw new Error("Invalid response format");
       }
 
       // Get the URL from the first media item
@@ -70,15 +105,15 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
       form.setValue(`config.${fieldKey}`, uploadedUrl);
 
       // Show success message
-      toast.success('Image uploaded successfully');
+      toast.success("Image uploaded successfully");
 
       return uploadedUrl;
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to upload image');
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
       return null;
     } finally {
-      setIsUploading(prev => ({ ...prev, [fieldKey]: false }));
+      setIsUploading((prev) => ({ ...prev, [fieldKey]: false }));
     }
   };
 
@@ -86,11 +121,19 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
     switch (field.ui.type) {
       case "text":
         return (
-          <Input {...formField} placeholder={field.ui.placeholder} type="text" />
+          <Input
+            {...formField}
+            placeholder={field.ui.placeholder}
+            type="text"
+          />
         );
       case "number":
         return (
-          <Input {...formField} placeholder={field.ui.placeholder} type="number" />
+          <Input
+            {...formField}
+            placeholder={field.ui.placeholder}
+            type="number"
+          />
         );
       case "boolean":
         return (
@@ -131,6 +174,129 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
         );
       case "textarea":
         return <Textarea {...formField} placeholder={field.ui.placeholder} />;
+      case "autogeneratedToken":
+        return (
+          <div className="relative">
+            <Input
+              {...formField}
+              placeholder={field.ui.placeholder}
+              type={showPassword[field.key] ? "text" : "password"}
+              readOnly
+              value={formField.value || ""}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Dialog
+                      open={dialogOpen[field.key]}
+                      onOpenChange={(open) =>
+                        setDialogOpen((prev) => ({
+                          ...prev,
+                          [field.key]: open,
+                        }))
+                      }
+                    >
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon">
+                          <RefreshCwIcon className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Generate New Token</DialogTitle>
+                          <DialogDescription>
+                            {formField.value
+                              ? "Generating a new token will replace the existing one. Are you sure you want to continue?"
+                              : "This will generate a new secure token."}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              setDialogOpen((prev) => ({
+                                ...prev,
+                                [field.key]: false,
+                              }))
+                            }
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              const token = generateSecureToken();
+                              formField.onChange(token);
+                              setDialogOpen((prev) => ({
+                                ...prev,
+                                [field.key]: false,
+                              }));
+                            }}
+                          >
+                            Generate
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Generate new token</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setShowPassword((prev) => ({
+                          ...prev,
+                          [field.key]: !prev[field.key],
+                        }));
+                      }}
+                    >
+                      {showPassword[field.key] ? (
+                        <EyeOffIcon className="h-4 w-4" />
+                      ) : (
+                        <EyeIcon className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {showPassword[field.key] ? "Hide token" : "Show token"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(formField.value);
+                        toast.success("Token copied to clipboard");
+                      }}
+                    >
+                      <CopyIcon className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy token</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        );
       case "image":
         return (
           <div className="space-y-2">
@@ -145,7 +311,10 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
                     const reader = new FileReader();
                     reader.onloadend = () => {
                       const base64String = reader.result as string;
-                      setImagePreview(prev => ({ ...prev, [field.key]: base64String }));
+                      setImagePreview((prev) => ({
+                        ...prev,
+                        [field.key]: base64String,
+                      }));
                     };
                     reader.readAsDataURL(file);
 
@@ -162,7 +331,9 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => document.getElementById(`image-upload-${field.key}`)?.click()}
+                onClick={() =>
+                  document.getElementById(`image-upload-${field.key}`)?.click()
+                }
                 disabled={isUploading[field.key]}
               >
                 {isUploading[field.key] ? (
@@ -181,12 +352,12 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    setImagePreview(prev => {
+                    setImagePreview((prev) => {
                       const newState = { ...prev };
                       delete newState[field.key];
                       return newState;
                     });
-                    formField.onChange('');
+                    formField.onChange("");
                   }}
                 >
                   <XIcon className="h-4 w-4" />
@@ -241,12 +412,12 @@ interface BotConfigUIProps {
 }
 
 const BotConfigUI: React.FC<BotConfigUIProps> = ({ packageName, config }) => {
-  switch (packageName) {
-    case "slack-web-tiny":
-      return <SlackWebTinyConfigUI configFields={config || []} />;
-    default:
-      return null;
-  }
+  // switch (packageName) {
+  // case "slack-web-tiny":
+  return <SlackWebTinyConfigUI configFields={config || []} />;
+  // default:
+  // return null;
+  // }
 };
 
 export default BotConfigUI;

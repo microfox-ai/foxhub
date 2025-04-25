@@ -1,22 +1,19 @@
 "use client";
-import {
-  ResizableHandle,
-  ResizablePanel
-} from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
-import { useUser } from "@/utils/hooks/useUser";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import ChatWindow from "../Chat/ChatWindow";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ApiDocProvider } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useLayout } from "../providers/LayoutProvider";
 import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 
 export const RequestPage = () => {
   const [tab, setTab] = useState("requests");
-  const { user } = useUser();
+  const { user } = useAuth();
   const {
     isLeftCollapsed,
     isRightCollapsed,
@@ -59,7 +56,7 @@ export const RequestPage = () => {
               onCollapse={handleLeftCollapse}
               isCollapsed={isLeftCollapsed}
               isLoading={isLoading}
-              clientRequest={selectedRequest}
+              clientRequest={selectedRequest ?? undefined}
               projectTitle={selectedProject?.name}
             />
           </div>
@@ -92,4 +89,3 @@ export const RequestPage = () => {
     </TaskInstanceMetaProvider>
   );
 };
-

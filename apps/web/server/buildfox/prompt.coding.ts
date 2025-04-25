@@ -134,8 +134,12 @@ export const codingFunctionPrompt = async ({
 
   // TODO: for redis, create a standard pattern just like prisma
   let writtenHelperFilesContent: string | null = null;
+  let previousEnvs: string[] = [];
   if (clientRequest && template_type != "plain") {
     const files = await readAllGenFilesList(clientRequest);
+    previousEnvs = previousEnvs.concat(
+      files.flatMap((file) => (file.meta as any).envVariablesUsed)
+    );
     const redisFile = files.filter((file) =>
       file.filePath.includes("/helpers/redis")
     );
@@ -154,6 +158,9 @@ export const codingFunctionPrompt = async ({
   const coreEnvs = taskInstanceMeta.taskIntegrations
     ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "allKeys")
     : [];
+  previousEnvs = previousEnvs.filter(
+    (env) => !templateEnvs.includes(env) && !coreEnvs.includes(env)
+  );
 
   //console.log("templateEnvs", templateEnvs);
   //console.log("coreEnvs", coreEnvs);
@@ -194,6 +201,7 @@ export const codingFunctionPrompt = async ({
             The following env variables are already present in the project:
             ${templateEnvs.map((env: any) => `- ${env.key}`).join("\n")}
             ${coreEnvs.map((env) => `- ${env}`).join("\n")}
+            ${previousEnvs.map((env) => `- ${env}`).join("\n")}
 
             ${
               /** TODO: this requires improving because cron would still add new variables, as it doesnt have a way to collect them,  so use redis as env var storage across all functions */

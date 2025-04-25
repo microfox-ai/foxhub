@@ -9,11 +9,13 @@ import { Constructor } from "../../Chat/message/types";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UploadIcon, XIcon, ArrowRight, ArrowLeft, Check, Copy, Loader2 } from "lucide-react";
+import { UploadIcon, XIcon, ArrowRight, ArrowLeft, Check, Copy, Loader2, InfoIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { APP_BASE_FOR_SHARD } from "@/utils/constants/appInfo";
 import { useBots } from "../providers/BotProvider";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const whatsappRequiredKeys = [
     "WHATSAPP_BUSINESS_ACCOUNT_ID",
@@ -133,7 +135,7 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
 
     useEffect(() => {
         if (botToEdit?.id) {
-            form.setValue("config.WHATSAPP_WEBHOOK_URL", `${APP_BASE_FOR_SHARD}/webhooks/${botToEdit.id}/whatsapp`);
+            form.setValue("config.WHATSAPP_WEBHOOK_URL", `${APP_BASE_FOR_SHARD}/api/webhooks/${botToEdit.id}/whatsapp`);
         }
     }, [botToEdit]);
 
@@ -194,14 +196,26 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                     <CardTitle>Webhook Configuration</CardTitle>
                                     <CardDescription>Configure your WhatsApp webhook settings</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-4 py-4 px-8">
                                     <FormField
                                         control={form.control}
                                         name="config.WHATSAPP_WEBHOOK_URL"
-                                        defaultValue={`${APP_BASE_FOR_SHARD}/webhooks/${botToEdit.id}/whatsapp`}
+                                        defaultValue={`${APP_BASE_FOR_SHARD}/api/webhooks/${botToEdit.id}/whatsapp`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Webhook URL</FormLabel>
+                                                <FormLabel>Webhook Callback URL
+
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <InfoIcon className="h-4 w-4" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                The URL where WhatsApp will send webhook events
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </FormLabel>
                                                 <FormControl>
                                                     <div className="flex gap-2">
                                                         <Input
@@ -221,7 +235,6 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                         </Button>
                                                     </div>
                                                 </FormControl>
-                                                <FormDescription>The URL where WhatsApp will send webhook events</FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -232,7 +245,18 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                         name="config.WHATSAPP_WEBHOOK_VERIFY_TOKEN"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Webhook Verify Token</FormLabel>
+                                                <FormLabel>Webhook Verify Token
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <InfoIcon className="h-4 w-4" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                The token used to verify webhook requests
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </FormLabel>
                                                 <div className="flex gap-2">
                                                     <FormControl>
                                                         <Input {...field} />
@@ -259,8 +283,6 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                         <Copy className="h-4 w-4" />
                                                     </Button>
                                                 </div>
-                                                <FormDescription>Token used to verify webhook requests</FormDescription>
-                                                <FormMessage />
                                             </FormItem>
                                         )}
                                     />

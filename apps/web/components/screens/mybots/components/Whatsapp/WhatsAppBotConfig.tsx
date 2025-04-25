@@ -557,7 +557,7 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                 variant="outline"
                                                 className="ml-auto"
                                                 onClick={() => {
-                                                    navigator.clipboard.writeText(generateWidgetCode(form.getValues("config.WHATSAPP_BUSINESS_SLUG") || '[business-slug]', botToEdit.id))
+                                                    navigator.clipboard.writeText(generateWidgetCode(form.getValues("config.WHATSAPP_BUSINESS_SLUG") || '[business-slug]', botToEdit.id, form.getValues("config.WHATSAPP_BUSINESS_NAME") || '[business-name]'))
                                                     toast.success("Widget URL copied to clipboard");
                                                 }}
                                             >

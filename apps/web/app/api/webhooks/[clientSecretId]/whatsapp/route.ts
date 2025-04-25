@@ -150,13 +150,13 @@ export async function POST(
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              userNumberFromWhatsapp: phoneNumber,
-              userIdFromMicrofox: userId,
+              number: phoneNumber,
+              userId: userId,
             }),
           });
 
           // 4. forward the message to the api agent
-          await forwardToAiAgent(message, phoneNumber, callbackUri, apiKey);
+          // await forwardToAiAgent(message, phoneNumber, callbackUri, apiKey);
         }
       } else {
         //2. forward the message to the api agent

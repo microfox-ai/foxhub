@@ -1,4 +1,8 @@
-export const generateWidgetCode = (slug: string, clientSecretId: string) => {
+export const generateWidgetCode = (
+  slug: string,
+  clientSecretId: string,
+  name: string
+) => {
   return `
     "use client";
     const WhatsappWidget = () => {
@@ -21,7 +25,7 @@ export const generateWidgetCode = (slug: string, clientSecretId: string) => {
         onClick={openWhatsappWidget}
         className="flex items-center gap-2 bg-green-500  overflow-y-auto text-white px-4 py-2 rounded hover:bg-green-600"
       >
-        Talk to Good Friend
+        Talk to ${name}
         <svg
           className="w-5 h-5"
           fill="currentColor"
@@ -34,6 +38,6 @@ export const generateWidgetCode = (slug: string, clientSecretId: string) => {
   );
 };
 
-export default Test;
+export default WhatsappWidget;
     `;
 };

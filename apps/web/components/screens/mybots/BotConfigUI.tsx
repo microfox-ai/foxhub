@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useUser } from "@/utils/hooks/useUser";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   Tooltip,
   TooltipContent,
@@ -56,9 +56,9 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
   const form = useFormContext();
   const [imagePreview, setImagePreview] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
+  const { user } = useAuth();
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [dialogOpen, setDialogOpen] = useState<Record<string, boolean>>({});
-  const { user } = useUser();
 
   const generateSecureToken = () => {
     // Generate 32 random bytes

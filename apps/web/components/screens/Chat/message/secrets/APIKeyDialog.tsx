@@ -28,12 +28,11 @@ import {
 import Link from "next/link";
 import useSWR, { KeyedMutator } from "swr";
 import { useParams } from "next/navigation";
-import { useUser } from "@/utils/hooks/useUser";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 import { CLIENTSECRETSTATUS, ClientSecret } from "@prisma/client";
 import { Constructor, KeyVariableConfig, Package } from "../types";
 import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
-
 
 interface APIKeyDialogProps {
   isOpen: boolean;
@@ -43,7 +42,7 @@ interface APIKeyDialogProps {
   apiKeySecret?: ClientSecret;
   mutateSecrets?: KeyedMutator<{
     clientSecrets: ClientSecret[];
-  }>
+  }>;
 }
 
 export const APIKeyDialog = ({
@@ -54,7 +53,6 @@ export const APIKeyDialog = ({
   pkg,
   apiKeySecret,
 }: APIKeyDialogProps) => {
-
   const params = useParams<{
     project_id?: string;
     request_id?: string;
@@ -62,7 +60,9 @@ export const APIKeyDialog = ({
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
 
-  const constructor = pkg.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
+  const constructor = pkg.constructors.find(
+    (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
+  );
 
   const [nickName, setNickName] = useState<string>(apiKeySecret?.name ?? "");
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
@@ -72,15 +72,17 @@ export const APIKeyDialog = ({
   >({});
   const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const { user } = useUser();
+  const { user } = useAuth();
 
   // Populate form with existing values when secret is found
   useEffect(() => {
     if (apiKeySecret) {
       const keyMap: Record<string, string> = {};
-      (apiKeySecret.variables as any[]).forEach((variable: ClientSecretVariable) => {
-        keyMap[variable.key] = variable.value;
-      });
+      (apiKeySecret.variables as any[]).forEach(
+        (variable: ClientSecretVariable) => {
+          keyMap[variable.key] = variable.value;
+        }
+      );
       setApiKeys(keyMap);
       setNickName(apiKeySecret.name);
     }
@@ -134,26 +136,26 @@ export const APIKeyDialog = ({
 
       const body = apiKeySecret
         ? {
-          id: apiKeySecret.id,
-          variables,
-          name: nickName ?? pkg.name,
-          clientRequestId: requestParamId,
-          status: CLIENTSECRETSTATUS.FILLED,
-          updateDeployments: true,
-        }
+            id: apiKeySecret.id,
+            variables,
+            name: nickName ?? pkg.name,
+            clientRequestId: requestParamId,
+            status: CLIENTSECRETSTATUS.FILLED,
+            updateDeployments: true,
+          }
         : {
-          botProjectId: projectParamId,
-          clientRequestId: requestParamId,
-          userId: user?.id,
-          name: nickName ?? pkg.name,
-          packageName: pkg?.name,
-          packageConstructor: constructor?.name,
-          packageType: ClientSecretPackageType.APIKEY,
-          status: CLIENTSECRETSTATUS.FILLED,
-          variables,
-          addToClientRequest: true,
-          updateDeployments: true,
-        };
+            botProjectId: projectParamId,
+            clientRequestId: requestParamId,
+            userId: user?.id,
+            name: nickName ?? pkg.name,
+            packageName: pkg?.name,
+            packageConstructor: constructor?.name,
+            packageType: ClientSecretPackageType.APIKEY,
+            status: CLIENTSECRETSTATUS.FILLED,
+            variables,
+            addToClientRequest: true,
+            updateDeployments: true,
+          };
 
       const response = await fetch(endpoint, {
         method,
@@ -191,8 +193,7 @@ export const APIKeyDialog = ({
             <img src={pkg.icon} className="h-8 w-8" />
             <div className="flex flex-col">
               <span className="text-xl font-medium">
-                {apiKeySecret ? "Update" : "Setup"} your{" "}
-                {platformName} Bot
+                {apiKeySecret ? "Update" : "Setup"} your {platformName} Bot
               </span>
               <span className="text-xs text-gray-500">
                 {apiKeySecret
@@ -214,15 +215,11 @@ export const APIKeyDialog = ({
 
         <div className="space-y-4 pl-2 pb-6 min-h-[200px] max-h-[400px] overflow-y-auto pr-4 -mr-4 scrollbar-thin">
           <div className="flex flex-col items-start gap-2">
-            <span className="text-sm font-medium text-gray-700">
-              Bot Name
-            </span>
+            <span className="text-sm font-medium text-gray-700">Bot Name</span>
             <Input
               id="nickName"
               value={nickName}
-              onChange={(e) =>
-                setNickName(e.target.value)
-              }
+              onChange={(e) => setNickName(e.target.value)}
               className={`h-11 px-4`}
               placeholder={`Enter a nickname for this API key`}
               aria-label={`Enter a nickname for this API key`}
@@ -274,10 +271,11 @@ export const APIKeyDialog = ({
                   onChange={(e) =>
                     handleInputChange(keyInfo.key, e.target.value)
                   }
-                  className={`h-11 px-4 ${apiKeys[keyInfo.key] ? "pr-11" : ""} ${validationErrors[keyInfo.key]
-                    ? "border-red-500 focus-visible:ring-red-200"
-                    : ""
-                    }`}
+                  className={`h-11 px-4 ${apiKeys[keyInfo.key] ? "pr-11" : ""} ${
+                    validationErrors[keyInfo.key]
+                      ? "border-red-500 focus-visible:ring-red-200"
+                      : ""
+                  }`}
                   placeholder={`Enter your ${keyInfo.displayName}`}
                   aria-label={keyInfo.displayName}
                 />

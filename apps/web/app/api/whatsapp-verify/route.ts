@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 
+/** CRUD FOR whatsAppVerification documents */
+// TODO: Requires security layer (incoming requests should eithe be origined to us, or we should add auth headers)
+
 export async function POST(req: Request) {
   try {
     const { clientSecretId, userId, slug, code, callbackUri } =

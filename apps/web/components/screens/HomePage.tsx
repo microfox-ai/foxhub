@@ -1,13 +1,12 @@
 "use client";
 
-import { useUser } from "@/utils/hooks/useUser";
 import NewProjectCreation from "./global/NewProjectCreation";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { useEffect } from "react";
-
+import { useAuth } from "@/components/auth/AuthProvider";
 export const CustomBotsHomePage = () => {
-  const { user } = useUser();
+  const { user } = useAuth();
   const router = useRouter();
 
   const {
@@ -16,7 +15,7 @@ export const CustomBotsHomePage = () => {
     isLoading,
   } = useSWR(
     user?.id ? `/api/bot-project?userId=${user?.id}` : null,
-    async (url) => await fetch(url).then((res) => res.json()),
+    async (url) => await fetch(url).then((res) => res.json())
   );
 
   useEffect(() => {
@@ -24,7 +23,7 @@ export const CustomBotsHomePage = () => {
       const lastProject = projects[0];
       if (lastProject && lastProject.clientRequests.length > 0) {
         router.push(
-          `/project/${lastProject.id}/request/${lastProject.clientRequests[0].id}`,
+          `/project/${lastProject.id}/request/${lastProject.clientRequests[0].id}`
         );
       } else if (lastProject) {
         router.push(`/project/${projects[0].id}`);

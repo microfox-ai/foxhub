@@ -8,13 +8,14 @@ import {
   useEffect,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useUser } from "@/utils/hooks/useUser";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { analytics } from "@/utils/services/analytics/client";
-import { ClientRequest, REQUESTSTATUS } from "@prisma/client";
+import { REQUESTSTATUS } from "@prisma/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
+import { ClientRequest } from "@prisma/client";
 
 interface ClientProjectContextType {
   clientRequestId: string | null;
@@ -51,7 +52,7 @@ export function ClientProjectProvider({
 }: ClientProjectProviderProps) {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(null);
-  const { user } = useUser();
+  const { user } = useAuth();
   const router = useRouter();
 
   const params = useParams<{

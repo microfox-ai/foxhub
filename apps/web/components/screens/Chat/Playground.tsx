@@ -1,14 +1,12 @@
-'use client';
+"use client";
 
-import { useUser } from "@/utils/hooks/useUser";
+import { useAuth } from "@/components/auth/AuthProvider";
 import ChatWindow from "./ChatWindow";
 
 export const PlaygroundPage = () => {
-    const { user } = useUser();
-    if (!user) {
-        return null;
-    }
-    return (
-        <ChatWindow userId={user.id} isLoading={false} />
-    )
-}
+  const { user } = useAuth();
+  if (!user) {
+    return null;
+  }
+  return <ChatWindow userId={user.id} isLoading={false} />;
+};

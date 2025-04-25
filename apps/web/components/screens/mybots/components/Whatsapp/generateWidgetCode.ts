@@ -1,3 +1,5 @@
+import { APP_BASE_FOR_SHARD } from "@/utils/constants/appInfo";
+
 export const generateWidgetCode = (
   slug: string,
   clientSecretId: string,
@@ -13,7 +15,7 @@ export const generateWidgetCode = (
     const top = window.screen.height / 2 - height / 2;
 
     window.open(
-      "/widget/${slug}/whatsapp?clientSecretId=${clientSecretId}&businessUserId=[YOUR_INNER_USER_ID]&callbackUri=[YOUR_CALLBACK_URL_TO_LINK_NUMBER_TO_USER_ID]",
+      "${APP_BASE_FOR_SHARD}/widget/${slug}/whatsapp?clientSecretId=${clientSecretId}&businessUserId=[YOUR_INNER_USER_ID]&callbackUri=[YOUR_CALLBACK_URL_TO_LINK_NUMBER_TO_USER_ID]",
       "WhatsApp Widget",
       ${"`width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`"}
     );

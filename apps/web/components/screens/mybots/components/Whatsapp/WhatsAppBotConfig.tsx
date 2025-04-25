@@ -602,33 +602,55 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                 <CardContent className="space-y-4">
                                     <FormField
                                         control={form.control}
-                                        name="config.WHATSAPP_AGENTCHAT_API_KEY"
+                                        name="config.WHATSAPP_AGENTCHAT_ENDPOINT"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Agent Chat API Key</FormLabel>
+                                                <FormLabel>Agent Chat Endpoint
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <InfoIcon className="h-4 w-4" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                The endpoint URL for your agent chat service.
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </FormLabel>
                                                 <FormControl>
-                                                    <Input type="password" {...field} />
+                                                    <Input placeholder="https://api.agentchat.com" {...field} />
                                                 </FormControl>
-                                                <FormDescription>Your agent chat API key for authentication</FormDescription>
-                                                <FormMessage />
                                             </FormItem>
                                         )}
                                     />
 
                                     <FormField
                                         control={form.control}
-                                        name="config.WHATSAPP_AGENTCHAT_ENDPOINT"
+                                        name="config.WHATSAPP_AGENTCHAT_API_KEY"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Agent Chat Endpoint</FormLabel>
+                                                <FormLabel>Agent Chat API Key
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <InfoIcon className="h-4 w-4" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                This API key is used to authenticate requests to your agent chat service. You can generate a secure key or use your own.
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="https://api.agentchat.com" {...field} />
+                                                    <div className="flex gap-2">
+                                                        <Input {...field} />
+                                                    </div>
                                                 </FormControl>
-                                                <FormDescription>The endpoint URL for your agent chat service</FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
+
                                 </CardContent>
                             </Card>
                         )}

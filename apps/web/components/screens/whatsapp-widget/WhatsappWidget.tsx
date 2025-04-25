@@ -9,6 +9,8 @@ import { ClientSecret } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { customAlphabet } from "nanoid";
 const WHATSAPP_BASE_API_URL = IN_DEV
   ? "http://localhost:3000"
   : APP_BASE_FOR_SHARD;
@@ -34,7 +36,7 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-const whatsappVerificationSdk = new WhatsAppVerificationSdk();
+const generateCode = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
 
 /** Note: The listener webhook is still on staging/production branch, to check or verify the webhook functionality is working,
  * log the foxhub-staging 
@@ -99,12 +101,13 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     }
 
     try {
-
-      const existingVerification = await whatsappVerificationSdk.getInitialVerificationSession(
-        clientSecretId,
-        userId
-      );
-
+      const existingVerification = await PortalSdk.getData(
+        `/api/whatsapp-verify`,
+        {
+          clientSecretId,
+          userId: userId,
+        }
+      )
       if (existingVerification && existingVerification[0]?.code) {
         return existingVerification[0];
       }
@@ -128,11 +131,15 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       if (existingVerification) {
         return existingVerification;
       }
-      const verification = await whatsappVerificationSdk.createVerification(
-        clientSecretId,
-        userId,
-        slug || "",
-        callbackUri || ""
+      const verification = await PortalSdk.postData(
+        `/api/whatsapp-verify`,
+        {
+          clientSecretId,
+          userId,
+          slug: slug || "",
+          callbackUri: callbackUri || "",
+          code: generateCode(6),
+        }
       );
 
       console.log("Verification created:", verification);

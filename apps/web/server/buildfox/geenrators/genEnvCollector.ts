@@ -84,6 +84,9 @@ export const genEnvCollector = async (
           "requiredKeys"
         )
       : [];
+    const botConfigEnvs = taskInstanceMeta.taskIntegrations
+      ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "botConfig")
+      : [];
 
     // filter out template envs & corepackage based envs - only keep custom envs
     try {
@@ -91,6 +94,7 @@ export const genEnvCollector = async (
         (env) => !templatedEnvs.some((envJson: any) => envJson.key === env)
       );
       envs = envs.filter((env) => !coreEnvs?.includes(env));
+      envs = envs.filter((env) => !botConfigEnvs?.includes(env));
     } catch (error) {
       console.error("Error generating core envs", error);
     }

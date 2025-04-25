@@ -55,7 +55,10 @@ export const getRunforClientRequestbySha = async ({
     //   ? (clientRequest.prBranch ?? "")
     //   : "project/master",
     head_sha,
+    per_page: 5,
   });
+
+  //console.log("workflowRuns", workflowRuns.data);
 
   return workflowRuns.data.workflow_runs[0]?.id;
 };
@@ -71,10 +74,10 @@ export const getLatestRunForClientRequest = async (
   const workflowRuns = await octokitSdk.rest.actions.listWorkflowRunsForRepo({
     owner: TEMPLATE_REPO_OWNER,
     repo: clientRequest.repoName ?? "",
-    branch:
-      stage === DEPLOY_STAGE.STAGING
-        ? (clientRequest.prBranch ?? "")
-        : "project/master",
+    branch: clientRequest.prBranch ?? "",
+    // stage === DEPLOY_STAGE.STAGING
+    //   ? (clientRequest.prBranch ?? "")
+    //   : "project/master",
     per_page: 5,
   });
 

@@ -95,7 +95,7 @@ export const TaskStructure = ({
                         )}
                     </TabsList>
 
-                    {object.dbSchemas && object.dbSchemas.length > 0 && (
+                    {object.dbSchemas && object.dbSchemas.length > 0 && object.templateType === "upstash" && (
                         <TabsContent value="schemas" className="mt-4">
                             <div className="grid gap-4">
                                 {object.dbSchemas.map((schema) => (

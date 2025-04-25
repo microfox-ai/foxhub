@@ -3,22 +3,27 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
   const projectId = searchParams.get("projectId");
   const userId = searchParams.get("userId");
 
-  if (!projectId) {
-    return NextResponse.json(
-      { error: "Project ID is required" },
-      { status: 400 }
-    );
-  }
+  // if (!projectId) {
+  //   return NextResponse.json(
+  //     { error: "Project ID is required" },
+  //     { status: 400 }
+  //   );
+  // }
 
-  if (!userId) {
-    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-  }
+  // if (!userId) {
+  //   return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+  // }
 
   const project = await prisma.clientSecret.findMany({
-    where: { botProjectId: projectId, userId },
+    where: {
+      ...(id && { id }),
+      ...(projectId && { botProjectId: projectId }),
+      ...(userId && { userId }),
+    },
   });
 
   return NextResponse.json(project);

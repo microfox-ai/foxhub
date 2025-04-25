@@ -129,7 +129,7 @@ export const SecretVault = () => {
     return (
         <div>
             <div className="w-full flex flex-col gap-4">
-                <div className="flex items-center gap-2 mb-8">
+                <div className="flex items-center gap-2">
                     <Key className="w-4 h-4 text-gray-500" />
                     <h3 className="text-lg font-semibold text-gray-900">
                         Settings

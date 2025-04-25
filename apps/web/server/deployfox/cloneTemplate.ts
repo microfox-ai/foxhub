@@ -55,103 +55,109 @@ export const cloneTemplate = async ({
   });
 
   try {
-    // Get the contents of the source repository
-    const { data: contents } = await octokit.rest.repos.getContent({
-      owner: TEMPLATE_REPO_OWNER,
-      repo: sourceRepo,
-      path: sourcePath,
-      ref: sourceBranch,
-    });
+    const fileBlobs: { path: string; sha: string }[] = [];
 
-    // Handle both single file and directory contents
-    if (Array.isArray(contents)) {
-      // If it's a directory, recursively process each item
-      for (const item of contents) {
-        if (item.type === "file") {
-          // Get the file content
-          const { data: fileContent } = await octokit.rest.repos.getContent({
-            owner: TEMPLATE_REPO_OWNER,
-            repo: sourceRepo,
-            path: item.path,
-            ref: sourceBranch,
-          });
+    async function processContents(path: string) {
+      const { data: contents } = await octokit.rest.repos.getContent({
+        owner: TEMPLATE_REPO_OWNER,
+        repo: sourceRepo,
+        path,
+        ref: sourceBranch,
+      });
 
-          if (!Array.isArray(fileContent) && "content" in fileContent) {
-            const targetFilePath = item.path;
-
-            // Try to get the SHA of existing file if it exists
-            let sha: string | undefined;
-            try {
-              const { data: existingFile } =
-                await octokit.rest.repos.getContent({
-                  owner: TEMPLATE_REPO_OWNER,
-                  repo: targetRepo,
-                  path: targetFilePath,
-                  ref: targetBranch,
-                });
-
-              if (!Array.isArray(existingFile)) {
-                sha = existingFile.sha;
-              }
-            } catch (error) {
-              // File doesn't exist yet, which is fine
-            }
-
-            // Create or update the file in the target repository
-            await octokit.rest.repos.createOrUpdateFileContents({
+      if (Array.isArray(contents)) {
+        for (const item of contents) {
+          if (item.type === "file") {
+            const { data: fileContent } = await octokit.rest.repos.getContent({
               owner: TEMPLATE_REPO_OWNER,
-              repo: targetRepo,
-              path: targetFilePath,
-              message: `nodeploy: Clone template: ${item.path}`,
-              content: fileContent.content,
-              branch: targetBranch,
-              ...(sha ? { sha } : {}),
+              repo: sourceRepo,
+              path: item.path,
+              ref: sourceBranch,
             });
-          }
-        } else if (item.type === "dir") {
-          console.log("Cloning directory:", item.path);
-          // Recursively process subdirectories
-          await cloneTemplate({
-            sourceRepo,
-            targetRepo,
-            sourcePath: item.path,
-            targetPath: item.path,
-            sourceBranch,
-            targetBranch,
-          });
-        }
-      }
-    } else if ("content" in contents) {
-      // If it's a single file
-      const targetFilePath = targetPath || contents.path;
 
-      // Try to get the SHA of existing file if it exists
-      let sha: string | undefined;
-      try {
-        const { data: existingFile } = await octokit.rest.repos.getContent({
+            if (!Array.isArray(fileContent) && "content" in fileContent) {
+              // Decode the base64 content
+              const content = Buffer.from(
+                fileContent.content,
+                "base64"
+              ).toString();
+
+              // Create a blob for the file content
+              const { data: blob } = await octokit.rest.git.createBlob({
+                owner: TEMPLATE_REPO_OWNER,
+                repo: targetRepo,
+                content,
+                encoding: "utf-8",
+              });
+
+              fileBlobs.push({
+                path: item.path,
+                sha: blob.sha,
+              });
+            }
+          } else if (item.type === "dir") {
+            await processContents(item.path);
+          }
+        }
+      } else if ("content" in contents) {
+        const targetFilePath = targetPath || contents.path;
+        const content = Buffer.from(contents.content, "base64").toString();
+
+        // Create a blob for the file content
+        const { data: blob } = await octokit.rest.git.createBlob({
           owner: TEMPLATE_REPO_OWNER,
           repo: targetRepo,
-          path: targetFilePath,
-          ref: targetBranch,
+          content,
+          encoding: "utf-8",
         });
 
-        if (!Array.isArray(existingFile)) {
-          sha = existingFile.sha;
-        }
-      } catch (error) {
-        // File doesn't exist yet, which is fine
+        fileBlobs.push({
+          path: targetFilePath,
+          sha: blob.sha,
+        });
       }
-
-      await octokit.rest.repos.createOrUpdateFileContents({
-        owner: TEMPLATE_REPO_OWNER,
-        repo: targetRepo,
-        path: targetFilePath,
-        message: `nodeploy: Clone template: ${contents.path}`,
-        content: contents.content,
-        branch: targetBranch,
-        ...(sha ? { sha } : {}),
-      });
     }
+
+    await processContents(sourcePath);
+
+    // Get the latest commit SHA of the target branch
+    const { data: ref } = await octokit.rest.git.getRef({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: targetRepo,
+      ref: `heads/${targetBranch}`,
+    });
+
+    // Create a new tree with all the blobs
+    const tree = fileBlobs.map(({ path: filePath, sha }) => ({
+      path: filePath,
+      mode: "100644" as const,
+      type: "blob" as const,
+      sha,
+    }));
+
+    const { data: newTree } = await octokit.rest.git.createTree({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: targetRepo,
+      tree,
+      base_tree: ref.object.sha,
+    });
+
+    // Create a new commit
+    const { data: commit } = await octokit.rest.git.createCommit({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: targetRepo,
+      message: `nodeploy: Clone template files`,
+      tree: newTree.sha,
+      parents: [ref.object.sha],
+    });
+
+    // Update the branch reference
+    await octokit.rest.git.updateRef({
+      owner: TEMPLATE_REPO_OWNER,
+      repo: targetRepo,
+      ref: `heads/${targetBranch}`,
+      sha: commit.sha,
+    });
 
     return { success: true };
   } catch (error) {

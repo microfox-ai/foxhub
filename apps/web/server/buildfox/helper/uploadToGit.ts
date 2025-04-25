@@ -13,25 +13,18 @@ export const uploadToRepo = async (
   commitMessage: string = `My commit message`
 ) => {
   try {
-    // gets commit's AND its tree's SHA
-
     const lastCommit = await getCurrentCommit(octo, org, repo, branch);
-    // TODO: revert not working because the last commit maybe a deployed commit, so it should check back untill it finds a microcode commit , revert it and then continue
     const currentCommit = lastCommit.commitMessage.includes(
       "clientRequest.json"
     )
       ? lastCommit
-      : lastCommit.commitMessage.includes("microcode")
-        ? await revertCommit(
-            octo,
-            org,
-            repo,
-            branch,
-            lastCommit.commitSha,
-            lastCommit.treeSha,
-            lastCommit.parentSha
-          )
-        : lastCommit;
+      : await findAndRevertToLastMicrocodeCommit(
+          octo,
+          org,
+          repo,
+          branch,
+          lastCommit
+        );
 
     const filesPaths = await glob(coursePath);
     const filesBlobs = await Promise.all(
@@ -199,3 +192,55 @@ const setBranchToCommit = (
     ref: `heads/${branch}`,
     sha: commitSha,
   });
+
+const findAndRevertToLastMicrocodeCommit = async (
+  octo: Octokit,
+  org: string,
+  repo: string,
+  branch: string,
+  currentCommit: {
+    commitSha: string;
+    commitMessage: string;
+    treeSha: string;
+    parentSha?: string;
+  }
+) => {
+  let commit = currentCommit;
+  let depth = 0;
+  const MAX_DEPTH = 10; // Safety limit to prevent infinite loops
+
+  // Traverse back through commit history
+  while (depth < MAX_DEPTH && commit.parentSha) {
+    if (commit.commitMessage.includes("microcode")) {
+      // Found a microcode commit, revert to it
+      return await revertCommit(
+        octo,
+        org,
+        repo,
+        branch,
+        commit.commitSha,
+        commit.treeSha,
+        commit.parentSha
+      );
+    }
+
+    // Get the parent commit
+    const { data: parentCommitData } = await octo.rest.git.getCommit({
+      owner: org,
+      repo,
+      commit_sha: commit.parentSha,
+    });
+
+    commit = {
+      commitSha: parentCommitData.sha,
+      commitMessage: parentCommitData.message,
+      treeSha: parentCommitData.tree.sha,
+      parentSha: parentCommitData.parents[0]?.sha,
+    };
+
+    depth++;
+  }
+
+  // If no microcode commit found, return the current commit
+  return currentCommit;
+};

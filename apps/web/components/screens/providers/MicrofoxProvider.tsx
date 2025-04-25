@@ -39,11 +39,6 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   const [minionType, setMinionType] =
     useState<ChatUIMessageWithTypes["minionType"]>("hellofox");
 
-  // Tab-related states
-  const [activeTab, setActiveTab] = useState<"chat" | "dashboard" | "history">("chat");
-  const [previousTab, setPreviousTab] = useState<"chat" | "dashboard" | "history">("chat");
-  const [hasScrolled, setHasScrolled] = useState(false);
-
   const {
     data: serverMessages,
     mutate,
@@ -59,7 +54,6 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
   useEffect(() => {
     if (serverMessages && serverMessages.length > 0) {
-      //console.log("serverMessages", serverMessages);
       let userMessages = serverMessages.filter((m) => m.role === "user");
       if (userMessages.length > 0) {
         const lastMessage = userMessages[userMessages.length - 1];
@@ -300,13 +294,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     isValidating,
     serverMessages,
     handleRefresh,
-    // Add tab-related states to the context value
-    activeTab,
-    setActiveTab,
-    previousTab,
-    setPreviousTab,
-    hasScrolled,
-    setHasScrolled,
+    clientRequest,
   };
 }
 

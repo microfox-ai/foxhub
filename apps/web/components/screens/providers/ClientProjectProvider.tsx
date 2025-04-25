@@ -15,17 +15,18 @@ import { analytics } from "@/utils/services/analytics/client";
 import { REQUESTSTATUS } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
+import { ClientRequest } from "http";
 
 interface ClientProjectContextType {
   clientRequestId: string | null;
   projectId: string | null;
   selectedProject: any;
-  selectedRequest: any;
+  selectedRequest: ClientRequest | null;
   projects: any[];
   isLoading: boolean;
   createNewEmptyRequest: () => Promise<void>;
   setSelectedProject: (project: any) => void;
-  setSelectedRequest: (request: any) => void;
+  setSelectedRequest: (request: ClientRequest | null) => void;
 }
 
 const ClientProjectContext = createContext<

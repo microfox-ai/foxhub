@@ -13,6 +13,8 @@ import { useClientProject } from "../../providers/ClientProjectProvider";
 import useSWR from "swr";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { ClientDeploymentMetadata } from "@/server/types";
+import { useTabUi } from "../../providers/TabUiProvider";
+import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
         case "success":
@@ -121,8 +123,7 @@ export const DeployStatus = () => {
         pingerInterval: 10000,
         initialDeployStep: taskInstanceMeta?.deployStep,
     });
-    const { append, setActiveTab } = useMicrofox();
-
+    const { setActiveTab } = useTabUi();
 
     if (!deployStep)
         return (
@@ -235,7 +236,7 @@ export const DeployStatus = () => {
                                 )}
                                 {clientDeployment?.baseUrl && (
                                     <div className="flex justify-between">
-                                        <span className="text-xs text-gray-500">Base URL</span>
+                                        <span className="text-xs text-gray-500">API Base URL</span>
                                         <a
                                             href={clientDeployment.baseUrl}
                                             target="_blank"
@@ -247,6 +248,18 @@ export const DeployStatus = () => {
                                         </a>
                                     </div>
                                 )}
+                                <div className="flex justify-between">
+                                    <span className="text-xs text-gray-500">GitHub Repository</span>
+                                    <a
+                                        href={`https://github.com/${TEMPLATE_REPO_OWNER}/${selectedRequest?.repoName}/tree/${selectedRequest?.prBranch}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs max-w-[200px] truncate font-medium text-blue-600 hover:underline flex items-center gap-1"
+                                    >
+                                        {`View on GitHub`}
+                                        <GitPullRequest className="w-3 h-3" />
+                                    </a>
+                                </div>
                                 {clientDeployment?.metadata && (
                                     <div className="flex justify-between">
                                         <span className="text-xs text-gray-500">{(clientDeployment.metadata as unknown as ClientDeploymentMetadata).serverless?.stage} functions</span>

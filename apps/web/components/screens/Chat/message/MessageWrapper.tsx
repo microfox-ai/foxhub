@@ -1,20 +1,15 @@
-import { UIMessage } from "ai";
-import { ChevronLeft, ChevronRight, FileText, RefreshCcw } from "lucide-react";
-import dayjs from "dayjs";
-import { getMessageClass } from "../helpers/ui";
-import { MessageMetadata } from "../../hooks/convertors";
-import { Markdown } from "./markdown";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useEffect, useState } from "react";
-import { ChatUIMessage } from "@prisma/client";
-import { useMicrofox } from "../../providers/MicrofoxProvider";
-import { Button } from "@/components/ui/button";
 import { IN_DEV } from "@/utils/constants/appInfo";
+import { UIMessage } from "ai";
+import dayjs from "dayjs";
+import { ChevronLeft, ChevronRight, FileText, RefreshCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { MessageMetadata } from "../../hooks/convertors";
+import { useMicrofox } from "../../providers/MicrofoxProvider";
+import { getMessageClass } from "../helpers/ui";
 import { AnnotationUIList } from "./AnnotationUIList";
-import { ToolInvocationPart } from "./ToolInvocationPart";
-import { AnimatePresence, motion } from "framer-motion";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { MessageMarkdown } from "./MessageThoughtWrapper";
+import { ToolInvocationPart } from "./ToolInvocationPart";
 
 // Define types for annotations
 export type ThinkingAnnotation = {

@@ -14,8 +14,9 @@ import {
   MessagesSquare,
   PanelLeftIcon,
   Plus,
+  LayoutDashboard,
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
 
 import Link from "next/link";
@@ -63,6 +64,14 @@ interface NavigationConfig {
 }
 
 const navigationConfig: NavigationConfig[] = [
+  {
+    icon: <LayoutDashboard strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <LayoutDashboard strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "Dashboard",
+    href: "/dashboard",
+  },
   {
     icon: (
       <MessagesSquare
@@ -195,9 +204,14 @@ const NavigationItem = ({
   onClick,
   isCollapsed,
 }: NavigationItemProps) => {
+  const pathname = usePathname();
+  const isActive = href ? pathname === href : false;
+
   const content = (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2 text-neutral-500 group-hover:text-black transition-all duration-200">
+      <div
+        className={`flex items-center gap-2 ${isActive ? "text-black" : "text-neutral-500"} group-hover:text-black transition-all duration-200`}
+      >
         {!isCollapsed ? (
           icon
         ) : (
@@ -220,7 +234,7 @@ const NavigationItem = ({
 
   return (
     <li
-      className={`hover:bg-gray-100 rounded-lg cursor-pointer ${isCollapsed ? "p-2 w-full flex justify-center" : "p-2 px-3"} group`}
+      className={`${isActive ? "bg-gray-200" : "hover:bg-gray-100"} rounded-lg cursor-pointer ${isCollapsed ? "p-2 w-full flex justify-center" : "p-2 px-3"} group`}
     >
       {href ? (
         <Link href={href} className="flex items-center justify-between">

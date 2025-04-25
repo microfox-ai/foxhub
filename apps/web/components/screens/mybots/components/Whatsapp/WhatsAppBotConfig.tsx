@@ -5,17 +5,18 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Constructor } from "../../Chat/message/types";
+import { Constructor } from "../../../Chat/message/types";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UploadIcon, XIcon, ArrowRight, ArrowLeft, Check, Copy, Loader2, InfoIcon } from "lucide-react";
+import { UploadIcon, XIcon, ArrowRight, ArrowLeft, Check, Copy, Loader2, InfoIcon, CodeIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { APP_BASE_FOR_SHARD } from "@/utils/constants/appInfo";
-import { useBots } from "../providers/BotProvider";
+import { useBots } from "../../providers/BotProvider";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { generateWidgetCode } from "./generateWidgetCode";
 
 const whatsappRequiredKeys = [
     "WHATSAPP_BUSINESS_ACCOUNT_ID",
@@ -43,7 +44,7 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<string>("for_agents");
     const [currentStep, setCurrentStep] = useState(1);
-    const totalSteps = 5;
+    const totalSteps = 6;
 
     const generateSecureToken = () => {
         const array = new Uint8Array(32);
@@ -108,21 +109,25 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
     const handleSetupHandshake = async () => {
         try {
             const handshake = {
-                "WHATSAPP_BUSINESS_ACCOUNT_ID": form.getValues("config.WHATSAPP_BUSINESS_ACCOUNT_ID"),
-                "WHATSAPP_BUSINESS_ACCESS_TOKEN": form.getValues("config.WHATSAPP_BUSINESS_ACCESS_TOKEN"),
+                "WHATSAPP_BUSINESS_ACCOUNT_ID": form.getValues("keys.WHATSAPP_BUSINESS_ACCOUNT_ID"),
+                "WHATSAPP_BUSINESS_ACCESS_TOKEN": form.getValues("keys.WHATSAPP_BUSINESS_ACCESS_TOKEN"),
             }
+            console.log(handshake);
             const response = await fetch(`https://graph.facebook.com/v22.0/${handshake["WHATSAPP_BUSINESS_ACCOUNT_ID"]}/subscribed_apps`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${handshake["WHATSAPP_BUSINESS_ACCESS_TOKEN"]}`,
                 },
+                body: JSON.stringify({
+                }),
             });
             if (!response.ok) {
                 throw new Error("Setup handshake failed");
             }
             const data = await response.json();
             if (data.success) {
+                handleNext();
                 toast.success("Setup handshake completed successfully");
             } else {
                 throw new Error("Setup handshake failed");
@@ -157,10 +162,20 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
     }, [currentStep, botToEdit?.botConfigMapped?.WHATSAPP_WEBHOOK_VERIFIED, refreshBotToEdit]);
 
     // console.log(botToEdit);
+    useEffect(() => {
+        if (botToEdit?.botConfigMapped?.WHATSAPP_ICON_URL) {
+            setImagePreview((prev) => ({
+                ...prev,
+                WHATSAPP_ICON_URL: botToEdit?.botConfigMapped?.WHATSAPP_ICON_URL,
+            }));
+        }
+    }, [botToEdit?.botConfigMapped]);
 
     if (!botToEdit?.id) {
         return null;
     }
+
+    const isWhatsappWebhookVerified = botToEdit?.botConfigMapped?.WHATSAPP_WEBHOOK_VERIFIED;
 
     return (
         <div>
@@ -221,6 +236,7 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                         <Input
                                                             placeholder="https://your-webhook-url.com"
                                                             {...field}
+                                                            disabled={isWhatsappWebhookVerified}
                                                         />
                                                         <Button
                                                             type="button"
@@ -259,18 +275,22 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                 </FormLabel>
                                                 <div className="flex gap-2">
                                                     <FormControl>
-                                                        <Input {...field} />
+                                                        <Input {...field}
+                                                            disabled={isWhatsappWebhookVerified}
+                                                        />
                                                     </FormControl>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        onClick={() => {
-                                                            const token = generateSecureToken();
-                                                            form.setValue("config.WHATSAPP_WEBHOOK_VERIFY_TOKEN", token);
-                                                        }}
-                                                    >
-                                                        Generate Token
-                                                    </Button>
+                                                    {!isWhatsappWebhookVerified && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                const token = generateSecureToken();
+                                                                form.setValue("config.WHATSAPP_WEBHOOK_VERIFY_TOKEN", token);
+                                                            }}
+                                                        >
+                                                            Generate Token
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         type="button"
                                                         variant="outline"
@@ -331,8 +351,43 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                             </Card>
                         )}
 
-                        {/* Step 2: Business Information */}
+                        {/** Step 3: handshake */}
                         {currentStep === 3 && (
+                            <Card className={cn(
+                                "transition-all duration-500", ""
+                            )}>
+                                <CardHeader>
+                                    <CardTitle>Activate Webhook</CardTitle>
+                                    <CardDescription>Enable message subscriptions for your WhatsApp webhook</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    <div className=" py-2 text-neutral-800">
+                                        <ol className="list-decimal list-inside space-y-2 text-sm">
+                                            <li>Go to your WhatsApp Business Platform</li>
+                                            <li>Navigate to Configuration {">"} Webhooks</li>
+                                            <li>Enable "Messages" subscription</li>
+                                            <li>Return here and click "Activate Webhook" below</li>
+                                        </ol>
+                                    </div>
+
+                                    <div className={cn(
+                                        "w-full flex flex-col items-end justify-end rounded-lg text-center transition-all duration-500", ""
+                                    )}>
+                                        <Button
+                                            onClick={handleSetupHandshake}
+                                            size="lg"
+                                            className="gap-2"
+                                        >
+                                            <Check className="h-5 w-5" />
+                                            Activate Webhook
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Step 2: Business Information */}
+                        {currentStep === 4 && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Business Information</CardTitle>
@@ -385,6 +440,7 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                                                 const uploadedUrl = await uploadImage(file, "WHATSAPP_ICON_URL");
                                                                                 if (uploadedUrl) {
                                                                                     field.onChange(uploadedUrl);
+                                                                                    form.setValue("config.WHATSAPP_ICON_URL", uploadedUrl);
                                                                                 }
                                                                             }
                                                                         }}
@@ -443,7 +499,6 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                         <FormControl>
                                                             <Input placeholder="Your Business Name" {...field} />
                                                         </FormControl>
-                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
@@ -465,19 +520,77 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                                 value={field.value || ''}
                                                             />
                                                         </FormControl>
-                                                        <FormDescription>Used in URLs and API endpoints</FormDescription>
-                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
+
+
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
                         )}
 
-                        {/* Step 3: Agent Chat Configuration */}
-                        {currentStep === 4 && (
+                        {/** Step 5: Agent User Registering Configuration */}
+                        {currentStep === 5 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Widget Popup</CardTitle>
+                                    <CardDescription>Open this widget URL as a popup for When users first connect their whatsapp number, link it to a particular userId in your database, so you can process their whatsapp messages later on.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 w-full">
+                                            <h4 className="text-sm font-medium">Widget URL</h4>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <InfoIcon className="h-4 w-4" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        Share this URL as a popup in your web app to let your users connect with your web app / agent.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="ml-auto"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(generateWidgetCode(form.getValues("config.WHATSAPP_BUSINESS_SLUG") || '[business-slug]', botToEdit.id))
+                                                    toast.success("Widget URL copied to clipboard");
+                                                }}
+                                            >
+                                                Copy Widget Code
+                                                <CodeIcon className="h-4 w-4 ml-2" />
+                                            </Button>
+                                        </div>
+                                        <div className="relative">
+                                            <pre className="p-4 bg-gray-900 text-gray-100 rounded-lg font-mono text-sm overflow-x-auto whitespace-pre-wrap break-all">
+                                                <code>{`${APP_BASE_FOR_SHARD}/widget/${form.getValues("config.WHATSAPP_BUSINESS_SLUG") || '[business-slug]'}/whatsapp?clientSecretId=${botToEdit.id}&businessUserId=[YOUR_INNER_USER_ID]&callbackUri=[YOUR_CALLBACK_URL_TO_LINK_NUMBER_TO_USER_ID]`}</code>
+                                            </pre>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                className="absolute top-2 right-2 bg-gray-800 hover:bg-gray-700 border-gray-700"
+                                                onClick={() => {
+                                                    const widgetUrl = `${APP_BASE_FOR_SHARD}/widget/${form.getValues("config.WHATSAPP_BUSINESS_SLUG")}/whatsapp?clientSecretId=${botToEdit.id}&businessUserId=[YOUR_INNER_USER_ID]&callbackUri=[YOUR_CALLBACK_URL_TO_LINK_NUMBER_TO_USER_ID]`;
+                                                    navigator.clipboard.writeText(widgetUrl);
+                                                    toast.success("Widget URL copied to clipboard");
+                                                }}
+                                            >
+                                                <Copy className="h-4 w-4 text-gray-300" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+
+                        {/* Step 6: Agent Chat Configuration */}
+                        {currentStep === 6 && (
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Agent Chat Configuration</CardTitle>

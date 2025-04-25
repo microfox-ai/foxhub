@@ -2,14 +2,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WhatsAppVerification } from "@microfox/whatsapp-verify";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { ClientSecret } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
-
+import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
 const WHATSAPP_BASE_API_URL = IN_DEV
   ? "http://localhost:3000"
   : APP_BASE_FOR_SHARD;
@@ -34,6 +33,8 @@ const useIsMobile = () => {
 
   return isMobile;
 };
+
+const whatsappVerificationSdk = new WhatsAppVerificationSdk();
 
 const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +80,6 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     );
   };
 
-  const whatsappVerify = new WhatsAppVerification({
-    baseUrl: WHATSAPP_BASE_API_URL,
-    authToken: process.env.NEXT_PUBLIC_WIDGETS_PROTECTED_API_KEY,
-  });
-
   useEffect(() => {
     if (clientSecretId && userId) {
       //get client secret
@@ -101,11 +97,10 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
 
     try {
 
-      const existingVerification =
-        await whatsappVerify.getInitialVerificationSession(
-          clientSecretId,
-          userId
-        );
+      const existingVerification = await whatsappVerificationSdk.getInitialVerificationSession(
+        clientSecretId,
+        userId
+      );
 
       if (existingVerification && existingVerification[0]?.code) {
         return existingVerification[0];
@@ -130,7 +125,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       if (existingVerification) {
         return existingVerification;
       }
-      const verification = await whatsappVerify.createVerification(
+      const verification = await whatsappVerificationSdk.createVerification(
         clientSecretId,
         userId,
         slug || "",

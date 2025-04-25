@@ -30,7 +30,6 @@
     "@microfox/google-sdk": "^1.0.2",
     "@microfox/linkedin-oauth": "^1.0.4",
     "@microfox/slack-web-tiny": "^1.0.3",
-    "@microfox/whatsapp-verify": "*",
     "@mui/material": "^6.4.7",
     "@prisma/client": "^6.5.0",
     "@radix-ui/react-checkbox": "^1.1.4",

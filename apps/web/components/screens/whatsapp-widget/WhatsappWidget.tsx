@@ -89,6 +89,9 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   useEffect(() => {
     if (clientSecretId && userId) {
       //get client secret
+      getClientSecret({
+        clientSecretId: clientSecretId,
+      });
     }
   }, [clientSecretId, userId]);
 

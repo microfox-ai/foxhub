@@ -24,10 +24,12 @@ export async function createNewBotProject({
   userId,
   projectName,
   projectDescription,
+  slug,
 }: {
   userId: string;
   projectName: string;
   projectDescription: string;
+  slug?: string;
 }) {
   if (!userId) {
     console.error("No user ID provided");
@@ -141,10 +143,25 @@ export async function createNewBotProject({
       prUrl: prResult.data.html_url,
       prNumber: prResult.data.number,
       description: projectDescription,
+      slug: slug,
       templateVersion,
       metadata: {
         repo: repoResult.data as any,
         pr: prResult.data as any,
+      },
+      permissions: {
+        create: {
+          userId: userId,
+          accessType: "WRITE",
+          role: "OWNER",
+        },
+      },
+    },
+    include: {
+      permissions: {
+        include: {
+          user: true,
+        },
       },
     },
   });

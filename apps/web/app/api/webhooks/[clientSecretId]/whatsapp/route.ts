@@ -64,6 +64,20 @@ export async function GET(
 
     // Verify the webhook
     if (mode === "subscribe" && token === whatsappVerifyToken) {
+      await prisma.clientSecret.update({
+        where: { id: clientSecretId },
+        data: {
+          botConfig: [
+            ...(clientSecret.botConfig
+              ? (clientSecret.botConfig as any[])
+              : []),
+            {
+              key: "WHATSAPP_WEBHOOK_VERIFIED",
+              value: true,
+            },
+          ],
+        },
+      });
       return new NextResponse(challenge, { status: 200 });
     }
 

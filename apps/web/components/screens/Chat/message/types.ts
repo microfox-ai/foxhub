@@ -4,22 +4,32 @@ import {
   ConfigUi,
 } from "@/server/types";
 
+export interface BotConfigInstructions {
+  type: "video" | "image" | "externalLinke";
+  url: string;
+  placement: "onCopy" | "onHowToGet";
+}
 export interface KeyVariableConfig {
   key: string;
   displayName: string;
   description: string;
   defaultValue?: string | string[];
   ui?: ConfigUi;
+  instructions?: BotConfigInstructions;
 }
 
 export interface Constructor {
   name: string;
   description: string;
   auth: "apikey" | "oauth2";
+  isAutoSetupEnabled: boolean;
   apiType?: ClientSecretApiType;
   requiredKeys?: KeyVariableConfig[];
+  requiredKeysComponent?: string;
   internalKeys: KeyVariableConfig[];
   botConfig: KeyVariableConfig[];
+  botConfigComponent: string;
+  botConfigInstructions?: BotConfigInstructions;
   authEndpoint?: string;
 }
 

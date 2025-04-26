@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import ConfigurationTab from "./ConfigurationTab";
-import { Package } from "../../Chat/message/types";
+import { Constructor, Package } from "../../Chat/message/types";
 
 interface GeneralTabProps {
     form: UseFormReturn<BotFormValues>;
@@ -30,7 +30,7 @@ interface GeneralTabProps {
     packageInfo?: Package;
     packageName: string;
     botToEdit?: any;
-    botConfig?: any;
+    selectedConstructor?: Constructor;
 }
 
 const GeneralTab = ({
@@ -44,7 +44,7 @@ const GeneralTab = ({
     isDeleting = false,
     packageName,
     botToEdit,
-    botConfig,
+    selectedConstructor,
     packageInfo,
 }: GeneralTabProps) => {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -174,7 +174,7 @@ const GeneralTab = ({
                 packageName={packageName}
                 mode={mode}
                 botToEdit={botToEdit}
-                botConfig={botConfig}
+                selectedConstructor={selectedConstructor}
             />
             {mode === "edit" && botToEdit?.id && (
                 <div className="border border-red-200 rounded-md p-4 bg-red-50 mt-8">

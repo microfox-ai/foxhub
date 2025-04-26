@@ -99,39 +99,38 @@ export class WhatsAppVerificationSdk {
     else return true;
   }
 
-  public async getInitialVerificationSession(
-    clientSecretId: string,
-    userId: string
-  ): Promise<WhatsAppVerification[] | null> {
-    const doc = await prisma.whatsAppVerification.findMany({
-      where: {
-        clientSecretId,
-        userId,
-      },
-    });
-    return doc ?? null;
-  }
-
   public async processVerification(
     clientSecretId: string,
     message: string
   ): Promise<{ isVerified?: boolean; record?: WhatsAppVerification }> {
-    const code = this.extractVerificationCode(message);
-    if (!code) {
+    try {
+      const code = this.extractVerificationCode(message);
+      console.log("code", code);
+      if (!code) {
+        return { isVerified: false };
+      }
+
+      const isCodeVerified = await this.checkIfCodeIsVerified(
+        clientSecretId,
+        code
+      );
+      console.log(
+        "isCodeVerified",
+        isCodeVerified.error,
+        isCodeVerified.id,
+        isCodeVerified.verified,
+        isCodeVerified.record
+      );
+
+      if (isCodeVerified.verified && isCodeVerified.id) {
+        await this.deleteVerificationSession(isCodeVerified.id);
+        return { isVerified: true, record: isCodeVerified.record };
+      }
+      return { isVerified: false };
+    } catch (error) {
+      console.error("Error in processVerification", error);
       return { isVerified: false };
     }
-
-    const isCodeVerified = await this.checkIfCodeIsVerified(
-      clientSecretId,
-      code
-    );
-
-    if (isCodeVerified.verified && isCodeVerified.id) {
-      await this.deleteVerificationSession(isCodeVerified.id);
-
-      return { isVerified: true, record: isCodeVerified.record };
-    }
-    return { isVerified: false };
   }
 
   public async checkIfCodeIsVerified(
@@ -143,39 +142,45 @@ export class WhatsAppVerificationSdk {
     id?: string;
     record?: WhatsAppVerification;
   }> {
-    const verification = await prisma.whatsAppVerification.findMany({
-      where: {
-        clientSecretId,
-        code: inputCode,
-      },
-    });
+    try {
+      const verification = await prisma.whatsAppVerification.findMany({
+        where: {
+          clientSecretId,
+          code: inputCode,
+        },
+      });
 
-    //1. check if the verification record exists
-    if (
-      !verification ||
-      verification.length === 0 ||
-      verification[0] === undefined
-    ) {
-      return { verified: false, error: "Verification Record not found" };
+      //1. check if the verification record exists
+      if (
+        !verification ||
+        verification.length === 0 ||
+        verification[0] === undefined
+      ) {
+        return { verified: false, error: "Verification Record not found" };
+      }
+
+      //2. check if this session is expired
+      const isExpired =
+        verification[0].createdAt < new Date(Date.now() - 3 * 60 * 1000);
+
+      if (isExpired) {
+        await this.deleteVerificationSession(verification[0].id);
+        return { verified: false, error: "Verification Record expired" };
+      }
+
+      if (verification[0].code === inputCode) {
+        return {
+          verified: true,
+          id: verification[0].id,
+          record: verification[0],
+        };
+      }
+
+      return { verified: false, error: "Invalid Code" };
+    } catch (error) {
+      console.error("Error in checkIfCodeIsVerified", error);
+      return { verified: false, error: "Invalid Code" };
     }
-
-    //2. check if this session is expired
-    const isExpired =
-      verification[0].createdAt < new Date(Date.now() - 3 * 60 * 1000);
-
-    if (isExpired) {
-      return { verified: false, error: "Verification Record expired" };
-    }
-
-    if (verification[0].code === inputCode) {
-      return {
-        verified: true,
-        id: verification[0].id,
-        record: verification[0],
-      };
-    }
-
-    return { verified: false, error: "Invalid Code" };
   }
 
   public async getVerificationSession(

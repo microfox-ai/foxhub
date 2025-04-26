@@ -1,6 +1,7 @@
 import { Octokit } from "octokit";
 import {
   GITHUB_TOKEN,
+  PROJECT_REPO_OWNER,
   TEMPLATE_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
@@ -8,6 +9,8 @@ import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 
 interface CloneTemplateParams {
+  sourceOwner: string;
+  targetOwner: string;
   sourceRepo: string;
   targetRepo: string;
   sourcePath?: string;
@@ -29,6 +32,8 @@ export const recloneTemplateStuffToClientRequest = async (
     value: "Template stuff cloning..",
   });
   await cloneTemplate({
+    sourceOwner: TEMPLATE_REPO_OWNER,
+    targetOwner: PROJECT_REPO_OWNER,
     sourceRepo: TEMPLATE_REPO,
     targetRepo: clientRequest.repoName,
     sourcePath: "",
@@ -43,6 +48,8 @@ export const recloneTemplateStuffToClientRequest = async (
 };
 
 export const cloneTemplate = async ({
+  sourceOwner,
+  targetOwner,
   sourceRepo,
   targetRepo,
   sourcePath = "",
@@ -59,7 +66,7 @@ export const cloneTemplate = async ({
 
     async function processContents(path: string) {
       const { data: contents } = await octokit.rest.repos.getContent({
-        owner: TEMPLATE_REPO_OWNER,
+        owner: sourceOwner,
         repo: sourceRepo,
         path,
         ref: sourceBranch,
@@ -69,7 +76,7 @@ export const cloneTemplate = async ({
         for (const item of contents) {
           if (item.type === "file") {
             const { data: fileContent } = await octokit.rest.repos.getContent({
-              owner: TEMPLATE_REPO_OWNER,
+              owner: sourceOwner,
               repo: sourceRepo,
               path: item.path,
               ref: sourceBranch,
@@ -84,7 +91,7 @@ export const cloneTemplate = async ({
 
               // Create a blob for the file content
               const { data: blob } = await octokit.rest.git.createBlob({
-                owner: TEMPLATE_REPO_OWNER,
+                owner: targetOwner,
                 repo: targetRepo,
                 content,
                 encoding: "utf-8",
@@ -105,7 +112,7 @@ export const cloneTemplate = async ({
 
         // Create a blob for the file content
         const { data: blob } = await octokit.rest.git.createBlob({
-          owner: TEMPLATE_REPO_OWNER,
+          owner: targetOwner,
           repo: targetRepo,
           content,
           encoding: "utf-8",
@@ -122,7 +129,7 @@ export const cloneTemplate = async ({
 
     // Get the latest commit SHA of the target branch
     const { data: ref } = await octokit.rest.git.getRef({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: targetOwner,
       repo: targetRepo,
       ref: `heads/${targetBranch}`,
     });
@@ -136,7 +143,7 @@ export const cloneTemplate = async ({
     }));
 
     const { data: newTree } = await octokit.rest.git.createTree({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: targetOwner,
       repo: targetRepo,
       tree,
       base_tree: ref.object.sha,
@@ -144,7 +151,7 @@ export const cloneTemplate = async ({
 
     // Create a new commit
     const { data: commit } = await octokit.rest.git.createCommit({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: targetOwner,
       repo: targetRepo,
       message: `nodeploy: Clone template files`,
       tree: newTree.sha,
@@ -153,7 +160,7 @@ export const cloneTemplate = async ({
 
     // Update the branch reference
     await octokit.rest.git.updateRef({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: targetOwner,
       repo: targetRepo,
       ref: `heads/${targetBranch}`,
       sha: commit.sha,

@@ -5,10 +5,12 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { ClientSecret } from "@prisma/client";
+import { ClientSecret, WhatsAppVerification } from "@prisma/client";
 import { ArrowLeftRight, MessageSquare } from "lucide-react";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { customAlphabet } from "nanoid";
 const WHATSAPP_BASE_API_URL = IN_DEV
   ? "http://localhost:3000"
   : APP_BASE_FOR_SHARD;
@@ -34,7 +36,7 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-const whatsappVerificationSdk = new WhatsAppVerificationSdk();
+const generateCode = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
 
 /** Note: The listener webhook is still on staging/production branch, to check or verify the webhook functionality is working,
  * log the foxhub-staging 
@@ -47,6 +49,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [whatsappBusinessNumber, setWhatsappBusinessNumber] =
     useState<string>("");
   const isMobile = useIsMobile();
+  const [verification, setVerification] = useState<WhatsAppVerification | null>(null);
 
   const searchParams = useSearchParams();
   const clientSecretId = searchParams.get("clientSecretId");
@@ -86,7 +89,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   useEffect(() => {
     if (clientSecretId && userId) {
       //get client secret
-      const clientSecret = getClientSecret({
+      getClientSecret({
         clientSecretId: clientSecretId,
       });
     }
@@ -99,12 +102,13 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     }
 
     try {
-
-      const existingVerification = await whatsappVerificationSdk.getInitialVerificationSession(
-        clientSecretId,
-        userId
-      );
-
+      const existingVerification = await PortalSdk.getData(
+        `/api/whatsapp-verify`,
+        {
+          clientSecretId,
+          userId: userId,
+        }
+      )
       if (existingVerification && existingVerification[0]?.code) {
         return existingVerification[0];
       }
@@ -128,13 +132,18 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       if (existingVerification) {
         return existingVerification;
       }
-      const verification = await whatsappVerificationSdk.createVerification(
-        clientSecretId,
-        userId,
-        slug || "",
-        callbackUri || ""
+      const verification = await PortalSdk.postData(
+        `/api/whatsapp-verify`,
+        {
+          clientSecretId,
+          userId,
+          slug: slug || "",
+          callbackUri: callbackUri || "",
+          code: generateCode(6),
+        }
       );
 
+      setVerification(verification);
       console.log("Verification created:", verification);
       return verification;
     } catch (err) {
@@ -148,9 +157,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       setIsLoading(true);
       setError(null);
 
-      const verification = await createVerification();
       if (!verification?.code) return;
-
       // Create WhatsApp deep link
       const message = `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`;
       const url = `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(message)}`;
@@ -170,7 +177,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       setIsQRLoading(true);
       const verification = await createVerification();
       if (!verification?.code) return;
-
+      setVerification(verification);
       setQrCodeData(
         `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(
           `Hey, ${verification.slug}! I want to connect with you. This is my verification code: ${verification.code}`

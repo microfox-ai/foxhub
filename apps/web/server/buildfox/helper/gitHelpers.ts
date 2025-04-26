@@ -2,7 +2,7 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { DataStreamWriter } from "ai";
 import {
   GITHUB_TOKEN,
-  TEMPLATE_REPO_OWNER,
+  PROJECT_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 
@@ -22,7 +22,7 @@ export const updateFileToGit = async (
   }
 ) => {
   const response = await octokitSdk.rest.repos.createOrUpdateFileContents({
-    owner: options.owner ?? TEMPLATE_REPO_OWNER,
+    owner: options.owner ?? PROJECT_REPO_OWNER,
     repo: options.repoName,
     path: options.filePath,
     message: options.commitMessage,
@@ -43,7 +43,7 @@ export const getAppFolderContents = async (
   }
 ) => {
   const response = await octokitSdk.rest.repos.getContent({
-    owner: options.owner ?? TEMPLATE_REPO_OWNER,
+    owner: options.owner ?? PROJECT_REPO_OWNER,
     repo: options.repoName,
     path: options.path,
     branch: options.branchName,

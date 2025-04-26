@@ -10,6 +10,7 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { uploadToRepo } from "../buildfox/helper/uploadToGit";
 import {
   GITHUB_TOKEN,
+  PROJECT_REPO_OWNER,
   TEMPLATE_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
@@ -141,6 +142,8 @@ const checkAndUpdateTemplateVersion = async (clientRequest: ClientRequest) => {
   if (clientRequest.templateVersion !== latestTemplateVersion) {
     console.log("Template version mismatch, cloning template");
     await cloneTemplate({
+      sourceOwner: TEMPLATE_REPO_OWNER,
+      targetOwner: PROJECT_REPO_OWNER,
       sourceRepo: TEMPLATE_REPO,
       targetRepo: clientRequest.repoName ?? "",
       sourcePath: "",

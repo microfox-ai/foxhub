@@ -16,18 +16,22 @@ async function forwardToAiAgent(
   apiKey?: string,
   metadata?: any
 ): Promise<void> {
-  await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey || "",
-    },
-    body: JSON.stringify({
-      message: message,
-      number: phoneNumber,
-      metadata: metadata,
-    }),
-  });
+  try {
+    await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey || "",
+      },
+      body: JSON.stringify({
+        message: message,
+        number: phoneNumber,
+        metadata: metadata,
+      }),
+    });
+  } catch (error) {
+    console.log("Error in forwardToAiAgent", error);
+  }
 }
 
 const whatsappVerificationSdk = new WhatsAppVerificationSdk();
@@ -238,7 +242,10 @@ export async function POST(
 
             await whatsappSdk.sendTextMessage(
               phoneNumber,
-              "You are no verified & connected to " + businessName
+              "You are no verified & connected to " + businessName,
+              {
+                previewUrl: false,
+              }
             );
             await whatsappVerificationSdk.deleteVerificationSession(record.id);
             await whatsappSdk.markMessageAsRead(message.id);
@@ -263,6 +270,13 @@ export async function POST(
           endpoint,
           apiKey,
           requestBody
+        );
+        await whatsappSdk.sendTextMessage(
+          phoneNumber,
+          "Message forwarded to agent",
+          {
+            previewUrl: false,
+          }
         );
       } else {
         await whatsappSdk.markMessageAsRead(message.id);

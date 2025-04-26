@@ -47,13 +47,13 @@ export async function GET(request: Request) {
       }
     }
   }
-  if (dbUser?.isOnboarded) {
-    return NextResponse.redirect(`${origin}/dashboard`);
+  if (!dbUser?.isOnboarded) {
+    return NextResponse.redirect(`${origin}/onboarding`);
   }
 
   if (redirectTo && redirectTo?.length > 0) {
     return NextResponse.redirect(redirectTo);
   }
 
-  return NextResponse.redirect(`${origin}/onboarding`);
+  return NextResponse.redirect(`${origin}/dashboard`);
 }

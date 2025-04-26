@@ -14,7 +14,7 @@ import useSWR from "swr";
 import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { ClientDeploymentMetadata } from "@/server/types";
 import { useTabUi } from "../../providers/TabUiProvider";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
         case "success":
@@ -251,7 +251,7 @@ export const DeployStatus = () => {
                                 <div className="flex justify-between">
                                     <span className="text-xs text-gray-500">GitHub Repository</span>
                                     <a
-                                        href={`https://github.com/${TEMPLATE_REPO_OWNER}/${selectedRequest?.repoName}/tree/${selectedRequest?.prBranch}`}
+                                        href={`https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest?.repoName}/tree/${selectedRequest?.prBranch}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-xs max-w-[200px] truncate font-medium text-blue-600 hover:underline flex items-center gap-1"

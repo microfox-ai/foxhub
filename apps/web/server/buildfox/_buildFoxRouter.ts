@@ -1,5 +1,5 @@
 import { createPullRequest } from "@/server/buildfox/createPullRequest";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { findLastElementWith } from "@/utils/helpers/array";
 import {
   getClientRequest,
@@ -228,7 +228,7 @@ export const buildFoxRouter: ServerStreamingFunction<
   if (clientRequest.prNumber) {
     try {
       await octokitSdk.rest.issues.createComment({
-        owner: TEMPLATE_REPO_OWNER,
+        owner: PROJECT_REPO_OWNER,
         repo: clientRequest.repoName ?? "",
         issue_number: clientRequest.prNumber,
         body: generateStatsReport(taskInstanceMetaUpdated as any),

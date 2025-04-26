@@ -2,7 +2,7 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { DeployStep, TaskInstanceMetaType } from "../convertfox/types";
 import {
   GITHUB_TOKEN,
-  TEMPLATE_REPO_OWNER,
+  PROJECT_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
@@ -48,7 +48,7 @@ export const getRunforClientRequestbySha = async ({
   });
 
   const workflowRuns = await octokitSdk.rest.actions.listWorkflowRunsForRepo({
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: clientRequest.repoName ?? "",
     branch: clientRequest.prBranch ?? "",
     // stage === DEPLOY_STAGE.STAGING
@@ -72,7 +72,7 @@ export const getLatestRunForClientRequest = async (
   });
 
   const workflowRuns = await octokitSdk.rest.actions.listWorkflowRunsForRepo({
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: clientRequest.repoName ?? "",
     branch: clientRequest.prBranch ?? "",
     // stage === DEPLOY_STAGE.STAGING
@@ -97,7 +97,7 @@ export const fetchWorkflowActionRun = async (
 
   try {
     const { data: latestRun } = await octokitSdk.rest.actions.getWorkflowRun({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: PROJECT_REPO_OWNER,
       repo: clientRequest.repoName ?? "",
       run_id: runId,
     });
@@ -236,7 +236,7 @@ export const fetchWorkflowActionRun = async (
       };
     }
     // const logs = await octokitSdk.rest.actions.downloadWorkflowRunLogs({
-    //   owner: TEMPLATE_REPO_OWNER,
+    //   owner: PROJECT_REPO_OWNER,
     //   repo: clientRequest.repoName ?? "",
     //   run_id: latestRun?.id ?? 0,
     // });

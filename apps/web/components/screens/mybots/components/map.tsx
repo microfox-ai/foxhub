@@ -1,4 +1,4 @@
-import { WhatsAppBotConfig } from "./WhatsAppBotConfig";
+import { WhatsAppBotConfig } from "./Whatsapp/WhatsAppBotConfig";
 
 
 export const componentMap = {

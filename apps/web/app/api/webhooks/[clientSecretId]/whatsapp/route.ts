@@ -127,11 +127,15 @@ export async function POST(
 
       // 1. if message is verification code, forward to verify route
       if (isVerificationMessage(messageText)) {
+        console.log("messageText", messageText);
         const { isVerified, record } =
           await whatsappVerificationSdk.processVerification(
             clientSecretId,
             messageText
           );
+
+        console.log("isVerified", isVerified);
+        console.log("record", record);
 
         if (!record || !isVerified) {
           return new NextResponse("Verification record not found", {
@@ -144,19 +148,22 @@ export async function POST(
         console.log("callbackUri", callbackUri);
         console.log("userId", userId);
 
+        console.log("callbackUri", callbackUri);
+        console.log("userId", userId);
+
         if (callbackUri) {
           // call the callback uri
           await fetch(callbackUri, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              userNumberFromWhatsapp: phoneNumber,
-              userIdFromMicrofox: userId,
+              number: phoneNumber,
+              userId: userId,
             }),
           });
 
           // 4. forward the message to the api agent
-          await forwardToAiAgent(message, phoneNumber, callbackUri, apiKey);
+          // await forwardToAiAgent(message, phoneNumber, callbackUri, apiKey);
         }
       } else {
         //2. forward the message to the api agent

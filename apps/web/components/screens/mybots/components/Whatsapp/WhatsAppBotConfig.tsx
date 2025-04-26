@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ClientSecretVariable } from "@/server/types"
 import { useFormContext } from "react-hook-form";

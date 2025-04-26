@@ -244,7 +244,7 @@ export async function POST(
 
     return new NextResponse("Invalid request body", { status: 400 });
   } catch (error) {
-    console.error("Error in WhatsApp webhook:", error);
+    console.log("Error in WhatsApp webhook:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

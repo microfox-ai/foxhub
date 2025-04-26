@@ -182,8 +182,7 @@ export async function POST(
           "Business phone number id, account id or access token not found",
           businessPhoneNumberId,
           businessAccountId,
-          businessAccessToken,
-          clientSecret
+          businessAccessToken
         );
         return new NextResponse(
           "Business phone number id, account id or access token not found",
@@ -193,7 +192,6 @@ export async function POST(
         );
       }
 
-      console.log("whatsappWebhookUrl", clientSecret, whatsappWebhookUrl);
       const whatsappSdk = new WhatsAppBusinessSDK({
         phoneNumberId: businessPhoneNumberId,
         businessAccountId: businessAccountId,
@@ -242,14 +240,15 @@ export async function POST(
               phoneNumber,
               "You are no verified & connected to " + businessName
             );
+            await whatsappVerificationSdk.deleteVerificationSession(record.id);
+            await whatsappSdk.markMessageAsRead(message.id);
           } catch (error) {
             await whatsappSdk.markMessageAsRead(message.id);
             return new NextResponse("Error in callbackUri", { status: 500 });
           }
         }
-        await whatsappSdk.markMessageAsRead(message.id);
         return new NextResponse("Success", { status: 200 });
-      } else {
+      } else if (endpoint) {
         console.log("forwarding to api agent");
         await whatsappSdk.markMessageAsRead(message.id);
         //2. forward the message to the api agent
@@ -259,6 +258,12 @@ export async function POST(
           endpoint,
           apiKey,
           requestBody
+        );
+      } else {
+        await whatsappSdk.markMessageAsRead(message.id);
+        await whatsappSdk.sendTextMessage(
+          phoneNumber,
+          "No endpoint found for this bot"
         );
       }
 

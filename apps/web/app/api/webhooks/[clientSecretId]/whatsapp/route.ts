@@ -19,7 +19,8 @@ async function forwardToAiAgent(
   message: any,
   phoneNumber: string,
   endpoint: string,
-  apiKey?: string
+  apiKey?: string,
+  metadata?: any
 ): Promise<void> {
   await fetch(endpoint, {
     method: "POST",
@@ -30,7 +31,7 @@ async function forwardToAiAgent(
     body: JSON.stringify({
       message: message,
       number: phoneNumber,
-      metadata: {},
+      metadata: metadata,
     }),
   });
 }
@@ -110,6 +111,7 @@ export async function POST(
     if (body.object === "whatsapp_business_account") {
       const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!message) {
+        console.error("No message found");
         return new NextResponse("No message found", { status: 400 });
       }
 
@@ -228,10 +230,12 @@ export async function POST(
         console.log("forwarding to api agent");
         await whatsappSdk.markMessageAsRead(message.id);
         //2. forward the message to the api agent
-        await forwardToAiAgent(message, phoneNumber, endpoint, apiKey);
+        await forwardToAiAgent(message, phoneNumber, endpoint, apiKey, body);
       }
 
       return new NextResponse("Success", { status: 200 });
+    } else {
+      console.log("invalid request body", body);
     }
 
     return new NextResponse("Invalid request body", { status: 400 });

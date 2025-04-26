@@ -20,14 +20,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { generateWidgetCode } from "./generateWidgetCode";
 
-export const whatsappRequiredKeys = {
+const whatsappRequiredKeys = {
     businessAccountId: "WHATSAPP_BUSINESS_ACCOUNT_ID",
     businessAccessToken: "WHATSAPP_BUSINESS_ACCESS_TOKEN",
     businessPhoneNumberId: "WHATSAPP_BUSINESS_PHONE_NUMBER_ID",
     businessPhoneNumber: "WHATSAPP_BUSINESS_PHONE_NUMBER",
 }
 
-export const whatsappConfigFields = {
+const whatsappConfigFields = {
     whatsappWebhookUrl: "WHATSAPP_WEBHOOK_URL",
     whatsappWebhookVerifyToken: "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
     whatsappBusinessName: "WHATSAPP_BUSINESS_NAME",

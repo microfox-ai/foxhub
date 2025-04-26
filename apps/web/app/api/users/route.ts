@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
+import { createClient } from "@/utils/supabase/server-client";
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
     if (!email || !name) {
       return NextResponse.json(
         { error: "Email and name are required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     console.error("Error managing user:", error);
     return NextResponse.json(
       { error: "Failed to manage user" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -61,7 +62,59 @@ export async function GET(request: Request) {
     console.error("Error fetching user:", error);
     return NextResponse.json(
       { error: "Failed to fetch user" },
-      { status: 500 },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, email, ...rest } = body;
+
+    if (!id && !email) {
+      return NextResponse.json(
+        { error: "User ID or email is required" },
+        { status: 400 }
+      );
+    }
+
+    const user = await prisma.user.update({
+      where: { ...(id && { id: id as string }), ...(email && { email }) },
+      data: rest,
+    });
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return NextResponse.json(
+      { error: "Failed to update user" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { id } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const user = await prisma.user.delete({
+      where: { id },
+    });
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return NextResponse.json(
+      { error: "Failed to delete user" },
+      { status: 500 }
     );
   }
 }

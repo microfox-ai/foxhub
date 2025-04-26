@@ -1,6 +1,7 @@
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { createClient } from "@/utils/supabase/server-client";
+import { User } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
   const origin = APP_BASE_URL;
   console.log("requestUrl", requestUrl, origin);
   const redirectTo = requestUrl.searchParams.get("redirect_to")?.toString();
+  let dbUser: User | null = null;
 
   if (code) {
     const supabase = await createClient();
@@ -19,10 +21,9 @@ export async function GET(request: Request) {
     if (!error && data.session) {
       // Get the user from the session
       const { user } = data.session;
-
       try {
         // Create or update the user in your database
-        await prisma.user.upsert({
+        dbUser = await prisma.user.upsert({
           where: { email: user.email! },
           update: {
             name: user.user_metadata.full_name,
@@ -46,11 +47,13 @@ export async function GET(request: Request) {
       }
     }
   }
+  if (dbUser?.isOnboarded) {
+    return NextResponse.redirect(`${origin}/dashboard`);
+  }
 
   if (redirectTo && redirectTo?.length > 0) {
     return NextResponse.redirect(redirectTo);
   }
 
-  // URL to redirect to after sign up process completes
-  return NextResponse.redirect(`${origin}/dashboard`);
+  return NextResponse.redirect(`${origin}/onboarding`);
 }

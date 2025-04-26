@@ -29,6 +29,7 @@ import {
   CircleDotIcon,
   CirclePlusIcon,
   DotIcon,
+  Settings,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import Link from "next/link";
 
 export const ProjectDropdown = ({
   className,
@@ -97,7 +99,7 @@ export const ProjectDropdown = ({
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <div
         className={cn(
-          "flex items-center justify-between text-sm w-[200px]",
+          "flex items-center justify-between gap-2 text-sm w-[200px]",
           className
         )}
       >
@@ -194,6 +196,13 @@ export const ProjectDropdown = ({
             </Command>
           </PopoverContent>
         </Popover>
+        <Link
+          href={`/project/${selectedProject?.id}/settings`}
+          className="p-1 hover:bg-gray-100 rounded-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Settings className="h-4 w- 4 text-gray-500" />
+        </Link>
       </div>
       <DialogContent>
         <DialogTitle className="sr-only">Create a new project</DialogTitle>

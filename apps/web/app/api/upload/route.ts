@@ -66,3 +66,40 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const fileName = searchParams.get("fileName");
+    const userId = searchParams.get("userId");
+    const folderName =
+      searchParams.get("folderName") || "customBots/clientMessages";
+
+    if (!fileName || !userId) {
+      return NextResponse.json(
+        { error: "File name and user ID are required" },
+        { status: 400 }
+      );
+    }
+
+    const deleteResponse = await s3FileUploadSdk.deleteFile({
+      fileName,
+      userId,
+      folder: folderName,
+    });
+
+    if (!deleteResponse || deleteResponse.$metadata.httpStatusCode !== 204) {
+      throw new Error("Failed to delete file");
+    }
+
+    return NextResponse.json(
+      { success: true, message: "File deleted successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}

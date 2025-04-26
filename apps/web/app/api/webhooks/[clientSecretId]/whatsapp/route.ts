@@ -245,7 +245,11 @@ export async function POST(
           } catch (error) {
             console.log("error in callbackUri", error);
             await whatsappSdk.markMessageAsRead(message.id);
-            return new NextResponse("Error in callbackUri", { status: 500 });
+            await whatsappSdk.sendTextMessage(
+              phoneNumber,
+              "Error in Agent Callback URI - " + error
+            );
+            return new NextResponse("Error in callbackUri", { status: 200 });
           }
         }
         return new NextResponse("Success", { status: 200 });

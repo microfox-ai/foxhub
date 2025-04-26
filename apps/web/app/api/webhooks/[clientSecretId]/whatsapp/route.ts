@@ -119,16 +119,22 @@ export async function POST(
         });
 
       if (!clientSecret) {
+        console.error("Client secret not found");
         return new NextResponse("Client secret not found", { status: 404 });
       }
       //1. get the endpoint from the client secret
       const endpoint = (
         clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find((config) => config.key === "WHATSAPP_AGENTCHAT_ENDPOINT")?.value;
+      ).find(
+        (config) =>
+          config.key === whatsappConfigFields.whatsappAgentchatEndpoint
+      )?.value;
 
       const apiKey = (
         clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find((config) => config.key === "WHATSAPP_AGENTCHAT_API_KEY")?.value;
+      ).find(
+        (config) => config.key === whatsappConfigFields.whatsappAgentchatApiKey
+      )?.value;
 
       const businessPhoneNumberId = (
         clientSecret.variables as unknown as ClientSecretVariable[]
@@ -215,6 +221,7 @@ export async function POST(
         }
         return new NextResponse("Success", { status: 200 });
       } else {
+        console.log("forwarding to api agent");
         //2. forward the message to the api agent
         await forwardToAiAgent(message, phoneNumber, endpoint, apiKey);
       }

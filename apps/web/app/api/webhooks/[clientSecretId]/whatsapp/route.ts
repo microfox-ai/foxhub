@@ -123,52 +123,56 @@ export async function POST(
         return new NextResponse("Client secret not found", { status: 404 });
       }
       //1. get the endpoint from the client secret
-      const endpoint = (
-        clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find(
+      const endpoint = (clientSecret.botConfig as any[]).find(
         (config) =>
           config.key === whatsappConfigFields.whatsappAgentchatEndpoint
       )?.value;
 
-      const apiKey = (
-        clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find(
+      const apiKey = (clientSecret.botConfig as any[]).find(
         (config) => config.key === whatsappConfigFields.whatsappAgentchatApiKey
       )?.value;
 
-      const businessPhoneNumberId = (
-        clientSecret.variables as unknown as ClientSecretVariable[]
-      ).find(
+      const businessPhoneNumberId = (clientSecret.variables as any[]).find(
         (config) => config.key === whatsappRequiredKeys.businessPhoneNumberId
       )?.value;
 
-      const businessAccountId = (
-        clientSecret.variables as unknown as ClientSecretVariable[]
-      ).find(
+      const businessAccountId = (clientSecret.variables as any[]).find(
         (config) => config.key === whatsappRequiredKeys.businessAccountId
       )?.value;
 
-      const businessAccessToken = (
-        clientSecret.variables as unknown as ClientSecretVariable[]
-      ).find(
+      const businessAccessToken = (clientSecret.variables as any[]).find(
         (config) => config.key === whatsappRequiredKeys.businessAccessToken
       )?.value;
 
-      const businessName = (
-        clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find(
+      const businessName = (clientSecret.botConfig as any[]).find(
         (config) => config.key === whatsappConfigFields.whatsappBusinessName
       )?.value;
 
-      const whatsappWebhookVerifyToken = (
-        clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find(
-        (config) =>
-          config.key === whatsappConfigFields.whatsappWebhookVerifyToken
+      const whatsappWebhookUrl = (clientSecret.botConfig as any[]).find(
+        (config) => config.key === whatsappConfigFields.whatsappWebhookUrl
       )?.value;
 
+      if (
+        !businessPhoneNumberId ||
+        !businessAccountId ||
+        !businessAccessToken
+      ) {
+        return new NextResponse(
+          "Business phone number id, account id or access token not found",
+          {
+            status: 500,
+          }
+        );
+      }
+
+      console.log("whatsappWebhookUrl", clientSecret, whatsappWebhookUrl);
+      const whatsappSdk = new WhatsAppBusinessSDK({
+        phoneNumberId: businessPhoneNumberId,
+        businessAccountId: businessAccountId,
+        accessToken: businessAccessToken,
+      });
       // 1. if message is verification code, forward to verify route
-      if (isVerificationMessage(messageText) && whatsappWebhookVerifyToken) {
+      if (isVerificationMessage(messageText) && whatsappWebhookUrl) {
         console.log("messageText", messageText);
         const { isVerified, record } =
           await whatsappVerificationSdk.processVerification(
@@ -180,6 +184,7 @@ export async function POST(
         console.log("record", record);
 
         if (!record || !isVerified) {
+          await whatsappSdk.markMessageAsRead(message.id);
           return new NextResponse("Verification record not found", {
             status: 500,
           });
@@ -204,24 +209,20 @@ export async function POST(
               }),
             });
 
-            const whatsappSdk = new WhatsAppBusinessSDK({
-              phoneNumberId: businessPhoneNumberId,
-              businessAccountId: businessAccountId,
-              accessToken: businessAccessToken,
-            });
-
             await whatsappSdk.sendTextMessage(
               phoneNumber,
               "You are no verified & connected to " + businessName
             );
           } catch (error) {
+            await whatsappSdk.markMessageAsRead(message.id);
             return new NextResponse("Error in callbackUri", { status: 500 });
-            console.error("Error in callbackUri", error);
           }
         }
+        await whatsappSdk.markMessageAsRead(message.id);
         return new NextResponse("Success", { status: 200 });
       } else {
         console.log("forwarding to api agent");
+        await whatsappSdk.markMessageAsRead(message.id);
         //2. forward the message to the api agent
         await forwardToAiAgent(message, phoneNumber, endpoint, apiKey);
       }

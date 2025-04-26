@@ -5,6 +5,11 @@ import { ClientSecretVariable } from "@/server/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
 import { prisma } from "@/prisma/prisma";
+import { WhatsAppBusinessSDK } from "@microfox/whatsapp-business";
+import {
+  whatsappConfigFields,
+  whatsappRequiredKeys,
+} from "@/components/screens/mybots/components/Whatsapp/WhatsAppBotConfig";
 
 // Helper function to forward data to API agent
 async function forwardToAiAgent(
@@ -125,8 +130,39 @@ export async function POST(
         clientSecret.botConfig as unknown as ClientSecretVariable[]
       ).find((config) => config.key === "WHATSAPP_AGENTCHAT_API_KEY")?.value;
 
+      const businessPhoneNumberId = (
+        clientSecret.variables as unknown as ClientSecretVariable[]
+      ).find(
+        (config) => config.key === whatsappRequiredKeys.businessPhoneNumberId
+      )?.value;
+
+      const businessAccountId = (
+        clientSecret.variables as unknown as ClientSecretVariable[]
+      ).find(
+        (config) => config.key === whatsappRequiredKeys.businessAccountId
+      )?.value;
+
+      const businessAccessToken = (
+        clientSecret.variables as unknown as ClientSecretVariable[]
+      ).find(
+        (config) => config.key === whatsappRequiredKeys.businessAccessToken
+      )?.value;
+
+      const businessName = (
+        clientSecret.botConfig as unknown as ClientSecretVariable[]
+      ).find(
+        (config) => config.key === whatsappConfigFields.whatsappBusinessName
+      )?.value;
+
+      const whatsappWebhookVerifyToken = (
+        clientSecret.botConfig as unknown as ClientSecretVariable[]
+      ).find(
+        (config) =>
+          config.key === whatsappConfigFields.whatsappWebhookVerifyToken
+      )?.value;
+
       // 1. if message is verification code, forward to verify route
-      if (isVerificationMessage(messageText)) {
+      if (isVerificationMessage(messageText) && whatsappWebhookVerifyToken) {
         console.log("messageText", messageText);
         const { isVerified, record } =
           await whatsappVerificationSdk.processVerification(
@@ -147,24 +183,37 @@ export async function POST(
 
         console.log("callbackUri", callbackUri);
         console.log("userId", userId);
-
-        console.log("callbackUri", callbackUri);
-        console.log("userId", userId);
-
         if (callbackUri) {
-          // call the callback uri
-          await fetch(callbackUri, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              number: phoneNumber,
-              userId: userId,
-            }),
-          });
+          try {
+            // call the callback uri
+            await fetch(callbackUri, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey || "",
+              },
+              body: JSON.stringify({
+                number: phoneNumber,
+                userId: userId,
+              }),
+            });
 
-          // 4. forward the message to the api agent
-          // await forwardToAiAgent(message, phoneNumber, callbackUri, apiKey);
+            const whatsappSdk = new WhatsAppBusinessSDK({
+              phoneNumberId: businessPhoneNumberId,
+              businessAccountId: businessAccountId,
+              accessToken: businessAccessToken,
+            });
+
+            await whatsappSdk.sendTextMessage(
+              phoneNumber,
+              "You are no verified & connected to " + businessName
+            );
+          } catch (error) {
+            return new NextResponse("Error in callbackUri", { status: 500 });
+            console.error("Error in callbackUri", error);
+          }
         }
+        return new NextResponse("Success", { status: 200 });
       } else {
         //2. forward the message to the api agent
         await forwardToAiAgent(message, phoneNumber, endpoint, apiKey);

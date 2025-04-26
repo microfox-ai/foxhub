@@ -46,6 +46,11 @@ const formSchema = z.object({
     ),
   description: z.string().min(1, "Description is required"),
   image: z.any().optional(),
+  homepageUrl: z
+    .string()
+    .url("Please enter a valid URL")
+    .optional()
+    .or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -139,6 +144,7 @@ const NewProject = () => {
             userId: user.id,
             slug: values.slug || null,
             imageUrl: values.image || null,
+            homepageUrl: values.homepageUrl || null,
           }),
         });
 
@@ -455,6 +461,41 @@ const NewProject = () => {
                             </div>
                           </FormControl>
                           <FormMessage className="text-xs mt-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+
+                  {/* Homepage URL Field */}
+                  <motion.div
+                    variants={{
+                      hidden: { y: 20, opacity: 0 },
+                      visible: { y: 0, opacity: 1 },
+                    }}
+                  >
+                    <FormField
+                      control={form.control}
+                      name="homepageUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700 font-medium mb-1 block text-sm">
+                            Homepage URL
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              <Input
+                                placeholder="https://your-company.com or https://your-ai-agent.com"
+                                className="pl-9 h-12 bg-white border-gray-200 rounded-2xl focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:border-gray-500"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage className="text-xs mt-1" />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Link to your company website, AI agent, or web
+                            application
+                          </p>
                         </FormItem>
                       )}
                     />

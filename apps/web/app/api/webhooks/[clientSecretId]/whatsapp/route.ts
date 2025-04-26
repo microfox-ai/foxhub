@@ -105,13 +105,17 @@ export async function POST(
     const params = await segmentData.params;
     const { clientSecretId } = params;
     const body = (await req.json()) as WhatsAppWebhookPayload;
-    console.log("Incoming webhook: " + JSON.stringify(body));
+    console.log(
+      "Incoming webhook: " + JSON.stringify(body),
+      clientSecretId,
+      body
+    );
 
     // Handle webhook messages from WhatsApp
     if (body.object === "whatsapp_business_account") {
       const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!message) {
-        console.error("No message found");
+        console.log("No message found");
         return new NextResponse("No message found", { status: 400 });
       }
 
@@ -123,7 +127,7 @@ export async function POST(
         });
 
       if (!clientSecret) {
-        console.error("Client secret not found");
+        console.log("Client secret not found");
         return new NextResponse("Client secret not found", { status: 404 });
       }
       //1. get the endpoint from the client secret

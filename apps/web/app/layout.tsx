@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { AnalyticsProvider } from "@/components/providers/AnalyticsProvider";
@@ -6,8 +6,17 @@ import "./globals.css";
 import { serverAnalytics } from "@/utils/services/analytics/server";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#FFFFFF"
+};
 
 export const metadata: Metadata = {
+  metadataBase: new URL(APP_BASE_URL),
   title: "Microfox",
   description: "Enter the new age of AI-first, custom made, branded bots",
   keywords: ["AI", "Microfox", "chatbots", "automation", "branded bots"],
@@ -38,12 +47,6 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
     creator: "@microfoxai",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
-  themeColor: "#FFFFFF",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-16x16.png",

@@ -242,10 +242,7 @@ export async function POST(
 
             await whatsappSdk.sendTextMessage(
               phoneNumber,
-              "You are no verified & connected to " + businessName,
-              {
-                previewUrl: false,
-              }
+              "You are no verified & connected to " + businessName
             );
             await whatsappVerificationSdk.deleteVerificationSession(record.id);
             await whatsappSdk.markMessageAsRead(message.id);
@@ -273,10 +270,7 @@ export async function POST(
         );
         await whatsappSdk.sendTextMessage(
           phoneNumber,
-          "Message forwarded to agent",
-          {
-            previewUrl: false,
-          }
+          "Message forwarded to agent"
         );
       } else {
         await whatsappSdk.markMessageAsRead(message.id);

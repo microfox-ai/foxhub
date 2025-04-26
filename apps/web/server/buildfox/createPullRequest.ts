@@ -1,7 +1,7 @@
 import { prisma } from "@/prisma/prisma";
 import {
   GITHUB_TOKEN,
-  TEMPLATE_REPO_OWNER,
+  PROJECT_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { GenAiSdk } from "../../utils/services/GenAiSdk";
@@ -76,12 +76,12 @@ export async function createPullRequest({
   const newBranch = `request/${uniqueRequestTitle}`;
   const targetBranch = botProject.githubRepoBranch || "project/master";
   const defaultBranchSha = await githubSdk.rest.git.getRef({
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: botProject.githubRepoName,
     ref: `heads/${targetBranch}`,
   });
   const newBranchResult = await githubSdk.rest.git.createRef({
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: botProject.githubRepoName,
     ref: `refs/heads/${newBranch}`,
     sha: defaultBranchSha.data.object.sha,
@@ -103,7 +103,7 @@ export async function createPullRequest({
   const readmeFilePath = `apps/${uniqueRequestTitle}/README.md`;
   const readmeFileContent =
     await githubSdk.rest.repos.createOrUpdateFileContents({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: PROJECT_REPO_OWNER,
       repo: botProject.githubRepoName,
       path: readmeFilePath,
       message: `Add README for ${requestTitle}`,
@@ -117,7 +117,7 @@ export async function createPullRequest({
 
   // Create pull request from new branch to target branch
   const pr = await githubSdk.rest.pulls.create({
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: botProject.githubRepoName,
     title: `New Client Request: ${requestTitle}`,
     body: `<Not for Client> Description: ${description}`,
@@ -160,7 +160,7 @@ export async function createPullRequest({
   const clientRequestFilePath = `apps/${uniqueRequestTitle}/clientRequest.json`;
   const clientRequestFile =
     await githubSdk.rest.repos.createOrUpdateFileContents({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: PROJECT_REPO_OWNER,
       repo: botProject.githubRepoName,
       path: clientRequestFilePath,
       message: `Add clientRequest.json for ${requestTitle}`,

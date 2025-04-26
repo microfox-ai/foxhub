@@ -7,6 +7,7 @@ import {
   PROJECT_BRANCH_NAME,
   PROJECT_INFO_DIR,
   PROJECT_JSON_FILE_DIR,
+  PROJECT_REPO_OWNER,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { TEMPLATE_REPO } from "@/utils/constants/githubInfo";
@@ -61,7 +62,7 @@ export async function createNewBotProject({
     },
     template_repo: TEMPLATE_REPO,
     template_owner: TEMPLATE_REPO_OWNER,
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     name: `space-${projectName.toLowerCase().replace(/ /g, "-")}-${Date.now()}`,
     description: projectDescription,
     private: true,
@@ -97,7 +98,7 @@ export async function createNewBotProject({
   const readmeFilePath = `${PROJECT_INFO_DIR}/README.md`;
   const readmeFileContent =
     await githubSdk.rest.repos.createOrUpdateFileContents({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: PROJECT_REPO_OWNER,
       repo: repoResult.data.name,
       path: readmeFilePath,
       message: `Add README for ${projectName}`,
@@ -116,7 +117,7 @@ export async function createNewBotProject({
     mediaType: {
       format: "json",
     },
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: repoResult.data.name,
     base: "main",
     head: newBranch,
@@ -171,7 +172,7 @@ export async function createNewBotProject({
     server_env: IN_DEV ? "staging" : "production",
   };
   const botProjectFile = await githubSdk.rest.repos.createOrUpdateFileContents({
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: repoResult.data.name,
     path: PROJECT_JSON_FILE_DIR,
     message: `Add initial configs to the project`,
@@ -210,14 +211,14 @@ export async function createOrUpdateRepoVariable({
 }) {
   if (variables.find((variable) => variable.name === name)) {
     await githubSdk.rest.actions.updateRepoVariable({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: PROJECT_REPO_OWNER,
       repo: repoName,
       name: name,
       value: value,
     });
   } else {
     await githubSdk.rest.actions.createRepoVariable({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: PROJECT_REPO_OWNER,
       repo: repoName,
       name: name,
       value: value,
@@ -246,11 +247,11 @@ export async function addGithubSecretsToRepo({
     });
 
   const alreadyListedVariables = await thisSdk.rest.actions.listRepoVariables({
-    owner: TEMPLATE_REPO_OWNER,
+    owner: PROJECT_REPO_OWNER,
     repo: repoName,
   });
 
-  //console.log("taskInstanceMeta", repoName, TEMPLATE_REPO_OWNER);
+  //console.log("taskInstanceMeta", repoName, PROJECT_REPO_OWNER);
   try {
     if (taskInstanceMeta?.taskStructure?.templateType === "upstash") {
       const upstashEnvsFile = await fs.readFile(

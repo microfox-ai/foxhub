@@ -32,7 +32,7 @@ import { useLayout } from "@/components/screens/providers/LayoutProvider";
 import { useMicrofox } from "@/components/screens/providers/MicrofoxProvider";
 import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
 import Link from "next/link";
-import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { useDeployStatus } from "@/components/screens/providers/useDeployStatus";
 import { useTabUi } from "@/components/screens/providers/TabUiProvider";
 
@@ -265,7 +265,7 @@ export const DeploymentsInfo = ({
                         </div>
                         <div className="text-gray-500 mt-1 flex items-center gap-2">
                             PR #{deployStep.metadata.pull_requests[0].number}
-                            <Link href={`https://github.com/${TEMPLATE_REPO_OWNER}/${clientRequest?.repoName}/actions/runs/${runId}`} target="_blank" className="text-blue-500 hover:text-blue-600"> View Action</Link>
+                            <Link href={`https://github.com/${PROJECT_REPO_OWNER}/${clientRequest?.repoName}/actions/runs/${runId}`} target="_blank" className="text-blue-500 hover:text-blue-600"> View Action</Link>
                         </div>
                     </div>
                 </div>

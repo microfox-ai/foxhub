@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   GITHUB_TOKEN,
-  TEMPLATE_REPO_OWNER,
+  PROJECT_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     const { data: logs } =
       await octokit.rest.actions.downloadJobLogsForWorkflowRun({
-        owner: TEMPLATE_REPO_OWNER,
+        owner: PROJECT_REPO_OWNER,
         repo: repoName,
         job_id: parseInt(jobId),
       });

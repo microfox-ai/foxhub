@@ -243,6 +243,7 @@ export async function POST(
             await whatsappVerificationSdk.deleteVerificationSession(record.id);
             await whatsappSdk.markMessageAsRead(message.id);
           } catch (error) {
+            console.log("error in callbackUri", error);
             await whatsappSdk.markMessageAsRead(message.id);
             return new NextResponse("Error in callbackUri", { status: 500 });
           }

@@ -1,0 +1,9 @@
+-- CreateEnum
+CREATE TYPE "PROJECTROLE" AS ENUM ('OWNER', 'ADMIN', 'EDITOR', 'VIEWER');
+
+-- CreateEnum
+CREATE TYPE "PROJECT_ACCESS_TYPE" AS ENUM ('READ', 'WRITE');
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "isOnboarded" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "onboardingData" JSONB;

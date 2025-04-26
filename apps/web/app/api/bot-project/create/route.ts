@@ -3,13 +3,14 @@ import { createNewBotProject } from "@/utils/services/db_functions/createNewBotP
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { userId, projectName, projectDescription } = body;
+  const { userId, projectName, projectDescription, slug } = body;
 
   try {
     const newBotProject = await createNewBotProject({
       userId,
       projectName,
       projectDescription,
+      slug: slug,
     });
     // console.log("newBotProject", newBotProject);
 
@@ -22,4 +23,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

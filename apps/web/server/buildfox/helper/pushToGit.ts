@@ -10,7 +10,7 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { uploadToRepo } from "./uploadToGit";
 import {
   GITHUB_TOKEN,
-  TEMPLATE_REPO_OWNER,
+  PROJECT_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { TaskInstanceMetaType } from "../../convertfox/types";
@@ -50,7 +50,7 @@ export const pushToGit = async (
     octo,
     `${clientRequest.repoName}/${clientRequest.requestDir}`,
     `${clientRequest.repoName}/`,
-    TEMPLATE_REPO_OWNER,
+    PROJECT_REPO_OWNER,
     clientRequest.repoName,
     clientRequest.prBranch,
     "nodeploy: microcode: " +

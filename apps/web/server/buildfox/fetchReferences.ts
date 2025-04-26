@@ -10,7 +10,7 @@ import path from "path";
 import { Octokit } from "octokit";
 import {
   GITHUB_TOKEN,
-  TEMPLATE_REPO_OWNER,
+  PROJECT_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
 
 const githubSdk = new Octokit({
@@ -79,7 +79,7 @@ export const fetchReferences = (
               for (const file of files) {
                 // 2. Making API calls to GitHub
                 const fileContent = await githubSdk.rest.repos.getContent({
-                  owner: TEMPLATE_REPO_OWNER,
+                  owner: PROJECT_REPO_OWNER,
                   repo: repoName,
                   path: `${requestDir}/${file.filePath}`,
                 });

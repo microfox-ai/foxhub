@@ -46,9 +46,7 @@ export const updateSession = async (request: NextRequest) => {
     } = await supabase.auth.getUser();
 
     // Skip auth check for public routes
-    const isPublicRoute = PUBLIC_ROUTES.find((route) =>
-      request.nextUrl.pathname.startsWith(route)
-    );
+    const isPublicRoute = PUBLIC_ROUTES.includes(request.nextUrl.pathname);
 
     if (isPublicRoute) {
       return NextResponse.next();

@@ -1,18 +1,16 @@
-import { NextResponse } from "next/server";
-import { APP_BASE_URL } from "@/utils/constants/appInfo";
-import { ClientSecret } from "@prisma/client";
-import { ClientSecretVariable } from "@/server/types";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
-import { prisma } from "@/prisma/prisma";
-import {
-  WhatsAppBusinessSDK,
-  WhatsAppWebhookPayload,
-} from "@microfox/whatsapp-business";
 import {
   whatsappConfigFields,
   whatsappRequiredKeys,
 } from "@/components/screens/mybots/components/Whatsapp/WhatsAppBotConfig";
+import { prisma } from "@/prisma/prisma";
+import { ClientSecretVariable } from "@/server/types";
+import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
+import {
+  WhatsAppBusinessSDK,
+  WhatsAppWebhookPayload,
+} from "@microfox/whatsapp-business";
+import { ClientSecret } from "@prisma/client";
+import { NextResponse } from "next/server";
 
 // Helper function to forward data to API agent
 async function forwardToAiAgent(
@@ -112,7 +110,7 @@ export async function POST(
     );
 
     // Handle webhook messages from WhatsApp
-    if (body.object === "whatsapp_business_account") {
+    if (body?.object === "whatsapp_business_account") {
       const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!message) {
         console.log("No message found");
@@ -241,8 +239,8 @@ export async function POST(
     } else {
       console.log("invalid request body", body);
     }
-
-    return new NextResponse("Invalid request body", { status: 400 });
+    console.log("invalid request body", body);
+    return new NextResponse("Invalid request body", { status: 200 });
   } catch (error) {
     console.log("Error in WhatsApp webhook:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

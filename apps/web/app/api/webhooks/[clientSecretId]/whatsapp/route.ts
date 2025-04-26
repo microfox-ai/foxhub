@@ -5,7 +5,10 @@ import { ClientSecretVariable } from "@/server/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
 import { prisma } from "@/prisma/prisma";
-import { WhatsAppBusinessSDK } from "@microfox/whatsapp-business";
+import {
+  WhatsAppBusinessSDK,
+  WhatsAppWebhookPayload,
+} from "@microfox/whatsapp-business";
 import {
   whatsappConfigFields,
   whatsappRequiredKeys,
@@ -100,18 +103,17 @@ export async function POST(
   try {
     const params = await segmentData.params;
     const { clientSecretId } = params;
-    const body = await req.json();
+    const body = (await req.json()) as WhatsAppWebhookPayload;
     console.log("Incoming webhook: " + JSON.stringify(body));
 
     // Handle webhook messages from WhatsApp
     if (body.object === "whatsapp_business_account") {
-      const message = body.entry[0]?.changes[0]?.value?.messages[0];
+      const message = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!message) {
         return new NextResponse("No message found", { status: 400 });
       }
 
       const phoneNumber = message.from;
-      const messageText = message.text?.body || "";
 
       const clientSecret: ClientSecret | null =
         await prisma.clientSecret.findUnique({
@@ -171,6 +173,8 @@ export async function POST(
         businessAccountId: businessAccountId,
         accessToken: businessAccessToken,
       });
+
+      const messageText = message?.type === "text" ? message?.text?.body : "";
       // 1. if message is verification code, forward to verify route
       if (isVerificationMessage(messageText) && whatsappWebhookUrl) {
         console.log("messageText", messageText);

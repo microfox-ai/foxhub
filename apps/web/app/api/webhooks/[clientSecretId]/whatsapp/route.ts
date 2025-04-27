@@ -130,12 +130,12 @@ export async function POST(
     // Handle webhook messages from WhatsApp
     if (requestBody?.object != "whatsapp_business_account") {
       console.log("invalid request body", requestBody);
-      return new NextResponse("Invalid request body", { status: 500 });
+      return new NextResponse("Invalid request body", { status: 200 });
     }
     const message = requestBody?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!message) {
       console.log("No message found");
-      return new NextResponse("No message found", { status: 400 });
+      return new NextResponse("No message found", { status: 200 });
     }
 
     const phoneNumber = message.from;
@@ -147,7 +147,7 @@ export async function POST(
 
     if (!clientSecret) {
       console.log("Client secret not found");
-      return new NextResponse("Client secret not found", { status: 404 });
+      return new NextResponse("Client secret not found", { status: 200 });
     }
     //1. get the endpoint from the client secret
     const endpoint = (clientSecret.botConfig as any[]).find(

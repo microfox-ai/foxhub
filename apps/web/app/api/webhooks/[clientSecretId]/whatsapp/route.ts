@@ -210,10 +210,10 @@ export async function POST(
         );
 
       if (!record || !isVerified) {
-        await whatsappSdk.sendTextMessage(
-          phoneNumber,
-          "OTP timed out. Please try again."
-        );
+        // await whatsappSdk.sendTextMessage(
+        //   phoneNumber,
+        //   "OTP timed out. Please try again."
+        // );
         return new NextResponse("Verification record not found", {
           status: 200,
         });
@@ -226,7 +226,7 @@ export async function POST(
       if (callbackUri) {
         try {
           // call the callback uri
-          await fetch(callbackUri, {
+          const response = await fetch(callbackUri, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -237,14 +237,18 @@ export async function POST(
               userId: userId,
             }),
           });
-
-          await whatsappSdk.sendTextMessage(
-            phoneNumber,
-            "You are no verified & connected to " + businessName
-          );
-          await whatsappVerificationSdk.deleteVerificationSession(record.id);
-          await whatsappSdk.markMessageAsRead(message.id);
-          return new NextResponse("Success", { status: 200 });
+          if (response.status === 200) {
+            await whatsappVerificationSdk.deleteVerificationSession(record.id);
+            await whatsappSdk.markMessageAsRead(message.id);
+            return new NextResponse("Success", { status: 200 });
+          } else {
+            await whatsappSdk.markMessageAsRead(message.id);
+            await whatsappSdk.sendTextMessage(
+              phoneNumber,
+              "Error in Agent Callback URI - " + response.statusText
+            );
+            return new NextResponse("Error in callbackUri", { status: 200 });
+          }
         } catch (error) {
           console.log("error in callbackUri", error);
           await whatsappSdk.markMessageAsRead(message.id);

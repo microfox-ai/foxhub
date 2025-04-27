@@ -123,7 +123,7 @@ export class WhatsAppVerificationSdk {
       );
 
       if (isCodeVerified.verified && isCodeVerified.id) {
-        await this.deleteVerificationSession(isCodeVerified.id);
+        // await this.deleteVerificationSession(isCodeVerified.id);
         return { isVerified: true, record: isCodeVerified.record };
       }
       return { isVerified: false };

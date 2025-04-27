@@ -1,36 +1,61 @@
-import { NextResponse } from "next/server";
-import { APP_BASE_URL } from "@/utils/constants/appInfo";
-import { ClientSecret } from "@prisma/client";
-import { ClientSecretVariable } from "@/server/types";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
 import { prisma } from "@/prisma/prisma";
+import { ClientSecretVariable } from "@/server/types";
+import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
+import {
+  WhatsAppBusinessSDK,
+  WhatsAppWebhookPayload,
+} from "@microfox/whatsapp-business";
+import { ClientSecret } from "@prisma/client";
+import { NextResponse } from "next/server";
 
 // Helper function to forward data to API agent
 async function forwardToAiAgent(
   message: any,
   phoneNumber: string,
   endpoint: string,
-  apiKey?: string
+  apiKey?: string,
+  metadata?: any
 ): Promise<void> {
-  await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey || "",
-    },
-    body: JSON.stringify({
-      message: message,
-      number: phoneNumber,
-      metadata: {},
-    }),
-  });
+  try {
+    await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey || "",
+      },
+      body: JSON.stringify({
+        message: message,
+        number: phoneNumber,
+        metadata: metadata,
+      }),
+    });
+  } catch (error) {
+    console.log("Error in forwardToAiAgent", error);
+  }
 }
 
 const whatsappVerificationSdk = new WhatsAppVerificationSdk();
 function isVerificationMessage(message: string): boolean {
   return message.includes("verification code");
 }
+
+const whatsappRequiredKeys = {
+  businessAccountId: "WHATSAPP_BUSINESS_ACCOUNT_ID",
+  businessAccessToken: "WHATSAPP_BUSINESS_ACCESS_TOKEN",
+  businessPhoneNumberId: "WHATSAPP_BUSINESS_PHONE_NUMBER_ID",
+  businessPhoneNumber: "WHATSAPP_BUSINESS_PHONE_NUMBER",
+};
+
+const whatsappConfigFields = {
+  whatsappWebhookUrl: "WHATSAPP_WEBHOOK_URL",
+  whatsappWebhookVerifyToken: "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+  whatsappBusinessName: "WHATSAPP_BUSINESS_NAME",
+  whatsappIconUrl: "WHATSAPP_ICON_URL",
+  whatsappBusinessSlug: "WHATSAPP_BUSINESS_SLUG",
+  whatsappAgentchatApiKey: "WHATSAPP_AGENTCHAT_API_KEY",
+  whatsappAgentchatEndpoint: "WHATSAPP_AGENTCHAT_ENDPOINT",
+  whatsappWebhookVerified: "WHATSAPP_WEBHOOK_VERIFIED",
+};
 
 export async function GET(
   req: Request,
@@ -95,87 +120,178 @@ export async function POST(
   try {
     const params = await segmentData.params;
     const { clientSecretId } = params;
-    const body = await req.json();
-    console.log("Incoming webhook: " + JSON.stringify(body));
+    const requestBody = (await req.json()) as WhatsAppWebhookPayload;
+    console.log(
+      "Incoming webhook: ",
+      clientSecretId,
+      requestBody.entry?.[0]?.changes?.[0]?.value?.messages?.[0]
+    );
 
     // Handle webhook messages from WhatsApp
-    if (body.object === "whatsapp_business_account") {
-      const message = body.entry[0]?.changes[0]?.value?.messages[0];
-      if (!message) {
-        return new NextResponse("No message found", { status: 400 });
-      }
+    if (requestBody?.object != "whatsapp_business_account") {
+      console.log("invalid request body", requestBody);
+      return new NextResponse("Invalid request body", { status: 200 });
+    }
+    const message = requestBody?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    if (!message) {
+      console.log("No message found");
+      return new NextResponse("No message found", { status: 200 });
+    }
 
-      const phoneNumber = message.from;
-      const messageText = message.text?.body || "";
+    const phoneNumber = message.from;
 
-      const clientSecret: ClientSecret | null =
-        await prisma.clientSecret.findUnique({
-          where: { id: clientSecretId },
-        });
+    const clientSecret: ClientSecret | null =
+      await prisma.clientSecret.findUnique({
+        where: { id: clientSecretId },
+      });
 
-      if (!clientSecret) {
-        return new NextResponse("Client secret not found", { status: 404 });
-      }
-      //1. get the endpoint from the client secret
-      const endpoint = (
-        clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find((config) => config.key === "WHATSAPP_AGENTCHAT_ENDPOINT")?.value;
+    if (!clientSecret) {
+      console.log("Client secret not found");
+      return new NextResponse("Client secret not found", { status: 200 });
+    }
+    //1. get the endpoint from the client secret
+    const endpoint = (clientSecret.botConfig as any[]).find(
+      (config) => config.key === whatsappConfigFields.whatsappAgentchatEndpoint
+    )?.value;
 
-      const apiKey = (
-        clientSecret.botConfig as unknown as ClientSecretVariable[]
-      ).find((config) => config.key === "WHATSAPP_AGENTCHAT_API_KEY")?.value;
+    const apiKey = (clientSecret.botConfig as any[]).find(
+      (config) => config.key === whatsappConfigFields.whatsappAgentchatApiKey
+    )?.value;
 
-      // 1. if message is verification code, forward to verify route
-      if (isVerificationMessage(messageText)) {
-        console.log("messageText", messageText);
-        const { isVerified, record } =
-          await whatsappVerificationSdk.processVerification(
-            clientSecretId,
-            messageText
-          );
+    const businessPhoneNumberId = (clientSecret.variables as any[]).find(
+      (config) => config.key === whatsappRequiredKeys.businessPhoneNumberId
+    )?.value;
 
-        console.log("isVerified", isVerified);
-        console.log("record", record);
+    const businessAccountId = (clientSecret.variables as any[]).find(
+      (config) => config.key === whatsappRequiredKeys.businessAccountId
+    )?.value;
 
-        if (!record || !isVerified) {
-          return new NextResponse("Verification record not found", {
-            status: 500,
-          });
+    const businessAccessToken = (clientSecret.variables as any[]).find(
+      (config) => config.key === whatsappRequiredKeys.businessAccessToken
+    )?.value;
+
+    const businessName = (clientSecret.botConfig as any[]).find(
+      (config) => config.key === whatsappConfigFields.whatsappBusinessName
+    )?.value;
+
+    const whatsappWebhookUrl = (clientSecret.botConfig as any[]).find(
+      (config) => config.key === whatsappConfigFields.whatsappWebhookUrl
+    )?.value;
+
+    if (!businessPhoneNumberId || !businessAccountId || !businessAccessToken) {
+      console.log(
+        "Business phone number id, account id or access token not found",
+        businessPhoneNumberId,
+        businessAccountId,
+        businessAccessToken
+      );
+      return new NextResponse(
+        "Business phone number id, account id or access token not found",
+        {
+          status: 200,
         }
+      );
+    }
 
-        const { callbackUri, userId } = record;
+    const whatsappSdk = new WhatsAppBusinessSDK({
+      phoneNumberId: businessPhoneNumberId,
+      businessAccountId: businessAccountId,
+      accessToken: businessAccessToken,
+    });
 
-        console.log("callbackUri", callbackUri);
-        console.log("userId", userId);
+    const messageText = message?.type === "text" ? message?.text?.body : "";
+    //1. if message is verification code, forward to verify route
+    if (isVerificationMessage(messageText) && whatsappWebhookUrl) {
+      console.log("messageText", messageText);
+      const { isVerified, record } =
+        await whatsappVerificationSdk.processVerification(
+          clientSecretId,
+          messageText
+        );
 
-        console.log("callbackUri", callbackUri);
-        console.log("userId", userId);
+      if (!record || !isVerified) {
+        // await whatsappSdk.sendTextMessage(
+        //   phoneNumber,
+        //   "OTP timed out. Please try again."
+        // );
+        return new NextResponse("Verification record not found", {
+          status: 200,
+        });
+      }
 
-        if (callbackUri) {
+      const { callbackUri, userId } = record;
+
+      console.log("callbackUri", callbackUri, userId);
+
+      if (callbackUri) {
+        try {
           // call the callback uri
-          await fetch(callbackUri, {
+          const response = await fetch(callbackUri, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey || "",
+            },
             body: JSON.stringify({
               number: phoneNumber,
               userId: userId,
             }),
           });
-
-          // 4. forward the message to the api agent
-          // await forwardToAiAgent(message, phoneNumber, callbackUri, apiKey);
+          if (response.status === 200) {
+            await whatsappVerificationSdk.deleteVerificationSession(record.id);
+            await whatsappSdk.markMessageAsRead(message.id);
+            return new NextResponse("Success", { status: 200 });
+          } else {
+            await whatsappSdk.markMessageAsRead(message.id);
+            await whatsappSdk.sendTextMessage(
+              phoneNumber,
+              "Error in Agent Callback URI - " + response.statusText
+            );
+            return new NextResponse("Error in callbackUri", { status: 200 });
+          }
+        } catch (error) {
+          console.log("error in callbackUri", error);
+          await whatsappSdk.markMessageAsRead(message.id);
+          await whatsappSdk.sendTextMessage(
+            phoneNumber,
+            "Error in Agent Callback URI - " + error
+          );
+          return new NextResponse("Error in callbackUri", { status: 200 });
         }
       } else {
-        //2. forward the message to the api agent
-        await forwardToAiAgent(message, phoneNumber, endpoint, apiKey);
+        await whatsappSdk.markMessageAsRead(message.id);
+        await whatsappSdk.sendTextMessage(
+          phoneNumber,
+          "No Callback URI found for this bot"
+        );
+        return new NextResponse("Success", { status: 200 });
       }
-
+    } else if (endpoint) {
+      console.log("forwarding to api agent");
+      await whatsappSdk.markMessageAsRead(message.id);
+      //2. forward the message to the api agent
+      await forwardToAiAgent(
+        message,
+        phoneNumber,
+        endpoint,
+        apiKey,
+        requestBody
+      );
+      // await whatsappSdk.sendTextMessage(
+      //   phoneNumber,
+      //   "Message forwarded to agent"
+      // );
+      return new NextResponse("Success", { status: 200 });
+    } else {
+      await whatsappSdk.markMessageAsRead(message.id);
+      await whatsappSdk.sendTextMessage(
+        phoneNumber,
+        "No endpoint found for this bot"
+      );
       return new NextResponse("Success", { status: 200 });
     }
-
-    return new NextResponse("Invalid request body", { status: 400 });
   } catch (error) {
-    console.error("Error in WhatsApp webhook:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.log("Error in Microfox WhatsApp webhook:", error);
+    return new NextResponse("Internal Server Error", { status: 200 });
   }
 }

@@ -6,7 +6,7 @@ const PrivacyPolicy = () => {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
-      
+
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">Data Collection Disclosure</h2>
         <p className="mb-4">We collect and process the following categories of personal data:</p>

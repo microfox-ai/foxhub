@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ClientSecretVariable } from "@/server/types"
 import { useFormContext } from "react-hook-form";
@@ -18,23 +20,23 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { generateWidgetCode } from "./generateWidgetCode";
 
-const whatsappRequiredKeys = [
-    "WHATSAPP_BUSINESS_ACCOUNT_ID",
-    "WHATSAPP_BUSINESS_ACCESS_TOKEN",
-    "WHATSAPP_BUSINESS_PHONE_NUMBER_ID",
-    "WHATSAPP_BUSINESS_PHONE_NUMBER",
-]
+const whatsappRequiredKeys = {
+    businessAccountId: "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    businessAccessToken: "WHATSAPP_BUSINESS_ACCESS_TOKEN",
+    businessPhoneNumberId: "WHATSAPP_BUSINESS_PHONE_NUMBER_ID",
+    businessPhoneNumber: "WHATSAPP_BUSINESS_PHONE_NUMBER",
+}
 
-const whatsappConfigFields = [
-    "WHATSAPP_WEBHOOK_URL",
-    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
-    "WHATSAPP_BUSINESS_NAME",
-    "WHATSAPP_ICON_URL",
-    "WHATSAPP_BUSINESS_SLUG",
-    "WHATSAPP_AGENTCHAT_API_KEY",
-    "WHATSAPP_AGENTCHAT_ENDPOINT",
-    "WHATSAPP_WEBHOOK_VERIFIED",
-]
+const whatsappConfigFields = {
+    whatsappWebhookUrl: "WHATSAPP_WEBHOOK_URL",
+    whatsappWebhookVerifyToken: "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+    whatsappBusinessName: "WHATSAPP_BUSINESS_NAME",
+    whatsappIconUrl: "WHATSAPP_ICON_URL",
+    whatsappBusinessSlug: "WHATSAPP_BUSINESS_SLUG",
+    whatsappAgentchatApiKey: "WHATSAPP_AGENTCHAT_API_KEY",
+    whatsappAgentchatEndpoint: "WHATSAPP_AGENTCHAT_ENDPOINT",
+    whatsappWebhookVerified: "WHATSAPP_WEBHOOK_VERIFIED",
+}
 
 export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: ClientSecretVariable[], packageConstructor: Constructor }) => {
     const { botToEdit, refreshBotToEdit } = useBots();

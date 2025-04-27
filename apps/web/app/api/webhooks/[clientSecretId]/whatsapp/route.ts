@@ -221,8 +221,8 @@ export async function POST(
 
       const { callbackUri, userId } = record;
 
-      console.log("callbackUri", callbackUri);
-      console.log("userId", userId);
+      console.log("callbackUri", callbackUri, userId);
+
       if (callbackUri) {
         try {
           // call the callback uri
@@ -288,6 +288,6 @@ export async function POST(
     }
   } catch (error) {
     console.log("Error in Microfox WhatsApp webhook:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return new NextResponse("Internal Server Error", { status: 200 });
   }
 }

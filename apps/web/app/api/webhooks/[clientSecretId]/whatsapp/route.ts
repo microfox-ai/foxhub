@@ -273,10 +273,10 @@ export async function POST(
         apiKey,
         requestBody
       );
-      await whatsappSdk.sendTextMessage(
-        phoneNumber,
-        "Message forwarded to agent"
-      );
+      // await whatsappSdk.sendTextMessage(
+      //   phoneNumber,
+      //   "Message forwarded to agent"
+      // );
       return new NextResponse("Success", { status: 200 });
     } else {
       await whatsappSdk.markMessageAsRead(message.id);

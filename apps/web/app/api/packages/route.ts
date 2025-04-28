@@ -26,14 +26,6 @@ interface PackageJson {
   description?: string;
 }
 
-// Interface for packages list
-interface PackagesList {
-  partialPackages: string[];
-  stablePackages: string[];
-  total: number;
-  generatedAt: string;
-}
-
 // Interface for formatted package data
 interface FormattedPackageData {
   name: string;
@@ -140,17 +132,17 @@ export async function GET(request: Request) {
     const packagesList = (await fetchWithCache(
       `${PACKAGE_BASE_URL}/packages-list.json`,
       cacheOptions
-    )) as PackagesList;
+    )) as any;
 
-    const allPackages = packagesList.stablePackages.concat(
-      packagesList.partialPackages
-    );
+    const allPackages: string[] = packagesList.stablePackages
+      .concat(packagesList.semiStablePackages)
+      .concat(packagesList.partialPackages);
     // Fetch package info for each package
     const packagePromises = allPackages.map(async (packagePath) => {
       try {
         // Fetch package-info.json
         const packageInfo = (await fetchWithCache(
-          `${PACKAGE_BASE_URL}/${packagePath}/package-info.json`,
+          `${PACKAGE_BASE_URL}/${encodeURIComponent(packagePath)}/package-info.json`,
           cacheOptions
         )) as PackageInfo;
 
@@ -160,7 +152,7 @@ export async function GET(request: Request) {
         let _packageJson: any = {};
         try {
           const packageJson = (await fetchWithCache(
-            `${PACKAGE_BASE_URL}/${packagePath}/package.json`,
+            `${PACKAGE_BASE_URL}/${encodeURIComponent(packagePath)}/${packagePath.includes("@ext_") ? "@ext_" : ""}package.json`,
             cacheOptions
           )) as PackageJson;
           version = packageJson.version || "-";

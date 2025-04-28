@@ -47,7 +47,7 @@ import { Label } from "@/components/ui/label";
 interface PackageData {
   name: string;
   icon: string;
-  status: "STABLE" | "BETA" | "ALPHA" | "DEPRECATED";
+  status: "stable" | "semiStable" | "partial" | "internal" | "oauthConnector";
   version: string;
   description: string;
   installs: string;
@@ -96,10 +96,11 @@ const Status = () => {
     return [...data.packages].sort((a, b) => {
       // Define status priority
       const statusPriority: Record<PackageData["status"], number> = {
-        STABLE: 0,
-        BETA: 1,
-        ALPHA: 2,
-        DEPRECATED: 3,
+        stable: 0,
+        semiStable: 1,
+        partial: 2,
+        internal: 3,
+        oauthConnector: 4,
       };
 
       // Compare status first
@@ -259,17 +260,17 @@ const Status = () => {
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant={
-                                  item.status === "STABLE"
+                                  item.status === "stable"
                                     ? "success"
-                                    : item.status === "BETA"
+                                    : item.status === "semiStable"
                                       ? "default"
-                                      : item.status === "ALPHA"
+                                      : item.status === "partial"
                                         ? "secondary"
-                                        : item.status === "DEPRECATED"
+                                        : item.status === "internal"
                                           ? "destructive"
                                           : "secondary"
                                 }
-                                className={item.status === "STABLE" ? "text-xs px-1.5 py-0" : ""}
+                                className={item.status === "stable" ? "text-xs px-1.5 py-0" : ""}
                               >
                                 {item.status}
                               </Badge>

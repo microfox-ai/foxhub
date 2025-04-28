@@ -12,7 +12,7 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { analytics } from "@/utils/services/analytics/client";
-import { REQUESTSTATUS } from "@prisma/client";
+import { BotProject, REQUESTSTATUS } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import { ClientRequest } from "@prisma/client";
@@ -20,7 +20,7 @@ import { ClientRequest } from "@prisma/client";
 interface ClientProjectContextType {
   clientRequestId: string | null;
   projectId: string | null;
-  selectedProject: any;
+  selectedProject: BotProject | null;
   selectedRequest: ClientRequest | null;
   projects: any[];
   isLoading: boolean;
@@ -50,7 +50,7 @@ interface ClientProjectProviderProps {
 export function ClientProjectProvider({
   children,
 }: ClientProjectProviderProps) {
-  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [selectedProject, setSelectedProject] = useState<BotProject | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(null);
   const { user } = useAuth();
   const router = useRouter();
@@ -87,12 +87,12 @@ export function ClientProjectProvider({
         }
       }
     } else {
-      const personalSpace = projects.find(
-        (p: any) => p.name === "Personal Space"
-      );
-      if (personalSpace) {
-        setSelectedProject(personalSpace);
-      }
+      // const personalSpace = projects.find(
+      //   (p: any) => p.name === "Personal Space"
+      // );
+      // if (personalSpace) {
+      //   setSelectedProject(personalSpace);
+      // }
     }
   }, [projectParamId, requestParamId, projects]);
 
@@ -102,7 +102,7 @@ export function ClientProjectProvider({
       return;
     }
 
-    const openRequests = selectedProject?.clientRequests?.filter(
+    const openRequests = (selectedProject as any)?.clientRequests?.filter(
       (request: any) =>
         request?.requestStatus !== REQUESTSTATUS.COMPLETED &&
         request?.requestStatus !== REQUESTSTATUS.CLOSED

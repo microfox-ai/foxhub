@@ -29,6 +29,7 @@ export async function getPackageList(): Promise<{
   stablePackages: string[];
   partialPackages: string[];
   semiStablePackages: string[];
+  oauthConnectorPackages: string[];
   deprecatedPackages?: string[];
 }> {
   const packages = await fetchGithubJson(
@@ -44,6 +45,9 @@ export async function getPackageList(): Promise<{
       pkg.replaceAll("packages/", "@microfox/")
     ),
     semiStablePackages: packages.semiStablePackages.map((pkg: string) =>
+      pkg.replaceAll("packages/@ext_", "").replaceAll("#", "/")
+    ),
+    oauthConnectorPackages: packages.oauthConnectorPackages.map((pkg: string) =>
       pkg.replaceAll("packages/@ext_", "").replaceAll("#", "/")
     ),
     // deprecatedPackages: packages.deprecatedPackages.map((pkg: string) =>

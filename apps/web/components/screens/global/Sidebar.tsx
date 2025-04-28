@@ -34,9 +34,9 @@ interface BotProjectWithRequests extends BotProject {
 }
 
 interface SidebarProps {
-  selectedProject: BotProjectWithRequests;
+  selectedProject: BotProject | null;
   onSelectRequest: (request: ClientRequest) => void;
-  onNewRequest: (project: BotProjectWithRequests) => void;
+  onNewRequest: (project: BotProject) => void;
   onOpenConfig: (project: BotProject) => void;
   isCollapsed: boolean;
   onCollapse?: (collapsed: boolean) => void;
@@ -73,23 +73,6 @@ const navigationConfig: NavigationConfig[] = [
     href: "/dashboard",
   },
   {
-    icon: (
-      <MessagesSquare
-        strokeWidth={2.2}
-        className={cn("h-[1.1rem] w-[1.1rem]")}
-      />
-    ),
-    collapsedIcon: (
-      <MessageSquare strokeWidth={2.2} className={cn("h-[20px] w-[20px]")} />
-    ),
-    label: "Chat",
-    onClick: ({ isCollapsed, onCollapse }) => {
-      if (isCollapsed) {
-        onCollapse?.(false);
-      }
-    },
-  },
-  {
     icon: <FileCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
       <FileCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
@@ -121,6 +104,23 @@ const navigationConfig: NavigationConfig[] = [
     label: "Feedback",
     onClick: ({ setIsFeedbackModalOpen }) => setIsFeedbackModalOpen(true),
   },
+  {
+    icon: (
+      <MessagesSquare
+        strokeWidth={2.2}
+        className={cn("h-[1.1rem] w-[1.1rem]")}
+      />
+    ),
+    collapsedIcon: (
+      <MessageSquare strokeWidth={2.2} className={cn("h-[20px] w-[20px]")} />
+    ),
+    label: "Chat",
+    onClick: ({ isCollapsed, onCollapse }) => {
+      if (isCollapsed) {
+        onCollapse?.(false);
+      }
+    },
+  },
 ];
 
 export default function Sidebar({
@@ -149,16 +149,18 @@ export default function Sidebar({
           <SidebarHeader isCollapsed={isCollapsed} onCollapse={onCollapse} />
 
           <div className="flex-1">
-            <NewRequestButton
-              isCollapsed={isCollapsed}
-              onNewRequest={onNewRequest}
-              selectedProject={selectedProject}
-            />
+            {selectedProject && (
+              <NewRequestButton
+                isCollapsed={isCollapsed}
+                onNewRequest={onNewRequest}
+                selectedProject={selectedProject}
+              />
+            )}
 
             <ul
               className={`${isCollapsed ? "flex flex-col items-center gap-2" : "flex flex-col"}`}
             >
-              {navigationConfig.map((item, index) => (
+              {navigationConfig.filter((item) => !isCollapsed ? item.label !== "Chat" : true).map((item, index) => (
                 <NavigationItem
                   key={item.label}
                   icon={item.icon}
@@ -168,11 +170,11 @@ export default function Sidebar({
                   onClick={
                     item.onClick
                       ? () =>
-                          item.onClick?.({
-                            isCollapsed,
-                            onCollapse,
-                            setIsFeedbackModalOpen,
-                          })
+                        item.onClick?.({
+                          isCollapsed,
+                          onCollapse,
+                          setIsFeedbackModalOpen,
+                        })
                       : undefined
                   }
                   isCollapsed={isCollapsed}
@@ -180,11 +182,13 @@ export default function Sidebar({
               ))}
             </ul>
 
-            <RequestsList
-              selectedProject={selectedProject}
-              requestParamId={requestParamId}
-              isCollapsed={isCollapsed}
-            />
+            {selectedProject && (
+              <RequestsList
+                selectedProject={selectedProject}
+                requestParamId={requestParamId}
+                isCollapsed={isCollapsed}
+              />
+            )}
           </div>
 
           <div className="space-y-4 mb-6">
@@ -296,7 +300,7 @@ const RequestsList = ({
   requestParamId,
   isCollapsed,
 }: {
-  selectedProject: BotProjectWithRequests;
+  selectedProject: BotProject;
   requestParamId?: string;
   isCollapsed: boolean;
 }) => {
@@ -307,16 +311,15 @@ const RequestsList = ({
       <div className="text-xs font-medium mb-2 px-2 text-gray-500">
         Requests
       </div>
-      {selectedProject?.clientRequests?.length > 0 ? (
-        selectedProject?.clientRequests?.map((request: ClientRequest) => (
+      {(selectedProject as any)?.clientRequests?.length > 0 ? (
+        (selectedProject as any)?.clientRequests?.map((request: ClientRequest) => (
           <Link
             key={request?.id}
             href={`/project/${selectedProject?.id}/request/${request?.id}`}
-            className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${
-              request?.id === requestParamId
-                ? "bg-gray-200 text-black"
-                : "hover:bg-gray-100"
-            }`}
+            className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
+              ? "bg-gray-200 text-black"
+              : "hover:bg-gray-100"
+              }`}
           >
             {request.id === requestParamId ? (
               <ChevronRight
@@ -354,8 +357,8 @@ const NewRequestButton = ({
   selectedProject,
 }: {
   isCollapsed: boolean;
-  onNewRequest: (project: BotProjectWithRequests) => void;
-  selectedProject: BotProjectWithRequests;
+  onNewRequest: (project: BotProject) => void;
+  selectedProject: BotProject;
 }) => {
   if (isCollapsed) {
     return (

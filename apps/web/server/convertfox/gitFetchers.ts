@@ -108,3 +108,15 @@ export async function fetchPackageReadme(packageName: string) {
     return null;
   }
 }
+
+export function packagePathFromName(packageName: string) {
+  return packageName.startsWith("@microfox/")
+    ? packageName.replaceAll("@microfox/", "packages/")
+    : `packages/@ext_${packageName.replaceAll("/", "#")}`;
+}
+
+export function packageNameFromPath(packagePath: string) {
+  return packagePath.startsWith("packages/")
+    ? packagePath.replaceAll("packages/", "@microfox/")
+    : packagePath.replaceAll("packages/@ext_", "@ext_");
+}

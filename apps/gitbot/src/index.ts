@@ -28,6 +28,10 @@ await _appWithHooks.eachRepository(({ octokit, repository }) => {
   console.log(`Found repository: ${repository.name}`);
 });
 
+_appWithHooks.webhooks.onAny((event) => {
+  console.log("Any event received:", JSON.stringify(event, null, 2));
+});
+
 // Create Octokit middleware
 const octokitMiddleware = createNodeMiddleware(_appWithHooks, {
   pathPrefix: "/api/v1/packagefox",

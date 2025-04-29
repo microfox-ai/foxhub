@@ -158,6 +158,13 @@ export const registerGitHubHooks = (_app: App) => {
     );
   });
 
+  _app.webhooks.on("check_run.completed", async (event) => {
+    console.log(
+      "Check run completed event received:",
+      JSON.stringify(event, null, 2)
+    );
+  });
+
   _app.webhooks.onAny((event) => {
     console.log("Any event received:", JSON.stringify(event, null, 2));
   });

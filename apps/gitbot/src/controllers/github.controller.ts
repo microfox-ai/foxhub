@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { App } from "@octokit/app";
 import { GitHubEvent } from "../models/github-event.model.js";
-import { MicrofoxAiApp } from "../lib/octokit.js";
+import { PackageFox } from "../lib/octokit.js";
 
 class GitHubController {
   private octokitApp: App;
@@ -88,4 +88,4 @@ class GitHubController {
 }
 
 // Export a singleton instance
-export const githubController = new GitHubController(MicrofoxAiApp);
+export const githubController = new GitHubController(PackageFox);

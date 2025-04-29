@@ -3,7 +3,7 @@ import { config } from "dotenv";
 import { App, createNodeMiddleware } from "@octokit/app";
 import mongoose from "mongoose";
 import { gitHubRoutes } from "./routes/github.routes.js";
-import { MicrofoxAiApp } from "./lib/octokit.js";
+import { PackageFox } from "./lib/octokit.js";
 import { registerGitHubHooks } from "./hooks/github.hooks.js";
 
 // Load environment variables
@@ -15,9 +15,9 @@ const port = process.env.GITBOT_PORT || 7001;
 // Middleware
 app.use(express.json());
 
-registerGitHubHooks(MicrofoxAiApp);
+registerGitHubHooks(PackageFox);
 // Create Octokit middleware
-const octokitMiddleware = createNodeMiddleware(MicrofoxAiApp, {
+const octokitMiddleware = createNodeMiddleware(PackageFox, {
   pathPrefix: "/api/v1/packagefox",
 });
 // MongoDB Connection

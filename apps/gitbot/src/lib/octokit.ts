@@ -15,7 +15,7 @@ config();
 //   },
 // });
 
-export const MicrofoxAiApp = new App({
+export const PackageFox = new App({
   appId: process.env.GITHUB_APP_ID!,
   privateKey: `-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAoVQB1JJas0ywBFgcOZdLDn/VYbCfqWZbCyuQaxslC4zBAxp9

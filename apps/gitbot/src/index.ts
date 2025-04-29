@@ -3,7 +3,7 @@ import { config } from "dotenv";
 import { App, createNodeMiddleware } from "@octokit/app";
 import mongoose from "mongoose";
 import { gitHubRoutes } from "./routes/github.routes.js";
-import { PackageFox } from "./lib/octokit.js";
+import { PackageFox, webhookMiddleware } from "./lib/octokit.js";
 import { registerGitHubHooks } from "./hooks/github.hooks.js";
 
 // Load environment variables
@@ -46,6 +46,7 @@ mongoose
 
 // Octokit routes
 app.use(octokitMiddleware);
+app.use(webhookMiddleware);
 
 // Custom routes
 //app.use("/api/v2/packagefox", gitHubRoutes);

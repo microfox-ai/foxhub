@@ -1,5 +1,6 @@
 import { App } from "@octokit/app";
 import { config } from "dotenv";
+import { Webhooks, createNodeMiddleware } from "@octokit/webhooks";
 
 config();
 
@@ -13,4 +14,17 @@ export const PackageFox = new App({
     clientId: process.env.GITHUB_CLIENT_ID!,
     clientSecret: process.env.GITHUB_CLIENT_SECRET!,
   },
+});
+
+const webhooks = new Webhooks({
+  secret: process.env.GITHUB_WEBHOOK_SECRET!,
+});
+
+webhooks.onAny(({ id, name, payload }) => {
+  console.log(name, "event received aka 2");
+});
+
+export const webhookMiddleware = createNodeMiddleware(webhooks, {
+  path: "/api/v1/packagefox/webhooks",
+  log: console,
 });

@@ -45,7 +45,7 @@ app.use(
     res: express.Response,
     next: express.NextFunction
   ) => {
-    //console.log("");
+    console.log("Request received:", req.originalUrl);
     console.error(err.stack);
     if (await octokitMiddleware(req, res, next)) {
       return;

@@ -17,23 +17,23 @@ app.use(express.json());
 
 // Register GitHub webhooks
 console.log("Setting up GitHub webhooks...", process.env.GITHUB_WEBHOOK_SECRET);
-const _appWithHooks = registerGitHubHooks(PackageFox);
+// const _appWithHooks = registerGitHubHooks(PackageFox);
 
 // Log installations
-await _appWithHooks.eachInstallation(({ octokit, installation }) => {
+await PackageFox.eachInstallation(({ octokit, installation }) => {
   console.log(`Found installation: ${installation.id}`);
 });
 
-await _appWithHooks.eachRepository(({ octokit, repository }) => {
+await PackageFox.eachRepository(({ octokit, repository }) => {
   console.log(`Found repository: ${repository.name}`);
 });
 
-_appWithHooks.webhooks.onAny((event) => {
+PackageFox.webhooks.onAny((event) => {
   console.log("Any event received:", JSON.stringify(event, null, 2));
 });
 
 // Create Octokit middleware
-const octokitMiddleware = createNodeMiddleware(_appWithHooks, {
+const octokitMiddleware = createNodeMiddleware(PackageFox, {
   pathPrefix: "/api/v1/packagefox",
   log: console,
 });

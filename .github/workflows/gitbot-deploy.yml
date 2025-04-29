@@ -70,21 +70,19 @@ jobs:
         if: ${{steps.build.outputs.build-status == 1 }}
         run: |
           shopt -s dotglob
-          mkdir -p build/gitbot/main-copy
+          TARGET_DIR="build/gitbot/main-copy"
+          mkdir -p "$TARGET_DIR/dist"
           
-          # Copy only the necessary files
-          mkdir -p build/gitbot/main-copy/dist
-          cp -r apps/gitbot/dist/* build/gitbot/main-copy/dist
-          cp -r apps/gitbot/package.json build/gitbot/main-copy
-          
-          # Create a clean node_modules with only production dependencies
-          cd apps/gitbot
-          npm ci --production --ignore-scripts
-          cd ../..
-          
-          # Copy only the gitbot's node_modules
-          cp -r apps/gitbot/node_modules build/gitbot/main-copy
-          cp .env.vault build/gitbot/main-copy/.env.vault
+          # Copy necessary files
+          cp apps/gitbot/package.json "$TARGET_DIR/package.json"
+          cp -r apps/gitbot/dist/* "$TARGET_DIR/dist/"
+          cp .env.vault "$TARGET_DIR/.env.vault"
+
+          # Generate production-only package-lock.json in the target directory
+          npm install --prefix "$TARGET_DIR" --omit=dev --ignore-scripts --package-lock-only
+
+          # Install production dependencies using the generated lock file
+          npm ci --prefix "$TARGET_DIR" --ignore-scripts
 
       - name: Upload using rsync
         if: ${{steps.build.outputs.build-status == 1 }}

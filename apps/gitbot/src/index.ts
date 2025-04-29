@@ -28,30 +28,33 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Octokit routes
-//app.use(octokitMiddleware);
+app.use(octokitMiddleware);
 
 // Custom routes
-//app.use("/api/v1/packagefox", gitHubRoutes);
+app.use("/api/v2/packagefox", gitHubRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
-// Error handling middleware
+
+// Error handling middleware (must be defined AFTER all other routes/middleware)
 app.use(
-  async (
+  (
     err: any,
     req: express.Request,
     res: express.Response,
-    next: express.NextFunction
+    next: express.NextFunction // Keep next even if unused for now, it's the standard signature
   ) => {
-    console.log("Request received:", req.originalUrl);
-    console.error(err.stack);
-    if (await octokitMiddleware(req, res, next)) {
-      return;
-    } else {
-      next();
+    console.error("Unhandled error:", err.stack || err); // Log the error stack or the error itself
+
+    // Avoid sending response if headers already sent (e.g., by a streaming response)
+    if (res.headersSent) {
+      return next(err); // Delegate to default Express handler if response already started
     }
+
+    // Send a generic JSON error response
+    res.status(500).json({ error: "Internal Server Error" });
   }
 );
 

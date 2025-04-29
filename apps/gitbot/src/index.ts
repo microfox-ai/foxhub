@@ -24,7 +24,7 @@ app.use(
 
 // Register GitHub webhooks
 console.log("Setting up GitHub webhooks...", process.env.GITHUB_WEBHOOK_SECRET);
-// const _appWithHooks = registerGitHubHooks(PackageFox);
+registerGitHubHooks(PackageFox);
 
 // Log installations
 await PackageFox.eachInstallation(({ octokit, installation }) => {
@@ -52,8 +52,8 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Octokit routes
-//app.use(octokitMiddleware);
-app.use(webhookMiddleware);
+app.use(octokitMiddleware);
+//app.use(webhookMiddleware);
 
 // Custom routes
 //app.use("/api/v2/packagefox", gitHubRoutes);

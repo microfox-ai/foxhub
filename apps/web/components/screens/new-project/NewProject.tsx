@@ -71,6 +71,11 @@ const NewProject = () => {
           return;
         }
 
+        if (currentSlug.length < 3) {
+          setIsSlugAvailable(null);
+          return;
+        }
+
         setIsCheckingSlug(true);
         try {
           const response = await fetch(
@@ -295,7 +300,7 @@ const NewProject = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
               >
-                Create Project
+                Create your Microfox
               </motion.span>
               <motion.h1
                 className="text-5xl font-semibold text-gray-900"
@@ -305,7 +310,7 @@ const NewProject = () => {
               >
                 Let&apos;s Build Your
                 <br />
-                New Project.
+                New Workspace.
               </motion.h1>
               <motion.p
                 className="text-gray-500"
@@ -313,9 +318,9 @@ const NewProject = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.4 }}
               >
-                Set up your project workspace and customize its appearance.
+                Set up your project workspace, each workspace has 5 free requests,
                 <br />
-                We&apos;ll help you get started with everything you need.
+                and 1 personal microfox that will incrementally adapt to your needs.
               </motion.p>
             </div>
           </motion.div>
@@ -397,13 +402,12 @@ const NewProject = () => {
                                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <Input
                                   placeholder="project-slug"
-                                  className={`pl-9 pr-9 h-12 bg-white border-gray-200 rounded-2xl focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:border-gray-500 ${
-                                    field.value && isSlugAvailable !== null
-                                      ? isSlugAvailable
-                                        ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
-                                        : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
-                                      : ""
-                                  }`}
+                                  className={`pl-9 pr-9 h-12 bg-white border-gray-200 rounded-2xl focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:border-gray-500 ${field.value && isSlugAvailable !== null
+                                    ? isSlugAvailable
+                                      ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
+                                      : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
+                                    : ""
+                                    }`}
                                   {...field}
                                 />
                                 {field.value && (
@@ -424,7 +428,7 @@ const NewProject = () => {
                             <FormMessage className="text-xs mt-1" />
                             {field.value &&
                               !isCheckingSlug &&
-                              isSlugAvailable === false && (
+                              (isSlugAvailable === false || isSlugAvailable === null) && (
                                 <p className="text-xs text-red-500 mt-1">
                                   This slug is already taken
                                 </p>
@@ -586,7 +590,7 @@ const NewProject = () => {
                     ) : (
                       <div className="flex items-center justify-center">
                         <Plus className="w-4 h-4 mr-2" />
-                        Create Project
+                        Create Workspace
                       </div>
                     )}
                   </Button>

@@ -73,19 +73,6 @@ export const ProjectDropdown = ({
     async (url) => await fetch(url).then((res) => res.json())
   );
 
-  //console.log("projects", projects);
-  useEffect(() => {
-    if (projectParamId) {
-      const project = projects?.find((p: any) => p.id === projectParamId);
-      setSelectedProject(project);
-      setValue(projectParamId);
-    } else {
-      const project = projects?.find((p: any) => p.name === "Personal Space");
-      setSelectedProject(project);
-      setValue(project?.id || "");
-    }
-  }, [projectParamId, projects]);
-
   if (isLoading || !projects || !user) {
     return (
       <Skeleton
@@ -106,25 +93,32 @@ export const ProjectDropdown = ({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger className="w-full">
             {!isCollapsed ? (
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className="w-full justify-between border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
-              >
-                <span className="flex-1">
-                  {value
-                    ? projects?.find((_project) => _project.id === value)?.name
-                    : "Select project..."}
-                </span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-start border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
+                >
+                  <img src={selectedProject?.imageUrl ?? ""} className="w-4 h-4 rounded-md object-cover" />
+                  <span className="">
+                    {selectedProject ? selectedProject?.name
+                      : "Select project..."}
+                  </span>
+                  <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+                <Link
+                  href={`/project/${selectedProject?.id}/settings`}
+                  className="p-1 hover:bg-gray-100 rounded-md"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Settings className="h-4 w- 4 text-gray-500" />
+                </Link>
+              </div>
             ) : (
               <Tooltip>
-                <TooltipTrigger>
-                  <Button variant="outline" className="w-fit">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                <TooltipTrigger className="w-full hover:bg-gray-100 rounded-md flex items-center justify-center py-2">
+                  <ChevronRight className="h-4 w-4" />
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -179,30 +173,24 @@ export const ProjectDropdown = ({
                           value === project.id ? "opacity-100" : "opacity-0"
                         )}
                       />
+                      {/* <img src={project.imageUrl ?? "/images/default-bot-avatar.png"} className="w-4 h-4 rounded-md object-cover" /> */}
                       {project.name}
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                <DialogTrigger className="w-full flex">
-                  <div
-                    onClick={() => setOpen(false)}
-                    className="flex opacity-[0.5] items-center py-2 flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
-                  >
-                    <CirclePlusIcon className="h-4 w-4" />
-                    New Project
-                  </div>
-                </DialogTrigger>
+                <div
+                  onClick={() => {
+                    router.push("/new-project");
+                  }}
+                  className=" cursor-pointer flex opacity-[0.5] items-center py-2 flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
+                >
+                  <CirclePlusIcon className="h-4 w-4" />
+                  New Project
+                </div>
               </CommandList>
             </Command>
           </PopoverContent>
         </Popover>
-        <Link
-          href={`/project/${selectedProject?.id}/settings`}
-          className="p-1 hover:bg-gray-100 rounded-md"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Settings className="h-4 w- 4 text-gray-500" />
-        </Link>
       </div>
       <DialogContent>
         <DialogTitle className="sr-only">Create a new project</DialogTitle>

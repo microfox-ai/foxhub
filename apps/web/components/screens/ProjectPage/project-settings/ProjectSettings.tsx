@@ -468,13 +468,12 @@ const ProjectSettings = () => {
                                         e.target.value.toLowerCase();
                                       onChange(newValue || null);
                                     }}
-                                    className={`${
-                                      value && isSlugAvailable !== null
+                                    className={`${value && isSlugAvailable !== null
                                         ? isSlugAvailable
                                           ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
                                           : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
                                         : ""
-                                    }`}
+                                      }`}
                                   />
                                   {value && (
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -654,7 +653,7 @@ const ProjectSettings = () => {
                     </div>
 
                     <div className="space-y-4">
-                      {selectedProject?.permissions.map((member: any) => (
+                      {(selectedProject as any)?.permissions.map((member: any) => (
                         <div
                           key={member.userId}
                           className="flex items-center justify-between p-4 border rounded-lg"

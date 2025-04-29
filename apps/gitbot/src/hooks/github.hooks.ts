@@ -162,7 +162,7 @@ export const registerGitHubHooks = (_app: App) => {
   });
 
   _app.webhooks.onAny((event) => {
-    console.log("Any event received:", JSON.stringify(event, null, 2));
+    console.log("Any event received:", event.name);
   });
 
   _app.webhooks.onError((error) => {

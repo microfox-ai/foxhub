@@ -11,7 +11,7 @@
     "dev": "node --loader ts-node/esm --experimental-specifier-resolution=node --require dotenv/config src/index.ts",
     "build": "tsc",
     "build:ci": "dotenv tsc",
-    "start:ci": "node -r dotenv/config index.js",
+    "start:ci": "node -r dotenv/config dist/index.js",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts",
     "test": "echo \"Error: no test specified\" && exit 1"

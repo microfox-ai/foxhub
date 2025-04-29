@@ -66,8 +66,9 @@ jobs:
         run: |
           shopt -s dotglob
           mkdir -p build/gitbot/main-copy
-          cp -r apps/gitbot/dist/* build/gitbot/main-copy
+          cp -r apps/gitbot/dist/* build/gitbot/main-copy/dist/*
           cp -r apps/gitbot/package.json build/gitbot/main-copy
+          cp -r apps/gitbot/node_modules build/gitbot/main-copy
           cp .env.vault build/gitbot/main-copy/.env.vault
 
       - name: Upload using rsync

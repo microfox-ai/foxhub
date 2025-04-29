@@ -19,7 +19,7 @@ export const registerGitHubHooks = (_app: App) => {
     console.log("Push event received:", JSON.stringify(event, null, 2));
   });
 
-  _app.webhooks.on("issues.opened", async ({ payload, octokit }) => {
+  _app.webhooks.on(["issues.opened"], async ({ payload, octokit }) => {
     console.log(
       "Issue opened event received:",
       JSON.stringify(payload, null, 2)

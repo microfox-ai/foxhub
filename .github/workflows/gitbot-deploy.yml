@@ -71,13 +71,19 @@ jobs:
         run: |
           shopt -s dotglob
           mkdir -p build/gitbot/main-copy
-
+          
           # Copy only the necessary files
           mkdir -p build/gitbot/main-copy/dist
           cp -r apps/gitbot/dist/* build/gitbot/main-copy/dist
           cp -r apps/gitbot/package.json build/gitbot/main-copy
+          
+          # Create a clean node_modules with only production dependencies
+          cd apps/gitbot
+          npm ci --production --ignore-scripts
+          cd ../..
+          
+          # Copy only the gitbot's node_modules
           cp -r apps/gitbot/node_modules build/gitbot/main-copy
-          cp -r node_modules build/gitbot/main-copy
           cp .env.vault build/gitbot/main-copy/.env.vault
 
       - name: Upload using rsync

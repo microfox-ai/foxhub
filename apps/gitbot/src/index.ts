@@ -19,6 +19,7 @@ registerGitHubHooks(PackageFox);
 // Create Octokit middleware
 const octokitMiddleware = createNodeMiddleware(PackageFox, {
   pathPrefix: "/api/v1/packagefox",
+  log: console,
 });
 // MongoDB Connection
 mongoose
@@ -30,8 +31,12 @@ mongoose
 //app.use(octokitMiddleware);
 
 // Custom routes
-app.use("/api/v1/packagefox", gitHubRoutes);
+//app.use("/api/v1/packagefox", gitHubRoutes);
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 // Error handling middleware
 app.use(
   async (
@@ -40,6 +45,7 @@ app.use(
     res: express.Response,
     next: express.NextFunction
   ) => {
+    //console.log("");
     console.error(err.stack);
     if (await octokitMiddleware(req, res, next)) {
       return;

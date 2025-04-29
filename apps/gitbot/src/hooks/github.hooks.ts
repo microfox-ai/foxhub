@@ -1,29 +1,44 @@
 import { App } from "@octokit/app";
 
 export const registerGitHubHooks = (_app: App) => {
+  console.log("Registering GitHub webhooks...");
+
   _app.webhooks.on("installation", async (event) => {
-    console.log("Installation event received:", event);
+    console.log("Installation event received:", JSON.stringify(event, null, 2));
     //_app.octokit.request
   });
 
   _app.webhooks.on("installation_repositories", async (event) => {
-    console.log("Installation repositories event received:", event);
+    console.log(
+      "Installation repositories event received:",
+      JSON.stringify(event, null, 2)
+    );
   });
 
   _app.webhooks.on("push", async (event) => {
-    console.log("Push event received:", event);
+    console.log("Push event received:", JSON.stringify(event, null, 2));
+  });
+
+  _app.webhooks.on("issues.opened", async (event) => {
+    console.log("Issue opened event received:", JSON.stringify(event, null, 2));
   });
 
   _app.webhooks.on("issues.closed", async (event) => {
-    console.log("Issue closed event received:", event);
+    console.log("Issue closed event received:", JSON.stringify(event, null, 2));
   });
 
   _app.webhooks.on("issue_comment.created", async (event) => {
-    console.log("Issue comment created event received:", event);
+    console.log(
+      "Issue comment created event received:",
+      JSON.stringify(event, null, 2)
+    );
   });
 
   _app.webhooks.on("pull_request.opened", async ({ payload, octokit }) => {
-    console.log("Pull request opened event received:", payload);
+    console.log(
+      "Pull request opened event received:",
+      JSON.stringify(payload, null, 2)
+    );
 
     const prTitle = payload.pull_request.title;
     const prBody = payload.pull_request.body;
@@ -33,12 +48,16 @@ export const registerGitHubHooks = (_app: App) => {
 
     // Check if the title starts with "packagefox:" (case-insensitive)
     if (prTitle.toLowerCase().startsWith("packagefox:")) {
+      console.log(`PR #${prNumber} title matches "packagefox:" pattern`);
+
       if (prBody) {
         // Extract URLs from the body
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const detectedUrls = prBody.match(urlRegex);
 
         if (detectedUrls && detectedUrls.length > 0) {
+          console.log(`Found ${detectedUrls.length} URLs in PR #${prNumber}`);
+
           // Construct the comment body
           const commentBody = `URLs detected:\n${detectedUrls.join("\n")}`;
 
@@ -84,6 +103,8 @@ export const registerGitHubHooks = (_app: App) => {
         //   console.error(`Failed to comment on PR #${prNumber} (empty body):`, error);
         // }
       }
+    } else {
+      console.log(`PR #${prNumber} title does not match "packagefox:" pattern`);
     }
 
     // --- Create Task and Subtasks in MongoDB ---
@@ -131,6 +152,11 @@ export const registerGitHubHooks = (_app: App) => {
   });
 
   _app.webhooks.on("pull_request.edited", async (event) => {
-    console.log("Pull request edited event received:", event);
+    console.log(
+      "Pull request edited event received:",
+      JSON.stringify(event, null, 2)
+    );
   });
+
+  console.log("GitHub webhooks registered successfully");
 };

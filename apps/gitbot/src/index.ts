@@ -15,10 +15,15 @@ const port = process.env.GITBOT_PORT || 7001;
 // Middleware
 app.use(express.json());
 
+// Register GitHub webhooks
+console.log("Setting up GitHub webhooks...");
 registerGitHubHooks(PackageFox);
 
+// Log installations
 await PackageFox.eachInstallation(({ octokit, installation }) => {
-  console.log(installation.repositories_url, installation.id);
+  console.log(
+    `Found installation: ${installation.id} - ${installation.repositories_url}`
+  );
 });
 
 // Create Octokit middleware
@@ -27,9 +32,6 @@ const octokitMiddleware = createNodeMiddleware(PackageFox, {
   log: console,
 });
 
-PackageFox.webhooks.on("issues.opened", async (event) => {
-  console.log("Issue opened event received:", event);
-});
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_CONNECTION_URL!)
@@ -45,6 +47,12 @@ app.use(octokitMiddleware);
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+// Webhook endpoint for debugging
+app.post("/webhook", (req, res) => {
+  console.log("Webhook received at /webhook endpoint:", req.body);
+  res.status(200).send("Webhook received");
 });
 
 // Error handling middleware (must be defined AFTER all other routes/middleware)
@@ -69,4 +77,7 @@ app.use(
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+  console.log(
+    `Webhook endpoint: http://localhost:${port}/api/v1/packagefox/webhook`
+  );
 });

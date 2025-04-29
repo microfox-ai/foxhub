@@ -12,7 +12,8 @@
     "prisma:generate": "prisma generate --schema=./apps/web/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-dev": "prisma migrate dev --schema=./apps/web/prisma/schema.prisma",
-    "prisma:migrate-deploy": "dotenv -- prisma migrate deploy --schema=./apps/web/prisma/schema.prisma"
+    "prisma:migrate-deploy": "dotenv -- prisma migrate deploy --schema=./apps/web/prisma/schema.prisma",
+    "postinstall": "npm run prisma:generate"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
@@ -37,6 +38,7 @@
     "@types/yargs-parser": "^21.0.3",
     "eslint": "^9.22.0",
     "prettier": "^3.5.3",
+    "prisma": "^6.6.0",
     "turbo": "^2.4.4",
     "typescript": "5.8.2"
   },

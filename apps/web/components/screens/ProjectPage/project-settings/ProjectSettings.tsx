@@ -67,6 +67,11 @@ const formSchema = z.object({
     .transform((val) => val || null)
     .nullable()
     .optional(),
+  homepageUrl: z
+    .string()
+    .transform((val) => val || null)
+    .nullable()
+    .optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -102,6 +107,7 @@ const ProjectSettings = () => {
       description: "",
       slug: null,
       imageUrl: null,
+      homepageUrl: "",
     },
   });
 
@@ -115,6 +121,7 @@ const ProjectSettings = () => {
         description: selectedProject.description || "",
         slug: selectedProject.slug || null,
         imageUrl: selectedProject.imageUrl || null,
+        homepageUrl: selectedProject.homepageUrl || "",
       });
       if (selectedProject.imageUrl) {
         setPreviewUrl(selectedProject.imageUrl);
@@ -127,6 +134,12 @@ const ProjectSettings = () => {
       const checkSlugAvailability = async () => {
         if (!currentSlug) {
           setIsSlugAvailable(null);
+          return;
+        }
+
+        // If the slug hasn't changed from the current project's slug, it's available
+        if (selectedProject?.slug === currentSlug) {
+          setIsSlugAvailable(true);
           return;
         }
 
@@ -147,7 +160,7 @@ const ProjectSettings = () => {
 
       checkSlugAvailability();
     },
-    [currentSlug],
+    [currentSlug, selectedProject?.slug, projectId],
     500
   );
 
@@ -167,8 +180,12 @@ const ProjectSettings = () => {
       return;
     }
 
-    // Check if slug is available before proceeding
-    if (values.slug && !isSlugAvailable) {
+    // Only check slug availability if it's different from the current project's slug
+    if (
+      values.slug &&
+      values.slug !== selectedProject.slug &&
+      !isSlugAvailable
+    ) {
       toast.error(
         "The chosen slug is already taken. Please choose a different one."
       );
@@ -375,333 +392,361 @@ const ProjectSettings = () => {
           <LogoutElement />
         </div>
       </div>
-      <div className=" max-w-4xl mx-auto">
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="general">General Settings</TabsTrigger>
-            <TabsTrigger value="team">Team Members</TabsTrigger>
-          </TabsList>
+      <div className="h-screen w-full overflow-y-auto thin-scrollbar">
+        <div className=" max-w-4xl pt-10 pb-20 mx-auto">
+          <Tabs defaultValue="general" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="general">General Settings</TabsTrigger>
+              <TabsTrigger value="team">Team Members</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="general">
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Information</CardTitle>
-                <CardDescription>
-                  Update your project details and settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Project Name</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter project name"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Describe your project"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="slug"
-                        render={({ field: { value, onChange, ...field } }) => (
-                          <FormItem>
-                            <FormLabel>Slug</FormLabel>
-                            <FormControl>
-                              <div className="relative">
+            <TabsContent value="general">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Information</CardTitle>
+                  <CardDescription>
+                    Update your project details and settings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Project Name</FormLabel>
+                              <FormControl>
                                 <Input
-                                  placeholder="project-slug"
+                                  placeholder="Enter project name"
                                   {...field}
-                                  value={value || ""}
-                                  onChange={(e) => {
-                                    const newValue =
-                                      e.target.value.toLowerCase();
-                                    onChange(newValue || null);
-                                  }}
-                                  className={`${
-                                    value && isSlugAvailable !== null
-                                      ? isSlugAvailable
-                                        ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
-                                        : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
-                                      : ""
-                                  }`}
                                 />
-                                {value && (
-                                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                    {isCheckingSlug ? (
-                                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                                    ) : isSlugAvailable !== null ? (
-                                      isSlugAvailable ? (
-                                        <Check className="h-4 w-4 text-green-500" />
-                                      ) : (
-                                        <X className="h-4 w-4 text-red-500" />
-                                      )
-                                    ) : null}
-                                  </div>
-                                )}
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                            {value &&
-                              !isCheckingSlug &&
-                              isSlugAvailable === false && (
-                                <p className="text-xs text-red-500 mt-1">
-                                  This slug is already taken
-                                </p>
-                              )}
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="space-y-2">
-                        <FormLabel>Project Icon</FormLabel>
-                        <div className="flex items-center gap-4">
-                          {previewUrl && (
-                            <div className="relative w-20 h-20">
-                              <img
-                                src={previewUrl}
-                                alt="Project preview"
-                                className="rounded-lg object-cover"
-                              />
-                            </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
                           )}
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="max-w-xs"
-                          />
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Description</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Describe your project"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="slug"
+                          render={({
+                            field: { value, onChange, ...field },
+                          }) => (
+                            <FormItem>
+                              <FormLabel>Slug</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Input
+                                    placeholder="project-slug"
+                                    {...field}
+                                    value={value || ""}
+                                    onChange={(e) => {
+                                      const newValue =
+                                        e.target.value.toLowerCase();
+                                      onChange(newValue || null);
+                                    }}
+                                    className={`${value && isSlugAvailable !== null
+                                        ? isSlugAvailable
+                                          ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
+                                          : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
+                                        : ""
+                                      }`}
+                                  />
+                                  {value && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                      {isCheckingSlug ? (
+                                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                      ) : isSlugAvailable !== null ? (
+                                        isSlugAvailable ? (
+                                          <Check className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                          <X className="h-4 w-4 text-red-500" />
+                                        )
+                                      ) : null}
+                                    </div>
+                                  )}
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                              {value &&
+                                !isCheckingSlug &&
+                                isSlugAvailable === false && (
+                                  <p className="text-xs text-red-500 mt-1">
+                                    This slug is already taken
+                                  </p>
+                                )}
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="homepageUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Homepage URL</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="https://your-company.com or https://your-ai-agent.com"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) =>
+                                    field.onChange(e.target.value || null)
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                              <p className="text-sm text-muted-foreground">
+                                Optional: Link to your company website, AI
+                                agent, or web application
+                              </p>
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="space-y-2">
+                          <FormLabel>Project Icon</FormLabel>
+                          <div className="flex items-center gap-4">
+                            {previewUrl && (
+                              <div className="relative w-20 h-20">
+                                <img
+                                  src={previewUrl}
+                                  alt="Project preview"
+                                  className="rounded-lg object-cover"
+                                />
+                              </div>
+                            )}
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                              className="max-w-xs"
+                            />
+                          </div>
                         </div>
                       </div>
+
+                      <Button type="submit" disabled={isSaving}>
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Changes"
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="team">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Team Members</CardTitle>
+                  <CardDescription>
+                    Manage who has access to this project
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          placeholder="Enter email address"
+                          value={inviteEmail}
+                          onChange={(e) => {
+                            setInviteEmail(e.target.value);
+                            setShowUserSuggestions(true);
+                          }}
+                          onFocus={() => setShowUserSuggestions(true)}
+                          onBlur={() =>
+                            setTimeout(() => setShowUserSuggestions(false), 200)
+                          }
+                          type="email"
+                        />
+                        {showUserSuggestions && (
+                          <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground shadow-md rounded-md border">
+                            <div className="max-h-[300px] overflow-y-auto">
+                              {isSearchingUsers ? (
+                                <div className="flex items-center justify-center p-4">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                </div>
+                              ) : userSuggestions.length > 0 ? (
+                                <div className="divide-y">
+                                  {userSuggestions.map((user) => (
+                                    <button
+                                      key={user.id}
+                                      className="flex w-full items-center gap-3 p-3 hover:bg-accent"
+                                      onClick={() => handleUserSelect(user)}
+                                      onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                                    >
+                                      <Avatar>
+                                        <AvatarImage
+                                          src={user.avatar || undefined}
+                                        />
+                                        <AvatarFallback>
+                                          {user.name?.[0]?.toUpperCase() || "?"}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex flex-col items-start">
+                                        <span className="font-medium">
+                                          {user.name}
+                                        </span>
+                                        <span className="text-sm text-muted-foreground">
+                                          {user.email}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                  No users found
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <Button
+                        onClick={handleInviteMember}
+                        disabled={isInviting || !inviteEmail}
+                      >
+                        {isInviting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Inviting...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Invite
+                          </>
+                        )}
+                      </Button>
                     </div>
 
-                    <Button type="submit" disabled={isSaving}>
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Changes"
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="team">
-            <Card>
-              <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                  Manage who has access to this project
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        placeholder="Enter email address"
-                        value={inviteEmail}
-                        onChange={(e) => {
-                          setInviteEmail(e.target.value);
-                          setShowUserSuggestions(true);
-                        }}
-                        onFocus={() => setShowUserSuggestions(true)}
-                        onBlur={() =>
-                          setTimeout(() => setShowUserSuggestions(false), 200)
-                        }
-                        type="email"
-                      />
-                      {showUserSuggestions && (
-                        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground shadow-md rounded-md border">
-                          <div className="max-h-[300px] overflow-y-auto">
-                            {isSearchingUsers ? (
-                              <div className="flex items-center justify-center p-4">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              </div>
-                            ) : userSuggestions.length > 0 ? (
-                              <div className="divide-y">
-                                {userSuggestions.map((user) => (
-                                  <button
-                                    key={user.id}
-                                    className="flex w-full items-center gap-3 p-3 hover:bg-accent"
-                                    onClick={() => handleUserSelect(user)}
-                                    onMouseDown={(e) => e.preventDefault()} // Prevent blur
-                                  >
-                                    <Avatar>
-                                      <AvatarImage
-                                        src={user.avatar || undefined}
-                                      />
-                                      <AvatarFallback>
-                                        {user.name?.[0]?.toUpperCase() || "?"}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex flex-col items-start">
-                                      <span className="font-medium">
-                                        {user.name}
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">
-                                        {user.email}
-                                      </span>
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="p-4 text-center text-sm text-muted-foreground">
-                                No users found
-                              </div>
+                    <div className="space-y-4">
+                      {(selectedProject as any)?.permissions.map((member: any) => (
+                        <div
+                          key={member.userId}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage
+                                src={member.user.avatar || undefined}
+                              />
+                              <AvatarFallback>
+                                {member.user.name?.[0]?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{member.user.name}</p>
+                              <p className="text-sm text-gray-500">
+                                {member.user.email}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-500">
+                              {member.role}
+                            </span>
+                            {member.userId !== user?.id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  handleRemoveMember(
+                                    member.userId,
+                                    member.user.name
+                                  )
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                    <Button
-                      onClick={handleInviteMember}
-                      disabled={isInviting || !inviteEmail}
-                    >
-                      {isInviting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Inviting...
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Invite
-                        </>
-                      )}
-                    </Button>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
-                  <div className="space-y-4">
-                    {selectedProject?.permissions.map((member: any) => (
-                      <div
-                        key={member.userId}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage
-                              src={member.user.avatar || undefined}
-                            />
-                            <AvatarFallback>
-                              {member.user.name?.[0]?.toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{member.user.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {member.user.email}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm text-gray-500">
-                            {member.role}
-                          </span>
-                          {member.userId !== user?.id && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                handleRemoveMember(
-                                  member.userId,
-                                  member.user.name
-                                )
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <Dialog
-          open={!!memberToDelete}
-          onOpenChange={(open) => {
-            if (!open) {
-              setMemberToDelete(null);
-            }
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Remove Team Member</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to remove {memberToDelete?.name} from this
-                project? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMemberToDelete(null);
-                }}
-                disabled={isDeleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDeleteMember}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Removing...
-                  </>
-                ) : (
-                  "Remove"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          <Dialog
+            open={!!memberToDelete}
+            onOpenChange={(open) => {
+              if (!open) {
+                setMemberToDelete(null);
+              }
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Remove Team Member</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to remove {memberToDelete?.name} from
+                  this project? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMemberToDelete(null);
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDeleteMember}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Removing...
+                    </>
+                  ) : (
+                    "Remove"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </div>
   );

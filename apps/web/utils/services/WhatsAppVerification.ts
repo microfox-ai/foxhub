@@ -203,4 +203,39 @@ export class WhatsAppVerificationSdk {
       },
     });
   }
+
+  public async setupWebhookHandshakeSubscription(
+    accessToken: string,
+    businessAccountId: string
+  ): Promise<void> {
+    const doc = await fetch(
+      `https://graph.facebook.com/v22.0/${businessAccountId}/subscribed_apps`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+  }
+
+  public async registerBusinessNumber(
+    accessToken: string,
+    phoneNumberId: string
+  ): Promise<void> {
+    const doc = await fetch(
+      `https://graph.facebook.com/v22.0/${phoneNumberId}/register`,
+      {
+        method: "POST",
+        body: JSON.stringify({ pin: "123456" }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+  }
+
+  // public async handshake for webhooks
 }

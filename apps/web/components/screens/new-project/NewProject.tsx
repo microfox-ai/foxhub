@@ -46,6 +46,11 @@ const formSchema = z.object({
     ),
   description: z.string().min(1, "Description is required"),
   image: z.any().optional(),
+  homepageUrl: z
+    .string()
+    .url("Please enter a valid URL")
+    .optional()
+    .or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -62,6 +67,11 @@ const NewProject = () => {
     () => {
       const checkSlugAvailability = async () => {
         if (!currentSlug) {
+          setIsSlugAvailable(null);
+          return;
+        }
+
+        if (currentSlug.length < 3) {
           setIsSlugAvailable(null);
           return;
         }
@@ -139,6 +149,7 @@ const NewProject = () => {
             userId: user.id,
             slug: values.slug || null,
             imageUrl: values.image || null,
+            homepageUrl: values.homepageUrl || null,
           }),
         });
 
@@ -289,7 +300,7 @@ const NewProject = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
               >
-                Create Project
+                Create your Microfox
               </motion.span>
               <motion.h1
                 className="text-5xl font-semibold text-gray-900"
@@ -299,7 +310,7 @@ const NewProject = () => {
               >
                 Let&apos;s Build Your
                 <br />
-                New Project.
+                New Workspace.
               </motion.h1>
               <motion.p
                 className="text-gray-500"
@@ -307,9 +318,9 @@ const NewProject = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.4 }}
               >
-                Set up your project workspace and customize its appearance.
+                Set up your project workspace, each workspace has 5 free requests,
                 <br />
-                We&apos;ll help you get started with everything you need.
+                and 1 personal microfox that will incrementally adapt to your needs.
               </motion.p>
             </div>
           </motion.div>
@@ -391,13 +402,12 @@ const NewProject = () => {
                                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <Input
                                   placeholder="project-slug"
-                                  className={`pl-9 pr-9 h-12 bg-white border-gray-200 rounded-2xl focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:border-gray-500 ${
-                                    field.value && isSlugAvailable !== null
-                                      ? isSlugAvailable
-                                        ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
-                                        : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
-                                      : ""
-                                  }`}
+                                  className={`pl-9 pr-9 h-12 bg-white border-gray-200 rounded-2xl focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:border-gray-500 ${field.value && isSlugAvailable !== null
+                                    ? isSlugAvailable
+                                      ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
+                                      : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
+                                    : ""
+                                    }`}
                                   {...field}
                                 />
                                 {field.value && (
@@ -418,7 +428,7 @@ const NewProject = () => {
                             <FormMessage className="text-xs mt-1" />
                             {field.value &&
                               !isCheckingSlug &&
-                              isSlugAvailable === false && (
+                              (isSlugAvailable === false || isSlugAvailable === null) && (
                                 <p className="text-xs text-red-500 mt-1">
                                   This slug is already taken
                                 </p>
@@ -455,6 +465,41 @@ const NewProject = () => {
                             </div>
                           </FormControl>
                           <FormMessage className="text-xs mt-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+
+                  {/* Homepage URL Field */}
+                  <motion.div
+                    variants={{
+                      hidden: { y: 20, opacity: 0 },
+                      visible: { y: 0, opacity: 1 },
+                    }}
+                  >
+                    <FormField
+                      control={form.control}
+                      name="homepageUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700 font-medium mb-1 block text-sm">
+                            Homepage URL
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              <Input
+                                placeholder="https://your-company.com or https://your-ai-agent.com"
+                                className="pl-9 h-12 bg-white border-gray-200 rounded-2xl focus-visible:ring-1 focus-visible:ring-gray-500 focus-visible:border-gray-500"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage className="text-xs mt-1" />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Link to your company website, AI agent, or web
+                            application
+                          </p>
                         </FormItem>
                       )}
                     />
@@ -545,7 +590,7 @@ const NewProject = () => {
                     ) : (
                       <div className="flex items-center justify-center">
                         <Plus className="w-4 h-4 mr-2" />
-                        Create Project
+                        Create Workspace
                       </div>
                     )}
                   </Button>

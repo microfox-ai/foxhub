@@ -3,6 +3,9 @@ name: Production Deployment
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/web/**'
+      - '.github/workflows/prod-deploy.yml'
 
 permissions:
   contents: write

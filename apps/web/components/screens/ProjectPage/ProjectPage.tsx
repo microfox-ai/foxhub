@@ -72,7 +72,7 @@ export const ProjectPage = () => {
               <TabsTrigger value="requests">Requests</TabsTrigger>
               <TabsTrigger value="bots">Bots</TabsTrigger>
             </TabsList>
-            <Button
+            {/* <Button
               onClick={async () => {
                 const newRequest = await createEmptyClientRequest({
                   userId: user.id,
@@ -95,7 +95,7 @@ export const ProjectPage = () => {
             >
               <CirclePlusIcon size={24} />
               New Request
-            </Button>
+            </Button> */}
           </div>
           <TabsContent value="requests">
             <div className="flex flex-col p-2 gap-2 bg-neutral-50  rounded-xl min-h-[70vh] shadow-md">
@@ -112,7 +112,7 @@ export const ProjectPage = () => {
                   >
                     <div>
                       <h4 className="text-md font-bold text-neutral-700">
-                        {request.title}
+                        {request.title === "Untitled" ? "New Chat Request" : request.title}
                       </h4>
                       <p className="text-xs text-neutral-400">
                         {request.requestDir}

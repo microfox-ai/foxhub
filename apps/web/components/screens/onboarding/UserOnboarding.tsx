@@ -160,20 +160,18 @@ const RoleSelector = ({
     {Object.entries(roleIcons).map(([roleValue, icon]) => (
       <div
         key={roleValue}
-        className={`cursor-pointer transition-all rounded-lg border-2 ${
-          value === roleValue
+        className={`cursor-pointer transition-all rounded-lg border-2 ${value === roleValue
             ? "border-[1.5px] border-primary bg-primary/5"
             : "hover:border-gray-300"
-        }`}
+          }`}
         onClick={() => onChange(roleValue)}
       >
         <div className="flex items-center p-3">
           <div
-            className={`rounded-lg p-1.5 ${
-              value === roleValue
+            className={`rounded-lg p-1.5 ${value === roleValue
                 ? "bg-primary text-white"
                 : "bg-gray-100 text-gray-500"
-            }`}
+              }`}
           >
             {icon}
           </div>
@@ -267,6 +265,7 @@ const UserOnboarding = () => {
   const handleSkipConfirm = () => {
     // Here you would typically navigate to the main app or close the onboarding
     console.log("Skipping onboarding");
+    router.push("/dashboard");
   };
 
   const isStepValid = () => {

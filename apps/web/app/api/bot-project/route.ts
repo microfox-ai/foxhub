@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { createNewBotProject } from "@/utils/services/db_functions/createNewBotProject";
 import { serverAnalytics } from "@/utils/services/analytics/server";
+import { Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { id, name, description, slug, imageUrl } = await request.json();
+    const { id, ...rest } = await request.json();
 
     if (!id) {
       return NextResponse.json(
@@ -58,9 +59,21 @@ export async function PUT(request: Request) {
       );
     }
 
+    // Use Prisma's update input type
+    const updateData: Prisma.BotProjectUpdateInput = {
+      name: rest.name,
+      description: rest.description,
+      slug: rest.slug,
+      homepageUrl: rest.homepageUrl,
+      imageUrl: rest.imageUrl,
+      githubRepoBranch: rest.githubRepoBranch,
+      templateVersion: rest.templateVersion,
+      metadata: rest.metadata,
+    };
+
     const updatedProject = await prisma.botProject.update({
       where: { id },
-      data: { name, description, slug, imageUrl },
+      data: updateData,
     });
 
     return NextResponse.json(updatedProject);

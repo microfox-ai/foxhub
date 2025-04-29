@@ -45,7 +45,7 @@ export const TaskIntegrations = ({
         clientSecrets: ClientSecret[];
     }>(
         requestParamId
-            ? `/api/client-secrets?clientRequestId=${requestParamId}`
+            ? `/api/client-secrets?clientRequestId=${requestParamId}&status=FILLED`
             : null,
         async (url: string) => {
             const res = await fetch(url);

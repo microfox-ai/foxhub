@@ -25,8 +25,8 @@ const ResizableSidebar = () => {
       maxSize={16}
       collapsible={true}
       collapsedSize={4}
-      // onCollapse={() => handleLeftCollapse(true)}
-      // onExpand={() => handleLeftCollapse(false)}
+      onCollapse={() => handleLeftCollapse(true)}
+      onExpand={() => handleLeftCollapse(false)}
       className={cn(
         "z-50",
         isLeftTransitioning && "transition-all duration-100 linear"
@@ -37,7 +37,7 @@ const ResizableSidebar = () => {
           selectedProject={selectedProject}
           onSelectRequest={setSelectedRequest}
           onNewRequest={createNewEmptyRequest}
-          onOpenConfig={(project: any) => {}}
+          onOpenConfig={(project: any) => { }}
           isCollapsed={isLeftCollapsed}
           onCollapse={handleLeftCollapse}
         />

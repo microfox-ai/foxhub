@@ -17,7 +17,7 @@ import {
 } from "@/utils/services/db_functions/secrets_helper";
 import { ClientSecretPackageType } from "@/server/types";
 import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
-
+import { CLIENTSECRETSTATUS } from "@prisma/client";
 // Create ClientSecret
 export async function POST(req: NextRequest) {
   try {
@@ -92,6 +92,7 @@ export async function GET(req: NextRequest) {
     const packageConstructor = searchParams.get("packageConstructor");
     const withPackageInfos = searchParams.get("withPackageInfos");
     const packageTypes = searchParams.get("packageTypes");
+    const status = searchParams.get("status");
 
     const whereClause = {
       ...(id ? { id } : {}),
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
       ...(packageName ? { packageName } : {}),
       ...(packageConstructor ? { packageConstructor } : {}),
       ...(packageTypes ? { packageType: { in: packageTypes.split(",") } } : {}),
+      ...(status ? { status: status as CLIENTSECRETSTATUS } : {}),
     };
 
     const clientSecrets = await prisma.clientSecret.findMany({

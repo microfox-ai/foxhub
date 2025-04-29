@@ -26,11 +26,15 @@ export async function createNewBotProject({
   projectName,
   projectDescription,
   slug,
+  homepageUrl,
+  imageUrl,
 }: {
   userId: string;
   projectName: string;
   projectDescription: string;
   slug?: string;
+  homepageUrl?: string;
+  imageUrl?: string;
 }) {
   if (!userId) {
     console.error("No user ID provided");
@@ -144,6 +148,8 @@ export async function createNewBotProject({
       prUrl: prResult.data.html_url,
       prNumber: prResult.data.number,
       description: projectDescription,
+      homepageUrl: homepageUrl,
+      imageUrl: imageUrl,
       slug: slug,
       templateVersion,
       metadata: {

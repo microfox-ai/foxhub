@@ -235,6 +235,7 @@ export async function POST(
             body: JSON.stringify({
               number: phoneNumber,
               userId: userId,
+              message: message,
             }),
           });
           if (response.status === 200) {

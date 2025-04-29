@@ -1,7 +1,6 @@
-import { Octokit } from "octokit";
-import glob from "globby";
-import path from "path";
 import { readFile } from "fs/promises";
+import { globby } from "globby";
+import { Octokit } from "octokit";
 
 export const uploadToRepo = async (
   octo: Octokit,
@@ -26,7 +25,7 @@ export const uploadToRepo = async (
           lastCommit
         );
 
-    const filesPaths = await glob(coursePath);
+    const filesPaths = await globby(coursePath);
     const filesBlobs = await Promise.all(
       filesPaths.map(createBlobForFile(octo, org, repo))
     );

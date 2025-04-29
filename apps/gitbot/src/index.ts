@@ -26,6 +26,10 @@ const octokitMiddleware = createNodeMiddleware(PackageFox, {
   pathPrefix: "/api/v1/packagefox",
   log: console,
 });
+
+PackageFox.webhooks.on("issues.opened", async (event) => {
+  console.log("Issue opened event received:", event);
+});
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_CONNECTION_URL!)

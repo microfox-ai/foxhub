@@ -14,8 +14,8 @@ export const registerGitHubHooks = (_app: App) => {
     console.log("Push event received:", event);
   });
 
-  _app.webhooks.on("issues.opened", async (event) => {
-    console.log("Issue opened event received:", event);
+  _app.webhooks.on("issues.closed", async (event) => {
+    console.log("Issue closed event received:", event);
   });
 
   _app.webhooks.on("issue_comment.created", async (event) => {

@@ -13,7 +13,14 @@ const app = express();
 const port = process.env.GITBOT_PORT || 7001;
 
 // Middleware
-app.use(express.json());
+//app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      (req as any).rawBody = buf;
+    },
+  })
+);
 
 // Register GitHub webhooks
 console.log("Setting up GitHub webhooks...", process.env.GITHUB_WEBHOOK_SECRET);
@@ -45,7 +52,7 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Octokit routes
-app.use(octokitMiddleware);
+//app.use(octokitMiddleware);
 app.use(webhookMiddleware);
 
 // Custom routes

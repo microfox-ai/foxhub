@@ -17,17 +17,19 @@ app.use(express.json());
 
 // Register GitHub webhooks
 console.log("Setting up GitHub webhooks...");
-registerGitHubHooks(PackageFox);
+const _appWithHooks = registerGitHubHooks(PackageFox);
 
 // Log installations
-await PackageFox.eachInstallation(({ octokit, installation }) => {
-  console.log(
-    `Found installation: ${installation.id} - ${installation.repositories_url}`
-  );
+await _appWithHooks.eachInstallation(({ octokit, installation }) => {
+  console.log(`Found installation: ${installation.id}`);
+});
+
+await _appWithHooks.eachRepository(({ octokit, repository }) => {
+  console.log(`Found repository: ${repository.name}`);
 });
 
 // Create Octokit middleware
-const octokitMiddleware = createNodeMiddleware(PackageFox, {
+const octokitMiddleware = createNodeMiddleware(_appWithHooks, {
   pathPrefix: "/api/v1/packagefox",
   log: console,
 });
@@ -47,12 +49,6 @@ app.use(octokitMiddleware);
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
-});
-
-// Webhook endpoint for debugging
-app.post("/webhook", (req, res) => {
-  console.log("Webhook received at /webhook endpoint:", req.body);
-  res.status(200).send("Webhook received");
 });
 
 // Error handling middleware (must be defined AFTER all other routes/middleware)

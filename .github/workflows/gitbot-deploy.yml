@@ -3,6 +3,9 @@ name: Gitbot Deployment
 on:
   push:
     branches: [main]
+    paths:
+      - 'apps/gitbot/**'
+      - '.github/workflows/gitbot-deploy.yml'
 
 permissions:
   contents: write

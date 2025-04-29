@@ -12,11 +12,30 @@
     "prisma:generate": "prisma generate --schema=./apps/web/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-dev": "prisma migrate dev --schema=./apps/web/prisma/schema.prisma",
-    "prisma:migrate-deploy": "dotenv -- prisma migrate deploy --schema=./apps/web/prisma/schema.prisma",
-    "postinstall": "npm run prisma:generate"
+    "prisma:migrate-deploy": "dotenv -- prisma migrate deploy --schema=./apps/web/prisma/schema.prisma"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/aws-lambda": "^8.10.142",
+    "@types/body-parser": "^1.19.5",
+    "@types/caseless": "^0.12.3",
+    "@types/istanbul-lib-report": "^3.0.3",
     "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/minimatch": "^5.1.2",
+    "@types/ms": "^0.7.34",
+    "@types/node": "^22.13.9",
+    "@types/qs": "^6.9.15",
+    "@types/range-parser": "^1.2.7",
+    "@types/react": "19.0.10",
+    "@types/send": "^0.17.4",
+    "@types/serve-static": "^1.15.7",
+    "@types/through": "^0.0.32",
+    "@types/tough-cookie": "^4.0.5",
+    "@types/webidl-conversions": "^7.0.3",
+    "@types/yargs-parser": "^21.0.3",
+    "eslint": "^9.22.0",
     "prettier": "^3.5.3",
     "turbo": "^2.4.4",
     "typescript": "5.8.2"
@@ -30,8 +49,7 @@
     "packages/*"
   ],
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
-    "@microfox/aws-ses": "^1.0.4",
+    "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0"
   }

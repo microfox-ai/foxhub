@@ -29,8 +29,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            **/node_modules
             .turbo
-            apps/gitbot/.next/cache
+            **/.next/cache
+            **/dist
           key: ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
           restore-keys: |
             ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-
@@ -66,10 +68,16 @@ jobs:
         run: |
           shopt -s dotglob
           mkdir -p build/gitbot/main-copy
+
+          # Create a production-optimized node_modules
+          cd apps/gitbot
+          npm ci --production
+          cd ../..
+
+          # Copy only the necessary files
           mkdir -p build/gitbot/main-copy/dist
           cp -r apps/gitbot/dist/* build/gitbot/main-copy/dist
           cp -r apps/gitbot/package.json build/gitbot/main-copy
-          cp -r apps/gitbot/node_modules build/gitbot/main-copy
           cp .env.vault build/gitbot/main-copy/.env.vault
 
       - name: Upload using rsync

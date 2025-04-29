@@ -72,11 +72,6 @@ jobs:
           shopt -s dotglob
           mkdir -p build/gitbot/main-copy
 
-          # Create a production-optimized node_modules
-          cd apps/gitbot
-          npm ci --production
-          cd ../..
-
           # Copy only the necessary files
           mkdir -p build/gitbot/main-copy/dist
           cp -r apps/gitbot/dist/* build/gitbot/main-copy/dist

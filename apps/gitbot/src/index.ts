@@ -16,6 +16,11 @@ const port = process.env.GITBOT_PORT || 7001;
 app.use(express.json());
 
 registerGitHubHooks(PackageFox);
+
+await PackageFox.eachInstallation(({ octokit, installation }) => {
+  console.log(installation.repositories_url, installation.id);
+});
+
 // Create Octokit middleware
 const octokitMiddleware = createNodeMiddleware(PackageFox, {
   pathPrefix: "/api/v1/packagefox",

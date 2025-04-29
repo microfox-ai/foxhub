@@ -1,0 +1,144 @@
+name: Gitbot Deployment
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.repository }}-gitbot
+  cancel-in-progress: true
+
+jobs:
+  gitbot-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache dependencies and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/gitbot/.next/cache
+          key: ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        id: install
+        run: |
+          if ! npm install; then
+            echo "install-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "install-status=1" >> $GITHUB_OUTPUT
+
+      - name: Build project
+        id: build
+        run: |
+          if ${{steps.install.outputs.install-status == 0}} ; then
+            echo "npm install failed"
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
+
+          if ! npm run build:ci; then
+            echo "build-status=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "build-status=1" >> $GITHUB_OUTPUT
+
+      - name: Prepare deployment files
+        if: ${{steps.build.outputs.build-status == 1 }}
+        run: |
+          shopt -s dotglob
+          mkdir -p build/gitbot/main-copy
+          cp -r apps/gitbot/dist/* build/gitbot/main-copy
+          cp -r apps/gitbot/package.json build/gitbot/main-copy
+          cp .env.vault build/gitbot/main-copy/.env.vault
+
+      - name: Upload using rsync
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: "-av --delete --partial --bwlimit=5000"
+          path: "build/gitbot/main-copy/"
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/foxhub/builds/gitbot/main-copy"
+          remote_host: ${{ secrets.DROPLET_IP }}
+          remote_user: ${{ secrets.DROPLET_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up SSH (secured)
+        if: ${{steps.build.outputs.build-status == 1 }}
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          log-public-key: false
+
+      - name: Deploy on DigitalOcean
+        if: ${{steps.build.outputs.build-status == 1 }}
+        id: deploy
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
+            source ~/.nvm/nvm.sh
+            nvm use 23
+            
+            BASE_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/gitbot"
+            MAIN_PATH="$BASE_PATH/main"
+            COPY_PATH="$BASE_PATH/main-copy"
+            BACKUP_PATH="$BASE_PATH/main-backup"
+            
+            # Create backup of current production build if it exists
+            if [ -d "$MAIN_PATH" ]; then
+              rm -rf "$BACKUP_PATH"
+              cp -r "$MAIN_PATH" "$BACKUP_PATH"
+            fi
+            
+            # Copy new build from main-copy to main
+            rm -rf "$MAIN_PATH"
+            cp -r "$COPY_PATH" "$MAIN_PATH"
+            
+            cd "$MAIN_PATH"
+            
+            export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
+            export PORT=7001
+
+            # Check if the process exists
+            if pm2 list | grep -q "foxhub-gitbot" ; then
+              # Restart the existing process
+              if ! pm2 restart "foxhub-gitbot" --update-env ; then
+                echo "Failed to restart PM2 process"
+                exit 1
+              fi
+            else
+              # First time deployment
+              if ! pm2 start npm --name "foxhub-gitbot" -- run start:ci ; then
+                echo "Failed to start PM2 process"
+                exit 1
+              fi
+            fi
+            
+            if ! pm2 show "foxhub-gitbot" > /dev/null 2>&1; then
+              echo "Failed to start/restart PM2 process"
+              exit 1
+            fi
+            echo "Successfully deployed gitbot build"
+          ENDSSH
+          if [ $? -ne 0 ]; then
+            echo "Deployment step failed"
+            exit 1
+          fi

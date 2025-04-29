@@ -19,8 +19,20 @@ export const registerGitHubHooks = (_app: App) => {
     console.log("Push event received:", JSON.stringify(event, null, 2));
   });
 
-  _app.webhooks.on("issues.opened", async (event) => {
-    console.log("Issue opened event received:", JSON.stringify(event, null, 2));
+  _app.webhooks.on("issues.opened", async ({ payload, octokit }) => {
+    console.log(
+      "Issue opened event received:",
+      JSON.stringify(payload, null, 2)
+    );
+    await octokit.request(
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
+      {
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        issue_number: payload.issue.number,
+        body: "Hello World!",
+      }
+    );
   });
 
   _app.webhooks.on("issues.closed", async (event) => {

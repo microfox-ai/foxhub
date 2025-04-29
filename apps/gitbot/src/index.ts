@@ -16,7 +16,7 @@ const port = process.env.GITBOT_PORT || 7001;
 app.use(express.json());
 
 // Register GitHub webhooks
-console.log("Setting up GitHub webhooks...");
+console.log("Setting up GitHub webhooks...", process.env.GITHUB_WEBHOOK_SECRET);
 const _appWithHooks = registerGitHubHooks(PackageFox);
 
 // Log installations

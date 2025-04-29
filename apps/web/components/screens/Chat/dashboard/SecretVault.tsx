@@ -48,7 +48,7 @@ export const SecretVault = () => {
         clientSecrets: ClientSecretWithPackageInfo[];
     }>(
         clientRequestId
-            ? `/api/client-secrets?clientRequestId=${clientRequestId}&withPackageInfos=true`
+            ? `/api/client-secrets?clientRequestId=${clientRequestId}&withPackageInfos=true&status=FILLED`
             : null,
         async (url: string) => {
             const res = await fetch(url);

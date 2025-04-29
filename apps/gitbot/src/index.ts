@@ -36,7 +36,7 @@ mongoose
 app.use(octokitMiddleware);
 
 // Custom routes
-app.use("/api/v2/packagefox", gitHubRoutes);
+//app.use("/api/v2/packagefox", gitHubRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

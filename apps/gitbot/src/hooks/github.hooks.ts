@@ -22,8 +22,69 @@ export const registerGitHubHooks = (_app: App) => {
     console.log("Issue comment created event received:", event);
   });
 
-  _app.webhooks.on("pull_request.opened", async (event) => {
-    console.log("Pull request opened event received:", event);
+  _app.webhooks.on("pull_request.opened", async ({ payload, octokit }) => {
+    console.log("Pull request opened event received:", payload);
+
+    const prTitle = payload.pull_request.title;
+    const prBody = payload.pull_request.body;
+    const prNumber = payload.pull_request.number;
+    const repoOwner = payload.repository.owner.login;
+    const repoName = payload.repository.name;
+
+    // Check if the title starts with "packagefox:" (case-insensitive)
+    if (prTitle.toLowerCase().startsWith("packagefox:")) {
+      if (prBody) {
+        // Extract URLs from the body
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const detectedUrls = prBody.match(urlRegex);
+
+        if (detectedUrls && detectedUrls.length > 0) {
+          // Construct the comment body
+          const commentBody = `URLs detected:\n${detectedUrls.join("\n")}`;
+
+          // Post a comment on the PR
+          try {
+            await octokit.request(
+              `POST /repos/${repoOwner}/${repoName}/issues/${prNumber}/comments`,
+              {
+                body: commentBody,
+              }
+            );
+            console.log(`Commented on PR #${prNumber} with detected URLs.`);
+          } catch (error) {
+            console.error(`Failed to comment on PR #${prNumber}:`, error);
+          }
+        } else {
+          console.log(
+            `PR #${prNumber} title matched but no URLs found in the body.`
+          );
+          // Optionally, comment that no URLs were found
+          // try {
+          //   await octokit.issues.createComment({
+          //     owner: repoOwner,
+          //     repo: repoName,
+          //     issue_number: prNumber,
+          //     body: "Title indicated URL processing, but no URLs were found in the description.",
+          //   });
+          // } catch (error) {
+          //   console.error(`Failed to comment on PR #${prNumber} (no URLs found):`, error);
+          // }
+        }
+      } else {
+        console.log(`PR #${prNumber} title matched but the body is empty.`);
+        // Optionally, comment that the body is empty
+        // try {
+        //   await octokit.issues.createComment({
+        //     owner: repoOwner,
+        //     repo: repoName,
+        //     issue_number: prNumber,
+        //     body: "Title indicated URL processing, but the description is empty.",
+        //   });
+        // } catch (error) {
+        //   console.error(`Failed to comment on PR #${prNumber} (empty body):`, error);
+        // }
+      }
+    }
 
     // --- Create Task and Subtasks in MongoDB ---
     // try {

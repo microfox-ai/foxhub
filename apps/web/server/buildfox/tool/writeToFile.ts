@@ -283,7 +283,7 @@ export const writeToFile = (
           );
           const packageJsonContent = JSON.parse(packageJson);
           packagesUsed?.forEach((pkg) => {
-            if (packageJsonContent.dependencies[pkg]) {
+            if (!packageJsonContent.dependencies[pkg]) {
               packageJsonContent.dependencies[pkg] = "*";
             }
           });

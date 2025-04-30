@@ -55,6 +55,7 @@ export const updateSession = async (request: NextRequest) => {
 
     if (request.nextUrl.pathname.startsWith("/api")) {
       console.log(request.nextUrl);
+      console.log(JSON.stringify(request.headers));
       console.log(
         "middleware api",
         request.headers.get("microfox-api-key"),

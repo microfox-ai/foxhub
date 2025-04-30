@@ -16,14 +16,14 @@ export async function signInWithGoogle({ redirectTo }: { redirectTo: string }) {
     console.log("Initiating Google OAuth sign-in...");
     console.log(
       "Redirect URL:",
-      `${APP_BASE_URL}/auth/callback?redirect_to=${redirectTo}`
+      `${APP_BASE_URL}/auth/callback?redirect_to=${newRedirectTo}`
     );
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: redirectTo
-          ? `${APP_BASE_URL}/auth/callback?redirect_to=${redirectTo}`
+        redirectTo: newRedirectTo
+          ? `${APP_BASE_URL}/auth/callback?redirect_to=${newRedirectTo}`
           : `${APP_BASE_URL}/auth/callback`,
         scopes: "email profile",
       },

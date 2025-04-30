@@ -6,6 +6,12 @@ import { redirect } from "next/navigation";
 
 export async function signInWithGoogle({ redirectTo }: { redirectTo: string }) {
   try {
+    let newRedirectTo = redirectTo;
+    if (redirectTo === "") {
+      newRedirectTo = APP_BASE_URL;
+    } else if (redirectTo.startsWith("/")) {
+      newRedirectTo = APP_BASE_URL + redirectTo;
+    }
     const supabase = await createClient();
     console.log("Initiating Google OAuth sign-in...");
     console.log(

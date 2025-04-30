@@ -54,13 +54,6 @@ export const updateSession = async (request: NextRequest) => {
     }
 
     if (request.nextUrl.pathname.startsWith("/api")) {
-      console.log(request.nextUrl);
-      console.log(JSON.stringify(request.headers));
-      console.log(
-        "middleware api",
-        request.headers.get("microfox-api-key"),
-        process.env.MICROFOX_API_KEY
-      );
       const inputAPiKey = request.headers.get("microfox-api-key");
       const serverApiKey = process.env.MICROFOX_API_KEY;
       if (inputAPiKey === serverApiKey) {
@@ -77,7 +70,7 @@ export const updateSession = async (request: NextRequest) => {
 
     // If there's no user or an error, redirect to login
     if ((!user || userError) && !request.nextUrl.pathname.startsWith("/api")) {
-      console.log("redirecting to", request.nextUrl.pathname);
+      //console.log("redirecting to", request.nextUrl.pathname);
       const redirectTo = `${APP_BASE_URL}${request.nextUrl.pathname}`;
       console.log("redirectTo", redirectTo);
       const redirectUrl = new URL("/login", APP_BASE_URL);

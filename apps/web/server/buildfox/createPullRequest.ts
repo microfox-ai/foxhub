@@ -1,8 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import {
-  GITHUB_TOKEN,
-  PROJECT_REPO_OWNER,
-} from "@/utils/constants/githubInfo";
+import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { GenAiSdk } from "../../utils/services/GenAiSdk";
 import { createSlackSDK } from "@microfox/slack-web-tiny";
@@ -13,6 +10,7 @@ import {
 } from "@/utils/services/slackBotSdk";
 import { SLACK_BOT_OAUTH_TOKEN } from "@/utils/services/slackBotSdk";
 import { DataStreamWriter } from "ai";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 export async function createPullRequest({
   clientRequestId,
@@ -120,7 +118,7 @@ export async function createPullRequest({
     owner: PROJECT_REPO_OWNER,
     repo: botProject.githubRepoName,
     title: `New Client Request: ${requestTitle}`,
-    body: `<Not for Client> Description: ${description}`,
+    body: `<Not for Client> Description: ${description} \n ${APP_BASE_URL}/api/chat/message?requestId=${clientRequestId}`,
     head: `${newBranch}`,
     base: targetBranch,
   });

@@ -36,6 +36,7 @@ import { pushToGit } from "./helper/pushToGit";
 import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
 import { addGithubSecretsToRepo } from "@/utils/services/db_functions/createNewBotProject";
 import { getServiceName } from "./helper/getServiceName";
+import { prisma } from "@/prisma/prisma";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation

@@ -79,6 +79,9 @@ export const codingSystemPrompt = (
     - You then modify other files of project if needed to support the new code
     - You finally finish the task.
 
+    GROUND RULES
+       - Never use theese packages - axios
+
     YOU MUST NEVER WRITE ANY MOCK CODE, it should be production ready code.
     even if the packages are not available, you can use your own knowledge to integrate said platform.
 

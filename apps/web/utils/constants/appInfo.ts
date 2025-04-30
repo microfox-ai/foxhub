@@ -31,3 +31,8 @@ export const PUBLIC_ROUTES = [
   "/auth",
   "/auth/callback",
 ];
+
+export const ALLOWED_API_ORIGINS = [
+  "https://microfox.app",
+  "https://staging.microfox.app",
+];

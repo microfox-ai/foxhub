@@ -1,11 +1,6 @@
 import { prisma } from "@/prisma/prisma";
-import {
-  GITHUB_TOKEN,
-  TEMPLATE_REPO_OWNER,
-} from "@/utils/constants/githubInfo";
-import { ClientSecret, CLIENTSECRETSTATUS } from "@prisma/client";
-import { GithubSdk } from "../githubSdk";
 import { ClientDeploymentMetadata, ClientSecretVariable } from "@/server/types";
+import { ClientSecret } from "@prisma/client";
 import { updateLambdaEnvironmentVariables } from "./aws_helper";
 
 // RULE 1 - CLIENT SECRETS ARE SCOPED TO BOT PROJECTS

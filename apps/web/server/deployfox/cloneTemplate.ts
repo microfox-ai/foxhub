@@ -1,4 +1,3 @@
-import { Octokit } from "octokit";
 import {
   GITHUB_TOKEN,
   PROJECT_REPO_OWNER,
@@ -7,6 +6,7 @@ import {
 } from "@/utils/constants/githubInfo";
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { Octokit } from "octokit";
 
 interface CloneTemplateParams {
   sourceOwner: string;

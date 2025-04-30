@@ -90,7 +90,7 @@ export const triggerDeployment = async (
     let sha: string | undefined;
     try {
       const { data: fileData } = await octo.rest.repos.getContent({
-        owner: TEMPLATE_REPO_OWNER,
+        owner: PROJECT_REPO_OWNER,
         repo: clientRequest.repoName,
         path: changelogPath,
         ref: clientRequest.prBranch,
@@ -109,7 +109,7 @@ export const triggerDeployment = async (
 
     // Create a commit with timestamp update in clientRequest.json
     const { data } = await octo.rest.repos.createOrUpdateFileContents({
-      owner: TEMPLATE_REPO_OWNER,
+      owner: PROJECT_REPO_OWNER,
       repo: clientRequest.repoName,
       path: changelogPath,
       message: `${stage}: deployfox: ${isDelete ? "DELETE: deleting the serverless function" : " Update CHANGELOG.md to trigger deployment"}`,

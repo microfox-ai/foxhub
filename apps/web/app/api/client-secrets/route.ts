@@ -1,23 +1,15 @@
 // api/client-secrets/route.ts
-import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import {
-  TEMPLATE_REPO_OWNER,
-  GITHUB_TOKEN,
-} from "@/utils/constants/githubInfo";
-import { GithubSdk } from "@/utils/services/githubSdk";
+import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
+import { ClientSecretPackageType } from "@/server/types";
 import {
   addClientSecretToClientRequest,
   createNewClientSecret,
-  createOrUpdateClientSecret,
-  removeClientSecretFromClientRequest,
-  removeClientSecretFromClientDeployment,
   updateClientSecret,
   updateDeploymentsOfClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
-import { ClientSecretPackageType } from "@/server/types";
-import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 // Create ClientSecret
 export async function POST(req: NextRequest) {
   try {

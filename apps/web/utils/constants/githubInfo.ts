@@ -4,7 +4,9 @@ export const TEMPLATE_REPO_OWNER = "microfox-ai";
 // export const TEMPLATE_REPO = IN_DEV ? "Shard-Template-Staging" : "Shard-Template";
 export const TEMPLATE_REPO = "Shard-Template";
 
-export const PROJECT_REPO_OWNER = IN_DEV
+export const PROJECT_REPO_OWNER =
+  process.env.NEXT_PUBLIC_APP_BASE_URL === "https://staging.microfox.app" ||
+  IN_DEV
     ? "microfox-projects-staging"
     : "microfox-projects-production";
 

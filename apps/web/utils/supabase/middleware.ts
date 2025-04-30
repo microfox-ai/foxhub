@@ -53,6 +53,21 @@ export const updateSession = async (request: NextRequest) => {
       return NextResponse.next();
     }
 
+    if (request.nextUrl.pathname.startsWith("/api")) {
+      console.log(request.nextUrl);
+      console.log(
+        "middleware api",
+        request.headers.get("microfox-api-key"),
+        process.env.MICROFOX_API_KEY
+      );
+      const inputAPiKey = request.headers.get("microfox-api-key");
+      const serverApiKey = process.env.MICROFOX_API_KEY;
+      // if (inputAPiKey !== serverApiKey) {
+      //   return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
+      // }
+      return NextResponse.next();
+    }
+
     // If there's no user or an error, redirect to login
     if ((!user || userError) && !request.nextUrl.pathname.startsWith("/api")) {
       console.log("redirecting to", request.nextUrl.pathname);

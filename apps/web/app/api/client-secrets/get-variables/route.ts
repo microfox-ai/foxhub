@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
     const origin = req.nextUrl.origin;
 
     if (apiKey !== process.env.MICROFOX_API_KEY) {
+      console.log("apiKey", apiKey);
+      console.log("MICROFOX_API_KEY", process.env.MICROFOX_API_KEY);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

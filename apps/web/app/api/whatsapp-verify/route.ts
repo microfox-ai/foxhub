@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
+import { WHATSAPP_VERIFICATION_CODE_EXPIRATION_TIME } from "@/utils/services/WhatsAppVerification";
+import { WhatsAppVerification } from "@prisma/client";
 
 /** CRUD FOR whatsAppVerification documents */
 // TODO: Requires security layer (incoming requests should eithe be origined to us, or we should add auth headers)
@@ -87,18 +89,40 @@ export async function GET(req: Request) {
     const code = searchParams.get("code");
     const userId = searchParams.get("userId");
 
-    const record = await prisma.whatsAppVerification.findMany({
+    const records = await prisma.whatsAppVerification.findMany({
       where: {
         ...(clientSecretId && { clientSecretId }),
         ...(code && { code }),
         ...(userId && { userId }),
       },
     });
-    if (!record || record.length === 0) {
+
+    const expiredIds: string[] = [];
+    const unexpiredRecords: WhatsAppVerification[] = [];
+    records.forEach((record) => {
+      if (
+        record.createdAt <
+        new Date(Date.now() - WHATSAPP_VERIFICATION_CODE_EXPIRATION_TIME)
+      ) {
+        expiredIds.push(record.id);
+      } else {
+        unexpiredRecords.push(record);
+      }
+    });
+
+    await prisma.whatsAppVerification.deleteMany({
+      where: {
+        id: {
+          in: expiredIds,
+        },
+      },
+    });
+
+    if (!unexpiredRecords || unexpiredRecords.length === 0) {
       return new NextResponse("Verification not found", { status: 404 });
     }
 
-    return NextResponse.json(record);
+    return NextResponse.json(records);
   } catch (error) {
     console.error("Error getting verification:", error);
     return new NextResponse("Internal Server Error", { status: 500 });

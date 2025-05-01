@@ -18,6 +18,8 @@ export interface WhatsAppVerificationOptions {
 // Create a custom otp code
 const generateCode = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", 6);
 
+export const WHATSAPP_VERIFICATION_CODE_EXPIRATION_TIME = 3 * 60 * 1000; // 3 minutes
+
 export class WhatsAppVerificationSdk {
   extractVerificationCode(message: string): string | null {
     const match = message.match(/verification code:\s*([a-zA-Z0-9]{6})/i);
@@ -161,7 +163,8 @@ export class WhatsAppVerificationSdk {
 
       //2. check if this session is expired
       const isExpired =
-        verification[0].createdAt < new Date(Date.now() - 3 * 60 * 1000);
+        verification[0].createdAt <
+        new Date(Date.now() - WHATSAPP_VERIFICATION_CODE_EXPIRATION_TIME);
 
       if (isExpired) {
         console.log("deleting verification session", verification[0].id);

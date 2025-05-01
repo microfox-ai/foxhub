@@ -1,16 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
-import { QRCodeSVG } from "qrcode.react";
-import { ClientSecret, WhatsAppVerification } from "@prisma/client";
-import { ArrowLeftRight, MessageSquare } from "lucide-react";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
-import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { ClientSecret, WhatsAppVerification } from "@prisma/client";
+import { motion } from "framer-motion";
+import { ArrowLeftRight, MessageSquare } from "lucide-react";
 import { customAlphabet } from "nanoid";
+import { useSearchParams } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
+import { useEffect, useState } from "react";
 const WHATSAPP_BASE_API_URL = IN_DEV
   ? "http://localhost:3000"
   : APP_BASE_FOR_SHARD;

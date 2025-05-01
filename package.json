@@ -5,7 +5,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "build:ci": "dotenv -- turbo run build",
+    "build:ci": "dotenv -- turbo run build --filter=./apps/web",
+    "build:ci:gitbot": "dotenv -- turbo run build --filter=./apps/gitbot",
     "start:ci": "node -r dotenv/config apps/web/server.js",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",

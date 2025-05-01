@@ -15,3 +15,4 @@ export const PROJECT_INFO_DIR = "ProjectInfo";
 export const PROJECT_JSON_FILE_DIR = `${PROJECT_INFO_DIR}/botProject.json`;
 
 export const GITHUB_TOKEN = process.env.TMD_GITHUB_TOKEN;
+export const GITHUB_ACTION_POLICIES = process.env.TMD_GITHUB_ACTION_POLICIES;

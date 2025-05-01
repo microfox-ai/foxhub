@@ -3,6 +3,7 @@
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import {
+  GITHUB_ACTION_POLICIES,
   GITHUB_TOKEN,
   PROJECT_BRANCH_NAME,
   PROJECT_INFO_DIR,
@@ -83,7 +84,10 @@ export async function createNewBotProject({
   // Wait for 2 seconds to ensure the repo is created
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  const enableWorkflow = await octokitSdk.request(
+  const actionPoliciesSdk = new Octokit({
+    auth: GITHUB_ACTION_POLICIES,
+  });
+  const enableWorkflow = await actionPoliciesSdk.request(
     "PUT /orgs/{org}/actions/permissions/repositories/{repository_id}",
     {
       org: PROJECT_REPO_OWNER,

@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import { APP_BASE_FOR_SITES } from "@/utils/constants/appInfo";
-import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
+import { CLIENTSECRETSTATUS } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 
 // TODO: also insert UPSTASH envs if this taskInstanceMeta.taskStructure.templateType === "upstash"
 // TODO: also insert MONGODB envs if this taskInstanceMeta.taskStructure.templateType === "mongodb"

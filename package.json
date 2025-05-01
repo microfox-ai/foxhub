@@ -1,6 +1,7 @@
 {
   "name": "foxhub",
   "private": true,
+  "version": "0.0.1",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -11,6 +12,7 @@
     "check-types": "turbo run check-types",
     "prisma:generate": "prisma generate --schema=./apps/web/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-dev-reset": "prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-dev": "prisma migrate dev --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-deploy": "dotenv -- prisma migrate deploy --schema=./apps/web/prisma/schema.prisma",
     "postinstall": "npm run prisma:generate"

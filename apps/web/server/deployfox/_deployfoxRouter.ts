@@ -1,32 +1,20 @@
-import { findLastElementWith } from "@/utils/helpers/array";
 import {
   getClientRequest,
   getTaskInstanceMeta,
-  getClientDeployment,
 } from "@/utils/services/db_functions/getClientRequest";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import {
-  ServerStreamingFunction,
-  defaultCallbackResultBody,
-} from "@repo/ai-utils/router";
-import { deployViaGit } from "./deployGit";
-import {
-  DeployStep,
-  deployStep,
-  TaskInstanceMetaType,
-} from "../convertfox/types";
-import {
-  fetchLogs,
-  getLatestRunForClientRequest,
-  getRunforClientRequestbySha,
-} from "./fetchLogs";
-import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
-import { recloneTemplateStuffToClientRequest } from "./cloneTemplate";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
+import { DEPLOY_STAGE } from "@prisma/client";
+import {
+  defaultCallbackResultBody,
+  ServerStreamingFunction,
+} from "@repo/ai-utils/router";
+import { deployViaGit } from "./deployGit";
+import { getRunforClientRequestbySha } from "./fetchLogs";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -96,15 +84,16 @@ export const deployFoxRouter: ServerStreamingFunction<
   let runId = await getRunforClientRequestbySha({
     head_sha: sha,
     clientRequest,
-    stage: stage ?? DEPLOY_STAGE.STAGING,
+    mustRunId: true,
   });
   console.log("runId", runId);
 
-  // if (!runId) {
-  //   console.log("runId not found, getting latest run");
-  //   runId = await getLatestRunForClientRequest(clientRequest, stage);
-  //   console.log("runId", runId);
-  // }
+  if (!runId) {
+    console.log("runId not found, getting latest run");
+
+    //runId = await getLatestRunForClientRequest(clientRequest, stage);
+    //console.log("runId", runId);
+  }
 
   dataStream.writeMessageAnnotation({
     type: "loading",

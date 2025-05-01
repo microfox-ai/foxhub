@@ -1,9 +1,6 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { DeployStep, TaskInstanceMetaType } from "../convertfox/types";
-import {
-  GITHUB_TOKEN,
-  PROJECT_REPO_OWNER,
-} from "@/utils/constants/githubInfo";
+import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
@@ -37,11 +34,11 @@ export const fetchLogs = async (
 export const getRunforClientRequestbySha = async ({
   head_sha,
   clientRequest,
-  stage,
+  mustRunId,
 }: {
   head_sha: string;
   clientRequest: ClientRequest;
-  stage: DEPLOY_STAGE;
+  mustRunId?: boolean;
 }) => {
   const octokitSdk = new Octokit({
     auth: GITHUB_TOKEN,
@@ -60,7 +57,22 @@ export const getRunforClientRequestbySha = async ({
 
   //console.log("workflowRuns", workflowRuns.data);
 
-  return workflowRuns.data.workflow_runs[0]?.id;
+  const runId = workflowRuns.data.workflow_runs[0]?.id;
+  if (mustRunId && !runId) {
+    await octokitSdk.request(
+      "PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable",
+      {
+        owner: PROJECT_REPO_OWNER,
+        repo: clientRequest.repoName ?? "",
+        workflow_id: "deploy.yml",
+        headers: {
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      }
+    );
+  }
+
+  return runId;
 };
 
 export const getLatestRunForClientRequest = async (

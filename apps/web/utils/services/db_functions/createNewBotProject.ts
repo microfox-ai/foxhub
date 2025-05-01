@@ -20,6 +20,7 @@ import path from "path";
 import fs from "fs/promises";
 import { INTERNAL_TEMPLATE_UPSTASH_ROOT } from "@/server/buildfox/tool/writeToFile";
 import { getTemplateVersion } from "../github_functions/getTemplateVersion";
+import { octokitSdk } from "@/server/buildfox/helper/gitHelpers";
 
 export async function createNewBotProject({
   userId,
@@ -81,6 +82,18 @@ export async function createNewBotProject({
 
   // Wait for 2 seconds to ensure the repo is created
   await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  const enableWorkflow = await octokitSdk.request(
+    "PUT /orgs/{org}/actions/permissions/repositories/{repository_id}",
+    {
+      org: PROJECT_REPO_OWNER,
+      repository_id: repoResult.data.id,
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    }
+  );
+  console.log("enableWorkflow", enableWorkflow);
 
   // Create new branch from main
   const newBranch = PROJECT_BRANCH_NAME;

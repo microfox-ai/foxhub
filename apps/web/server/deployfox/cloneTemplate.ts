@@ -19,34 +19,6 @@ interface CloneTemplateParams {
   targetBranch?: string;
 }
 
-export const recloneTemplateStuffToClientRequest = async (
-  props: StreamingFucntionProps<any, any>,
-  clientRequest: ClientRequest
-) => {
-  const { dataStream } = props;
-  if (!clientRequest.repoName || !clientRequest.prBranch) {
-    throw new Error("Client request repo name or branch is not set");
-  }
-  dataStream.writeMessageAnnotation({
-    type: "success",
-    value: "Template stuff cloning..",
-  });
-  await cloneTemplate({
-    sourceOwner: TEMPLATE_REPO_OWNER,
-    targetOwner: PROJECT_REPO_OWNER,
-    sourceRepo: TEMPLATE_REPO,
-    targetRepo: clientRequest.repoName,
-    sourcePath: "",
-    targetPath: "",
-    sourceBranch: "main",
-    targetBranch: clientRequest.prBranch,
-  });
-  dataStream.writeMessageAnnotation({
-    type: "success",
-    value: "Template stuff cloned to client request",
-  });
-};
-
 export const cloneTemplate = async ({
   sourceOwner,
   targetOwner,

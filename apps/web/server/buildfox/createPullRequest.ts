@@ -11,6 +11,7 @@ import {
 import { SLACK_BOT_OAUTH_TOKEN } from "@/utils/services/slackBotSdk";
 import { DataStreamWriter } from "ai";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { octokitSdk } from "./helper/gitHelpers";
 
 export async function createPullRequest({
   clientRequestId,

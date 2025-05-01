@@ -151,6 +151,16 @@ const checkAndUpdateTemplateVersion = async (clientRequest: ClientRequest) => {
       sourceBranch: "main",
       targetBranch: clientRequest.prBranch ?? "",
     });
+    await cloneTemplate({
+      sourceOwner: TEMPLATE_REPO_OWNER,
+      targetOwner: PROJECT_REPO_OWNER,
+      sourceRepo: TEMPLATE_REPO,
+      targetRepo: clientRequest.repoName ?? "",
+      sourcePath: "",
+      targetPath: "",
+      sourceBranch: "main",
+      targetBranch: "project/master",
+    });
     await prisma.clientRequest.update({
       where: { id: clientRequest.id },
       data: {

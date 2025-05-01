@@ -171,6 +171,9 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       setIsLoading(false);
     }
   };
+  const message = `Hey, ${verification?.slug}! I want to connect with you. This is my verification code: ${verification?.code}`;
+  const url = `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(message)}`;
+  console.log("talk dm url", url);
 
   const updateQRCodeData = async () => {
     try {

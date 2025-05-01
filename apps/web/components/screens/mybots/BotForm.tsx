@@ -31,7 +31,7 @@ const BotForm = ({ mode }: BotFormProps) => {
   const searchParams = useSearchParams();
   const botId = searchParams.get("botId");
   const packageName = searchParams.get("package");
-  const { bots, stableBotPackages, refreshBots, botToEdit, packageInfo, selectedConstructor } = useBots();
+  const { bots, stableBotPackages, refreshBots, botToEdit, packageInfo, selectedConstructor, refreshBotToEdit } = useBots();
   const { selectedProject } = useClientProject();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -119,6 +119,7 @@ const BotForm = ({ mode }: BotFormProps) => {
       );
       toast.success("Bot deleted successfully!");
       refreshBots();
+      refreshBotToEdit();
       router.push("/my-bots");
     } catch (error) {
       console.error("Error deleting bot:", error);
@@ -176,6 +177,7 @@ const BotForm = ({ mode }: BotFormProps) => {
       );
       toast.success("Bot created successfully!");
       refreshBots();
+      refreshBotToEdit();
     } catch (error) {
       console.error("Error creating bot:", error);
       toast.error("Failed to create bot. Please try again.");
@@ -191,6 +193,7 @@ const BotForm = ({ mode }: BotFormProps) => {
     }
 
     setIsLoading(true);
+    console.log("data", data);
     try {
       // Format required keys into variables array
       const variables = Object.entries(data.keys || {}).map(([key, value]) => ({
@@ -234,6 +237,7 @@ const BotForm = ({ mode }: BotFormProps) => {
       await PortalSdk.putData("/api/client-secrets", clientSecretData);
       toast.success("Bot updated successfully!");
       refreshBots();
+      refreshBotToEdit();
     } catch (error) {
       console.error("Error updating bot:", error);
       toast.error("Failed to update bot. Please try again.");

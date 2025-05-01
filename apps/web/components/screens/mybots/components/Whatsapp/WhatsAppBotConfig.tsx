@@ -163,7 +163,6 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
         };
     }, [currentStep, botToEdit?.botConfigMapped?.WHATSAPP_WEBHOOK_VERIFIED, refreshBotToEdit]);
 
-    // console.log(botToEdit);
     useEffect(() => {
         if (botToEdit?.botConfigMapped?.WHATSAPP_ICON_URL) {
             setImagePreview((prev) => ({
@@ -514,7 +513,7 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="your-business-slug"
-                                                                pattern="^[a-z_-]*$"
+                                                                pattern="/^[a-z_-]*$/v"
                                                                 onChange={(e) => {
                                                                     const value = e.target.value.toLowerCase().replace(/[^a-z_-]/g, '');
                                                                     field.onChange(value);

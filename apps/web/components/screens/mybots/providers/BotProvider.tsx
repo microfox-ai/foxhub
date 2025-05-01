@@ -108,7 +108,7 @@ const useBotsCOntext = () => {
   }, [selectedProjectSecretsData]);
 
 
-  const mode = botId === undefined ? "create" : "edit";
+  const mode = botId === undefined || botId === null ? "create" : "edit";
 
   const botToEdit = useMemo(() => {
     let _botToEdit: any = mode === "edit" ? currentBot?.clientSecrets?.[0] : null;
@@ -117,6 +117,7 @@ const useBotsCOntext = () => {
     }
     return null;
   }, [currentBot, mode]);
+
 
   const packageInfo =
     mode === "create"

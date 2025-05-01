@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
 
   const thisSecret = project[0];
   if (!thisSecret) {
-    return NextResponse.json({ error: "Secret not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Secret not found for " + id },
+      { status: 404 }
+    );
   }
   let newSecret = { ...thisSecret };
 

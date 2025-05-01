@@ -105,6 +105,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
         `/api/whatsapp-verify?clientSecretId=${clientSecretId}&userId=${userId}`, {}
       )
       if (existingVerification && existingVerification[0]?.code) {
+        console.log("existingVerification", existingVerification[0]);
         return existingVerification[0];
       }
 

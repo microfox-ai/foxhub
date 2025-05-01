@@ -62,19 +62,18 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
     clientSecretId: string;
   }) => {
     const response = await fetch(
-      `/api/client-secrets/project-secrets?id=${clientSecretId}`
+      `/api/whatsapp-verify/identity?id=${clientSecretId}`,
     );
-    const data: ClientSecret[] = await response.json();
-    console.log("response", data);
-    const clientSecret = data[0];
-    console.log(clientSecret);
+    const clientSecret: ClientSecret = await response.json();
+    console.log("response", clientSecret);
+
 
     setWhatsappBusinessNumber(
       (
         clientSecret?.variables.find(
           (variable: any) => variable.key === "WHATSAPP_BUSINESS_PHONE_NUMBER"
         ) as any
-      )?.value.trim()
+      )?.value.replaceAll(" ", "").trim()
     );
 
     setBotImage(
@@ -103,11 +102,7 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
 
     try {
       const existingVerification = await PortalSdk.getData(
-        `/api/whatsapp-verify`,
-        {
-          clientSecretId,
-          userId: userId,
-        }
+        `/api/whatsapp-verify?clientSecretId=${clientSecretId}&userId=${userId}`, {}
       )
       if (existingVerification && existingVerification[0]?.code) {
         return existingVerification[0];
@@ -171,9 +166,6 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
       setIsLoading(false);
     }
   };
-  const message = `Hey, ${verification?.slug}! I want to connect with you. This is my verification code: ${verification?.code}`;
-  const url = `https://wa.me/${whatsappBusinessNumber}?text=${encodeURIComponent(message)}`;
-  console.log("talk dm url", url);
 
   const updateQRCodeData = async () => {
     try {

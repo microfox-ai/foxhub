@@ -5,7 +5,8 @@ import { APP_BASE_URL, PUBLIC_ROUTES } from "../constants/appInfo";
 export const updateSession = async (request: NextRequest) => {
   if (
     request.nextUrl.pathname.startsWith("/api/client-secrets/get-variables") ||
-    request.nextUrl.pathname.startsWith("/api/webhooks")
+    request.nextUrl.pathname.startsWith("/api/webhooks") ||
+    request.nextUrl.pathname.startsWith("/api/whatsapp-verify")
   ) {
     return NextResponse.next();
   }

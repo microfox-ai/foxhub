@@ -46,9 +46,10 @@ import {
   OpenAPIResponse,
 } from "./types";
 import { useApiDoc } from "../providers/ApiDocProvider";
+import { useDeployStatus } from "../providers/useDeployStatus";
 
 const PreviewWindow = () => {
-  const { deploymentInfo } = useTaskInstanceMetaContext();
+  const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
   const {
     apiDoc,
     endpoints,
@@ -62,12 +63,14 @@ const PreviewWindow = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<any | null>(null);
   const [showDocs, setShowDocs] = useState(false);
+  const [serverlessLogs, setServerlessLogs] = useState<any | null>(null);
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
   const { copied, copyToClipboard: copyText } = useCopyToClipboard();
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
 
+  const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
   const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
 
   // Create form schema based on request parameters
@@ -249,6 +252,7 @@ const PreviewWindow = () => {
     let requestBody: any = undefined;
 
     try {
+      setServerlessLogs(null);
       // Process path parameters
       let path = currentEndpointData.path || "";
       if (currentEndpointData.parameters) {
@@ -392,6 +396,10 @@ const PreviewWindow = () => {
         }
       }
 
+      console.log(url, "url");
+      console.log(requestBody, "requestBody");
+      console.log(headers, "headers");
+      console.log(currentEndpointData.method, "method");
       const response = await fetch(url, {
         method: currentEndpointData.method,
         headers,
@@ -418,6 +426,16 @@ const PreviewWindow = () => {
         contentType,
         status: response.status,
       });
+
+      const logs = await fetch("/api/client-functions/logs", {
+        method: "POST",
+        body: JSON.stringify({
+          clientDeploymentId: deploymentInfo.clientDeploymentId,
+          endpointLink: url,
+        }),
+      });
+      const logsData = await logs.json();
+      setServerlessLogs(logsData);
     } catch (error) {
       console.log(error);
       if (error instanceof Error && error.name === "AbortError") {
@@ -757,6 +775,8 @@ const PreviewWindow = () => {
       (param) => param.in === "body"
     );
 
+    console.log("bodyParams", currentEndpointData);
+
     return (
       <div className="space-y-4">
         {pathParams.length > 0 && (
@@ -837,6 +857,27 @@ const PreviewWindow = () => {
       </div>
     );
   };
+
+  if (!deploymentInfo && apiDoc) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-background">
+        {/* Header - Fixed */}
+        <div className="sticky top-0 z-10 flex flex-col border-b bg-white shadow-sm">
+          <div className="flex mb-2 gap-4 items-center bg-zinc-100 px-3 py-2">
+            <X
+              className="cursor-pointer h-4 w-4 text-gray-500 hover:text-gray-700"
+              onClick={() => handleRightCollapse(!isRightCollapsed)}
+            />
+            <div className="flex gap-2 items-center">
+              <p className="text-base font-medium">Preview</p>
+              <Monitor className="h-4 w-4 " />
+            </div>
+          </div>
+        </div>
+        <p className="text-sm p-4">There is an error loading the deployment info, can you refresh the page?</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">

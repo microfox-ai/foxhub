@@ -1,5 +1,6 @@
 import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { ClientDeployment } from "@prisma/client";
 import { createContext, useContext, useState } from "react";
 import useSWR from "swr";
 
@@ -10,7 +11,7 @@ interface UseTaskInstanceMetaProps {
 export const useTaskInstanceMeta = ({
   clientRequestId,
 }: UseTaskInstanceMetaProps) => {
-  const [deploymentInfo, setDeploymentInfo] = useState<any | null>(null);
+  const [deploymentInfo, setDeploymentInfo] = useState<any | ClientDeployment | null>(null);
   const { data, error, mutate, isLoading, isValidating } =
     useSWR<TaskInstanceMetaType>(
       clientRequestId

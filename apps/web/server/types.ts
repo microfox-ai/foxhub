@@ -80,6 +80,7 @@ export interface ClientDeploymentMetadata {
     functions: {
       functionName: string;
       size: string;
+      endpointLink?: string;
     }[];
     serviceName?: string;
     functionBase?: string;

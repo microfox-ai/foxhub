@@ -64,6 +64,10 @@ export interface OpenAPIPath {
 
 export interface OpenAPIDoc {
   openapi: string;
+  servers: {
+    url: string;
+    description: string;
+  }[];
   info: {
     title: string;
     version: string;

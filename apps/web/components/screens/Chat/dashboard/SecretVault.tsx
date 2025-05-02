@@ -1,23 +1,18 @@
-import { Edit, Package, RouteIcon, ShieldAlertIcon } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import { Key } from "lucide-react";
-import useSWR from "swr";
+import { Button } from "@/components/ui/button";
+import { ClientSecretPackageType, ClientSecretVariable, ClientSecretWithPackageInfo } from "@/server/types";
+import { PortalSdk } from "@/utils/services/PortalSdk";
 import { ClientSecret } from "@prisma/client";
-import { useClientProject } from "../../providers/ClientProjectProvider";
+import { Edit, Key, RouteIcon, ShieldAlertIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { SecretCard } from "./SecretCard";
+import useSWR from "swr";
+import { useClientProject } from "../../providers/ClientProjectProvider";
+import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
 import { EnvVariablesDialog } from "../message/EnvVariablesDialog";
-import { APIKeyDialog } from "../message/secrets/APIKeyDialog";
-import { DeleteConfirmationDialog } from "./DeleteConfirmationDialogue";
-import { ClientSecretPackageType, ClientSecretVariable, ClientSecretWithPackageInfo } from "@/server/types";
-import { useTaskInstanceMeta, useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { OAuthButton } from "../message/secrets/OAuthButton";
 import { ApiKeyButton } from "../message/secrets/ApiKeyButton";
+import { OAuthButton } from "../message/secrets/OAuthButton";
 import { Constructor } from "../message/types";
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialogue";
 
 
 

@@ -107,6 +107,7 @@ export const deployFoxRouter: ServerStreamingFunction<
         runId,
         stage: stage ?? DEPLOY_STAGE.STAGING,
         status: "pending",
+        shouldBreak: false,
       },
     },
   });

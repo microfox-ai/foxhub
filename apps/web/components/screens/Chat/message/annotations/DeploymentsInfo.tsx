@@ -334,7 +334,7 @@ export const DeploymentsInfo = ({
                             <Button
                                 onClick={() => {
                                     setDeploymentInfo(finalData.clientDeployment);
-                                    handleRightCollapse(!isRightCollapsed);
+                                    handleRightCollapse(false);
                                 }}
                                 variant="default"
                                 className="group/button flex items-center gap-2"

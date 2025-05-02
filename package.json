@@ -54,6 +54,7 @@
     "packages/*"
   ],
   "dependencies": {
+    "@aws-sdk/client-cloudwatch-logs": "^3.800.0",
     "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0"

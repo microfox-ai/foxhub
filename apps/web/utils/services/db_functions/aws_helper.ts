@@ -3,11 +3,24 @@ import {
   UpdateFunctionConfigurationCommand,
   GetFunctionConfigurationCommand,
 } from "@aws-sdk/client-lambda";
+import {
+  CloudWatchLogsClient,
+  GetLogEventsCommand,
+  DescribeLogStreamsCommand,
+} from "@aws-sdk/client-cloudwatch-logs";
 
 interface UpdateLambdaEnvVarsParams {
   functionName: string;
   environmentVariables: Record<string, string>;
   region?: string;
+}
+
+interface GetLambdaLogsParams {
+  functionName: string;
+  region?: string;
+  limit?: number;
+  startTime?: number;
+  endTime?: number;
 }
 
 /**
@@ -55,6 +68,60 @@ export async function updateLambdaEnvironmentVariables({
     );
   } catch (error) {
     console.error("Error updating Lambda environment variables:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches logs from a Lambda function
+ * @param params GetLambdaLogsParams object containing function details and log parameters
+ * @returns Promise that resolves with the log events
+ */
+export async function getLambdaLogs({
+  functionName,
+  region,
+  limit = 50,
+  startTime,
+  endTime,
+}: GetLambdaLogsParams): Promise<any[]> {
+  try {
+    const logsClient = new CloudWatchLogsClient({
+      region: region ?? process.env.AWS_REGION ?? "us-east-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+      },
+    });
+
+    // Get the log stream name
+    const logGroupName = `/aws/lambda/${functionName}`;
+    const describeLogStreamsCommand = new DescribeLogStreamsCommand({
+      logGroupName,
+      orderBy: "LastEventTime",
+      descending: true,
+      limit: 1,
+    });
+
+    const logStreams = await logsClient.send(describeLogStreamsCommand);
+    if (!logStreams.logStreams?.[0]?.logStreamName) {
+      throw new Error("No log streams found for the Lambda function");
+    }
+
+    const logStreamName = logStreams.logStreams[0].logStreamName;
+
+    // Get the log events
+    const getLogEventsCommand = new GetLogEventsCommand({
+      logGroupName,
+      logStreamName,
+      limit,
+      startTime,
+      endTime,
+    });
+
+    const logEvents = await logsClient.send(getLogEventsCommand);
+    return logEvents.events ?? [];
+  } catch (error) {
+    console.error("Error fetching Lambda logs:", error);
     throw error;
   }
 }

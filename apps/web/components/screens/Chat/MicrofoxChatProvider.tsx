@@ -124,7 +124,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     const minionFlowAnnotation: any = lastMessage?.annotations?.find((a: any) => a.type === "minionFlow");
     return minionFlowAnnotation?.value ?? MinionFlow.Unknown;
   }, [chatOptions.messages]);
-  console.log("lastKnownStuff", lastKnownMinionType, lastKnownMinionFlow);
+  //console.log("lastKnownStuff", lastKnownMinionType, lastKnownMinionFlow);
 
   useEffect(() => {
     console.log("messages", chatOptions.messages);

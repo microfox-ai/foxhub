@@ -62,6 +62,9 @@ export const genDbCode = async (
                 The example redis helper file is as follows:
                 ${redisHelper}
 
+                make sure the imports follow the '.js' extension like this for imports from other folders:
+                import { exampleHelper } from '../helpers/exampleHelper.js'
+
                 Make sure you null check the variables first, before saving them to redis.
 
                 your workflow should be as follows:

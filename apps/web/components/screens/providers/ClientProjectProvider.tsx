@@ -128,30 +128,35 @@ export function ClientProjectProvider({
 
     if (openRequests?.length >= 5 && !IN_DEV) {
       toast.warning(
-        "At the moment we only support 5 concurrent requests. You can create new requests once your open requests are resolved."
+        "At the moment we only support 5 concurrent requests. You can create new requests once we launch to production."
       );
       return;
     }
 
-    const newRequest = await PortalSdk.postData(
-      `/api/client-requests/create-empty`,
-      {
+    await toast.promise(
+      PortalSdk.postData(`/api/client-requests/create-empty`, {
         userId: user.id,
         botProjectId: selectedProject.id,
         MinionFlow: MinionFlow.BuildFlow
+      }),
+      {
+        loading: "Creating new request...",
+        success: (newRequest) => {
+          analytics.track("Client Request Created From Request Page", {
+            userId: user.id,
+            requestId: newRequest.id,
+            botProjectId: selectedProject.id,
+            title: newRequest.title,
+            timestamp: new Date().toISOString(),
+          });
+
+          setSelectedRequest(newRequest);
+          router.push(`/project/${selectedProject.id}/request/${newRequest.id}`);
+          return "Request created successfully!";
+        },
+        error: "Failed to create request. Please try again."
       }
     );
-
-    analytics.track("Client Request Created From Request Page", {
-      userId: user.id,
-      requestId: newRequest.id,
-      botProjectId: selectedProject.id,
-      title: newRequest.title,
-      timestamp: new Date().toISOString(),
-    });
-
-    setSelectedRequest(newRequest);
-    router.push(`/project/${selectedProject.id}/request/${newRequest.id}`);
   };
 
   const value = {

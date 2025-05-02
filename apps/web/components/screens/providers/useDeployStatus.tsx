@@ -53,7 +53,7 @@ export const useDeployStatus = ({
     const deployStep = finalData?.deployStep;
     useEffect(() => {
         if (DeploymentData) {
-            //console.log(DeploymentData, "DeploymentData");
+            console.log(DeploymentData, "DeploymentData");
             setFinalData(DeploymentData);
             setDeploymentInfo(DeploymentData.clientDeployment);
         }

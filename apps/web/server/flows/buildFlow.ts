@@ -13,10 +13,12 @@ import { deployFoxRouter } from "../deployfox/_deployfoxRouter";
 import { buildFoxRouter } from "../buildfox/_buildFoxRouter";
 import {
   MinionFlow,
+  MinionSupports,
   MinionType,
   MinionTypeType,
 } from "@/components/screens/hooks/convertors";
 
+// hellofox, convertfox, buildfox, deployfox, testfox.
 export const buildFlow: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -32,6 +34,10 @@ export const buildFlow: ServerStreamingFunction<
   const lastUsersMessage = findLastElementWith(
     requestBody.messages as any[],
     (message) => message.role === "user"
+  );
+  const lastAssistantMessage = findLastElementWith(
+    requestBody.messages as any[],
+    (message) => message.role === "assistant"
   );
   if (!lastUsersMessage)
     return {
@@ -56,28 +62,44 @@ export const buildFlow: ServerStreamingFunction<
   if (minionType === MinionType.Unknown && requestBody.messages.length <= 1) {
     minionType = MinionType.HelloFox;
   }
+  const isMinionFirsttime =
+    requestBody.messages.filter(
+      (m: any) =>
+        m.role === "assistant" &&
+        m.annotations?.find((a: any) => a.type === "minion")?.value ===
+          minionType
+    ).length < 1;
 
-  if (minionType != MinionType.Unknown) {
-    switch (minionType) {
-      case MinionType.HelloFox:
-        return hellofoxRouter(props);
-      case MinionType.ConvertFox:
-        return convertfoxRouter(props);
-      case MinionType.BuildFox:
-        return buildFoxRouter(props);
-      case MinionType.DeployFox:
-        return deployFoxRouter(props);
-      default:
-        props.dataStream.writeMessageAnnotation({
-          type: "error",
-          content: "Unknown minion type",
-        });
-        return {
-          responseBody: { ...responseBody },
-          appendRequestBody: { ...requestBody },
-        };
-    }
-  } else {
+  const isSameMinionJustBefore =
+    lastAssistantMessage?.annotations?.find((a: any) => a.type === "minion")
+      ?.value === minionType;
+
+  const isMinionSupportsIntentReading =
+    MinionSupports[minionType]?.includes("intent-observor"); // convertfox, hellofox
+
+  let needIntentObserver = false;
+
+  if (minionType === MinionType.Unknown) {
+    needIntentObserver = true;
+  }
+  if (
+    !isMinionFirsttime &&
+    !isMinionSupportsIntentReading &&
+    isSameMinionJustBefore
+  ) {
+    needIntentObserver = true;
+  }
+
+  console.log(
+    "needIntentObserver",
+    minionType,
+    needIntentObserver,
+    isMinionFirsttime,
+    isMinionSupportsIntentReading,
+    isSameMinionJustBefore
+  );
+
+  if (needIntentObserver) {
     props.dataStream.writeMessageAnnotation({
       type: "thinking",
       content: "Thinking about the user's intent",
@@ -110,6 +132,8 @@ export const buildFlow: ServerStreamingFunction<
         `,
     });
 
+    console.log("result", result.object.intent);
+
     switch (result.object.intent) {
       case "Modify-Task":
         return convertfoxRouter(props);
@@ -120,6 +144,26 @@ export const buildFlow: ServerStreamingFunction<
       case "Rebuild-App":
         return buildFoxRouter(props);
       case "Redeploy-App":
+        return deployFoxRouter(props);
+      default:
+        props.dataStream.writeMessageAnnotation({
+          type: "error",
+          content: "Unknown minion type",
+        });
+        return {
+          responseBody: { ...responseBody },
+          appendRequestBody: { ...requestBody },
+        };
+    }
+  } else {
+    switch (minionType) {
+      case MinionType.HelloFox:
+        return hellofoxRouter(props);
+      case MinionType.ConvertFox:
+        return convertfoxRouter(props);
+      case MinionType.BuildFox:
+        return buildFoxRouter(props);
+      case MinionType.DeployFox:
         return deployFoxRouter(props);
       default:
         props.dataStream.writeMessageAnnotation({

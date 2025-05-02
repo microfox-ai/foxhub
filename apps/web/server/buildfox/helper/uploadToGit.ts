@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { globby } from "globby";
+import globby from "globby";
 import { Octokit } from "octokit";
 
 const clearRepoFolder = async (

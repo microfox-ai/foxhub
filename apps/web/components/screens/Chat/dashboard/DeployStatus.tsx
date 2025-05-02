@@ -1,20 +1,17 @@
-import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
-import { DeployStep } from "@/server/convertfox/types";
-import { Clock, CheckCircle, XCircle, Loader2, Rocket, GitPullRequest, PackageIcon, ExternalLink } from "lucide-react";
-import { cn } from "@/lib/utils";
-import dayjs from "dayjs";
-import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useDeployStatus } from "../../providers/useDeployStatus";
-import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { useClientProject } from "../../providers/ClientProjectProvider";
-import useSWR from "swr";
-import { useMicrofox } from "../../providers/MicrofoxProvider";
+import { cn } from "@/lib/utils";
 import { ClientDeploymentMetadata } from "@/server/types";
-import { useTabUi } from "../../providers/TabUiProvider";
 import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
+import dayjs from "dayjs";
+import { CheckCircle, Clock, ExternalLink, GitPullRequest, Loader2, Rocket, XCircle } from "lucide-react";
+import useSWR from "swr";
+import { useClientProject } from "../../providers/ClientProjectProvider";
+import { useTabUi } from "../../providers/TabUiProvider";
+import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
+import { useDeployStatus } from "../../providers/useDeployStatus";
 const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
         case "success":

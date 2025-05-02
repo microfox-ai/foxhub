@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         shouldBreak: lastRun?.shouldBreak,
-        clientDeployment: clientDeployment,
+        clientDeployment: lastRun?.shouldBreak ? clientDeployment : undefined,
         deployStep: lastRun?.taskInstanceMeta?.deployStep,
         taskInstanceMeta: lastRun?.taskInstanceMeta,
       },

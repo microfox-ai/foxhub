@@ -5,6 +5,7 @@ import { mapProviderToAuthFunction } from "./providerInstances";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { ClientSecretVariable } from "@/server/types";
+import { prisma } from "@/prisma/prisma";
 
 const AuthPopupWindow = async ({
   params,
@@ -39,14 +40,18 @@ const AuthPopupWindow = async ({
     return <div>Authorization Failed!</div>;
   }
 
-  const clientSecretData = await PortalSdk.getData(
-    `${APP_BASE_URL}/api/client-secrets?id=${DOCUMENT_ID}`,
-    {}
-  );
+  const clientSecret = await prisma.clientSecret.findUnique({
+    where: {
+      id: DOCUMENT_ID,
+    },
+  });
 
-  const clientSecret = clientSecretData.clientSecrets[0];
+  if (!clientSecret) {
+    return <div>Client Secret Not Found</div>;
+  }
 
-  const scopes = (clientSecret.variables as ClientSecretVariable[]).find(
+
+  const scopes = (clientSecret.variables as any[] as ClientSecretVariable[]).find(
     (variable: any) => variable.key === "SCOPES"
   )?.value;
 
@@ -63,7 +68,7 @@ const AuthPopupWindow = async ({
     const code = searchParamsAwaited.code as string;
     const state = searchParamsAwaited.state as string;
     if (!code) {
-      throw new Error("Authorization code not found in URL");
+      return <div>Authorization code not found in URL</div>;
     }
 
     const tokenResponse = await providerInstance.exchangeCodeForTokens(code);
@@ -72,7 +77,7 @@ const AuthPopupWindow = async ({
       return <div>Authorization Failed!</div>;
     }
 
-    const keyValuePairs = clientSecret.variables.map((variable: ClientSecretVariable) => {
+    const keyValuePairs = (clientSecret.variables as any[] as ClientSecretVariable[]).map((variable: ClientSecretVariable) => {
       if ((variable.key as string).includes("_ACCESS_TOKEN")) {
         return {
           key: variable.key,

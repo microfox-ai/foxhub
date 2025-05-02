@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const Dashboard = () => {
-  const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading } = useClientProject();
+  const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, createNewEmptyRequest } = useClientProject();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
 
@@ -116,7 +116,9 @@ const Dashboard = () => {
                   <BotIcon className="w-4 h-4" />
                   <span> Show all cutom bots </span>
                 </Link>
-                <li className="bg-black text-white flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
+                <li
+                  onClick={createNewEmptyRequest}
+                  className="bg-black text-white flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
                   <CornerDownRightIcon className="w-4 h-4" />
                   <span> Start a New Task </span>
                 </li>

@@ -4,13 +4,13 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 dotenv.config();
 
 /**
- * GET endpoint to fetch data from an external API
+ * POST endpoint to fetch data from an external API
  */
-export const getExternalData = async (
+export const postExternalData = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    // Get query parameters from the event
+    // POST query parameters from the event
     const queryParams = event.queryStringParameters || {};
     const postId = queryParams.id ? parseInt(queryParams.id) : 1;
 
@@ -49,13 +49,14 @@ export const getExternalData = async (
 /**
  * Documentation for external API endpoints
  * Write down this apiDocs on the basis of open api 3.0.1 in JSON format
+ * Body parameters must be in requestBody
  */
-export const getExternalDataDocs = {
+export const postExternalDataDocs = {
   instructions: `
-  This is a simple GET endpoint that fetches data from an external API.
+  This is a simple POST endpoint that fetches data from an external API.
   If any webhook setup instructions are required, they are written in this field.
   `,
-  operationId: "getExternalData",
+  operationId: "postExternalData",
   summary: "Fetch data from external API",
   description: "Retrieves data from JSONPlaceholder API for a specific post ID",
   parameters: [
@@ -70,6 +71,37 @@ export const getExternalDataDocs = {
       },
     },
   ],
+  requestBody: {
+    "required": true,
+    "content": {
+        "application/json": {
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Full name of the new user"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email address of the new user"
+                    },
+                    "signupDate": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "ISO 8601 formatted date and time of user signup"
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "signupDate"
+                ]
+            }
+        }
+    }
+  },
   responses: {
     "200": {
       description: "Successfully retrieved data",

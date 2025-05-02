@@ -42,7 +42,12 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log("deploymentInfo", deploymentInfo);
     const fetchApiDocs = async () => {
-      if (!deploymentInfo?.baseUrl || !deploymentInfo?.stage) return;
+      if (!deploymentInfo?.baseUrl || !deploymentInfo?.stage) {
+        setApiDoc(null);
+        setSelectedEndpoint(null);
+        setSelectedMethod(null);
+        return;
+      }
 
       setIsLoading(true);
       setError(null);

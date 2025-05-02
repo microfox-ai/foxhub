@@ -84,6 +84,10 @@ export const codingSystemPrompt = (
     GROUND RULES
        - Never use theese packages - axios
 
+    SILLY ERROR TO AVOID
+    - Make sure function names & identifiers are unique
+    - Make sure proper null exception handling is done (?. operator)
+
     YOU MUST NEVER WRITE ANY MOCK CODE, it should be production ready code.
     even if the packages are not available, you can use your own knowledge to integrate said platform.
 
@@ -274,6 +278,8 @@ export const codingFunctionPrompt = async ({
             `
                 : ""
             }
+            make sure the imports follow the '.js' extension like this for imports from other folders:
+            import { exampleHelper } from '../helpers/exampleHelper.js'
 
             Requirements:
             - Use TypeScript
@@ -293,6 +299,9 @@ export const codingFunctionPrompt = async ({
 
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
+
+            functionNaming should be like this:
+            ${type === "lambda" ? _function?.name?.replaceAll(/[^a-zA-Z0-9]/g, "") : _cron?.name?.replaceAll(/[^a-zA-Z0-9]/g, "")}.ts
           
             The code should be created in the src/functions directory.
             Make sure to use the necessary imports from the packages when needed.

@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     newMetadata.serverless.serviceName = serviceName;
     newMetadata.serverless.functionBase =
       serviceName + "-" + stage?.toLowerCase();
+    console.log("newMetadata", newMetadata);
 
     // Create the ClientDeployment
     // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),

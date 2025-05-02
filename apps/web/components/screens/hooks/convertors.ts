@@ -28,6 +28,17 @@ export const MinionType = {
 
 export type MinionTypeType = (typeof MinionType)[keyof typeof MinionType];
 
+export const MinionSupports = {
+  [MinionType.HelloFox]: ["intent-observor"] as string[],
+  [MinionType.ConvertFox]: ["intent-observor"] as string[],
+  [MinionType.BuildFox]: [] as string[],
+  [MinionType.TestFox]: [] as string[],
+  [MinionType.DeployFox]: [] as string[],
+  [MinionType.ReviewFox]: [] as string[],
+  [MinionType.PackageFox]: [] as string[],
+  [MinionType.Unknown]: [] as string[],
+} as const;
+
 export interface ChatUIMessageWithTypes
   extends Omit<ChatUIMessage, "minionType" | "minionFlow" | "role"> {
   role: "user" | "assistant" | "system";

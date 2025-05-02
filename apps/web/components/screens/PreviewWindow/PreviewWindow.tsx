@@ -70,7 +70,7 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
 
-  const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
+  //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
   const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
 
   // Create form schema based on request parameters
@@ -1311,6 +1311,24 @@ const PreviewWindow = () => {
                               {String(response.data)}
                             </pre>
                           )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xs font-medium">Server Logs</h3>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setResponse(null)}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                          >
+                            <X className="h-3 w-3 text-neutral-500" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="overflow-hidden rounded-lg border bg-white">
+                        <div className="p-3">
+                          <pre className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
+                            {JSON.stringify(serverlessLogs, null, 2)}
+                          </pre>
                         </div>
                       </div>
                     </div>

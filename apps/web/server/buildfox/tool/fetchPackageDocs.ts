@@ -42,8 +42,10 @@ export const fetchPackageDocs = (
         ),
     }),
     execute: async ({ microfoxPackages, externalPackages }, options) => {
-      const fetchReadMePackages = microfoxPackages.filter((pkg) =>
-        pkg.includes("@microfox/")
+      console.log("microfoxPackages", microfoxPackages);
+      console.log("externalPackages", externalPackages);
+      const fetchReadMePackages = microfoxPackages.filter(
+        (pkg) => pkg.includes("@microfox/") && pkg != "@microfox/null"
       );
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {

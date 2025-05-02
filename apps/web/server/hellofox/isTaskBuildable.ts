@@ -4,7 +4,10 @@ import { z } from "zod";
 import { models } from "../models";
 import { getMicrofoxCapabilities } from "./getMicrofoxCapabilities";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import {
+  updateClientRequest,
+  updateTaskInstanceMeta,
+} from "@/utils/services/db_functions/updateClientRequest";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
@@ -33,6 +36,15 @@ export const isTaskBuildable = (props: StreamingFucntionProps<any, any>) => {
       props.dataStream.writeMessageAnnotation({
         type: "loading",
         content: "Let me verify if this is possible...",
+      });
+      await updateClientRequest({
+        clientRequestId: props.requestBody.clientRequestId,
+        title: task,
+      });
+      props.dataStream.writeMessageAnnotation({
+        type: "clientRequestTitle",
+        content: task,
+        id: props.requestBody.clientRequestId,
       });
       const result = await generateObject({
         model: models.googleGeminiPro,

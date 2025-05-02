@@ -6,6 +6,8 @@ import {
   ReactNode,
   useState,
   useEffect,
+  Dispatch,
+  SetStateAction,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -16,17 +18,23 @@ import { BotProject, REQUESTSTATUS } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import { ClientRequest } from "@prisma/client";
+import { MinionFlow } from "../hooks/convertors";
 
+interface BotProjectWithRequests extends BotProject {
+  clientRequests: ClientRequest[];
+}
 interface ClientProjectContextType {
   clientRequestId: string | null;
   projectId: string | null;
-  selectedProject: BotProject | null;
+  selectedProject: BotProjectWithRequests | null;
   selectedRequest: ClientRequest | null;
-  projects: any[];
+  projects: BotProjectWithRequests[] | any[];
   isLoading: boolean;
   createNewEmptyRequest: () => Promise<void>;
-  setSelectedProject: (project: any) => void;
-  setSelectedRequest: (request: ClientRequest | null) => void;
+  setSelectedProject: (project: BotProjectWithRequests | any) => void;
+  setSelectedRequest: Dispatch<SetStateAction<ClientRequest | null>>;
+  selectedProjectClientRequests: ClientRequest[];
+  selectedProjectClientRequestsLoading: boolean;
 }
 
 const ClientProjectContext = createContext<
@@ -50,7 +58,7 @@ interface ClientProjectProviderProps {
 export function ClientProjectProvider({
   children,
 }: ClientProjectProviderProps) {
-  const [selectedProject, setSelectedProject] = useState<BotProject | null>(null);
+  const [selectedProject, setSelectedProject] = useState<BotProjectWithRequests | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(null);
   const { user } = useAuth();
   const router = useRouter();
@@ -71,6 +79,15 @@ export function ClientProjectProvider({
     async (url) => await fetch(url).then((res) => res.json())
   );
 
+  const {
+    data: selectedProjectClientRequests = [],
+    error: selectedProjectClientRequestsError,
+    isLoading: selectedProjectClientRequestsLoading,
+  } = useSWR(
+    selectedProject?.id ? `/api/client-requests?botProjectId=${selectedProject?.id}` : null,
+    async (url) => await fetch(url).then((res) => res.json())
+  );
+
   useEffect(() => {
     if (projectParamId && projects) {
       const project = projects?.find((p: any) => p.id === projectParamId);
@@ -86,14 +103,15 @@ export function ClientProjectProvider({
           setSelectedRequest(request);
         }
       }
-    } else {
-      // const personalSpace = projects.find(
-      //   (p: any) => p.name === "Personal Space"
-      // );
-      // if (personalSpace) {
-      //   setSelectedProject(personalSpace);
-      // }
     }
+    //else {
+    // const personalSpace = projects.find(
+    //   (p: any) => p.name === "Personal Space"
+    // );
+    // if (personalSpace) {
+    //   setSelectedProject(personalSpace);
+    // }
+    //}
   }, [projectParamId, requestParamId, projects]);
 
   const createNewEmptyRequest = async () => {
@@ -120,6 +138,7 @@ export function ClientProjectProvider({
       {
         userId: user.id,
         botProjectId: selectedProject.id,
+        MinionFlow: MinionFlow.BuildFlow
       }
     );
 
@@ -145,6 +164,8 @@ export function ClientProjectProvider({
     createNewEmptyRequest,
     setSelectedProject,
     setSelectedRequest,
+    selectedProjectClientRequests: selectedProjectClientRequests?.data ?? [],
+    selectedProjectClientRequestsLoading,
   };
 
   return (

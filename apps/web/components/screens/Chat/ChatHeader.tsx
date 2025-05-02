@@ -7,7 +7,7 @@ import {
   LogOut,
   LayoutDashboard,
 } from "lucide-react";
-import { useMicrofox } from "../providers/MicrofoxProvider";
+import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import {
   Popover,
@@ -68,7 +68,7 @@ const ChatHeader = ({
   activeTab,
   projectTitle,
 }: IChatHeaderProps) => {
-  const { minionType } = useMicrofox();
+  const { lastKnownMinionType, lastKnownMinionFlow } = useMicrofoxChat();
 
   return (
     <div className="grid grid-cols-12 w-full items-start justify-between gap-2 px-4 pt-6 py-2">
@@ -97,7 +97,9 @@ const ChatHeader = ({
             <p className="text-xs text-gray-500">
               Request ID: {clientRequest?.id}
             </p>
-            <p className="text-xs text-gray-500">Minion: {minionType}</p>
+            <p className="text-xs text-gray-500">
+              Minion: {lastKnownMinionType};  Flow: {lastKnownMinionFlow}
+            </p>
           </>
         )}
       </div>

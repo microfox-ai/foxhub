@@ -12,6 +12,8 @@ import fs from "fs/promises";
 import { ClientRequest } from "@prisma/client";
 import { envsFromTaskIntegrations } from "./helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "./helper/templateEnvsFromTaskIntegrations";
+import { prisma } from "@/prisma/prisma";
+import { ClientSecretVariable } from "../types";
 
 export const codingSystemPrompt = (
   step: "backend" | "frontend",
@@ -158,9 +160,50 @@ export const codingFunctionPrompt = async ({
   }
 
   const templateEnvs = await templateEnvsFromTaskIntegrations(template_type);
-  const coreEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "allKeys")
+  let coreEnvs: string[] = [];
+  const requiredEnvs = taskInstanceMeta.taskIntegrations
+    ? envsFromTaskIntegrations(
+        taskInstanceMeta.taskIntegrations,
+        "requiredKeys"
+      )
     : [];
+  coreEnvs = coreEnvs.concat(requiredEnvs);
+  const oauthEnvs = taskInstanceMeta.taskIntegrations
+    ? envsFromTaskIntegrations(
+        taskInstanceMeta.taskIntegrations,
+        "internalKeys"
+      )
+    : [];
+  coreEnvs = coreEnvs.concat(oauthEnvs);
+  let configEnvs = taskInstanceMeta.taskIntegrations
+    ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "botConfig")
+    : [];
+  if (
+    configEnvs.length > 0 &&
+    clientRequest &&
+    clientRequest?.mentionedClientSecretIds?.length > 0
+  ) {
+    const clientSecrets = await prisma.clientSecret.findMany({
+      where: {
+        id: {
+          in: clientRequest?.mentionedClientSecretIds,
+        },
+      },
+    });
+    const filletBotConfig: ClientSecretVariable[] = clientSecrets.flatMap(
+      (secret) => secret.botConfig
+    ) as any[];
+    console.log("filled botconfigs", filletBotConfig);
+    configEnvs = configEnvs.filter(
+      (env) =>
+        filletBotConfig.find(
+          (c) => c && c.key === env && c.value != undefined && c.value != null
+        ) != undefined
+    );
+    console.log("configEnvs filtered", configEnvs);
+    coreEnvs = coreEnvs.concat(configEnvs);
+  }
+
   previousEnvs = previousEnvs.filter(
     (env) => !templateEnvs.includes(env) && !coreEnvs.includes(env)
   );
@@ -190,7 +233,10 @@ export const codingFunctionPrompt = async ({
             }
 
             The following packages are installed in the project:
-            - ${taskInstanceMeta?.taskIntegrations?.platforms?.map((platform) => platform?.package).join("\n - ")}
+            - ${taskInstanceMeta?.taskIntegrations?.platforms
+              ?.filter((platform) => platform?.package != "@microfox/null")
+              .map((platform) => platform?.package)
+              .join("\n - ")}
             ${
               template_type === "mongodb"
                 ? "- @mongoose"

@@ -6,9 +6,9 @@ import { ClientRequest } from "@prisma/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronsRight, Loader2, PanelRightIcon } from "lucide-react";
 import { useEffect } from "react";
-import { ChatUIProvider, useChatUI } from "../providers/ChatUiProvider";
+import { ChatUIProvider, useChatUI } from "./ChatUiProvider";
 import { useLayout } from "../providers/LayoutProvider";
-import { MicrofoxProvider, useMicrofox } from "../providers/MicrofoxProvider";
+import { MicrofoxChatProvider, useMicrofoxChat } from "./MicrofoxChatProvider";
 import { TabUiProvider, useTabUi } from "../providers/TabUiProvider";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
@@ -44,7 +44,7 @@ function ChatWindow({
     input,
     handleInputChange,
     serverMessages,
-  } = useMicrofox();
+  } = useMicrofoxChat();
 
   const {
     activeTab,
@@ -212,8 +212,11 @@ function ChatWindow({
           (!serverMessages || serverMessages.length === 0) && (
             <div className="flex relative -mt-10 flex-col gap-4 justify-center items-center h-full">
               <h1 className="text-4xl font-bold">
-                What would you like to build?
+                What can I do for you?
               </h1>
+              <p className="text-gray-500">
+                I build bots that do complex automations across platforms based on your needs.
+              </p>
               <ChatInputBox
                 input={input}
                 messageStatus={status}
@@ -245,7 +248,7 @@ export default function ChatWindowWithProvider({
   isLoading: boolean;
 }) {
   return (
-    <MicrofoxProvider clientRequest={clientRequest}>
+    <MicrofoxChatProvider clientRequest={clientRequest}>
       <TabUiProvider>
         <ChatUIProvider>
           <ChatWindow
@@ -258,6 +261,6 @@ export default function ChatWindowWithProvider({
           />
         </ChatUIProvider>
       </TabUiProvider>
-    </MicrofoxProvider>
+    </MicrofoxChatProvider>
   );
 }

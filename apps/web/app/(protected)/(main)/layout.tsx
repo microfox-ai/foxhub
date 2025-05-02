@@ -9,6 +9,7 @@ import { LayoutProvider } from "@/components/screens/providers/LayoutProvider";
 import FeebackModal from "@/components/global/FeebackModal";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import ResizableSidebar from "@/components/screens/global/ResizableSidebar";
+import LogoutElement from "@/components/auth/LogoutElement";
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const isPlayground = pathname.includes("playground");
@@ -36,6 +37,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <>{children}</>
               )}
             </ResizablePanelGroup>
+            {!pathname.includes("request") && (
+              <div className="absolute top-10 right-10 z-100">
+                <LogoutElement />
+              </div>
+            )}
           </main>
         </LayoutProvider>
       </ClientProjectProvider>

@@ -1,6 +1,8 @@
 "use server";
 
 import { prisma } from "@/prisma/prisma";
+import { INTERNAL_TEMPLATE_UPSTASH_ROOT } from "@/server/buildfox/tool/writeToFile";
+import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import {
   GITHUB_ACTION_POLICIES,
@@ -9,19 +11,14 @@ import {
   PROJECT_INFO_DIR,
   PROJECT_JSON_FILE_DIR,
   PROJECT_REPO_OWNER,
+  TEMPLATE_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
-import { TEMPLATE_REPO } from "@/utils/constants/githubInfo";
-import { Octokit } from "octokit";
-import { createEmptyClientRequest } from "./createEmptyClientRequest";
-import { createClientMongoDB } from "./createClientMongoDB";
-import { TaskInstanceMeta } from "@prisma/client";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
-import path from "path";
 import fs from "fs/promises";
-import { INTERNAL_TEMPLATE_UPSTASH_ROOT } from "@/server/buildfox/tool/writeToFile";
+import { Octokit } from "octokit";
+import path from "path";
 import { getTemplateVersion } from "../github_functions/getTemplateVersion";
-import { octokitSdk } from "@/server/buildfox/helper/gitHelpers";
+import { MinionFlow } from "@/components/screens/hooks/convertors";
 
 export async function createNewBotProject({
   userId,
@@ -232,10 +229,16 @@ export async function createNewBotProject({
   console.log("botProjectFile", botProjectFile);
 
   // Create empty ClientRequest
-  const clientRequest = await createEmptyClientRequest({
-    userId,
-    botProjectId: botProject.id,
-  });
+  const clientRequest =
+    (await prisma.clientRequest.create({
+      data: {
+        botProjectId: botProject.id,
+        userId,
+        title: "Untitled",
+        description: "",
+        minionFlow: MinionFlow.Unknown,
+      },
+    })) || {};
 
   return { ...botProject, clientRequests: [clientRequest] };
 }

@@ -5,6 +5,7 @@ import {
 } from "@/components/screens/Chat/message/types";
 import { TaskIntegrations } from "@/server/convertfox/types";
 
+//edge - platforms can be external (unkonw new kinds.)
 export const envsFromTaskIntegrations = (
   taskIntegrations: TaskIntegrations,
   type?: "requiredKeys" | "allKeys" | "botConfig" | "internalKeys"
@@ -43,9 +44,12 @@ export const envsFromTaskIntegrations = (
         }
       )
     );
-    console.log("coreEnvs Used", coreEnvs);
+    console.log(
+      "coreEnvs Used",
+      coreEnvs?.filter((env) => env !== undefined)
+    );
   } catch (error) {
     console.error("Error generating core envs", error);
   }
-  return coreEnvs;
+  return coreEnvs?.filter((env) => env !== undefined);
 };

@@ -24,6 +24,7 @@ export const genCronJobs = async (
         taskInstanceMeta,
         cron: cronJob,
         template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
+        clientRequest,
       });
       console.log("generating cron job", cronJob.name);
       const result = await generateText({

@@ -185,56 +185,58 @@ export const TaskIntegrations = ({
             </div>
 
             <div className="grid gap-4">
-                {platforms.map((platform, index) => {
-                    const packageInfo = platform.packageInfo as Package;
-                    const isApiKeyRequired = packageInfo?.constructors.some(
-                        (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
-                    );
-                    const isOAuthRequired = packageInfo?.constructors.some(
-                        (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.OAUTH2
-                    );
-                    return (
-                        <div
-                            key={platform.name}
-                            className="flex rounded-lg border p-4 flex-col gap-2"
-                        >
-                            <div className="flex items-start gap-3">
-                                <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />
-                                <div className="flex-1">
-                                    <div className="flex gap-2 items-center justify-between">
-                                        <div className="flex flex-col items-start gap-2">
-                                            <span className="leading-none font-medium w-fit text-gray-900">
-                                                {platform.name}
-                                            </span>
-                                            <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
-                                                {packageInfo?.name}
-                                            </span>
+                {platforms
+                    .map((platform, index) => {
+                        const packageInfo = platform.packageInfo as Package;
+                        const isApiKeyRequired = packageInfo?.constructors.some(
+                            (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
+                        );
+                        const isOAuthRequired = packageInfo?.constructors.some(
+                            (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.OAUTH2
+                        );
+                        return (
+                            <div
+                                key={platform.name}
+                                className="flex rounded-lg border p-4 flex-col gap-2"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />
+                                    <div className="flex-1">
+                                        <div className="flex gap-2 items-center justify-between">
+                                            <div className="flex flex-col items-start gap-2">
+                                                <span className="leading-none font-medium w-fit text-gray-900">
+                                                    {platform.name}
+                                                </span>
+                                                <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
+                                                    {packageInfo?.name ?? "Not Supported yet"}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 rounded-lg border border-gray-200">
+                                                {isOAuthRequired && (
+                                                    <OAuthButton
+                                                        packageInfo={packageInfo}
+                                                        secretsData={secretsData}
+                                                        mutateSecrets={mutateSecrets}
+                                                    />
+                                                )}
+                                                {isApiKeyRequired && (
+                                                    <ApiKeyButton
+                                                        packageInfo={packageInfo}
+                                                        secretsData={secretsData}
+                                                        mutateSecrets={mutateSecrets}
+                                                    />
+                                                )}
+                                                {!packageInfo}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-lg border border-gray-200">
-                                            {isOAuthRequired && (
-                                                <OAuthButton
-                                                    packageInfo={packageInfo}
-                                                    secretsData={secretsData}
-                                                    mutateSecrets={mutateSecrets}
-                                                />
-                                            )}
-                                            {isApiKeyRequired && (
-                                                <ApiKeyButton
-                                                    packageInfo={packageInfo}
-                                                    secretsData={secretsData}
-                                                    mutateSecrets={mutateSecrets}
-                                                />
-                                            )}
-                                        </div>
+                                        {packageInfo?.name && <p className="text-sm text-gray-600 mt-3">
+                                            {platform.reason}
+                                        </p>}
                                     </div>
-                                    <p className="text-sm text-gray-600 mt-3">
-                                        {platform.reason}
-                                    </p>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
             </div>
 
             <ActionButtons

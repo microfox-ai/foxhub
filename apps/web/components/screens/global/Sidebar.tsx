@@ -56,6 +56,7 @@ interface NavigationConfig {
   collapsedIcon?: React.ReactNode;
   label: string;
   href?: string;
+  requiresProject?: boolean;
   onClick?: (props: {
     isCollapsed: boolean;
     onCollapse?: (collapsed: boolean) => void;
@@ -85,7 +86,7 @@ const navigationConfig: NavigationConfig[] = [
     collapsedIcon: (
       <CircleCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
     ),
-    label: "Status",
+    label: "Supported",
     href: "/status",
   },
   {
@@ -95,13 +96,14 @@ const navigationConfig: NavigationConfig[] = [
     ),
     label: "My Bots",
     href: "/my-bots",
+    requiresProject: true,
   },
   {
     icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
       <Flag strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
     ),
-    label: "Feedback",
+    label: "Beta-Feedback",
     onClick: ({ setIsFeedbackModalOpen }) => setIsFeedbackModalOpen(true),
   },
   {
@@ -160,26 +162,28 @@ export default function Sidebar({
             <ul
               className={`${isCollapsed ? "flex flex-col items-center gap-2" : "flex flex-col"}`}
             >
-              {navigationConfig.filter((item) => !isCollapsed ? item.label !== "Chat" : true).map((item, index) => (
-                <NavigationItem
-                  key={item.label}
-                  icon={item.icon}
-                  collapsedIcon={item.collapsedIcon}
-                  label={item.label}
-                  href={item.href}
-                  onClick={
-                    item.onClick
-                      ? () =>
-                        item.onClick?.({
-                          isCollapsed,
-                          onCollapse,
-                          setIsFeedbackModalOpen,
-                        })
-                      : undefined
-                  }
-                  isCollapsed={isCollapsed}
-                />
-              ))}
+              {navigationConfig.filter((item) =>
+                item.requiresProject ? selectedProject != null :
+                  !isCollapsed ? item.label !== "Chat" : true).map((item, index) => (
+                    <NavigationItem
+                      key={item.label}
+                      icon={item.icon}
+                      collapsedIcon={item.collapsedIcon}
+                      label={item.label}
+                      href={item.href}
+                      onClick={
+                        item.onClick
+                          ? () =>
+                            item.onClick?.({
+                              isCollapsed,
+                              onCollapse,
+                              setIsFeedbackModalOpen,
+                            })
+                          : undefined
+                      }
+                      isCollapsed={isCollapsed}
+                    />
+                  ))}
             </ul>
 
             {selectedProject && (
@@ -258,7 +262,7 @@ const SidebarHeader = ({
   isCollapsed?: boolean;
   onCollapse?: (collapsed: boolean) => void;
 }) => (
-  <div className="flex items-center justify-between">
+  <div className="flex items-center justify-between mb-4">
     <div
       onClick={() => onCollapse?.(!isCollapsed)}
       className={`flex mt-4 cursor-pointer items-center ${isCollapsed ? "justify-center" : "gap-2"} text-2xl`}
@@ -309,7 +313,7 @@ const RequestsList = ({
   return (
     <div className="my-4 mx-1 space-y-1">
       <div className="text-xs font-medium mb-2 px-2 text-gray-500">
-        Requests
+        Tasks
       </div>
       {(selectedProject as any)?.clientRequests?.length > 0 ? (
         (selectedProject as any)?.clientRequests?.map((request: ClientRequest) => (
@@ -383,7 +387,7 @@ const NewRequestButton = ({
           sideOffset={10}
           showArrow={false}
         >
-          <p>New Request</p>
+          <p>New Task</p>
         </TooltipContent>
       </Tooltip>
     );
@@ -396,10 +400,10 @@ const NewRequestButton = ({
         e.stopPropagation();
         onNewRequest(selectedProject);
       }}
-      className="w-full my-4 rounded-full shadow-md overflow-hidden"
+      className="w-full my-4 rounded-full shadow-md overflow-hidden bg-black text-white hover:bg-black/80 hover:text-white"
       style={{ padding: "0.25rem", marginRight: "0.25rem" }}
     >
-      New Request
+      New Task
     </ButtonSCN>
   );
 };

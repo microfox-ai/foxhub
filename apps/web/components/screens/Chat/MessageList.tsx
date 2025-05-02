@@ -2,8 +2,8 @@ import { Skeleton } from "@mui/material";
 import { UIMessage } from "ai";
 import dayjs from "dayjs";
 import { MessageWrapper } from "./message/MessageWrapper";
-import { useChatUI } from "../providers/ChatUiProvider";
-import { useMicrofox } from "../providers/MicrofoxProvider";
+import { useChatUI } from "./ChatUiProvider";
+import { useMicrofoxChat } from "./MicrofoxChatProvider";
 
 interface TabMessagesProps {
   isLoading: boolean;
@@ -13,7 +13,7 @@ export default function MessageList({
   isLoading,
 }: TabMessagesProps) {
 
-  const { messages, status } = useMicrofox();
+  const { messages, status } = useMicrofoxChat();
   const isStreaming = status === "streaming";
   const { messagesEndRef } = useChatUI();
 
@@ -36,7 +36,7 @@ export default function MessageList({
         messages.map((update, index) => {
           return (
             <div
-              key={update.id}
+              key={update.id + index}
               className={`${index === messages.length - 1 ? "min-h-[calc(85vh-258px)]" : ""}`}
             >
               <MessageWrapper

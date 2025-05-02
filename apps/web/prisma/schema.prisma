@@ -18,15 +18,15 @@ model ConfigData {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  avatar    String?
-  onboardingData Json?
-  isOnboarded Boolean @default(false)
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  name               String
+  avatar             String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  isOnboarded        Boolean             @default(false)
+  onboardingData     Json?
   projectPermissions ProjectPermission[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model FoxTemplate {
@@ -52,6 +52,7 @@ model ChatUIMessage {
   annotations           Json[]
   minionId              String?
   minionType            String?
+  minionFlow            String?
   userId                String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
@@ -63,38 +64,38 @@ model ChatUIMessage {
 }
 
 model BotProject {
-  id               String          @id @default(uuid())
+  id               String              @id @default(uuid())
   userId           String
   name             String
-  homepageUrl      String?
-  imageUrl         String?
-  githubRepoName   String          @unique
+  githubRepoName   String              @unique
   githubRepoUrl    String
-  githubRepoBranch String?         @default("main")
+  githubRepoBranch String?             @default("main")
   prUrl            String?
   prNumber         Int?
-  slug             String?         
   description      String?
   projectDir       String
   templateVersion  String?
-  permissions      ProjectPermission[]
   metadata         Json?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  slug             String?
+  imageUrl         String?
+  homepageUrl      String?
   clientRequests   ClientRequest[]
   clientSecrets    ClientSecret[]
+  permissions      ProjectPermission[]
 }
 
 model ProjectPermission {
-  id             String               @id @default(uuid())
-  botProjectId   String               
-  userId         String
-  accessType     PROJECT_ACCESS_TYPE 
-  role           PROJECTROLE
-  botProject     BotProject           @relation(fields: [botProjectId], references: [id])
-  user           User                 @relation(fields: [userId], references: [id])
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id           String              @id @default(uuid())
+  botProjectId String
+  userId       String
+  accessType   PROJECT_ACCESS_TYPE
+  role         PROJECTROLE
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  botProject   BotProject          @relation(fields: [botProjectId], references: [id])
+  user         User                @relation(fields: [userId], references: [id])
 
   @@unique([botProjectId, userId])
   @@index([botProjectId])
@@ -107,8 +108,8 @@ model ClientRequest {
   userId                   String
   mentionedClientSecretIds String[]
   title                    String             @default("Untitled")
+  minionFlow               String?
   description              String?
-  serviceName              String?
   repoName                 String?
   prUrl                    String?
   prNumber                 Int?
@@ -121,9 +122,10 @@ model ClientRequest {
   lastUpdatedAt            DateTime?          @default(now())
   createdAt                DateTime           @default(now())
   updatedAt                DateTime           @updatedAt
+  serviceName              String?
   chatUIMessages           ChatUIMessage[]
-  botProject               BotProject         @relation(fields: [botProjectId], references: [id])
   deployedFunctions        ClientDeployment[]
+  botProject               BotProject         @relation(fields: [botProjectId], references: [id])
   requestUpdates           RequestUpdate[]
   taskInstanceMeta         TaskInstanceMeta?
 }
@@ -135,7 +137,7 @@ model TaskInstanceMeta {
   initialSummary        String?
   taskIntegrations      Json?
   taskRequiredInfo      Json?
-  taskStructure         Json? // this should be in seperate model in future
+  taskStructure         Json?
   buildingStep          Json?
   deployStep            Json?
   minionType            String?
@@ -146,7 +148,7 @@ model TaskInstanceMeta {
 
 model UsageAnalytics {
   id               String  @id @unique @default(uuid())
-  matchId          String  @unique // userId+requestId+projectId
+  matchId          String  @unique
   promptTokens     Int     @default(0)
   totalTokens      Int     @default(0)
   completionTokens Int     @default(0)
@@ -157,22 +159,22 @@ model UsageAnalytics {
 }
 
 model ClientSecret {
-  id               String     @id @default(uuid())
-  botProjectId     String
-  clientRequestIds String[]
+  id                  String             @id @default(uuid())
+  botProjectId        String
+  clientRequestIds    String[]
+  userId              String
+  name                String
+  type                String
+  variables           Json[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  status              CLIENTSECRETSTATUS @default(FILLED)
+  botConfig           Json[]             @default([])
   clientDeploymentIds String[]
-  userId           String
-  name             String
-  packageName      String?
-  packageConstructor String?
-  packageType      String? // template / custom / oauth
-  type             String // packageName/constructor
-  variables        Json[] // this will be in the format of { key: "apiKey", value: "1234567890", isOptional: false}
-  status           CLIENTSECRETSTATUS @default(FILLED)
-  botConfig        Json[]             @default([])
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  botProject       BotProject @relation(fields: [botProjectId], references: [id])
+  packageConstructor  String?
+  packageName         String?
+  packageType         String?
+  botProject          BotProject         @relation(fields: [botProjectId], references: [id])
 }
 
 model ClientDeployment {
@@ -180,7 +182,6 @@ model ClientDeployment {
   userId                String
   botProjectId          String
   originClientRequestId String
-  clientSecretIds       String[]
   name                  String        @unique
   baseUrl               String
   stage                 DEPLOY_STAGE
@@ -191,6 +192,7 @@ model ClientDeployment {
   metadata              Json?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
+  clientSecretIds       String[]
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
@@ -210,16 +212,16 @@ model RequestUpdate {
 }
 
 model WhatsAppVerification {
-  id        String   @id @default(uuid())
-  clientSecretId  String   // clientSecretId of the whatsapp bot
-  userId    String // userId of the user who is connecting the whatsapp bot (provided by the client)
-  code      String // verification code for the whatsapp bot
-  slug      String    // slug provided by the client (provider)
-  phoneNumber String? 
-  isVerified Boolean @default(false)
-  callbackUri String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  clientSecretId String
+  userId         String
+  code           String
+  slug           String
+  phoneNumber    String?
+  isVerified     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  callbackUri    String?
 
   @@index([clientSecretId, code])
   @@index([userId])
@@ -264,4 +266,3 @@ enum PROJECT_ACCESS_TYPE {
   READ
   WRITE
 }
-

@@ -8,7 +8,9 @@ import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
 import { deployFoxRouter } from "./deployfox/_deployfoxRouter";
 import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
 import { modifyFoxRouter } from "./system/modifier";
-
+import { buildFlow } from "./flows/buildFlow";
+import { MinionFlow } from "@/components/screens/hooks/convertors";
+import { unknown } from "zod";
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
   userId?: string;
@@ -31,6 +33,11 @@ microfoxRouter.addPath("buildfox", buildFoxRouter);
 microfoxRouter.addPath("deployfox", deployFoxRouter);
 microfoxRouter.addPath("modifyfox", modifyFoxRouter);
 microfoxRouter.addPath("usageTracker", usageTrackerRouter);
+microfoxRouter.addPath(MinionFlow.BuildFlow, buildFlow);
+
+// action - defines from the user end. - abrupt-switch, switch-notsure, unknown,
+// minionFlow - preset by the type of clientRequest (on-start) & editable in middle of the conversation.
+// minonType - exact end point of the router.
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
@@ -39,11 +46,25 @@ microfoxRouter.setRouting((requestBody: any) => {
   // }
 
   //console.log("requestBody", requestBody);
+  let _minionFlow = requestBody.minionFlow;
+  if (requestBody.messages.length < 2 && _minionFlow === MinionFlow.Unknown) {
+    _minionFlow = MinionFlow.BuildFlow;
+  }
+
+  if (_minionFlow && _minionFlow != MinionFlow.Unknown) {
+    return ["usageTracker", _minionFlow];
+  }
+
+  console.log(
+    "WARNING: hitting old routes",
+    requestBody.minionFlow,
+    requestBody.minionType
+  );
 
   if (
     requestBody.action === "abrupt-switch" ||
     requestBody.action === "switch-notsure" ||
-    requestBody.action === "unkown"
+    requestBody.action === "unknown"
   ) {
     return ["usageTracker", "modifyfox"];
   }

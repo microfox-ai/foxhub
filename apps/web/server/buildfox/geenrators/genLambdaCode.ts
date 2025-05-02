@@ -28,6 +28,7 @@ export const genLambdaCode = async (
         taskInstanceMeta,
         function: _function,
         template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
+        clientRequest,
       });
       console.log("generating lambda function", _function.name);
       const result = await generateText({

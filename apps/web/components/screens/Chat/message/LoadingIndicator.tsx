@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { UIMessage } from "ai";
+import { useMicrofoxChat } from "../MicrofoxChatProvider";
 
 // Define types for annotations
 export type ThinkingAnnotation = {
@@ -23,7 +23,7 @@ interface LoadingIndicatorProps {
 }
 
 export const LoadingIndicator = ({ message }: LoadingIndicatorProps) => {
-    const { status } = useMicrofox();
+    const { status } = useMicrofoxChat();
 
     // Get the latest thinking or loading annotation
     const getLatestStatusAnnotation = (): StatusAnnotation | null => {

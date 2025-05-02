@@ -4,8 +4,8 @@ import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight, FileText, RefreshCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MessageMetadata } from "../../hooks/convertors";
-import { useMicrofox } from "../../providers/MicrofoxProvider";
 import { getMessageClass } from "../helpers/ui";
+import { useMicrofoxChat } from "../MicrofoxChatProvider";
 import { AnnotationUIList } from "./AnnotationUIList";
 import { LoadingIndicator } from "./LoadingIndicator";
 import { MessageMarkdown } from "./MessageThoughtWrapper";
@@ -69,7 +69,7 @@ export const MessageWrapper = ({
   length,
   isStreaming,
 }: MessageWrapperProps) => {
-  const { handleRefresh, status } = useMicrofox();
+  const { handleRefresh, status } = useMicrofoxChat();
   const annotations = message.annotations;
   const core = annotations?.find((a) => (a as any).type === "core");
   const metadata = (
@@ -79,7 +79,7 @@ export const MessageWrapper = ({
   const minion = annotations?.find((a) => (a as any).type === "minion");
 
   const displayParts = message.parts?.filter(
-    (part) => part.type !== "tool-invocation"
+    (part) => part.type !== "tool-invocation" && part.type != "step-start"
   );
   const toolInvocations = message.parts?.filter(
     (part) => part.type === "tool-invocation"
@@ -102,7 +102,7 @@ export const MessageWrapper = ({
   };
 
   return (
-    <div key={message.id}>
+    <div key={message.id + index}>
       {renderDateSeperator(new Date(message.createdAt!).toISOString()!)}
       {message.role === "system" ? (
         <div className="my-2 text-center text-xs text-gray-600">
@@ -147,7 +147,7 @@ export const MessageWrapper = ({
             {IN_DEV && (
               <div className="text-xs bg-red-800">
                 {message.annotations?.map((a: any, idx: number) => (
-                  <div key={idx} className="text-xs text-white bg-red-500 my-2">
+                  <div key={idx + a.type} className="text-xs text-white bg-red-500 my-2">
                     {a.type} - {a.value} - {a.content} - {a.text} - {a.contents}
                   </div>
                 ))}

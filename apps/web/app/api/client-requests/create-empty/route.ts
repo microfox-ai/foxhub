@@ -1,28 +1,34 @@
-import { createEmptyClientRequest } from "@/utils/services/db_functions/createEmptyClientRequest";
+import { prisma } from "@/prisma/prisma";
 import { NextResponse } from "next/server";
+import { MinionFlow } from "@/components/screens/hooks/convertors";
 
 export async function POST(request: Request) {
-  const { userId, botProjectId, title, description } = await request.json();
+  const { userId, botProjectId, title, description, minionFlow } =
+    await request.json();
   if (!userId || !botProjectId) {
     return NextResponse.json(
       { error: "Missing userId or botProjectId" },
-      { status: 400 },
+      { status: 400 }
     );
   }
   try {
-    const clientRequest = await createEmptyClientRequest({
-      userId,
-      botProjectId,
-      title: title || "Untitled",
-      description: description || "",
-    });
+    const clientRequest =
+      (await prisma.clientRequest.create({
+        data: {
+          botProjectId: botProjectId,
+          userId,
+          title: title || "Untitled",
+          description: description || "",
+          minionFlow: minionFlow || MinionFlow.Unknown,
+        },
+      })) || {};
 
     return NextResponse.json(clientRequest);
   } catch (error) {
     console.error("Error creating empty client request:", error);
     return NextResponse.json(
       { error: "Failed to create empty client request" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

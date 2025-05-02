@@ -29,12 +29,12 @@ import { constructAppendBody, constructMessageFromButton } from "../messageHelpe
 import { prettyPrintDuration } from "@/utils/helpers/prettyprint";
 import Cube from "@/components/ui/spinners/cube";
 import { useLayout } from "@/components/screens/providers/LayoutProvider";
-import { useMicrofox } from "@/components/screens/providers/MicrofoxProvider";
 import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
 import Link from "next/link";
 import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { useDeployStatus } from "@/components/screens/providers/useDeployStatus";
 import { useTabUi } from "@/components/screens/providers/TabUiProvider";
+import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 
 interface UIAnnotation {
     objectType: string;
@@ -61,7 +61,7 @@ export const DeploymentsInfo = ({
 
     const { isRightCollapsed, handleRightCollapse } = useLayout();
     const { setDeploymentInfo } = useTaskInstanceMetaContext();
-    const { append } = useMicrofox();
+    const { append } = useMicrofoxChat();
     const { setActiveTab } = useTabUi();
     const { finalData, deployStep, clientRequest } = useDeployStatus({
         stage,

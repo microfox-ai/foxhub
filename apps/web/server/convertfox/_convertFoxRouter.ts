@@ -64,6 +64,7 @@ export const convertfoxRouter: ServerStreamingFunction<
     };
   }
   // only update if the summary is not already set (otherwise take whatever is the last saved version of the summary)
+  // THis might be redundant now.
   if (!taskInstanceMeta?.initialSummary) {
     let lastHelloMessage = findLastElementWith(
       requestBody.messages,
@@ -107,7 +108,10 @@ export const convertfoxRouter: ServerStreamingFunction<
     Determine:
     1. User intent (confirmation, modification, query)
     2. Brief reasoning for classification
-    3. If modification, specify the type of modification (taskInfo - change some task level details, taskIntegrations - change the integrations, taskStructure - change the structure/pattern of the task)`,
+    3. If modification, specify the type of modification 
+       a. taskInfo - change some task info level details (goal, summary, more specific details), 
+       b. taskIntegrations - change the integrations & platforms to be used 
+       c. taskStructure - change the final code structure/pattern of the task`,
   });
   TokenUsageAnalyticsTracker.trackUsage({
     ...props.requestBody,
@@ -132,7 +136,8 @@ export const convertfoxRouter: ServerStreamingFunction<
 
   console.log("classification", classification, lastAssistantMessage);
 
-  // if the last message of assistant is not t=convertfox, then in the case that taskInstanceMeta.taskInfo already exists,
+  // if the last message of assistant is not t=convertfox,
+  // then in the case that taskInstanceMeta.taskStructure already exists,
   // then we can confirm that this is a modification at a later point.
   if (taskInstanceMeta.taskStructure && !lastAssistantJob) {
     if (classification.modificationType) {

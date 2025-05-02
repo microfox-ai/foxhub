@@ -9,7 +9,9 @@ import {
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
-import { useMicrofox } from "../providers/MicrofoxProvider";
+import { useMicrofoxChat } from "./MicrofoxChatProvider";
+import { MinionFlow, MinionType } from "../hooks/convertors";
+import { useClientProject } from "../providers/ClientProjectProvider";
 interface ChatInputBoxProps {
   input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
@@ -30,16 +32,17 @@ export default function ChatInputBox({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
-  const { handleSubmit } = useMicrofox();
+  const { selectedRequest } = useClientProject();
+  const { handleSubmit, messages } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // useEffect(() => {
-  //   //console.log("textareaRef", textareaRef.current);
-  //   if (textareaRef.current) {
+  useEffect(() => {
+    //console.log("textareaRef", textareaRef.current);
+    if (textareaRef.current) {
 
-  //     //textareaRef.current.style.height = "auto"; // Reset height
-  //     //textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
-  //   }
-  // }, [input]); // Runs when input changes
+      textareaRef.current.style.height = "auto"; // Reset height
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
+    }
+  }, [input]); // Runs when input changes
 
   const handleFileInputChange = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -59,6 +62,18 @@ export default function ChatInputBox({
   ) => {
     handleInputChange(e);
   };
+
+  const handleSend = (e?: any) => {
+    const isFirstMessage = messages.length === 0;
+    const minionFlow = isFirstMessage ? selectedRequest?.minionFlow ?? MinionFlow.BuildFlow : undefined;
+    const minionType = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
+    handleSubmit(e, {
+      body: {
+        minionFlow: minionFlow,
+        minionType: minionType
+      }
+    });
+  }
 
   return (
     <div className={cn("w-full overflow-visible", className)}>
@@ -97,7 +112,7 @@ export default function ChatInputBox({
           onChange={handleCustomInputChange}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
-              handleSubmit(e);
+              handleSend(e);
             }
           }}
           disabled={
@@ -108,14 +123,15 @@ export default function ChatInputBox({
           }
         />
         <div className="flex w-full items-center justify-between">
-          <button
+          {/* <button
             className="p-2 h-fit ml-2 border border-gray-300 rounded-full text-gray-500 hover:text-gray-700"
             onClick={() => fileInputRef.current?.click()}
           >
             <Plus className="h-5 w-5" />
-          </button>
+          </button> */}
+          <div></div>
           <button
-            onClick={() => handleSubmit()}
+            onClick={() => handleSend()}
             disabled={
               (
                 lastMessage?.annotations?.[

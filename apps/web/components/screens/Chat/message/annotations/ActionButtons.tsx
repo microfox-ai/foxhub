@@ -6,7 +6,7 @@ import {
     constructMessageFromButton,
     constructShiftMinionMessage,
 } from "../messageHelpers";
-import { useMicrofox } from "@/components/screens/providers/MicrofoxProvider";
+import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 
 interface ActionButtonsProps {
     buttons?: any[];
@@ -16,7 +16,7 @@ interface ActionButtonsProps {
 }
 
 export const ActionButtons = (props: ActionButtonsProps) => {
-    const { status, append, setInput, setMinionType } = useMicrofox();
+    const { status, append, setInput } = useMicrofoxChat();
 
     if (status === "streaming") {
         return null;
@@ -62,7 +62,6 @@ export const ActionButtons = (props: ActionButtonsProps) => {
                             }
                             if (button.action === "shiftMinion") {
                                 console.log("shiftMinion", button.value);
-                                setMinionType(button.value);
                                 setInput("");
                                 append(
                                     constructShiftMinionMessage(button),

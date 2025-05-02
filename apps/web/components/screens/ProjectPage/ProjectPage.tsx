@@ -1,19 +1,11 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { CommandEmpty } from "@/components/ui/command";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { prettySinceTime } from "@/utils/helpers/prettyprint";
 import { Skeleton } from "@mui/material";
 import { BotProject, ClientRequest } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { CirclePlusIcon } from "lucide-react";
-import { createEmptyClientRequest } from "@/utils/services/db_functions/createEmptyClientRequest";
-import { analytics } from "@/utils/services/analytics/client";
-import { PortalSdk } from "@/utils/services/PortalSdk";
-import { useAuth } from "@/components/auth/AuthProvider";
 export const ProjectPage = () => {
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const { user } = useAuth();

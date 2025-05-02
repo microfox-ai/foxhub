@@ -1,12 +1,12 @@
-import { UIMessage } from "ai";
-import { Button } from "@/components/ui/button";
-import { useMicrofox } from "../../providers/MicrofoxProvider";
-import { PrintCode } from "./PrintCode";
 import {
+  constructAppendBody,
   constructMessageFromButton,
-  constructShiftMinionMessage,
-  constructAppendBody
+  constructShiftMinionMessage
 } from "@/components/screens/Chat/message/messageHelpers";
+import { Button } from "@/components/ui/button";
+import { UIMessage } from "ai";
+import { useMicrofoxChat } from "../MicrofoxChatProvider";
+import { PrintCode } from "./PrintCode";
 
 type MessagePartType = UIMessage["parts"][number];
 
@@ -19,8 +19,8 @@ export const ToolInvocationPart = ({
   part,
   messageId,
 }: ToolInvocationPartProps) => {
-  const { setMinionType, setMessages, status, append, setInput } =
-    useMicrofox();
+  const { setMessages, status, append, setInput } =
+    useMicrofoxChat();
 
   if (part.type != "tool-invocation") {
     return null;
@@ -77,7 +77,6 @@ export const ToolInvocationPart = ({
                 className={`text-sm text-black px-2 py-2 rounded-xl cursor-pointer ${button.className}`}
                 onClick={() => {
                   if (button.action === "shiftMinion") {
-                    setMinionType(button.value);
                     setInput("");
                     append(
                       constructShiftMinionMessage(button),

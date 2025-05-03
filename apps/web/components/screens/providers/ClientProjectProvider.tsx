@@ -35,6 +35,8 @@ interface ClientProjectContextType {
   setSelectedRequest: Dispatch<SetStateAction<ClientRequest | null>>;
   selectedProjectClientRequests: ClientRequest[];
   selectedProjectClientRequestsLoading: boolean;
+  submitAnnotations: { type: "body", key: string, value: any }[];
+  setSubmitAnnotations: Dispatch<SetStateAction<{ type: "body", key: string, value: any }[]>>;
 }
 
 const ClientProjectContext = createContext<
@@ -62,6 +64,8 @@ export function ClientProjectProvider({
   const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(null);
   const { user } = useAuth();
   const router = useRouter();
+
+  const [submitAnnotations, setSubmitAnnotations] = useState<{ type: "body", key: string, value: any }[]>([]);
 
   const params = useParams<{
     project_id?: string;
@@ -171,6 +175,8 @@ export function ClientProjectProvider({
     setSelectedRequest,
     selectedProjectClientRequests: selectedProjectClientRequests?.data ?? [],
     selectedProjectClientRequestsLoading,
+    submitAnnotations,
+    setSubmitAnnotations
   };
 
   return (

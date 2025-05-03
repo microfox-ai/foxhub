@@ -41,4 +41,4 @@ export const TabUiProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     return <TabUiContext.Provider value={value}>{children}</TabUiContext.Provider>;
-}; 
+};

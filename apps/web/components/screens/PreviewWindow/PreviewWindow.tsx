@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Play, X, Monitor, Clock, Square } from "lucide-react";
+import { Copy, Play, X, Monitor, Clock, Square, ArrowLeftIcon, CheckIcon, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   Form,
@@ -47,6 +47,11 @@ import {
 } from "./types";
 import { useApiDoc } from "../providers/ApiDocProvider";
 import { useDeployStatus } from "../providers/useDeployStatus";
+import { ClientDeployment } from "@prisma/client";
+import { makeApiCallWithResponseData, fetchServerlessLogs, prepareApiRequest } from "./helpers";
+import { useMicrofoxChat } from "../Chat/MicrofoxChatProvider";
+import { useClientProject } from "../providers/ClientProjectProvider";
+import { useTabUi } from "../providers/TabUiProvider";
 
 const PreviewWindow = () => {
   const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
@@ -61,14 +66,19 @@ const PreviewWindow = () => {
   } = useApiDoc();
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [request, setRequest] = useState<any | null>(null);
   const [response, setResponse] = useState<any | null>(null);
   const [showDocs, setShowDocs] = useState(false);
   const [serverlessLogs, setServerlessLogs] = useState<any | null>(null);
   const [abortController, setAbortController] =
     useState<AbortController | null>(null);
+  const [modificationInstructions, setModificationInstructions] = useState<string>("");
   const { copied, copyToClipboard: copyText } = useCopyToClipboard();
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
+  const [showLogs, setShowLogs] = useState(false);
+  const { setSubmitAnnotations } = useClientProject();
+  const { setActiveTab } = useTabUi()
 
   //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
   const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
@@ -241,7 +251,7 @@ const PreviewWindow = () => {
     }
   };
 
-  const makeApiCall = async (data: FormValues) => {
+  const makeApiCall = async () => {
     if (!currentEndpointData) return;
 
     // Create new abort controller
@@ -249,208 +259,48 @@ const PreviewWindow = () => {
     setAbortController(controller);
     setIsLoading(true);
 
-    let requestBody: any = undefined;
+    let endpointLink: string = `${BASE_URL}${currentEndpointData.path}`;
 
     try {
       setServerlessLogs(null);
-      // Process path parameters
-      let path = currentEndpointData.path || "";
-      if (currentEndpointData.parameters) {
-        const pathParams = currentEndpointData.parameters.filter(
-          (param) => param.in === "path"
-        );
+      setResponse(null);
+      setRequest(null);
+      const { url, headers, body } = prepareApiRequest({
+        baseUrl: BASE_URL,
+        path: currentEndpointData.path || "",
+        method: currentEndpointData.method,
+        data: form.getValues(),
+        parameters: currentEndpointData.parameters,
+        requestBody: currentEndpointData.requestBody
+      });
 
-        pathParams.forEach((param) => {
-          const paramValue = data[`path_${param.name}`];
-          if (paramValue !== undefined) {
-            path = path.replace(
-              `{${param.name}}`,
-              encodeURIComponent(String(paramValue))
-            );
-          }
-        });
-      }
-      let url = `${BASE_URL}${path}`;
-      // Process query parameters
-
-      if (currentEndpointData.parameters) {
-        const queryParams = currentEndpointData.parameters.filter(
-          (param) => param.in === "query"
-        );
-
-        if (queryParams.length > 0) {
-          const queryString = queryParams
-            .map((param) => {
-              const paramValue = data[`query_${param.name}`];
-              if (paramValue !== undefined) {
-                return `${encodeURIComponent(param.name)}=${encodeURIComponent(String(paramValue))}`;
-              }
-              return null;
-            })
-            .filter(Boolean)
-            .join("&");
-
-          if (queryString) {
-            url += `?${queryString}`;
-          }
-        }
-      }
-
-      // Process header parameters
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-
-      if (currentEndpointData.parameters) {
-        const headerParams = currentEndpointData.parameters.filter(
-          (param) => param.in === "header"
-        );
-
-        // headers["Access-Control-Allow-Origin"] = "*";
-        // headers["Content-Type"] = "application/json";
-
-        headerParams.forEach((param) => {
-          const paramValue = data[`header_${param.name}`];
-          if (paramValue !== undefined) {
-            headers[param.name] = String(paramValue);
-          }
-        });
-      }
-
-      // Prepare request body for POST/PUT/PATCH requests
-      if (
-        currentEndpointData.method &&
-        ["POST", "PUT", "PATCH"].includes(currentEndpointData.method)
-      ) {
-        const requestBodySchema =
-          currentEndpointData.requestBody?.content?.["application/json"]
-            ?.schema;
-
-        if (requestBodySchema) {
-          // Handle different schema types
-          if (requestBodySchema.type === "object" && requestBodySchema.properties) {
-            const bodyData: Record<string, any> = {};
-            Object.entries(requestBodySchema.properties).forEach(([key, schema]) => {
-              const value = data[`body_${key}`];
-              if (value !== undefined) {
-                try {
-                  // Try to parse as JSON if it's an array or object
-                  if (schema.type === "array" || schema.type === "object") {
-                    bodyData[key] = JSON.parse(value);
-                  } else if (schema.type === "number" || schema.type === "integer") {
-                    bodyData[key] = Number(value);
-                  } else if (schema.type === "boolean") {
-                    bodyData[key] = value === "true";
-                  } else {
-                    bodyData[key] = value;
-                  }
-                } catch (e) {
-                  // If parsing fails, use the raw value
-                  bodyData[key] = value;
-                }
-              }
-            });
-            requestBody = JSON.stringify(bodyData);
-          } else if (requestBodySchema.type === "array" && requestBodySchema.items) {
-            // Handle array type request body
-            const value = data["body"];
-            if (value !== undefined) {
-              try {
-                requestBody = JSON.stringify(JSON.parse(value));
-              } catch (e) {
-                requestBody = JSON.stringify([]);
-              }
-            }
-          } else {
-            // Handle primitive type request body
-            const value = data["body"];
-            if (value !== undefined) {
-              try {
-                if (requestBodySchema.type === "number" || requestBodySchema.type === "integer") {
-                  requestBody = JSON.stringify(Number(value));
-                } else if (requestBodySchema.type === "boolean") {
-                  requestBody = JSON.stringify(value === "true");
-                } else {
-                  requestBody = JSON.stringify(value);
-                }
-              } catch (e) {
-                requestBody = JSON.stringify(value);
-              }
-            }
-          }
-        } else if (currentEndpointData.parameters) {
-          // Fallback to handling body parameters if no requestBody schema is defined
-          const bodyParams = currentEndpointData.parameters.filter(
-            (param) => param.in === "body"
-          );
-          if (bodyParams.length > 0) {
-            const bodyData: Record<string, any> = {};
-            bodyParams.forEach((param) => {
-              const paramValue = data[`body_${param.name}`];
-              if (paramValue !== undefined) {
-                bodyData[param.name] = paramValue;
-              }
-            });
-            requestBody = JSON.stringify(bodyData);
-          }
-        }
-      }
-
-      console.log(url, "url");
-      console.log(requestBody, "requestBody");
-      console.log(headers, "headers");
-      console.log(currentEndpointData.method, "method");
-      const response = await fetch(url, {
+      endpointLink = url;
+      setRequest({
+        url,
         method: currentEndpointData.method,
         headers,
-        body: requestBody,
+        body,
+      });
+
+      // First make the API call
+      await makeApiCallWithResponseData({
+        url,
+        method: currentEndpointData.method,
+        headers,
+        body,
         signal: controller.signal,
-        // mode: "no-cors",
+        setResponse: setResponse
       });
-
-      const contentType = response.headers.get("content-type") || "";
-      let responseData;
-
-      if (contentType.includes("application/json")) {
-        responseData = await response.json();
-      } else if (contentType.includes("image/")) {
-        responseData = await response.blob();
-      } else {
-        responseData = await response.text();
-      }
-
-      //console.log(contentType, responseData);
-
-      setResponse({
-        data: responseData,
-        contentType,
-        status: response.status,
-      });
-
-      const logs = await fetch("/api/client-functions/logs", {
-        method: "POST",
-        body: JSON.stringify({
-          clientDeploymentId: deploymentInfo.clientDeploymentId,
-          endpointLink: url,
-        }),
-      });
-      const logsData = await logs.json();
-      setServerlessLogs(logsData);
     } catch (error) {
-      console.log(error);
-      if (error instanceof Error && error.name === "AbortError") {
-        setResponse(null);
-      } else {
-        setResponse({
-          data: {
-            error:
-              error instanceof Error ? error.message : "Unknown error occurred",
-          },
-          contentType: "application/json",
-          status: 500,
-        });
-      }
+      console.error("Request preparation error:", error);
     } finally {
+      console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
+      // Then fetch logs, regardless of API call outcome
+      await fetchServerlessLogs({
+        clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+        endpointLink: endpointLink,
+        setServerlessLogs: setServerlessLogs
+      });
       setIsLoading(false);
       setAbortController(null);
     }
@@ -775,7 +625,7 @@ const PreviewWindow = () => {
       (param) => param.in === "body"
     );
 
-    console.log("bodyParams", currentEndpointData);
+    //console.log("bodyParams", currentEndpointData);
 
     return (
       <div className="space-y-4">
@@ -1313,24 +1163,89 @@ const PreviewWindow = () => {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xs font-medium">Server Logs</h3>
-                        <div className="flex items-center gap-2">
+                      {(response.status < 200 || response.status >= 300) &&
+                        (<div className="flex items-center justify-between mb-3">
+                          <h3 className="text-xs font-medium">Server Logs</h3>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setResponse(null)}
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                            >
+                              <X className="h-3 w-3 text-neutral-500" />
+                            </button>
+                          </div>
+                        </div>)}
+                      {serverlessLogs && (
+                        <div className="space-y-2">
                           <button
-                            onClick={() => setResponse(null)}
-                            className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                            onClick={() => setShowLogs(!showLogs)}
+                            className="flex w-full items-center justify-between rounded-lg border bg-white p-3 hover:bg-neutral-50"
                           >
-                            <X className="h-3 w-3 text-neutral-500" />
+                            <span className="text-xs font-medium">View Server Logs</span>
+                            <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-180' : ''}`} />
                           </button>
+                          {showLogs && (
+                            <div className="overflow-hidden rounded-lg border bg-white">
+                              <div className="p-3">
+                                <pre className="max-h-[20vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
+                                  {JSON.stringify(serverlessLogs, null, 2)}
+                                </pre>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="overflow-hidden rounded-lg border bg-white">
-                        <div className="p-3">
-                          <pre className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
-                            {JSON.stringify(serverlessLogs, null, 2)}
-                          </pre>
+                      )}
+                      {serverlessLogs && (
+                        <div className="flex flex-col items-center justify-between mb-3">
+                          {(response.status >= 200 && response.status < 300) && (
+                            <Textarea
+                              className="w-full mb-3"
+                              value={modificationInstructions}
+                              placeholder="Enter any  modification instructions you want"
+                              onChange={(e) => setModificationInstructions(e.target.value)}
+                              rows={3}
+                            />
+                          )}
+                          <div className="flex flex-row justify-between w-full gap-2">
+                            <Button
+                              type="submit"
+                              variant={"default"}
+                              onClick={() => {
+                                const errorAttachment = {
+                                  functionLink: `${BASE_URL}/${currentEndpointData.path}`,
+                                  serverlessLogs: serverlessLogs,
+                                  response: response,
+                                  request: request,
+                                  modificationInstructions: modificationInstructions
+                                }
+                                console.log("errorAttachment", errorAttachment);
+                                setModificationInstructions("");
+                                setSubmitAnnotations((sa) => {
+                                  const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
+                                  const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
+                                  return [
+                                    ...newAnnotations,
+                                    {
+                                      type: "body",
+                                      key: "api_errors",
+                                      value: [...(existingErrorAttachment?.value || []), errorAttachment]
+                                    }
+                                  ]
+                                });
+                                setActiveTab("chat")
+                                handleRightCollapse(true);
+                              }}
+                              className="w-full"
+                            >
+                              <ArrowLeftIcon className="h-3 w-3" />
+                              {(response.status < 200 || response.status >= 300) ?
+                                <span className="ml-2">Auto Fix this Error</span>
+                                : <span className="ml-2">Modify / Fix this Response</span>
+                              }
+                            </Button>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 )}

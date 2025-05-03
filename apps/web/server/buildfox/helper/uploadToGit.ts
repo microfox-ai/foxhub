@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import globby from "globby";
+import { globby } from "globby";
 import { Octokit } from "octokit";
 
 const clearRepoFolder = async (
@@ -135,13 +135,13 @@ export const uploadToRepo = async (
         repoRelativeFolderPath,
         filesToKeep
       );
-      // Fetch the full commit details for the *new* HEAD commit after cleanup
-      currentCommit = await getCurrentCommit(octo, org, repo, branch); // Re-fetch current state after cleanup
-
       // *** ADD DELAY HERE to allow ref update to propagate ***
       console.log("Waiting 2 seconds after cleanup ref update...");
       await new Promise((resolve) => setTimeout(resolve, 2000));
       // *** END DELAY ***
+
+      // Fetch the full commit details for the *new* HEAD commit after cleanup
+      currentCommit = await getCurrentCommit(octo, org, repo, branch); // Re-fetch current state after cleanup
     } else {
       console.log(
         `Last commit message "${currentCommit.commitMessage}" includes "clientRequest.json". Skipping cleanup.`

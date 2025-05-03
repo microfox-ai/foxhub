@@ -148,7 +148,7 @@ export const MessageWrapper = ({
               <div className="text-xs bg-red-800">
                 {message.annotations?.map((a: any, idx: number) => (
                   <div key={idx + a.type} className="text-xs text-white bg-red-500 my-2">
-                    {a.type} - {a.value} - {a.content} - {a.text} - {a.contents}
+                    {a.type} - {typeof a.value === "string" ? a.value : a.key ?? "no key"} - {a.content} - {a.text} - {a.contents}
                   </div>
                 ))}
               </div>

@@ -160,7 +160,7 @@ export const TaskIntegrations = ({
     }, [platforms, platformKeyStatus, oauthStatus, oauthSecrets]);
 
 
-    console.log("secretsData", secretsData);
+    //console.log("secretsData", secretsData);
     // If no platforms available, don't render anything
     if (!platforms || platforms.length === 0) {
         return null;

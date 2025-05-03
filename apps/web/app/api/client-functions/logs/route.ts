@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
     const thisFunction = serverlessConfig.functions.find(
       (f: any) => f.endpointLink === endpointLink
     );
+
+    console.log(thisFunction, "thisFunction", endpointLink);
     if (!thisFunction) {
       return NextResponse.json(
         { error: "Function not found" },

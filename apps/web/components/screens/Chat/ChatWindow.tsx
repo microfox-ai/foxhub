@@ -187,6 +187,7 @@ function ChatWindow({
               </div>
 
               <motion.div
+                key={"chat-input"}
                 className="bottom-0 pb-4 z-50 mx-auto left-0 right-0 w-full max-w-[800px] overflow-visible"
                 initial={{ x: getSlideDirection("chat"), opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
@@ -249,18 +250,16 @@ export default function ChatWindowWithProvider({
 }) {
   return (
     <MicrofoxChatProvider clientRequest={clientRequest}>
-      <TabUiProvider>
-        <ChatUIProvider>
-          <ChatWindow
-            userId={userId}
-            clientRequest={clientRequest}
-            isCollapsed={isCollapsed}
-            onCollapse={onCollapse}
-            projectTitle={projectTitle}
-            isChatLoading={isLoading}
-          />
-        </ChatUIProvider>
-      </TabUiProvider>
+      <ChatUIProvider>
+        <ChatWindow
+          userId={userId}
+          clientRequest={clientRequest}
+          isCollapsed={isCollapsed}
+          onCollapse={onCollapse}
+          projectTitle={projectTitle}
+          isChatLoading={isLoading}
+        />
+      </ChatUIProvider>
     </MicrofoxChatProvider>
   );
 }

@@ -13,7 +13,8 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useMemo
+  useMemo,
+  useState
 } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -236,7 +237,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         ...(clientRequest ? { clientRequestId: clientRequest?.id } : {}),
       };
 
-      console.log("bodyParams", bodyParams);
+      //console.log("bodyParams", bodyParams);
       // Create annotations from body parameters
       const bodyAnnotations = Object.entries(bodyParams).map(([key, value]) => ({
         type: 'body',
@@ -329,7 +330,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     handleRefresh,
     clientRequest,
     lastKnownMinionType,
-    lastKnownMinionFlow
+    lastKnownMinionFlow,
   };
 }
 

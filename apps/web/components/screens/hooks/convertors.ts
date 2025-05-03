@@ -20,8 +20,9 @@ export const MinionType = {
   HelloFox: "hellofox",
   ConvertFox: "convertfox",
   BuildFox: "buildfox",
-  TestFox: "testfox",
   DeployFox: "deployfox",
+  HotFixFox: "hotfixfox",
+  TestFox: "testfox",
   ReviewFox: "reviewfox",
   PackageFox: "packagefox",
 } as const;
@@ -34,6 +35,7 @@ export const MinionSupports = {
   [MinionType.BuildFox]: [] as string[],
   [MinionType.TestFox]: [] as string[],
   [MinionType.DeployFox]: [] as string[],
+  [MinionType.HotFixFox]: ["intent-observor"] as string[],
   [MinionType.ReviewFox]: [] as string[],
   [MinionType.PackageFox]: [] as string[],
   [MinionType.Unknown]: [] as string[],

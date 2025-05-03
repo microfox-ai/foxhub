@@ -29,7 +29,6 @@ export const codingSystemPrompt = (
           : ""
     }.
     You experise in writing microservices in typescript & deploy them to aws lambda functions using serverless framework.
-    You are also expert in Postgresql setups. and when no specific database is mentioned, you use postgresql.
     You are also an expert in building the UI for the same.
     ${
       step === "frontend" &&

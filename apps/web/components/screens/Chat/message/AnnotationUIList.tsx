@@ -7,6 +7,7 @@ import { EnvCollector } from "./annotations/EnvCollector";
 import { TaskInfo } from "./annotations/TaskInfo";
 import { TaskIntegrations } from "./annotations/TaskIntegrations";
 import { TaskStructure } from "./annotations/TaskStructure";
+import { HotFixes } from "./annotations/HotFix";
 
 dayjs.extend(duration);
 
@@ -74,6 +75,15 @@ export const AnnotationUIList = ({
     if (uiAnnotation.objectType === "deploymentsInfo") {
       return (
         <DeploymentsInfo
+          key={uiAnnotation.objectType + idx}
+          uiAnnotation={uiAnnotation}
+          idx={idx}
+        />
+      );
+    }
+    if (uiAnnotation.objectType === "hotFixes") {
+      return (
+        <HotFixes
           key={uiAnnotation.objectType + idx}
           uiAnnotation={uiAnnotation}
           idx={idx}

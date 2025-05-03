@@ -17,6 +17,7 @@ import {
   MinionType,
   MinionTypeType,
 } from "@/components/screens/hooks/convertors";
+import { hotfixFoxRouter } from "../hotfixfox/_hotfixRouter";
 
 // hellofox, convertfox, buildfox, deployfox, testfox.
 export const buildFlow: ServerStreamingFunction<
@@ -165,6 +166,8 @@ export const buildFlow: ServerStreamingFunction<
         return buildFoxRouter(props);
       case MinionType.DeployFox:
         return deployFoxRouter(props);
+      case MinionType.HotFixFox:
+        return hotfixFoxRouter(props);
       default:
         props.dataStream.writeMessageAnnotation({
           type: "error",

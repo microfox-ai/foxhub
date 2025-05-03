@@ -5,12 +5,13 @@ import {
   FileText,
   Plus,
   RefreshCw,
-  Send
+  Send,
+  XIcon
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
-import { MinionFlow, MinionType } from "../hooks/convertors";
+import { MinionFlow, MinionType, MinionTypeType } from "../hooks/convertors";
 import { useClientProject } from "../providers/ClientProjectProvider";
 interface ChatInputBoxProps {
   input: string;
@@ -32,13 +33,12 @@ export default function ChatInputBox({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
-  const { selectedRequest } = useClientProject();
-  const { handleSubmit, messages } = useMicrofoxChat();
+  const { selectedRequest, submitAnnotations, setSubmitAnnotations } = useClientProject();
+  const { handleSubmit, setInput, messages } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     //console.log("textareaRef", textareaRef.current);
     if (textareaRef.current) {
-
       textareaRef.current.style.height = "auto"; // Reset height
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`; // Expand to fit content
     }
@@ -65,15 +65,34 @@ export default function ChatInputBox({
 
   const handleSend = (e?: any) => {
     const isFirstMessage = messages.length === 0;
-    const minionFlow = isFirstMessage ? selectedRequest?.minionFlow ?? MinionFlow.BuildFlow : undefined;
-    const minionType = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
+    const minionFlow: any = isFirstMessage ? selectedRequest?.minionFlow ?? MinionFlow.BuildFlow : undefined;
+    let minionType: any = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
+    const extraBody = submitAnnotations.reduce((acc: any, annotation: any) => {
+      if (annotation.type === "body") {
+        acc[annotation.key] = annotation.value;
+        return acc;
+      }
+      return acc;
+    }, {});
+    if (extraBody.api_errors) {
+      minionType = MinionType.HotFixFox;
+    }
+    setSubmitAnnotations([]);
     handleSubmit(e, {
       body: {
         minionFlow: minionFlow,
-        minionType: minionType
+        minionType: minionType,
+        ...extraBody
       }
     });
   }
+
+  const apiErrors = submitAnnotations.find((annotation) => annotation.type === "body" && annotation.key === "api_errors");
+  useEffect(() => {
+    if (apiErrors?.value?.length > 0) {
+      setInput("Fix the following")
+    }
+  }, [apiErrors]);
 
   return (
     <div className={cn("w-full overflow-visible", className)}>
@@ -129,15 +148,28 @@ export default function ChatInputBox({
           >
             <Plus className="h-5 w-5" />
           </button> */}
-          <div></div>
+          <div className="flex flex-row gap-2 px-2">
+            {apiErrors?.value?.length > 0 && (
+              <div className="text-sm flex flex-row gap-2 items-center bg-gray-100 rounded-full px-4 py-[2px] text-gray-500">
+                {apiErrors?.value?.length} Logs attached
+                <XIcon
+                  onClick={() => {
+                    setSubmitAnnotations((sa) => {
+                      return sa.filter((a) => a.type !== "body" || a.key !== "api_errors");
+                    });
+                  }}
+                  className="h-4 w-4 cursor-pointer" />
+              </div>
+            )}
+          </div>
           <button
             onClick={() => handleSend()}
             disabled={
-              (
-                lastMessage?.annotations?.[
-                lastMessage.annotations.length - 1
-                ] as any
-              )?.type === "ui" ||
+              // (
+              //   lastMessage?.annotations?.[
+              //   lastMessage.annotations.length - 1
+              //   ] as any
+              // )?.type === "ui" ||
               (!input.trim() && attachedMedia.length === 0) ||
               messageStatus === "pending" ||
               messageStatus === "streaming" ||

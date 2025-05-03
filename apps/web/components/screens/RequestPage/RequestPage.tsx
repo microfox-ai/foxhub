@@ -10,6 +10,7 @@ import { useClientProject } from "../providers/ClientProjectProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useLayout } from "../providers/LayoutProvider";
 import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
+import { TabUiProvider } from "../providers/TabUiProvider";
 
 export const RequestPage = () => {
   const [tab, setTab] = useState("requests");
@@ -48,44 +49,47 @@ export const RequestPage = () => {
         className="cursor-pointer hidden"
         onClick={handleLeftResizeHandleClick}
       />
-      <ApiDocProvider>
-        <ResizablePanel defaultSize={84}>
-          <div className="h-full">
-            <ChatWindow
-              userId={user.id}
-              onCollapse={handleLeftCollapse}
-              isCollapsed={isLeftCollapsed}
-              isLoading={isLoading}
-              clientRequest={selectedRequest ?? undefined}
-              projectTitle={selectedProject?.name}
-            />
-          </div>
-        </ResizablePanel>
-        {!isRightCollapsed && (
-          <ResizableHandle
-            className="cursor-pointer w-[2px] ml-2 opacity-0 hover:opacity-100 transition-opacity duration-300"
-            onClick={handleRightResizeHandleClick}
-          />
-        )}
-        <ResizablePanel
-          ref={rightPanelRef}
-          defaultSize={0}
-          minSize={30}
-          maxSize={50}
-          collapsible={true}
-          collapsedSize={0}
-          onCollapse={() => handleRightCollapse(true)}
-          className={cn(
-            isRightTransitioning && "transition-all  duration-200 linear"
-          )}
-        >
-          <div className="h-full py-4 px-2">
-            <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
-              <PreviewWindow />
+
+      <TabUiProvider>
+        <ApiDocProvider>
+          <ResizablePanel defaultSize={84}>
+            <div className="h-full">
+              <ChatWindow
+                userId={user.id}
+                onCollapse={handleLeftCollapse}
+                isCollapsed={isLeftCollapsed}
+                isLoading={isLoading}
+                clientRequest={selectedRequest ?? undefined}
+                projectTitle={selectedProject?.name}
+              />
             </div>
-          </div>
-        </ResizablePanel>
-      </ApiDocProvider>
+          </ResizablePanel>
+          {!isRightCollapsed && (
+            <ResizableHandle
+              className="cursor-pointer w-[2px] ml-2 opacity-0 hover:opacity-100 transition-opacity duration-300"
+              onClick={handleRightResizeHandleClick}
+            />
+          )}
+          <ResizablePanel
+            ref={rightPanelRef}
+            defaultSize={0}
+            minSize={30}
+            maxSize={50}
+            collapsible={true}
+            collapsedSize={0}
+            onCollapse={() => handleRightCollapse(true)}
+            className={cn(
+              isRightTransitioning && "transition-all  duration-200 linear"
+            )}
+          >
+            <div className="h-full py-4 px-2">
+              <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
+                <PreviewWindow />
+              </div>
+            </div>
+          </ResizablePanel>
+        </ApiDocProvider>
+      </TabUiProvider>
     </TaskInstanceMetaProvider>
   );
 };

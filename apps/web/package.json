@@ -67,7 +67,7 @@
     "firebase": "^11.5.0",
     "firebase-admin": "^13.2.0",
     "framer-motion": "^12.5.0",
-    "globby": "^6.1.0",
+    "globby": "^14.1.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^0.482.0",
     "mixpanel": "^0.18.1",
@@ -100,7 +100,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/globby": "^6.1.0",
     "@types/mixpanel-browser": "^2.54.0",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -23,11 +23,16 @@ export async function POST(req: NextRequest) {
     const serverlessConfig = (
       clientDeployment.metadata as any as ClientDeploymentMetadata
     ).serverless;
-    const thisFunction = serverlessConfig.functions.find(
-      (f: any) => f.endpointLink === endpointLink
+    const thisFunction = serverlessConfig.functions.find((f: any) =>
+      f.endpointLink.includes(endpointLink)
     );
 
-    console.log(thisFunction, "thisFunction", endpointLink);
+    console.log(
+      thisFunction,
+      "thisFunction",
+      endpointLink,
+      serverlessConfig.functionBase
+    );
     if (!thisFunction) {
       return NextResponse.json(
         { error: "Function not found" },
@@ -36,8 +41,11 @@ export async function POST(req: NextRequest) {
     }
     const functionName =
       serverlessConfig.functionBase + "-" + thisFunction.functionName;
+
+    console.log(functionName, "functionName");
     const logs = await getLambdaLogs({
       functionName: functionName,
+      region: "us-east-1",
     });
 
     return NextResponse.json({ logs });

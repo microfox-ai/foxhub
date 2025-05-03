@@ -95,6 +95,7 @@ export async function getLambdaLogs({
 
     // Get the log stream name
     const logGroupName = `/aws/lambda/${functionName}`;
+    console.log(logGroupName, "logGroupName");
     const describeLogStreamsCommand = new DescribeLogStreamsCommand({
       logGroupName,
       orderBy: "LastEventTime",

@@ -23,8 +23,9 @@ export async function POST(req: NextRequest) {
     const serverlessConfig = (
       clientDeployment.metadata as any as ClientDeploymentMetadata
     ).serverless;
-    const thisFunction = serverlessConfig.functions.find((f: any) =>
-      f.endpointLink.includes(endpointLink)
+    const thisFunction = serverlessConfig.functions.find(
+      (f: any) =>
+        endpointLink.includes(f.endpointLink) || f.endpointLink === endpointLink
     );
 
     console.log(

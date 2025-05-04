@@ -1,6 +1,6 @@
 import { App } from "@octokit/app";
-import { handlePullRequestOpen } from "./handlePullRequestOpen.ts";
-import { handleIssueOpen } from "./handleIssueOpen.ts";
+import { handlePullRequestOpen } from "./handlePullRequestOpen.js";
+import { handleIssueOpen } from "./handleIssueOpen.js";
 
 export const registerGitHubHooks = (_app: App) => {
   console.log("Registering GitHub webhooks...");

@@ -1,4 +1,4 @@
-import { MICROFOX_LOGO, MySlackChannels, SlackSdk } from "../utils/slack.ts";
+import { MICROFOX_LOGO, MySlackChannels, SlackSdk } from "../utils/slack.js";
 
 export const handlePullRequestOpen = (payload: any, octokit: any) => {
   console.log(

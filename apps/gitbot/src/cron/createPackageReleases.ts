@@ -1,5 +1,5 @@
-import { PackageFox } from "../lib/octokit.ts";
-import { logger } from "../utils/logger.ts";
+import { PackageFox } from "../lib/octokit.js";
+import { logger } from "../utils/logger.js";
 import cron from "node-cron";
 
 async function createPackageReleases() {

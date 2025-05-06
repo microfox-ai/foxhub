@@ -135,7 +135,7 @@ export async function GET(request: Request) {
     )) as any;
 
     const allPackages: string[] = packagesList.stablePackages
-      .concat(packagesList.semiStablePackages)
+      .concat(packagesList.externalPackages)
       .concat(packagesList.partialPackages);
     // Fetch package info for each package
     const packagePromises = allPackages.map(async (packagePath) => {

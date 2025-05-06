@@ -43,9 +43,11 @@ export interface ClientSecretVariable {
 
 export enum PackageStatus {
   STABLE = "stable",
+  EXTERNAL = "external",
   SEMISTABLE = "semiStable",
   PARTIAL = "partial",
   OAUTHCONNECTOR = "oauthConnector",
+  INTERNAL = "internal",
 }
 
 export enum ClientSecretPackageType {

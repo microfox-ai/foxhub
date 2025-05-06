@@ -30,6 +30,7 @@ export async function getPackageList(): Promise<{
   partialPackages: string[];
   semiStablePackages: string[];
   oauthConnectorPackages: string[];
+  externalPackages: string[];
   deprecatedPackages?: string[];
 }> {
   const packages = await fetchGithubJson(
@@ -44,11 +45,14 @@ export async function getPackageList(): Promise<{
     partialPackages: packages.partialPackages.map((pkg: string) =>
       pkg.replaceAll("packages/", "@microfox/")
     ),
-    semiStablePackages: packages.semiStablePackages.map((pkg: string) =>
+    externalPackages: packages.externalPackages.map((pkg: string) =>
       pkg.replaceAll("packages/@ext_", "").replaceAll("#", "/")
     ),
     oauthConnectorPackages: packages.oauthConnectorPackages.map((pkg: string) =>
       pkg.replaceAll("packages/@ext_", "").replaceAll("#", "/")
+    ),
+    semiStablePackages: packages.semiStablePackages.map((pkg: string) =>
+      pkg.replaceAll("packages/", "@microfox/")
     ),
     // deprecatedPackages: packages.deprecatedPackages.map((pkg: string) =>
     //   pkg.replaceAll("packages/", "@microfox/")

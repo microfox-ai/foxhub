@@ -87,7 +87,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
   // serach internal packages for each platform & attach them to the platform
   const packageList = await getPackageList();
   const stablePackageNames = packageList.stablePackages;
-  const externalPackageNames = packageList.semiStablePackages;
+  const externalPackageNames = packageList.externalPackages;
 
   // Filter down all packages from both stablePackageNames and externalPackageNames
   // that have any remote relation to the platforms in textOfPlatforms

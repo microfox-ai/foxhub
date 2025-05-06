@@ -42,12 +42,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { PackageStatus } from "@/server/types";
 
 // Interface for package data
 interface PackageData {
   name: string;
   icon: string;
-  status: "stable" | "semiStable" | "partial" | "internal" | "oauthConnector";
+  status: PackageStatus
   version: string;
   description: string;
   installs: string;
@@ -97,10 +98,11 @@ const Status = () => {
       // Define status priority
       const statusPriority: Record<PackageData["status"], number> = {
         stable: 0,
-        semiStable: 1,
+        external: 1,
         partial: 2,
-        internal: 3,
-        oauthConnector: 4,
+        oauthConnector: 3,
+        semiStable: 4,
+        internal: 5,
       };
 
       // Compare status first
@@ -262,11 +264,11 @@ const Status = () => {
                                 variant={
                                   item.status === "stable"
                                     ? "success"
-                                    : item.status === "semiStable"
+                                    : item.status === "external"
                                       ? "default"
                                       : item.status === "partial"
                                         ? "secondary"
-                                        : item.status === "internal"
+                                        : item.status === "oauthConnector"
                                           ? "destructive"
                                           : "secondary"
                                 }

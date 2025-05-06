@@ -24,6 +24,8 @@ export async function GET(request: Request) {
         allList = allList.concat(packagesList.semiStablePackages);
       } else if (packageType === PackageStatus.PARTIAL) {
         allList = allList.concat(packagesList.partialPackages);
+      } else if (packageType === PackageStatus.EXTERNAL) {
+        allList = allList.concat(packagesList.externalPackages);
       }
     });
 

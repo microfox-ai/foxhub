@@ -174,7 +174,23 @@ model ClientSecret {
   packageConstructor  String?
   packageName         String?
   packageType         String?
+  isHidden            Boolean
   botProject          BotProject         @relation(fields: [botProjectId], references: [id])
+}
+
+model ClientSecretTemplate {
+  id                  String             @id @default(uuid())
+  templateId          String
+  templateType        String?            // free, markup, testing, official
+  name                String
+  type                String
+  variables           Json[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  botConfig           Json[]             @default([])
+  packageConstructor  String?
+  packageName         String?
+  packageType         String?
 }
 
 model ClientDeployment {

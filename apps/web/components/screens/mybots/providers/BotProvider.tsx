@@ -59,7 +59,7 @@ const useBotsCOntext = () => {
 
   // Fetch stable packages info
   const { data: stablePackages, error: stablePackagesError } = useSWR(
-    `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.SEMISTABLE}`,
+    `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.EXTERNAL}`,
     async (url: string) => {
       const response = await fetch(url);
       return response.json();

@@ -1,23 +1,10 @@
+import { Constructor, Package } from "@/components/screens/Chat/message/types";
 import { prisma } from "@/prisma/prisma";
 import { NextResponse } from "next/server";
 
 // Base URL for package data
 const PACKAGE_BASE_URL =
   "https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main";
-
-// Interface for package info
-interface PackageInfo {
-  name: string;
-  status: string;
-  version?: string;
-  constructors?: Constructor[];
-}
-
-// Interface for constructor
-interface Constructor {
-  name: string;
-  auth: string;
-}
 
 // Interface for package.json
 interface PackageJson {
@@ -82,7 +69,7 @@ function findAuthConstructor(constructors?: Constructor[]): string {
 
   const authConstructor = constructors?.find(
     (constructor) =>
-      constructor.auth === "oauth2" || constructor.auth === "apiKey"
+      constructor.auth === "oauth2" || constructor.auth === "apikey"
   );
 
   return authConstructor ? authConstructor.name : "-";
@@ -136,7 +123,7 @@ export async function GET(request: Request) {
 
     const allPackages: string[] = packagesList.stablePackages
       .concat(packagesList.externalPackages)
-      .concat(packagesList.partialPackages);
+      .concat(packagesList.semiStablePackages);
     // Fetch package info for each package
     const packagePromises = allPackages.map(async (packagePath) => {
       try {
@@ -144,7 +131,7 @@ export async function GET(request: Request) {
         const packageInfo = (await fetchWithCache(
           `${PACKAGE_BASE_URL}/${encodeURIComponent(packagePath)}/package-info.json`,
           cacheOptions
-        )) as PackageInfo;
+        )) as Package;
 
         // Fetch package.json to get version and description
         let version = "-";
@@ -163,7 +150,7 @@ export async function GET(request: Request) {
             error
           );
           // Use version from package-info.json if available
-          version = packageInfo.version || "-";
+          version = "-";
         }
 
         // Find the first constructor with oauth2 or apiKey auth
@@ -181,7 +168,7 @@ export async function GET(request: Request) {
           name: packageInfo.name,
           status: getStatusDisplay(packageInfo.status),
           version: version,
-          description: description,
+          description: packageInfo.description || description,
           installs: "Coming Soon",
           inUse: inUse,
         } as FormattedPackageData;

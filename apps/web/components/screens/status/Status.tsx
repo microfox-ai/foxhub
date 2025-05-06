@@ -43,6 +43,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PackageStatus } from "@/server/types";
+import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
+import { toast } from "sonner";
 
 // Interface for package data
 interface PackageData {
@@ -144,17 +146,17 @@ const Status = () => {
 
   const handleSubmitRequest = async () => {
     try {
-      const response = await fetch("/api/integration-requests", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestForm),
+      slackBotSdk.sendMessage({
+        channel: MySlackChannels.microfox_feedback,
+        text: `New platform integration request:
+        Platform: ${requestForm.platform}
+        Description: ${requestForm.description}
+        `
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to submit request");
-      }
+      toast.success("Request submitted", {
+        description: "Your request has been received. We'll finish it in 24hrs.",
+      });
 
       setIsDialogOpen(false);
       setRequestForm({ platform: "", description: "" });
@@ -166,9 +168,9 @@ const Status = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full ">
-      <div className="max-w-screen-2xl overflow-y-auto max-h-screen">
-        <div className="mx-auto max-w-screen-xl flex items-center justify-between gap-2 mb-6 sticky top-0 bg-white/20 backdrop-blur-sm z-10 p-6">
+    <div className="flex flex-col h-full w-full justify-center items-center">
+      <div className="w-full">
+        <div className="mx-auto w-full flex items-center justify-tart gap-8 mb-2 sticky top-0 bg-white/20 backdrop-blur-sm z-10 p-6">
           <div className="flex items-center gap-2">
             <div className="relative w-6 h-6">
               <Box className="w-6 h-6 animate-spin" style={{ animationDuration: '3s' }} />
@@ -238,13 +240,13 @@ const Status = () => {
           </div>
         ) : (
           <>
-            <div className="rounded-md border max-w-screen-xl mx-auto">
+            <div className="rounded-md border max-w-screen-lg mx-auto overflow-y-auto max-h-[80vh]">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">Package</TableHead>
+                    <TableHead className="pl-6">Supported Package Name</TableHead>
+                    <TableHead className="">Stats</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Stats</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -279,35 +281,25 @@ const Status = () => {
                               <span className="text-sm text-muted-foreground">
                                 v{item.version}
                               </span>
+                              <a
+                                href={item.documentation}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm cursor-pointer hover:opacity-50 flex items-center gap-1"
+                              >
+                                <Package className="w-3 h-3" />
+                                NPM
+                              </a>
                             </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-md">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Info className="w-4 h-4 text-muted-foreground" />
-                            <span className="truncate" title={item.description}>
-                              {item.description}
-                            </span>
-                          </div>
-                          <a
-                            href={item.documentation}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-                          >
-                            <Package className="w-3 h-3" />
-                            View on npm
-                          </a>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-4">
+                      <TableCell className="">
+                        <div className="flex items-center justify-start gap-4">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1 cursor-help">
+                                <div className="flex items-center gap-1 cursor-pointer">
                                   <FunctionSquare className="w-5 h-5 text-muted-foreground" />
                                   <span className="font-medium text-lg">
                                     {item.readme_map?.functionalities?.length}
@@ -320,25 +312,27 @@ const Status = () => {
                             </Tooltip>
                           </TooltipProvider>
 
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1 cursor-help">
-                                  {item.inUse === "-" ? (
-                                    <span className="text-muted-foreground text-lg">-</span>
-                                  ) : (
-                                    <>
-                                      <PlayCircle className="w-5 h-5 text-green-500" />
-                                      <span className="font-medium text-lg">{item.inUse}</span>
-                                    </>
-                                  )}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Active instances</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          {item.inUse != "-" && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-1 cursor-pointer">
+                                    <PlayCircle className="w-5 h-5 text-green-500" />
+                                    <span className="font-medium text-lg">{item.inUse}</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Active instances</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-md">
+                        <div className="space-y-2 flex flex-col gap-2">
+                          <p className="text-sm text-muted-foreground gap-2 line-clamp-3 whitespace-normal">
+                            {item.description}
+                          </p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -349,7 +343,7 @@ const Status = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center justify-between mt-4 max-w-screen-lg mx-auto">
                 <div className="text-sm text-muted-foreground">
                   Showing {startIndex + 1}-{endIndex} of {totalItems} items
                 </div>

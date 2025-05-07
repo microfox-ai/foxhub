@@ -99,9 +99,8 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     Your task is to identify ALL packages from both lists that have ANY remote relation to the platforms.
     This means:
     1. Include packages that directly integrate with any of the platforms
-    2. Include packages that could be used as alternatives for any of the platforms
-    3. Include packages that have any functional overlap with the platforms
-    4. Include packages that could be used in conjunction with the platforms
+    2. Include packages that have any functional overlap with the platforms
+    3. Include packages that could be used in conjunction with the platforms
     
     Be thorough and include packages even if they have only a tangential relationship.
     If a package appears in both lists, include it in both output arrays.
@@ -173,16 +172,14 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     model: models.googleGeminiPro,
     system: `
     You are an expert fullstack developer.
-    You are given a list of platforms & thier alternative.
+    You are given a list of platforms .
     Search for existing internal packages that can be used to integrate with the platforms.
     If internal package does not have the required functionalities for the task, search for external packages.
-    If no internal package is found, search for external packages.
-    package - If you find any, attach the package name.
-    package - If you dont find any even in alternatives, attach @microfox/null.
+    If no external package is found, use @microfox/null.
     Ignore all conditional platforms.
     ---
     Exclude the following platforms from the list:
-    - Website Webhooks (as we provide documentation fr this, & user can just copy paste the code)
+    - Website Webhooks (as we provide in-house documentation for this, & user can just copy paste the code)
     - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
     - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, Redis etc.`,
     schema: taskIntegrations,
@@ -197,38 +194,42 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
   });
   console.log("packageResult token Usage", packageResult.usage);
   let platforms = packageResult.object?.platforms;
-  let alternativePlatforms = packageResult.object?.alternativePlatforms;
+  // let alternativePlatforms = packageResult.object?.alternativePlatforms;
   let finalPlatforms = platforms.map((platform) => {
     if (platform?.package === "@microfox/null") {
-      let findAlternative = alternativePlatforms?.find(
-        (alternative) =>
-          alternative?.alternativeFor === platform?.name &&
-          alternative?.package !== "@microfox/null"
-      );
-      if (findAlternative) {
-        alternativePlatforms = alternativePlatforms?.filter(
-          (alternative) => alternative?.name !== findAlternative?.name
-        );
-        alternativePlatforms?.push({
-          alternativeFor: findAlternative.name,
-          name: platform.name,
-          reason: platform.reason,
-          package: platform.package,
-        });
-        return findAlternative;
-      }
+      // let findAlternative = alternativePlatforms?.find(
+      //   (alternative) =>
+      //     alternative?.alternativeFor === platform?.name &&
+      //     alternative?.package !== "@microfox/null"
+      // );
+      // if (findAlternative) {
+      //   alternativePlatforms = alternativePlatforms?.filter(
+      //     (alternative) => alternative?.name !== findAlternative?.name
+      //   );
+      //   alternativePlatforms?.push({
+      //     alternativeFor: findAlternative.name,
+      //     name: platform.name,
+      //     reason: platform.reason,
+      //     package: platform.package,
+      //   });
+      //   return findAlternative;
+      // }
     }
     return platform;
   });
 
   finalPlatforms = await Promise.all(
-    platforms.map(async (platform) => {
-      const packageInfo = await fetchPackageInfo(
-        platform?.package ?? "@microfox/null"
-      );
-      console.log("packageInfo for ", platform.package, packageInfo);
-      return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
-    })
+    platforms
+      .filter((platform) => platform.package != undefined)
+      .map(async (platform) => {
+        let packageInfo = validInternalPackagesWithInfo.find(
+          (pkg) => pkg.name === platform.package
+        )?.packageInfo;
+        if (!packageInfo) {
+          packageInfo = await fetchPackageInfo(platform.package as string);
+        }
+        return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
+      })
   );
 
   finalPlatforms = finalPlatforms.filter(
@@ -252,7 +253,6 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
       ...taskInstanceMeta,
       taskIntegrations: {
         platforms: finalPlatforms,
-        alternativePlatforms: alternativePlatforms,
       },
     },
   });
@@ -262,7 +262,6 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     objectType: "taskIntegrations",
     object: {
       platforms: finalPlatforms,
-      alternativePlatforms: alternativePlatforms,
     },
     persona: "taskManager",
     text: modification

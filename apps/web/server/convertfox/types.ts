@@ -34,19 +34,19 @@ export type TaskIntegrationPlatform = z.infer<typeof taskIntegrationPlatform>;
 // step2. get information about the integrations required for the task
 export const taskIntegrations = z.object({
   platforms: z.array(taskIntegrationPlatform.omit({ packageInfo: true })),
-  alternativePlatforms: z.array(
-    z.object({
-      alternativeFor: z
-        .string()
-        .describe("The name of the platform to be replaced"),
-      name: z.string().describe("The name of the platform"),
-      reason: z.string().describe("why this platform is needed for the task"),
-      package: z
-        .string()
-        .describe("The package name of the platform")
-        .optional(),
-    })
-  ),
+  // alternativePlatforms: z.array(
+  //   z.object({
+  //     alternativeFor: z
+  //       .string()
+  //       .describe("The name of the platform to be replaced"),
+  //     name: z.string().describe("The name of the platform"),
+  //     reason: z.string().describe("why this platform is needed for the task"),
+  //     package: z
+  //       .string()
+  //       .describe("The package name of the platform")
+  //       .optional(),
+  //   })
+  // ),
 });
 export type TaskIntegrations = z.infer<typeof taskIntegrations>;
 

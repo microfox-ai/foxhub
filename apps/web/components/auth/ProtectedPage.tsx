@@ -38,5 +38,16 @@ export default async function ProtectedPage({
     )
   }
 
+  if (!dbUser.isBetaAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h4>
+          This feature is only available for whitelisted users. Please request
+          access over here.
+        </h4>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }

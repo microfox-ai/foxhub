@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server-client";
 import { redirect } from "next/navigation";
 import { prisma } from "@/prisma/prisma";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 export default async function ProtectedPage({
   children,
@@ -22,6 +23,19 @@ export default async function ProtectedPage({
 
   if (!dbUser) {
     return redirect("/login");
+  }
+
+
+  const isProduction = APP_BASE_URL === "https://microfox.app";
+
+  if (isProduction) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h4>
+          This feature is only available in staging.microfox.app for now.
+        </h4>
+      </div>
+    )
   }
 
   return <>{children}</>;

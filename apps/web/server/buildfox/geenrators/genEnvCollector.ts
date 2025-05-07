@@ -72,6 +72,7 @@ export const genEnvCollector = async (
           clientRequestIds: [clientRequest.id],
           clientDeploymentIds: [],
           botConfig: secret.botConfig ?? [],
+          isHidden: true,
         });
       }
     }

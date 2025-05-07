@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       packageType,
       botConfig,
       updateDeployments,
+      isHidden,
     } = body;
 
     console.log("body", body);
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       packageConstructor,
       packageType,
       botConfig,
+      isHidden: isHidden ?? false,
     });
 
     if (addToClientRequest) {

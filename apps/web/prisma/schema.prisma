@@ -175,7 +175,7 @@ model ClientSecret {
   packageConstructor  String?
   packageName         String?
   packageType         String?
-  isHidden            Boolean
+  isHidden            Boolean?
   botProject          BotProject         @relation(fields: [botProjectId], references: [id])
 }
 

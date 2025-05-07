@@ -35,7 +35,7 @@ const MyBots = () => {
   }
 
   return (
-    <div className="grid mt-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+    <div className="grid mt-8 px-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
       {/* Add Bot Card */}
       <div className="flex flex-col items-center">
         <button

@@ -27,7 +27,7 @@ import {
   CopyIcon,
   RefreshCwIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -59,6 +59,20 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
   const { user } = useAuth();
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [dialogOpen, setDialogOpen] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    configFields.forEach((field) => {
+      if (field.ui.type === "image") {
+        const existingImageUrl = form.getValues(`config.${field.key}`);
+        if (existingImageUrl && typeof existingImageUrl === 'string') {
+          setImagePreview((prev) => ({
+            ...prev,
+            [field.key]: existingImageUrl,
+          }));
+        }
+      }
+    });
+  }, [configFields, form]);
 
   const generateSecureToken = () => {
     // Generate 32 random bytes
@@ -300,6 +314,16 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
       case "image":
         return (
           <div className="space-y-2">
+            {imagePreview[field.key] && (
+              <div className="mt-2 border rounded-md p-2 w-fit">
+                <img
+                  src={imagePreview[field.key]}
+                  alt="Preview"
+                  className="max-h-40 object-contain"
+                />
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <Input
                 type="file"
@@ -328,6 +352,7 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
                 className="hidden"
                 id={`image-upload-${field.key}`}
               />
+
               <Button
                 type="button"
                 variant="outline"
@@ -365,15 +390,6 @@ const SlackWebTinyConfigUI: React.FC<SlackWebTinyConfigUIProps> = ({
               )}
             </div>
 
-            {imagePreview[field.key] && (
-              <div className="mt-2 border rounded-md p-2">
-                <img
-                  src={imagePreview[field.key]}
-                  alt="Preview"
-                  className="max-h-40 object-contain"
-                />
-              </div>
-            )}
           </div>
         );
       default:

@@ -138,15 +138,32 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, clientRequestId, updateDeployments, ...secretData } = body;
+    const {
+      id,
+      clientRequestId,
+      updateDeployments,
+      botProjectId,
+      addToClientRequest,
+      ...secretData
+    } = body;
 
+    console.log(
+      "secretData",
+      secretData,
+      id,
+      clientRequestId,
+      updateDeployments
+    );
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
     let updatedSecret = await updateClientSecret(id, secretData);
 
+    console.log("updatedSecret", updatedSecret);
+
     if (
       clientRequestId &&
       !updatedSecret.clientRequestIds.includes(clientRequestId)
+      //&& addToClientRequest
     ) {
       const updates = await addClientSecretToClientRequest(id, clientRequestId);
       updatedSecret = updates.clientSecret!;

@@ -16,6 +16,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { PortalSdk } from "@/utils/services/PortalSdk";
+import { SecretProvider } from "@/components/screens/mybots/providers/SecretProvider";
+import { SecretFormProvider } from "@/components/screens/mybots/providers/SecretFormProvider";
 
 export const ApiKeyButton = ({
     packageInfo,
@@ -227,24 +229,28 @@ export const ApiKeyButton = ({
             </div>
 
             {selectedPlatform && (
-                <APIKeyDialog
-                    mutateSecrets={mutateSecrets}
-                    isOpen={isDialogOpen}
-                    onClose={async (submitted) => {
-                        setIsDialogOpen(false);
-                        if (submitted) {
-                        }
-                        setSelectedPlatform(null);
-                        if (submitted) {
-                            // if added another client secret already in this client request, remove it from the client request
-                            await mutateSecrets();
-                            await mutateBotSecrets();
-                        }
-                    }}
-                    platformName={selectedPlatform.name}
-                    pkg={selectedPlatform}
-                    apiKeySecret={apiKeySecret}
-                />
+                <SecretProvider>
+                    <SecretFormProvider>
+                        <APIKeyDialog
+                            mutateSecrets={mutateSecrets}
+                            isOpen={isDialogOpen}
+                            onClose={async (submitted) => {
+                                setIsDialogOpen(false);
+                                if (submitted) {
+                                }
+                                setSelectedPlatform(null);
+                                if (submitted) {
+                                    // if added another client secret already in this client request, remove it from the client request
+                                    await mutateSecrets();
+                                    await mutateBotSecrets();
+                                }
+                            }}
+                            platformName={selectedPlatform.name}
+                            pkg={selectedPlatform}
+                            apiKeySecret={apiKeySecret}
+                        />
+                    </SecretFormProvider>
+                </SecretProvider>
             )}
         </>
     )

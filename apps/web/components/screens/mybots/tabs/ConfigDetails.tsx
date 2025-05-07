@@ -9,7 +9,7 @@ interface ConfigurationTabProps {
   selectedConstructor?: Constructor;
 }
 
-const ConfigurationTab = ({
+const ConfigDetailsForm = ({
   packageName,
   mode,
   botToEdit,
@@ -53,4 +53,4 @@ const ConfigurationTab = ({
   );
 };
 
-export default ConfigurationTab;
+export default ConfigDetailsForm;

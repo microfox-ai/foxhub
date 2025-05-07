@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server-client";
 import { redirect } from "next/navigation";
 import { prisma } from "@/prisma/prisma";
-import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { APP_BASE_URL, IN_DEV } from "@/utils/constants/appInfo";
 
 export default async function ProtectedPage({
   children,
@@ -38,7 +38,7 @@ export default async function ProtectedPage({
     )
   }
 
-  if (!dbUser.isBetaAccess) {
+  if (!dbUser.isBetaAccess && !IN_DEV) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <h4>

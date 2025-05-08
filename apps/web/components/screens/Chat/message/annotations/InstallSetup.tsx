@@ -6,6 +6,7 @@ import { TaskIntegrations } from "./TaskIntegrations";
 import { DEPLOY_STAGE } from "@prisma/client";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 interface UIAnnotation {
     objectType: string;
@@ -50,16 +51,34 @@ export const InstallSetup = ({
     };
 
     return (
-        <>
+        <motion.div
+            key={uiAnnotation.objectType + idx}
+            className={`flex flex-col gap-6 bg-white rounded-xl p-4 my-4 border border-gray-100 shadow-lg`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+        >
+            <div className="">
+                <h3 className="text-lg font-semibold text-gray-900">
+                    Configure & Connect your Apps
+                </h3>
+                <p className="text-sm text-gray-500">
+                    {uiAnnotation.text}
+                </p>
+            </div>
+
             {uiAnnotation.object?.platforms &&
                 <TaskIntegrations
                     uiAnnotation={uiAnnotation}
                     idx={idx}
+                    hideMetaInfo={true}
                 />}
             {uiAnnotation?.envVariablesCollect && uiAnnotation?.envVariablesCollect?.length > 0 &&
                 (<EnvCollector
                     uiAnnotation={uiAnnotation}
                     idx={idx}
+                    hideMetaInfo={true}
                 />
                 )}
             <div className="flex justify-start items-center gap-2">
@@ -72,6 +91,6 @@ export const InstallSetup = ({
                     Deploy to Production
                 </Button>
             </div>
-        </>
+        </motion.div>
     )
 }

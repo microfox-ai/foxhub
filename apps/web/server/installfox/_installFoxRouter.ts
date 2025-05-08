@@ -22,6 +22,8 @@ import { createPullRequest } from "../buildfox/createPullRequest";
 import { getServiceName } from "../buildfox/helper/getServiceName";
 import { MinionType } from "@/components/screens/hooks/convertors";
 import { object } from "webidl-conversions";
+import { getClientSecretsFromTemplateEnvs } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
+import { addTemplateSecretsToClientRequest } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 interface ClientRequestMeta {
   repoName: string;
   repoDir: string;
@@ -90,7 +92,7 @@ export const installFoxRouter: ServerStreamingFunction<
   const shardTaskInstanceMeta =
     shardPage.taskInstanceMeta as unknown as TaskInstanceMetaType;
 
-  if (!clientRequestMeta.repoDir) {
+  if (clientRequestMeta.repoDir && !clientRequest.requestDir) {
     dataStream.writeMessageAnnotation({
       type: "thinking",
       content: "Creating new codebase for this request.",
@@ -98,8 +100,8 @@ export const installFoxRouter: ServerStreamingFunction<
 
     clientRequest = await createPullRequest({
       clientRequestId: clientRequest.id,
-      description: `nodeploy: Installing shard ${shardPage.title} for ${clientRequest.title}`,
-      title: `nodeploy: Installing shard ${shardPage.title} for ${clientRequest.title}`,
+      description: clientRequestMeta.metadata.description,
+      title: clientRequestMeta.metadata.title,
       dataStream,
       fullRequestDir: clientRequestMeta.repoDir,
     });
@@ -141,6 +143,23 @@ export const installFoxRouter: ServerStreamingFunction<
     });
   }
 
+  dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Adding Internal secrets",
+  });
+
+  let templateType = (taskInstanceMeta as any as TaskInstanceMetaType)
+    ?.taskStructure?.templateType;
+  // at this step, create template secrets as needed
+  // create secrets
+  const templateSecrets = await getClientSecretsFromTemplateEnvs(
+    templateType as "upstash"
+  );
+
+  if (templateSecrets.length > 0) {
+    await addTemplateSecretsToClientRequest(clientRequest, templateSecrets);
+  }
+
   if (!taskInstanceMeta) {
     dataStream.writeMessageAnnotation({
       type: "error",
@@ -157,6 +176,13 @@ export const installFoxRouter: ServerStreamingFunction<
     clientRequestId: clientRequest.id,
     serviceName: getServiceName(clientRequest, shardTaskInstanceMeta),
   });
+  //console.log("sourcePath", clientRequestMeta.repoDir, PROJECT_REPO_OWNER);
+  console.log(
+    "targetPath",
+    clientRequest.requestDir,
+    PROJECT_REPO_OWNER,
+    clientRequest.repoName
+  );
   // 3. Copy code from the shardPage repo
   await cloneTemplate({
     sourceOwner: TEMPLATE_REPO_OWNER,

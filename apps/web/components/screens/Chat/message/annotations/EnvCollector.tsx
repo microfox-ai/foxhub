@@ -39,9 +39,10 @@ interface UIAnnotation {
 interface EnvCollectorProps {
   uiAnnotation: UIAnnotation;
   idx: number;
+  hideMetaInfo?: boolean;
 }
 
-export const EnvCollector = ({ uiAnnotation, idx }: EnvCollectorProps) => {
+export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCollectorProps) => {
   const annotation = uiAnnotation as any;
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
   const [showDocDialog, setShowDocDialog] = useState(false);
@@ -92,33 +93,33 @@ export const EnvCollector = ({ uiAnnotation, idx }: EnvCollectorProps) => {
 
       const body = existingSecret
         ? {
-            id: existingSecret.id,
-            variables: Object.entries(values)
-              .filter(([_, value]) => value.trim())
-              .map(([key, value]) => ({
-                key,
-                value: value.trim(),
-                isOptional: false,
-              })),
-          }
+          id: existingSecret.id,
+          variables: Object.entries(values)
+            .filter(([_, value]) => value.trim())
+            .map(([key, value]) => ({
+              key,
+              value: value.trim(),
+              isOptional: false,
+            })),
+        }
         : {
-            addToClientRequest: true,
-            clientRequestId: requestParamId,
-            botProjectId: projectParamId,
-            name: "custom_keys",
-            userId: user?.id,
-            type: "custom",
-            packageName: ClientSecretPackageType.CUSTOM,
-            packageConstructor: ClientSecretPackageType.CUSTOM,
-            packageType: ClientSecretPackageType.CUSTOM,
-            variables: Object.entries(values)
-              .filter(([_, value]) => value.trim())
-              .map(([key, value]) => ({
-                key,
-                value: value.trim(),
-                isOptional: false,
-              })),
-          };
+          addToClientRequest: true,
+          clientRequestId: requestParamId,
+          botProjectId: projectParamId,
+          name: "custom_keys",
+          userId: user?.id,
+          type: "custom",
+          packageName: ClientSecretPackageType.CUSTOM,
+          packageConstructor: ClientSecretPackageType.CUSTOM,
+          packageType: ClientSecretPackageType.CUSTOM,
+          variables: Object.entries(values)
+            .filter(([_, value]) => value.trim())
+            .map(([key, value]) => ({
+              key,
+              value: value.trim(),
+              isOptional: false,
+            })),
+        };
 
       const response = await fetch(endpoint, {
         method,
@@ -160,20 +161,21 @@ export const EnvCollector = ({ uiAnnotation, idx }: EnvCollectorProps) => {
     <>
       <motion.div
         key={uiAnnotation.objectType + idx}
-        className="flex flex-col gap-6 p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg"
+        className={`flex flex-col gap-6 bg-white rounded-xl ${hideMetaInfo ? "" : "p-4 my-4 border border-gray-100 shadow-lg"}`}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {uiAnnotation.text}
-          </h3>
-          <p className="text-sm text-gray-500">
-            Please provide the following information to continue
-          </p>
-        </div>
+        {!hideMetaInfo && (
+          <div className="">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {uiAnnotation.text}
+            </h3>
+            <p className="text-sm text-gray-500">
+              Please provide the following information to continue
+            </p>
+          </div>)}
 
         <div className="bg-gray-50 rounded-lg p-4 space-y-4">
           {envVariables?.map((env: any) => (

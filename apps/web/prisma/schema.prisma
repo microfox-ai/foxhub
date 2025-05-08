@@ -283,3 +283,23 @@ enum PROJECT_ACCESS_TYPE {
   READ
   WRITE
 }
+
+// ------- StorePresence ---------
+
+model ShardPage {
+  id             String   @id @default(uuid())
+  taskInstanceMeta Json
+  clientRequestMeta Json
+  repoDir        String
+  title          String?
+  description    String?
+  video_url      String?
+  thumbnail_url  String?
+  banner_url     String?
+  version        String
+  versionNumber  String
+  creatorId      String
+  clientRequestId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

@@ -48,9 +48,11 @@ export async function fetchGithubText(
   }
 }
 
-export async function fetchtext(url: string) {
+export async function fetchText(url: string) {
   try {
-    const response = await fetch(url);
+    console.log("fetching", url);
+    const encodedPath = encodeURIComponent(url);
+    const response = await fetch(encodedPath);
     const data = await response.text();
     return data;
   } catch (error) {

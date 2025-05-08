@@ -2,15 +2,21 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
-import { ArrowLeftIcon, AxeIcon, BotIcon, CornerDownRightIcon, ListIcon, PyramidIcon } from "lucide-react";
+import { ArrowLeftIcon, AxeIcon, BotIcon, CornerDownRightIcon, ListIcon, PlusIcon, PyramidIcon } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import useSWR from "swr";
+import { ShardPage } from "@prisma/client";
 
 const Dashboard = () => {
   const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, createNewEmptyRequest } = useClientProject();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
+
+  const { data: shardpages, isLoading: shardpagesLoading } = useSWR("/api/shard-page",
+    (url: string) => fetch(url).then(res => res.json())
+  );
 
   useEffect(() => {
     if (selectedProject) {
@@ -157,6 +163,25 @@ const Dashboard = () => {
               </div>
             </TabsContent>
           </Tabs>
+        </div>
+        <div className="col-span-6 gap-4">
+          {shardpagesLoading ? (
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg">
+              {shardpages?.map((shardpage: ShardPage) => (
+                <li
+                  onClick={() => setActiveTab("tasks")}
+                  className={`flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2 ${activeTab === "tasks" ? "bg-gray-100" : ""}`}>
+                  <PlusIcon className="w-4 h-4" />
+                  <span> {shardpage.title} </span>
+                </li>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

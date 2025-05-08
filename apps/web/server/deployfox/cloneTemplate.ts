@@ -17,6 +17,8 @@ interface CloneTemplateParams {
   targetPath?: string;
   sourceBranch?: string;
   targetBranch?: string;
+  commitMessage?: string;
+  excludeFiles?: string[];
 }
 
 export const cloneTemplate = async ({
@@ -28,6 +30,8 @@ export const cloneTemplate = async ({
   targetPath = "",
   sourceBranch = "main",
   targetBranch = "main",
+  commitMessage = "nodeploy: Clone template files",
+  excludeFiles = [],
 }: CloneTemplateParams) => {
   const octokit = new Octokit({
     auth: GITHUB_TOKEN,
@@ -46,6 +50,15 @@ export const cloneTemplate = async ({
 
       if (Array.isArray(contents)) {
         for (const item of contents) {
+          // Skip if the file path matches any exclude pattern
+          if (
+            excludeFiles.some((excludePattern) =>
+              item.path.includes(excludePattern)
+            )
+          ) {
+            continue;
+          }
+
           if (item.type === "file") {
             const { data: fileContent } = await octokit.rest.repos.getContent({
               owner: sourceOwner,
@@ -125,7 +138,7 @@ export const cloneTemplate = async ({
     const { data: commit } = await octokit.rest.git.createCommit({
       owner: targetOwner,
       repo: targetRepo,
-      message: `nodeploy: Clone template files`,
+      message: commitMessage,
       tree: newTree.sha,
       parents: [ref.object.sha],
     });

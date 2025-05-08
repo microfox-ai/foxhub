@@ -27,6 +27,15 @@ export const taskIntegrationPlatform = z.object({
     )
     .optional(),
   package: z.string().describe("The package name of the platform").optional(),
+  functionSearch: z
+    .string()
+    .describe(
+      "What functions of this package would be needed, and for what reason"
+    )
+    .optional(),
+  scopes: z
+    .array(z.string())
+    .describe("The scopes needed for this particular task."),
   packageInfo: z.any().optional(),
 });
 export type TaskIntegrationPlatform = z.infer<typeof taskIntegrationPlatform>;

@@ -259,9 +259,24 @@ export const codingFunctionPrompt = async ({
               /** TODO: this requires improving because cron would still add new variables, as it doesnt have a way to collect them,  so use redis as env var storage across all functions */
               type === "cron"
                 ? "if new env variables are needed, other than theese, you can add them to the project."
-                : "if new variables are needed, other than theese, you can either add new env variables in the same format as above, or use input parameters or request body from the incoming aws event object to get theese variables from user side."
+                : `
+            if new variables are needed, other than those above, add new env variables in the same format as above, 
+            or use queryStringparameters or even body from the incoming aws event object 
+            to get theese variables from user side.
+            
+            input request body or query parameters are preferred over process.env variables.
+
+            for example:
+              process.env.VARIABLE_NAME should be avoided,
+            and instead
+              const body = event.body ? JSON.parse(event.body) : {};
+              const { variableName } = body;
+            should be used.
+            `
             }
-            only create/use process.env variables, if absolutely needed security wise, otherwise use input parameters or request body from the event object to get theese variables from user side.
+            only create/use process.env variables, if absolutely needed security wise, or if this is a cron job where request body is not available
+            otherwise use input parameters or request body from the event object to get theese variables from user side.
+            
 
             ${
               writtenHelperFilesContent

@@ -10,6 +10,24 @@ export const postExternalData = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
+    // Parse request body
+    const body = event.body ? JSON.parse(event.body) : {};
+    const { name, email, signupDate } = body;
+
+    // Validate required fields
+    if (!name || !email || !signupDate) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+        body: JSON.stringify({
+          error: "Missing required fields: name, email, and signupDate are required",
+        }),
+      };
+    }
+
     // POST query parameters from the event
     const queryParams = event.queryStringParameters || {};
     const postId = queryParams.id ? parseInt(queryParams.id) : 1;
@@ -28,11 +46,16 @@ export const postExternalData = async (
       },
       body: JSON.stringify({
         data,
+        userInfo: {
+          name,
+          email,
+          signupDate,
+        },
         timestamp: new Date().toISOString(),
       }),
     };
   } catch (error) {
-    console.error("Error fetching external data:", error);
+    console.error("Error processing request:", error);
     return {
       statusCode: 500,
       headers: {
@@ -131,10 +154,45 @@ export const postExternalDataDocs = {
                   },
                 },
               },
+              userInfo: {
+                type: "object",
+                properties: {
+                  name: {
+                    type: "string",
+                    description: "Full name of the user",
+                  },
+                  email: {
+                    type: "string",
+                    format: "email",
+                    description: "Email address of the user",
+                  },
+                  signupDate: {
+                    type: "string",
+                    format: "date-time",
+                    description: "ISO 8601 formatted date and time of user signup",
+                  },
+                },
+              },
               timestamp: {
                 type: "string",
                 format: "date-time",
                 description: "ISO timestamp of when the data was fetched",
+              },
+            },
+          },
+        },
+      },
+    },
+    "400": {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              error: {
+                type: "string",
+                description: "Error message describing what went wrong",
               },
             },
           },

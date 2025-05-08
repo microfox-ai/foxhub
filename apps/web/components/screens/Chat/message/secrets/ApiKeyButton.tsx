@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { TaskIntegrationPlatform } from "@/server/convertfox/types";
 import { useMemo, useState } from "react";
 import { APIKeyDialog } from "./APIKeyDialog";
-import { ClientSecret } from "@prisma/client";
+import { ClientSecret, ClientSecretTemplate } from "@prisma/client";
 import { ClientSecretPackageType, ClientSecretApiType, ClientSecretVariable } from "@/server/types";
 import { Constructor, KeyVariableConfig } from "../types";
 import useSWR, { KeyedMutator } from "swr";
@@ -18,6 +18,15 @@ import {
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { SecretProvider } from "@/components/screens/mybots/providers/SecretProvider";
 import { SecretFormProvider } from "@/components/screens/mybots/providers/SecretFormProvider";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { TemplateDialog } from "./TemplateDialog";
 
 export const ApiKeyButton = ({
     packageInfo,
@@ -43,9 +52,10 @@ export const ApiKeyButton = ({
 
     const { data: botSecretsData, mutate: mutateBotSecrets } = useSWR<{
         clientSecrets: ClientSecret[];
+        clientSecretTemplates: ClientSecretTemplate[];
     }>(
         projectParamId
-            ? `/api/client-secrets?botProjectId=${projectParamId}&packageType=${ClientSecretPackageType.APIKEY}&packageName=${packageInfo?.name}`
+            ? `/api/client-secrets?botProjectId=${projectParamId}&packageType=${ClientSecretPackageType.APIKEY}&packageName=${packageInfo?.name}&includeTemplateSecrets=true`
             : null,
         async (url: string) => {
             const res = await fetch(url);
@@ -56,13 +66,17 @@ export const ApiKeyButton = ({
             revalidateOnFocus: true,
         }
     );
+    console.log("botSecretsData", botSecretsData);
     const botSecrets = botSecretsData?.clientSecrets;
+    const botTemplates = botSecretsData?.clientSecretTemplates;
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedPlatform, setSelectedPlatform] = useState<any | null>(
         null
     );
     const [selectedBotSecret, setSelectedBotSecret] = useState<string | null>(null);
+    const [selectedTemplateSecret, setSelectedTemplateSecret] = useState<string | null>(null);
+    const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
     const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
     const packageApiType = constructor?.apiType as ClientSecretApiType;
@@ -103,30 +117,36 @@ export const ApiKeyButton = ({
 
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {
+        setIsLoading(true);
+        // if added another client secret already in this client request, remove it from the client request
+        if (apiKeySecret) {
+            await PortalSdk.postData("/api/client-secrets/link", {
+                id: apiKeySecret.id,
+                clientRequestIdToRemove: requestParamId,
+            });
+        }
         if (value === "add_new") {
-            setIsLoading(true);
             if (apiKeySecret) {
                 setSelectedBotSecret(null);
-                await PortalSdk.postData("/api/client-secrets/link", {
-                    id: apiKeySecret.id,
-                    clientRequestIdToRemove: requestParamId,
-                });
             }
-            mutateBotSecrets();
             await mutateSecrets();
             setIsLoading(false);
             setSelectedPlatform(packageInfo);
             setIsDialogOpen(true);
-        } else {
+        }
+        else if (value.startsWith("template_")) {
+            if (apiKeySecret) {
+                setSelectedBotSecret(null);
+            }
+            await mutateSecrets();
+            setIsLoading(false);
+            setSelectedPlatform(packageInfo);
+            setSelectedTemplateSecret(value.replace("template_", ""));
+            setTemplateDialogOpen(true);
+        }
+        else {
             setIsLoading(true);
             setSelectedBotSecret(value);
-            // if added another client secret already in this client request, remove it from the client request
-            if (apiKeySecret) {
-                await PortalSdk.postData("/api/client-secrets/link", {
-                    id: apiKeySecret.id,
-                    clientRequestIdToRemove: requestParamId,
-                });
-            }
             // add existing client secret (id: value) to this client request
             await PortalSdk.postData("/api/client-secrets/link", {
                 id: value,
@@ -214,6 +234,13 @@ export const ApiKeyButton = ({
                                 </div>
                             </SelectItem>
                         ))}
+                        {botTemplates?.filter((template) => !botSecrets?.some((secret) => secret.templateId === template.id))
+                            .map((template) => (
+                                <SelectItem key={template.id} value={"template_" + template.id} className="flex items-center gap-2 cursor-pointer">
+                                    <img src={"/images/default-bot-avatar.png"} className="h-4 w-4 rounded-full" />
+                                    <span className="leading-none w-full">use {template.name || "Unnamed Bot"}</span>
+                                </SelectItem>
+                            ))}
                         <SelectItem value="add_new" className="flex items-center gap-2 cursor-pointer">
                             <Plus className="h-4 w-4" />
                             {packageApiType === ClientSecretApiType.BOT_TOKEN ? "Add New Bot" : "Add New API Key"}
@@ -251,6 +278,24 @@ export const ApiKeyButton = ({
                         />
                     </SecretFormProvider>
                 </SecretProvider>
+            )}
+            {selectedTemplateSecret && (
+                <TemplateDialog
+                    isOpen={templateDialogOpen}
+                    onClose={() => {
+                        setTemplateDialogOpen(false);
+                        setSelectedTemplateSecret(null);
+                    }}
+                    onCancel={() => {
+                        setTemplateDialogOpen(false);
+                        setSelectedTemplateSecret(null);
+                    }}
+                    selectedTemplate={botTemplates?.find((template) => template.id === selectedTemplateSecret) || null}
+                    botTemplates={botTemplates}
+                    packageInfo={packageInfo}
+                    mutateSecrets={mutateSecrets}
+                    mutateBotSecrets={mutateBotSecrets}
+                />
             )}
         </>
     )

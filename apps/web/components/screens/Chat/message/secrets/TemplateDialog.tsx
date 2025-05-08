@@ -1,0 +1,130 @@
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { CLIENTSECRETSTATUS, ClientSecretTemplate } from "@prisma/client";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { KeyedMutator } from "swr";
+import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
+import { toast } from "sonner";
+import { useAuth } from "@/components/auth/AuthProvider";
+
+interface TemplateDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onCancel: () => void;
+    selectedTemplate: ClientSecretTemplate | null;
+    botTemplates?: ClientSecretTemplate[];
+    packageInfo: any;
+    mutateSecrets: KeyedMutator<{
+        clientSecrets: any[];
+    }>;
+    mutateBotSecrets: KeyedMutator<{
+        clientSecrets: any[];
+        clientSecretTemplates: ClientSecretTemplate[];
+    }>;
+}
+
+export const TemplateDialog = ({
+    isOpen,
+    onClose,
+    onCancel,
+    selectedTemplate,
+    botTemplates,
+    packageInfo,
+    mutateSecrets,
+    mutateBotSecrets,
+}: TemplateDialogProps) => {
+
+    const { selectedProject, selectedRequest } = useClientProject();
+    const { user } = useAuth();
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-4 mb-4 text-xl font-semibold">
+                        <img src={packageInfo?.icon} className="h-8 w-8" />
+                        <div className="flex flex-col">
+                            <span className="text-xl font-medium">
+                                {packageInfo?.name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                                Confirm to use Microfox's secret for your {packageInfo?.name} integration
+                            </span>
+                        </div>
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                    {selectedTemplate && (
+                        <div className="space-y-2">
+                            <h4 className="text-3xl font-medium">Hello, {user?.name}</h4>
+                            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                                <p className="text-sm">
+                                    You are trying to connect to {packageInfo?.name} using:
+                                    {selectedTemplate?.name}
+                                    <br />
+                                    This integratind comes inpacked with details
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button
+                        variant="outline"
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={async () => {
+                            try {
+
+                                if (!selectedProject || !selectedRequest) {
+                                    toast.error("Please select a project and request");
+                                    return;
+                                }
+
+                                const clientSecretData = {
+                                    botProjectId: selectedProject.id,
+                                    name: selectedTemplate?.name,
+                                    type: selectedTemplate?.type,
+                                    variables: selectedTemplate?.variables,
+                                    userId: user?.id,
+                                    status: CLIENTSECRETSTATUS.FILLED,
+                                    packageName: selectedTemplate?.packageName,
+                                    packageConstructor: selectedTemplate?.packageConstructor,
+                                    packageType: selectedTemplate?.packageType,
+                                    botConfig: selectedTemplate?.botConfig,
+                                    clientRequestId: selectedRequest?.id,
+                                    addToClientRequest: true,
+                                    updateDeployments: true,
+                                    isHidden: true,
+                                    templateId: selectedTemplate?.id,
+                                };
+                                // Create a new client secret from the template
+                                await PortalSdk.postData("/api/client-secrets", clientSecretData);
+                                toast.success("Connection successfull!");
+
+                                await mutateSecrets();
+                                await mutateBotSecrets();
+                                onClose();
+                            } catch (error) {
+                                console.error("Error creating secret from template:", error);
+                            }
+                        }}
+                    >
+                        Confirm
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}; 

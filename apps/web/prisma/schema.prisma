@@ -28,6 +28,7 @@ model User {
   onboardingData     Json?
   projectPermissions ProjectPermission[]
   isBetaAccess       Boolean?
+  shardPages         ShardPage[]
 }
 
 model FoxTemplate {
@@ -289,6 +290,8 @@ enum PROJECT_ACCESS_TYPE {
 model ShardPage {
   id             String   @id @default(uuid())
   taskInstanceMeta Json
+  status         SHARD_PAGE_STATUS @default(UNPUBLISHED)
+  category       String[]
   clientRequestMeta Json
   repoDir        String
   title          String?
@@ -302,4 +305,10 @@ model ShardPage {
   clientRequestId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  creator        User     @relation(fields: [creatorId], references: [id])
+}
+
+enum SHARD_PAGE_STATUS {
+  UNPUBLISHED
+  PUBLISHED
 }

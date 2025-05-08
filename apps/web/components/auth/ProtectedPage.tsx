@@ -32,7 +32,11 @@ export default async function ProtectedPage({
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <h4>
-          This feature is only available in staging.microfox.app for now.
+          This feature is only available in{" "}
+          <a href="https://staging.microfox.app">
+            staging.microfox.app
+          </a>{" "}
+          for now.
         </h4>
       </div>
     )
@@ -43,7 +47,14 @@ export default async function ProtectedPage({
       <div className="flex flex-col items-center justify-center h-screen">
         <h4>
           This feature is only available for whitelisted users. Please request
-          access over here.
+          access over{" "}
+          <a
+            href="https://forms.fillout.com/t/1jZRTx1ZRZus"
+            target="_blank"
+            className="text-blue-500"
+          >
+            here
+          </a>
         </h4>
       </div>
     );

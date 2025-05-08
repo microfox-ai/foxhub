@@ -8,7 +8,7 @@ import { TaskInfo } from "./annotations/TaskInfo";
 import { TaskIntegrations } from "./annotations/TaskIntegrations";
 import { TaskStructure } from "./annotations/TaskStructure";
 import { HotFixes } from "./annotations/HotFix";
-
+import { InstallSetup } from "./annotations/InstallSetup";
 dayjs.extend(duration);
 
 interface UIAnnotation {
@@ -84,6 +84,15 @@ export const AnnotationUIList = ({
     if (uiAnnotation.objectType === "hotFixes") {
       return (
         <HotFixes
+          key={uiAnnotation.objectType + idx}
+          uiAnnotation={uiAnnotation}
+          idx={idx}
+        />
+      );
+    }
+    if (uiAnnotation.objectType === "installSetup") {
+      return (
+        <InstallSetup
           key={uiAnnotation.objectType + idx}
           uiAnnotation={uiAnnotation}
           idx={idx}

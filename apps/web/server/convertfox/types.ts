@@ -187,6 +187,7 @@ export const buildingStep = z.object({
   endTime: z.string(),
   envVariablesUsed: z.array(z.string()).optional(),
   packagesUsed: z.array(z.string()).optional(),
+  envsToCollect: z.array(z.any()).optional(),
 });
 export type BuildingStep = z.infer<typeof buildingStep>;
 

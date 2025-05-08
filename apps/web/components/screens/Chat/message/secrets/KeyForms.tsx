@@ -52,30 +52,31 @@ export const KeyForms = ({
             console.log(fieldsToValidate);
 
             // First validate the form fields
-            form.trigger(fieldsToValidate).then(isValid => {
-                if (isValid) {
-                    // Then check if all required keys have values
-                    const formValues = form.getValues();
-                    const emptyKeys = requiredKeys?.filter(key => {
-                        const value = formValues.keys?.[key.key];
-                        return !value || value.trim() === '';
-                    });
+            // form.trigger(fieldsToValidate).then(isValid => {
+            //     if (isValid) {
 
-                    if (emptyKeys && emptyKeys.length > 0) {
-                        // Set error for each empty key
-                        emptyKeys.forEach(key => {
-                            if (key.required === true || key.required === undefined) {
-                                form.setError(`keys.${key.key}`, {
-                                    type: 'manual',
-                                    message: `${key.displayName} is required`
-                                });
-                            }
-                        });
-                    } else {
-                        setCurrentStep(2);
-                    }
-                }
+            //     }
+            // });
+            // Then check if all required keys have values
+            const formValues = form.getValues();
+            const emptyKeys = requiredKeys?.filter(key => {
+                const value = formValues.keys?.[key.key];
+                return !value || value.trim() === '';
             });
+
+            if (emptyKeys && emptyKeys.length > 0) {
+                // Set error for each empty key
+                emptyKeys.forEach(key => {
+                    if (key.required === true || key.required === undefined) {
+                        form.setError(`keys.${key.key}`, {
+                            type: 'manual',
+                            message: `${key.displayName} is required`
+                        });
+                    }
+                });
+            } else {
+                setCurrentStep(2);
+            }
         } else if (currentStep === 2) {
             setCurrentStep(3);
         }
@@ -115,7 +116,7 @@ export const KeyForms = ({
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-2 pt-6">
                         <Link
                             href={packageInfo?.documentation ?? ""}
                             target="_blank"
@@ -162,8 +163,8 @@ export const KeyForms = ({
             )}
 
             {currentStep === 3 && (
-                <div className="text-center py-12">
-                    <div className="flex flex-col items-center gap-4">
+                <div className="text-center">
+                    <div className="flex flex-col items-center gap-4 py-12">
                         <div className="p-3 bg-green-100 rounded-full">
                             <CheckCircle2 className="w-8 h-8 text-green-600" />
                         </div>
@@ -171,10 +172,12 @@ export const KeyForms = ({
                             You're all set!
                         </h3>
                         <p className="text-gray-500 max-w-md">
-                            Your bot has been configured successfully. You can now start using it.
+                            Your bot has been configured successfully.
+                            <br />
+                            You can now start using it.
                         </p>
                     </div>
-                    <div className="flex items-center justify-end gap-3 pt-2">
+                    <div className="flex items-center justify-end gap-3 ">
                         <Button variant="outline" className="mr-auto" onClick={handleBack}>
                             Back
                         </Button>
@@ -184,7 +187,6 @@ export const KeyForms = ({
                                 e.preventDefault();
                                 onClose(false);
                             }}
-                            className="h-11"
                             disabled={isUpdating}
                         >
                             Cancel

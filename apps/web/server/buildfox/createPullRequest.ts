@@ -19,12 +19,14 @@ export async function createPullRequest({
   title,
   dataStream,
   requestSubdir,
+  fullRequestDir,
 }: {
   clientRequestId: string;
   description: string;
   title?: string;
   dataStream?: DataStreamWriter;
   requestSubdir?: string;
+  fullRequestDir?: string;
 }) {
   console.log("triggering Pull Request creation");
   const clientRequest = await prisma.clientRequest.findUnique({
@@ -64,12 +66,34 @@ export async function createPullRequest({
     auth: GITHUB_TOKEN,
   });
 
-  const uniqueRequestTitle = `${requestTitle
-    ?.toLowerCase()
-    .replace(/ /g, "-")
-    // make requestTitle aa good acceptable git branch name
-    .replace(/[^a-z0-9-]/g, "-")
-    .substring(0, 20)}-${Date.now()}`;
+  let uniqueRequestTitle: string;
+  let _requestSubdir: string = requestSubdir || "";
+
+  if (fullRequestDir) {
+    // Extract uniqueRequestTitle and requestSubdir from fullRequestDir
+    const parts = fullRequestDir.split("/");
+    if (parts.length >= 3) {
+      uniqueRequestTitle = parts[1] || "";
+      _requestSubdir = parts[2] || "";
+    } else {
+      throw new Error(
+        "Invalid fullRequestDir format. Expected format: app/title/subdir"
+      );
+    }
+  } else {
+    uniqueRequestTitle = `${requestTitle
+      .toLowerCase()
+      .replace(/ /g, "-")
+      // make requestTitle aa good acceptable git branch name
+      .replace(/[^a-z0-9-]/g, "-")
+      .substring(0, 20)}-${Date.now()}`;
+
+    // TODO: remove this randomization & set requestDIr at a different step when templateType is known.
+    _requestSubdir =
+      ["alpha", "beta", "gamma", "delta", "omega", "sigma"][
+        Math.floor(Math.random() * 6)
+      ] || "";
+  }
 
   // Create new branch on GitHub
   const newBranch = `request/${uniqueRequestTitle}`;
@@ -89,16 +113,8 @@ export async function createPullRequest({
     throw new Error("Failed to create new branch");
   }
 
-  if (!requestSubdir) {
-    // TODO: remove this randomization & set requestDIr at a different step when templateType is known.
-    requestSubdir = ["alpha", "beta", "gamma", "delta", "omega", "sigma"][
-      Math.floor(Math.random() * 6)
-    ];
-  }
-  //console.log("newBranchResult", newBranchResult);
-
   // Create README.md file on new branch with request description
-  const requestDir = `apps/${uniqueRequestTitle}/${requestSubdir}`;
+  const requestDir = `apps/${uniqueRequestTitle}/${_requestSubdir}`;
   const readmeFilePath = `apps/${uniqueRequestTitle}/README.md`;
   const readmeFileContent =
     await githubSdk.rest.repos.createOrUpdateFileContents({
@@ -112,7 +128,6 @@ export async function createPullRequest({
   if (!readmeFileContent) {
     throw new Error("Failed to update README.md");
   }
-  //console.log("readmeFileContent", readmeFileContent);
 
   // Create pull request from new branch to target branch
   const pr = await githubSdk.rest.pulls.create({
@@ -126,7 +141,6 @@ export async function createPullRequest({
   if (!pr) {
     throw new Error("Failed to create pull request");
   }
-  //console.log("pr", pr);
 
   const updatedClientRequest = await prisma.clientRequest.update({
     where: {
@@ -145,7 +159,7 @@ export async function createPullRequest({
       metadata: {
         pr: pr.data,
         uniqueRequestTitle: uniqueRequestTitle,
-        requestSubdir: requestSubdir,
+        requestSubdir: _requestSubdir,
         requestFullDir: requestDir,
       },
       lastUpdatedAt: new Date(),
@@ -153,7 +167,6 @@ export async function createPullRequest({
       createdAt: new Date(),
     },
   });
-  //console.log("updatedClientRequest", updatedClientRequest);
 
   // Create clientRequest.json file on new branch
   const clientRequestFilePath = `apps/${uniqueRequestTitle}/clientRequest.json`;
@@ -175,8 +188,6 @@ export async function createPullRequest({
     });
     throw new Error("Failed to update clientRequest.json");
   }
-
-  //console.log("clientRequestFileContent", clientRequestFile);
 
   // Send slack message
   const slackMsg = `A new request has been created for the project: *${botProject.name}*\n\n*Title*: ${requestTitle}\n*Description*: ${description}\n*PR Link*: ${pr.data.html_url}`;

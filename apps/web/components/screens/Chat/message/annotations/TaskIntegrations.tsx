@@ -239,20 +239,21 @@ export const TaskIntegrations = ({
                     })}
             </div>
 
-            <ActionButtons
-                buttons={uiAnnotation.buttons}
-                areKeysRequired={platforms.some(
-                    (p) =>
-                        !p.optional &&
-                        (p.packageInfo?.constructors.some(
-                            (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
-                        ) ||
-                            p.packageInfo?.constructors.some(
-                                (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
-                            ))
-                )}
-                areKeysFilled={areKeysFilled}
-            />
+            {uiAnnotation.buttons && uiAnnotation.buttons.length > 0 &&
+                (<ActionButtons
+                    buttons={uiAnnotation.buttons}
+                    areKeysRequired={platforms.some(
+                        (p) =>
+                            !p.optional &&
+                            (p.packageInfo?.constructors.some(
+                                (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
+                            ) ||
+                                p.packageInfo?.constructors.some(
+                                    (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
+                                ))
+                    )}
+                    areKeysFilled={areKeysFilled}
+                />)}
         </motion.div>
     );
 }; 

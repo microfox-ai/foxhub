@@ -7,6 +7,9 @@ import {
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { Octokit } from "octokit";
+import YAML from "yaml";
+import { getServiceName } from "../buildfox/helper/getServiceName";
+import { TaskInstanceMetaType } from "../convertfox/types";
 
 interface CloneTemplateParams {
   sourceOwner: string;
@@ -19,6 +22,8 @@ interface CloneTemplateParams {
   targetBranch?: string;
   commitMessage?: string;
   excludeFiles?: string[];
+  clientRequest?: ClientRequest;
+  taskInstanceMeta?: TaskInstanceMetaType;
 }
 
 export const cloneTemplate = async ({
@@ -32,6 +37,8 @@ export const cloneTemplate = async ({
   targetBranch = "main",
   commitMessage = "nodeploy: Clone template files",
   excludeFiles = [],
+  clientRequest,
+  taskInstanceMeta,
 }: CloneTemplateParams) => {
   const octokit = new Octokit({
     auth: GITHUB_TOKEN,
@@ -69,10 +76,24 @@ export const cloneTemplate = async ({
 
             if (!Array.isArray(fileContent) && "content" in fileContent) {
               // Decode the base64 content
-              const content = Buffer.from(
+              let content = Buffer.from(
                 fileContent.content,
                 "base64"
               ).toString();
+
+              if (
+                item.path.endsWith("serverless.yml") &&
+                clientRequest &&
+                taskInstanceMeta
+              ) {
+                let yamlContent = YAML.parse(content);
+                yamlContent.service = getServiceName(
+                  clientRequest,
+                  taskInstanceMeta
+                );
+                console.log(yamlContent);
+                content = YAML.stringify(yamlContent);
+              }
 
               // Create a blob for the file content
               const { data: blob } = await octokit.rest.git.createBlob({

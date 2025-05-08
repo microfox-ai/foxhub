@@ -8,9 +8,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { ShardPage } from "@prisma/client";
+import { MinionFlow, MinionType } from "../hooks/convertors";
 
 const Dashboard = () => {
-  const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, createNewEmptyRequest } = useClientProject();
+  const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, setSubmitAnnotations, createNewEmptyRequest } = useClientProject();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
 
@@ -123,7 +124,9 @@ const Dashboard = () => {
                   <span> Show all cutom bots </span>
                 </Link>
                 <li
-                  onClick={createNewEmptyRequest}
+                  onClick={() => {
+                    createNewEmptyRequest();
+                  }}
                   className="bg-black text-white flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
                   <CornerDownRightIcon className="w-4 h-4" />
                   <span> Start a New Task </span>
@@ -174,7 +177,20 @@ const Dashboard = () => {
             <div className="bg-white rounded-lg">
               {shardpages?.map((shardpage: ShardPage) => (
                 <li
-                  onClick={() => setActiveTab("tasks")}
+                  onClick={() => {
+                    createNewEmptyRequest(MinionFlow.BuildFlow, [
+                      {
+                        type: "body",
+                        key: "shard_id",
+                        value: shardpage.id
+                      },
+                      {
+                        type: "body",
+                        key: "minionType",
+                        value: MinionType.InstallFox
+                      }
+                    ], "Set this up for me - " + shardpage.title);
+                  }}
                   className={`flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2 ${activeTab === "tasks" ? "bg-gray-100" : ""}`}>
                   <PlusIcon className="w-4 h-4" />
                   <span> {shardpage.title} </span>

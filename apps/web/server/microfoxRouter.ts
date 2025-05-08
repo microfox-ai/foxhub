@@ -34,6 +34,7 @@ microfoxRouter.addPath("deployfox", deployFoxRouter);
 microfoxRouter.addPath("modifyfox", modifyFoxRouter);
 microfoxRouter.addPath("usageTracker", usageTrackerRouter);
 microfoxRouter.addPath(MinionFlow.BuildFlow, buildFlow);
+//microfoxRouter.addPath(MinionFlow.InstallFlow, installFlow);
 
 // action - defines from the user end. - abrupt-switch, switch-notsure, unknown,
 // minionFlow - preset by the type of clientRequest (on-start) & editable in middle of the conversation.

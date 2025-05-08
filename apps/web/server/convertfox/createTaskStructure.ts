@@ -15,12 +15,16 @@ import {
   streamText,
 } from "ai";
 import { models } from "../models";
-import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import {
+  updateClientRequest,
+  updateTaskInstanceMeta,
+} from "@/utils/services/db_functions/updateClientRequest";
 import { taskPlanningPrompt } from "./prompt.taskPlanning";
 import { createStreamableValue } from "ai/rsc";
 import { createReadStream } from "fs";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
+import { getServiceName } from "../buildfox/helper/getServiceName";
 const generatePlatformsPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
   if (!taskInstanceMeta.taskIntegrations) {
     throw new Error("Task integrations not found");
@@ -118,6 +122,14 @@ export const createTaskStructure = async (
         taskStructure: object,
       },
     });
+
+    // TODO: enable this, or refactor the serviceName setting functionality
+    // if (requestBody.clientRequestId) {
+    //   await updateClientRequest({
+    //     clientRequestId: requestBody.clientRequestId,
+    //     serviceName: getServiceName(clientRequest, taskInstanceMeta),
+    //   });
+    // }
     dataStream.writeMessageAnnotation({
       type: "ui",
       objectType: "taskStructure",

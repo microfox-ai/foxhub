@@ -1,26 +1,16 @@
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
-import { generateText, streamText } from "ai";
+import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import dedent from "dedent";
+import { promises as fs } from "fs";
+import path from "path";
+import { TaskInstanceMetaType } from "../../convertfox/types";
 import {
   fetchTemplateRoot,
-  getFilePath,
-  INTERNAL_TEMPLATE_PLAIN_ROOT,
   readAllGenFilesList,
-  writeToFile,
   writeToFileSystemAndUpdateSteps,
 } from "../tool/writeToFile";
-import { readFile } from "fs/promises";
-import path from "path";
-import { models } from "../../models";
-import { codingSystemPrompt } from "../prompt.coding";
-import { promises as fs } from "fs";
-import dedent from "dedent";
-import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-import YAML from "yaml";
-import { getServiceName } from "../helper/getServiceName";
-import { genServerlessYML } from "./genServerlessYML";
 import { genServerlessIndex } from "./genServerlessIndex";
+import { genServerlessYML } from "./genServerlessYML";
 
 // IMPROTANT TODO: serverless.yml being written has no idea what env variables are needed..
 export const genFinalCode = async (

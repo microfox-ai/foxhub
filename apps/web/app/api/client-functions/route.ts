@@ -1,5 +1,6 @@
 import { prisma } from "@/prisma/prisma";
-import { DeployStep } from "@/server/convertfox/types";
+import { getServiceName } from "@/server/buildfox/helper/getServiceName";
+import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
 import {
@@ -7,7 +8,7 @@ import {
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
-import { DEPLOY_STAGE, FUNCTIONTYPE } from "@prisma/client";
+import { DEPLOY_STAGE, FUNCTIONTYPE, TaskInstanceMeta } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create ClientDeployment
@@ -34,6 +35,9 @@ export async function POST(req: NextRequest) {
     // Get userId and botProjectId from ClientRequest
     const clientRequest = await prisma.clientRequest.findUnique({
       where: { id: originClientRequestId },
+      include: {
+        taskInstanceMeta: true,
+      },
     });
 
     if (!clientRequest) {
@@ -43,9 +47,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId, botProjectId, serviceName } = clientRequest;
+    const { userId, botProjectId } = clientRequest;
 
     const serverlessLog = metadata.serverless.output;
+    const serviceName = getServiceName(
+      clientRequest,
+      clientRequest.taskInstanceMeta as unknown as TaskInstanceMetaType
+    );
     const functions = parseServerlessLogs(serverlessLog);
     let newMetadata = { ...metadata };
     newMetadata.serverless.functions = functions;

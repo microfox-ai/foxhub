@@ -13,6 +13,7 @@ export const models: Record<
   | "default"
   | "googleGeminiFlash"
   | "googleGeminiPro"
+  | "googleGeminiTwoFive"
   | "claude35Sonnet"
   | "claudeHaiku",
   {
@@ -24,6 +25,9 @@ export const models: Record<
     structuredOutputs: true,
   }),
   googleGeminiPro: google("gemini-1.5-pro", {
+    structuredOutputs: true,
+  }),
+  googleGeminiTwoFive: google("gemini-2.5-pro-exp-03-25", {
     structuredOutputs: true,
   }),
   claude35Sonnet: anthrophobic("claude-3-5-sonnet-20240620", {}),

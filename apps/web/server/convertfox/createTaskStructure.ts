@@ -30,7 +30,7 @@ const generatePlatformsPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
     throw new Error("Task integrations not found");
   }
   return `
-    ${taskInstanceMeta.taskIntegrations?.platforms?.map((p) => `name: ${p.name}; reason: ${p.reason}; package: ${p.package}`).join("\n")}
+    ${taskInstanceMeta.taskIntegrations?.platforms?.map((p) => `name: ${p.name};\nreason: ${p.reason};\npackage: ${p.package}`).join("\n")}
     `;
 };
 
@@ -83,6 +83,7 @@ export const createTaskStructure = async (
         - Never use theese packages - axios
         `,
       schema: taskStructure,
+      maxRetries: 3,
     });
 
     // for await (const chunk of result.partialObjectStream) {
@@ -92,10 +93,9 @@ export const createTaskStructure = async (
     // }
     const response = await result;
     const object = response.object;
-
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
-      model: models.claude35Sonnet.modelId,
+      model: models.googleGeminiTwoFive.modelId,
       usage: response.usage,
     });
 

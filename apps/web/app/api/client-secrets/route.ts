@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       botConfig,
       updateDeployments,
       isHidden,
+      templateId,
     } = body;
 
     console.log("body", body);
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       packageType,
       botConfig,
       isHidden: isHidden ?? false,
+      templateId,
     });
 
     if (addToClientRequest) {
@@ -116,7 +118,7 @@ export async function GET(req: NextRequest) {
           packageName,
         },
       });
-      console.log("templateSecrets", templateSecrets);
+      //console.log("templateSecrets", templateSecrets);
       for (const templateSecret of templateSecrets) {
         let packageInfo = null;
         if (

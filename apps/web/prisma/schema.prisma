@@ -195,6 +195,7 @@ model ClientSecretTemplate {
   packageConstructor  String?
   packageName         String?
   packageType         String?
+  metadata            Json?
 }
 
 model ClientDeployment {

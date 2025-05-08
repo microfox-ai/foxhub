@@ -31,10 +31,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 
 export const SecretTemplates = () => {
-    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ClientSecretTemplate | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<{
         templateId: string;
         name: string;
@@ -108,15 +108,39 @@ export const SecretTemplates = () => {
         }
     );
 
-    const handleCreate = async () => {
+    const openEditDialog = (template: ClientSecretTemplate) => {
+        setSelectedTemplate(template);
+        setFormData({
+            templateId: template.templateId,
+            name: template.name,
+            type: template.type,
+            templateType: template.templateType || "free",
+            variables: template.variables as any[] as ClientSecretVariable[],
+            botConfig: template.botConfig as any[] as ClientSecretVariable[],
+            packageName: template.packageName || "",
+            packageConstructor: template.packageConstructor || "",
+            packageType: template.packageType || "",
+        });
+        setIsEditing(true);
+        setIsDialogOpen(true);
+    };
+
+    const handleSubmit = async () => {
         try {
-            const response = await fetch("/api/client-secrets/templates", {
-                method: "POST",
+            const url = isEditing
+                ? `/api/client-secrets/templates`
+                : "/api/client-secrets/templates";
+
+            const method = isEditing ? "PUT" : "POST";
+
+            const response = await fetch(url, {
+                method,
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     ...formData,
+                    ...(selectedTemplate?.id ? { id: selectedTemplate.id } : {}),
                     type: formData.packageType === "custom" ? "custom" :
                         formData.packageType === "template" ? "template" :
                             `${formData.packageName}/${formData.packageConstructor}`,
@@ -125,10 +149,12 @@ export const SecretTemplates = () => {
                 }),
             });
 
-            if (!response.ok) throw new Error("Failed to create template");
+            if (!response.ok) throw new Error(`Failed to ${isEditing ? 'update' : 'create'} template`);
 
             await mutate();
-            setIsCreateDialogOpen(false);
+            setIsDialogOpen(false);
+            setSelectedTemplate(null);
+            setIsEditing(false);
             setFormData({
                 templateId: "",
                 name: "",
@@ -140,39 +166,9 @@ export const SecretTemplates = () => {
                 packageConstructor: "",
                 packageType: "",
             });
-            toast.success("Template created successfully");
+            toast.success(`Template ${isEditing ? 'updated' : 'created'} successfully`);
         } catch (error) {
-            toast.error("Failed to create template");
-        }
-    };
-
-    const handleEdit = async () => {
-        if (!selectedTemplate) return;
-
-        try {
-            const response = await fetch(`/api/client-secrets/templates?id=${selectedTemplate.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    type: formData.packageType === "custom" ? "custom" :
-                        formData.packageType === "template" ? "template" :
-                            `${formData.packageName}/${formData.packageConstructor}`,
-                    variables: formData.variables,
-                    botConfig: formData.botConfig,
-                }),
-            });
-
-            if (!response.ok) throw new Error("Failed to update template");
-
-            await mutate();
-            setIsEditDialogOpen(false);
-            setSelectedTemplate(null);
-            toast.success("Template updated successfully");
-        } catch (error) {
-            toast.error("Failed to update template");
+            toast.error(`Failed to ${isEditing ? 'update' : 'create'} template`);
         }
     };
 
@@ -193,22 +189,6 @@ export const SecretTemplates = () => {
         } catch (error) {
             toast.error("Failed to delete template");
         }
-    };
-
-    const openEditDialog = (template: ClientSecretTemplate) => {
-        setSelectedTemplate(template);
-        setFormData({
-            templateId: template.templateId,
-            name: template.name,
-            type: template.type,
-            templateType: template.templateType || "free",
-            variables: template.variables as any[] as ClientSecretVariable[],
-            botConfig: template.botConfig as any[] as ClientSecretVariable[],
-            packageName: template.packageName || "",
-            packageConstructor: template.packageConstructor || "",
-            packageType: template.packageType || "",
-        });
-        setIsEditDialogOpen(true);
     };
 
     const addVariable = () => {
@@ -307,7 +287,7 @@ export const SecretTemplates = () => {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Secret Templates</h1>
                 <Button onClick={() => {
-                    setIsCreateDialogOpen(true)
+                    setIsEditing(false);
                     setFormData({
                         templateId: "",
                         name: "",
@@ -318,7 +298,8 @@ export const SecretTemplates = () => {
                         packageName: "",
                         packageConstructor: "",
                         packageType: "",
-                    })
+                    });
+                    setIsDialogOpen(true);
                 }}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Template
@@ -363,45 +344,43 @@ export const SecretTemplates = () => {
                 ))}
             </div>
 
-            {/* Create Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            {/* Single Dialog for Create/Edit */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="min-w-[80vw] h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Create Secret Template</DialogTitle>
+                        <DialogTitle>{isEditing ? 'Edit' : 'Create'} Secret Template</DialogTitle>
                         <DialogDescription>
-                            Create a new secret template for managing API keys and other sensitive data.
+                            {isEditing ? 'Edit' : 'Create'} a new secret template for managing API keys and other sensitive data.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid grid-cols-3 gap-4 py-4">
                         <div className="col-span-1">
-                            <div className="flex gap-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">Name</Label>
-                                    <Input
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, name: e.target.value })
-                                        }
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="templateType">Template Type</Label>
-                                    <Select
-                                        value={formData.templateType}
-                                        onValueChange={(value) => setFormData({ ...formData, templateType: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select template type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="free">Free</SelectItem>
-                                            <SelectItem value="testing">Testing</SelectItem>
-                                            <SelectItem value="markup">Markup</SelectItem>
-                                            <SelectItem value="official">Official</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Name</Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, name: e.target.value })
+                                    }
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="templateType">Template Type</Label>
+                                <Select
+                                    value={formData.templateType}
+                                    onValueChange={(value) => setFormData({ ...formData, templateType: value })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select template type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="free">Free</SelectItem>
+                                        <SelectItem value="testing">Testing</SelectItem>
+                                        <SelectItem value="markup">Markup</SelectItem>
+                                        <SelectItem value="official">Official</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="templateId">Template ID</Label>
@@ -480,17 +459,6 @@ export const SecretTemplates = () => {
                                     </Select>
                                 </div>
                             </div>
-                            {/* <div className="grid gap-2">
-                            <Label htmlFor="type">Type</Label>
-                            <Input
-                                id="type"
-                                value={formData.type}
-                                disabled={true}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, type: e.target.value })
-                                }
-                            />
-                        </div> */}
                         </div>
                         <div className="col-span-2">
                             <div className="grid gap-2">
@@ -642,257 +610,16 @@ export const SecretTemplates = () => {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                        <Button variant="outline" onClick={() => {
+                            setIsDialogOpen(false);
+                            setSelectedTemplate(null);
+                            setIsEditing(false);
+                        }}>
                             Cancel
                         </Button>
-                        <Button onClick={handleCreate}>Create</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="min-w-[80vw] h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Edit Secret Template</DialogTitle>
-                        <DialogDescription>
-                            Edit the secret template details.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-3 gap-4 py-4">
-                        <div className="col-span-1">
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-templateId">Template ID</Label>
-                                <Input
-                                    id="edit-templateId"
-                                    value={formData.templateId}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, templateId: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-name">Name</Label>
-                                <Input
-                                    id="edit-name"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-packageName">Package Name</Label>
-                                <Select
-                                    value={formData.packageName as string}
-                                    onValueChange={(value) => {
-                                        setFormData({ ...formData, packageName: value || "", packageConstructor: "" });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a package" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {packagesData?.packages.map((pkg) => (
-                                            <SelectItem key={pkg.name} value={pkg.name}>
-                                                {pkg.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-packageType">Package Type</Label>
-                                <Select
-                                    value={formData.packageType as string}
-                                    onValueChange={(value) => setFormData({ ...formData, packageType: value || "" })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a package type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {packageTypes.map((type) => (
-                                            <SelectItem key={type} value={type}>
-                                                {type}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-packageConstructor">Package Constructor</Label>
-                                <Select
-                                    value={formData.packageConstructor as string}
-                                    onValueChange={(value) => setFormData({ ...formData, packageConstructor: value || "" })}
-                                    disabled={!formData.packageName}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a constructor" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {packageConstructors.map((constructor) => (
-                                            <SelectItem key={constructor} value={constructor}>
-                                                {constructor}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="col-span-2">
-                            <div className="grid gap-2">
-                                <div className="flex justify-between items-center">
-                                    <Label>Variables</Label>
-                                    <Select
-                                        value=""
-                                        onValueChange={(value) => {
-                                            const variable = availableVariables.find(v => v.key === value);
-                                            if (variable) {
-                                                setFormData({
-                                                    ...formData,
-                                                    variables: [
-                                                        ...formData.variables,
-                                                        {
-                                                            key: variable.key,
-                                                            value: "",
-                                                            isOptional: false,
-                                                            ui: variable.ui || {
-                                                                type: "text",
-                                                                label: variable.displayName,
-                                                                placeholder: variable.description
-                                                            }
-                                                        }
-                                                    ],
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Add Variable" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {availableVariables.map((variable) => (
-                                                <SelectItem key={variable.key} value={variable.key}>
-                                                    {variable.displayName || variable.key}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    {formData.variables.map((variable, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <Input
-                                                placeholder="Key"
-                                                value={variable.key}
-                                                onChange={(e) => updateVariable(index, "key", e.target.value)}
-                                            />
-                                            <Input
-                                                placeholder="Value"
-                                                value={variable.value}
-                                                onChange={(e) => updateVariable(index, "value", e.target.value)}
-                                            />
-                                            <div className="flex items-center gap-2">
-                                                <Checkbox
-                                                    checked={variable.isOptional}
-                                                    onCheckedChange={(checked) =>
-                                                        updateVariable(index, "isOptional", checked as boolean)
-                                                    }
-                                                />
-                                                <Label>Optional</Label>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => removeVariable(index)}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
-                                <div className="flex justify-between items-center">
-                                    <Label>Bot Config</Label>
-                                    <Select
-                                        value=""
-                                        onValueChange={(value) => {
-                                            const config = availableBotConfigs.find(c => c.key === value);
-                                            if (config) {
-                                                setFormData({
-                                                    ...formData,
-                                                    botConfig: [
-                                                        ...formData.botConfig,
-                                                        {
-                                                            key: config.key,
-                                                            value: "",
-                                                            isOptional: false,
-                                                            ui: config.ui || {
-                                                                type: "text",
-                                                                label: config.displayName,
-                                                                placeholder: config.description
-                                                            }
-                                                        }
-                                                    ],
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Add Config" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {availableBotConfigs.map((config) => (
-                                                <SelectItem key={config.key} value={config.key}>
-                                                    {config.displayName || config.key}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    {formData.botConfig.map((config, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <Input
-                                                placeholder="Key"
-                                                value={config.key}
-                                                onChange={(e) => updateBotConfig(index, "key", e.target.value)}
-                                            />
-                                            <Input
-                                                placeholder="Value"
-                                                value={config.value}
-                                                onChange={(e) => updateBotConfig(index, "value", e.target.value)}
-                                            />
-                                            <div className="flex items-center gap-2">
-                                                <Checkbox
-                                                    checked={config.isOptional}
-                                                    onCheckedChange={(checked) =>
-                                                        updateBotConfig(index, "isOptional", checked as boolean)
-                                                    }
-                                                />
-                                                <Label>Optional</Label>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => removeBotConfig(index)}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                            Cancel
+                        <Button onClick={handleSubmit}>
+                            {isEditing ? 'Save Changes' : 'Create'}
                         </Button>
-                        <Button onClick={handleEdit}>Save Changes</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

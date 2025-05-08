@@ -37,6 +37,7 @@ export const genLambdaCode = async (
         prompt,
         toolChoice: "auto",
         maxSteps: 2,
+        maxRetries: 5,
         maxTokens: 5000,
         tools: {
           write_to_file: writeToFile(

@@ -33,6 +33,7 @@ export const genCronJobs = async (
         prompt,
         toolChoice: "auto",
         maxSteps: 2,
+        maxRetries: 5,
         maxTokens: 5000,
         tools: {
           write_to_file: writeToFile(
@@ -48,9 +49,9 @@ export const genCronJobs = async (
         //   onFinish: async (result) => {
         //     console.log("result", result.usage);
         //   },
-        //   onError: (error) => {
-        //     console.log("error", error);
-        //   },
+        // onError: (error) => {
+        //   console.log("error", error);
+        // },
       });
       TokenUsageAnalyticsTracker.trackUsage({
         ...props.requestBody,

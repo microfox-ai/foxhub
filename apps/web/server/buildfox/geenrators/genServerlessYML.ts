@@ -114,7 +114,7 @@ export const genServerlessYML = async (
           ${taskInstanceMeta?.taskInfo?.summary}
 
           The service name should be:
-          service: ${clientRequest.serviceName || getServiceName(clientRequest, taskInstanceMeta)}
+          service: ${getServiceName(clientRequest, taskInstanceMeta)}
 
           your workflow should be as follows:
           1. read the serverless.yml file

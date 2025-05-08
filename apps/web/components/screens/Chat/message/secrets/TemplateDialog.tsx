@@ -6,12 +6,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { CLIENTSECRETSTATUS, ClientSecretTemplate } from "@prisma/client";
+import { CLIENTSECRETSTATUS, ClientSecret, ClientSecretTemplate } from "@prisma/client";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { KeyedMutator } from "swr";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface TemplateDialogProps {
     isOpen: boolean;
@@ -19,6 +21,7 @@ interface TemplateDialogProps {
     onCancel: () => void;
     selectedTemplate: ClientSecretTemplate | null;
     botTemplates?: ClientSecretTemplate[];
+    botSecrets?: ClientSecret[];
     packageInfo: any;
     mutateSecrets: KeyedMutator<{
         clientSecrets: any[];
@@ -35,6 +38,7 @@ export const TemplateDialog = ({
     onCancel,
     selectedTemplate,
     botTemplates,
+    botSecrets,
     packageInfo,
     mutateSecrets,
     mutateBotSecrets,
@@ -42,6 +46,53 @@ export const TemplateDialog = ({
 
     const { selectedProject, selectedRequest } = useClientProject();
     const { user } = useAuth();
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleConfirm = async () => {
+        try {
+            setIsSaving(true);
+
+            if (!selectedProject || !selectedRequest) {
+                toast.error("Please select a project and request");
+                return;
+            }
+
+            if (botSecrets?.find((secret) => secret.templateId === selectedTemplate?.id)) {
+                toast.error("You already have a related connection.");
+                return;
+            }
+
+            const clientSecretData = {
+                botProjectId: selectedProject.id,
+                name: selectedTemplate?.name,
+                type: selectedTemplate?.type,
+                variables: selectedTemplate?.variables,
+                userId: user?.id,
+                status: CLIENTSECRETSTATUS.FILLED,
+                packageName: selectedTemplate?.packageName,
+                packageConstructor: selectedTemplate?.packageConstructor,
+                packageType: selectedTemplate?.packageType,
+                botConfig: selectedTemplate?.botConfig,
+                clientRequestId: selectedRequest?.id,
+                addToClientRequest: true,
+                updateDeployments: true,
+                isHidden: true,
+                templateId: selectedTemplate?.id,
+            };
+            // Create a new client secret from the template
+            await PortalSdk.postData("/api/client-secrets", clientSecretData);
+            toast.success("Connection successfull!");
+
+            await mutateSecrets();
+            await mutateBotSecrets();
+            onClose();
+        } catch (error) {
+            console.error("Error creating secret from template:", error);
+            toast.error("Failed to create secret");
+        } finally {
+            setIsSaving(false);
+        }
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -69,7 +120,7 @@ export const TemplateDialog = ({
                                     You are trying to connect to {packageInfo?.name} using:
                                     {selectedTemplate?.name}
                                     <br />
-                                    This integratind comes inpacked with details
+                                    This integratind comes in packed with Microfox's servers.
                                 </p>
                             </div>
                         </div>
@@ -80,48 +131,22 @@ export const TemplateDialog = ({
                     <Button
                         variant="outline"
                         onClick={onCancel}
+                        disabled={isSaving}
                     >
                         Cancel
                     </Button>
                     <Button
-                        onClick={async () => {
-                            try {
-
-                                if (!selectedProject || !selectedRequest) {
-                                    toast.error("Please select a project and request");
-                                    return;
-                                }
-
-                                const clientSecretData = {
-                                    botProjectId: selectedProject.id,
-                                    name: selectedTemplate?.name,
-                                    type: selectedTemplate?.type,
-                                    variables: selectedTemplate?.variables,
-                                    userId: user?.id,
-                                    status: CLIENTSECRETSTATUS.FILLED,
-                                    packageName: selectedTemplate?.packageName,
-                                    packageConstructor: selectedTemplate?.packageConstructor,
-                                    packageType: selectedTemplate?.packageType,
-                                    botConfig: selectedTemplate?.botConfig,
-                                    clientRequestId: selectedRequest?.id,
-                                    addToClientRequest: true,
-                                    updateDeployments: true,
-                                    isHidden: true,
-                                    templateId: selectedTemplate?.id,
-                                };
-                                // Create a new client secret from the template
-                                await PortalSdk.postData("/api/client-secrets", clientSecretData);
-                                toast.success("Connection successfull!");
-
-                                await mutateSecrets();
-                                await mutateBotSecrets();
-                                onClose();
-                            } catch (error) {
-                                console.error("Error creating secret from template:", error);
-                            }
-                        }}
+                        onClick={handleConfirm}
+                        disabled={isSaving}
                     >
-                        Confirm
+                        {isSaving ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                            </>
+                        ) : (
+                            "Confirm"
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>

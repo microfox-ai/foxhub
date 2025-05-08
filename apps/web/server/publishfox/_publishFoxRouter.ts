@@ -69,10 +69,6 @@ export const publishFoxRouter: ServerStreamingFunction<
 
   // Create a new branch name based on the client request
   //const branchName = `publish-${clientRequest.id}-${Date.now()}`;
-
-  const shardId = shardPage?.repoDir
-    ? shardPage.repoDir
-    : "shards/" + clientRequest.serviceName + "/v1";
   try {
     // Clone the code from client request repo to published-shards repo
     await cloneTemplate({

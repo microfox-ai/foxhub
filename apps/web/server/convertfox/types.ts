@@ -121,36 +121,40 @@ export const taskStructure = z.object({
     )
     .describe("An array of lambda functions that are needed for the task"),
   cronJobs: z.array(
-    z.object({
-      name: z.string().describe("The name of this cron job"),
-      brief: z
-        .string()
-        .describe(
-          "A brief step by step description of what does this lambda function does"
-        ),
-      description: z.string().describe("What does this cron job do"),
-      endResult: z.string().describe("What is the end result of this cron job"),
-      endPoint: z.object({
-        url: z.string().describe("The url of the end point"),
-        method: z
-          .enum(["GET", "POST", "PUT", "DELETE"])
-          .describe("The method of the end point"),
-        body: z.any().describe("The body of the end point"),
-        headers: z.any().describe("The headers of the end point"),
-      }),
-      isolated: z
-        .boolean()
-        .default(false)
-        .describe(
-          "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
-        ),
-      cronExpression: z
-        .string()
-        .describe("The cron expression of the cron job"),
-      packagesUsed: z
-        .array(z.string())
-        .describe("The packages used in this cron job"),
-    })
+    z
+      .object({
+        name: z.string().describe("The name of this cron job"),
+        brief: z
+          .string()
+          .describe(
+            "A brief step by step description of what does this lambda function does"
+          ),
+        description: z.string().describe("What does this cron job do"),
+        endResult: z
+          .string()
+          .describe("What is the end result of this cron job"),
+        // endPoint: z.object({
+        //   url: z.string().describe("The url of the end point"),
+        //   method: z
+        //     .enum(["GET", "POST", "PUT", "DELETE"])
+        //     .describe("The method of the end point"),
+        //   body: z.any().describe("The body of the end point"),
+        //   headers: z.any().describe("The headers of the end point"),
+        // }),
+        isolated: z
+          .boolean()
+          .default(false)
+          .describe(
+            "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
+          ),
+        cronExpression: z
+          .string()
+          .describe("The cron expression of the cron job"),
+        packagesUsed: z
+          .array(z.string())
+          .describe("The packages used in this cron job"),
+      })
+      .describe("The cron jobs that are needed for the task")
   ),
   // userInteractions: z.array(
   //   z

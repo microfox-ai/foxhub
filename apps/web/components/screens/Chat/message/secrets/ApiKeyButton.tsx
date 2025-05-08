@@ -292,6 +292,7 @@ export const ApiKeyButton = ({
                     }}
                     selectedTemplate={botTemplates?.find((template) => template.id === selectedTemplateSecret) || null}
                     botTemplates={botTemplates}
+                    botSecrets={botSecrets}
                     packageInfo={packageInfo}
                     mutateSecrets={mutateSecrets}
                     mutateBotSecrets={mutateBotSecrets}

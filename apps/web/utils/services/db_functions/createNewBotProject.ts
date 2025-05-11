@@ -2,7 +2,10 @@
 
 import { prisma } from "@/prisma/prisma";
 import { INTERNAL_TEMPLATE_UPSTASH_ROOT } from "@/server/buildfox/tool/writeToFile";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import {
+  codeTemplateType,
+  TaskInstanceMetaType,
+} from "@/server/convertfox/types";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import {
   GITHUB_ACTION_POLICIES,
@@ -300,7 +303,10 @@ export async function addGithubSecretsToRepo({
 
   //console.log("taskInstanceMeta", repoName, PROJECT_REPO_OWNER);
   try {
-    if (taskInstanceMeta?.taskStructure?.templateType === "upstash") {
+    if (
+      taskInstanceMeta?.taskStructure?.templateType ===
+      codeTemplateType.enum.upstash_sls
+    ) {
       const upstashEnvsFile = await fs.readFile(
         path.join(process.cwd(), INTERNAL_TEMPLATE_UPSTASH_ROOT, "/envs.json"),
         "utf8"

@@ -14,14 +14,18 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Constructor } from "../types";
+import { OAuthButton } from "./OAuthButton";
 
 interface TemplateDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onCancel: () => void;
     selectedTemplate: ClientSecretTemplate | null;
-    botTemplates?: ClientSecretTemplate[];
-    botSecrets?: ClientSecret[];
+    secretsData?: {
+        clientSecrets: ClientSecret[];
+        clientSecretTemplates: ClientSecretTemplate[];
+    };
     packageInfo: any;
     mutateSecrets: KeyedMutator<{
         clientSecrets: any[];
@@ -37,9 +41,8 @@ export const TemplateDialog = ({
     onClose,
     onCancel,
     selectedTemplate,
-    botTemplates,
-    botSecrets,
     packageInfo,
+    secretsData,
     mutateSecrets,
     mutateBotSecrets,
 }: TemplateDialogProps) => {
@@ -47,6 +50,10 @@ export const TemplateDialog = ({
     const { selectedProject, selectedRequest } = useClientProject();
     const { user } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
+    const templateConstructor = selectedTemplate?.packageConstructor;
+    const templateConstructorInfo = packageInfo?.constructors.find((constructor: Constructor) => constructor.name === templateConstructor);
+    const authType = templateConstructorInfo?.auth;
+
 
     const handleConfirm = async () => {
         try {
@@ -57,7 +64,7 @@ export const TemplateDialog = ({
                 return;
             }
 
-            if (botSecrets?.find((secret) => secret.templateId === selectedTemplate?.id)) {
+            if (secretsData?.clientSecretTemplates?.find((secret) => secret.templateId === selectedTemplate?.id)) {
                 toast.error("You already have a related connection.");
                 return;
             }
@@ -135,19 +142,27 @@ export const TemplateDialog = ({
                     >
                         Cancel
                     </Button>
-                    <Button
-                        onClick={handleConfirm}
-                        disabled={isSaving}
-                    >
-                        {isSaving ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            "Confirm"
-                        )}
-                    </Button>
+                    {authType === "oauth" ? (
+                        <OAuthButton
+                            packageInfo={packageInfo}
+                            mutateSecrets={mutateSecrets}
+                            secretsData={secretsData}
+                        />
+                    ) : (
+                        <Button
+                            onClick={handleConfirm}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                "Confirm"
+                            )}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

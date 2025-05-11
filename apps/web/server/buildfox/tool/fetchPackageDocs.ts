@@ -74,10 +74,22 @@ export const fetchPackageDocs = (
             //     (p) => p.package === pkg
             //   );
             let mainReadme = await fetchPackageReadme(pkg.package);
+            let packageInfo = await fetchPackageInfo(pkg.package);
+            let constructorPath;
             readme = mainReadme;
             if (!pkg.readmeSearch) {
               console.log("no reason for this platform", pkg);
               return { readme, package: pkg };
+            }
+            if (packageInfo.readme_map?.all_readmes?.length > 0) {
+              constructorPath = packageInfo.readme_map?.all_readmes.find(
+                (r: any) => r.type === "constructor"
+              )?.path;
+              if (constructorPath) {
+                const constructorReadme = await fetchText(constructorPath);
+                readme += `\n\n${constructorReadme}`;
+                //console.log("constructorReadme", constructorReadme);
+              }
             }
             const microfoxFunction = await semanticFunctionSearch(
               pkg.package,
@@ -85,35 +97,12 @@ export const fetchPackageDocs = (
             );
             //console.log("functions", microfoxFunction);
             for (const _function of microfoxFunction) {
-              if (_function.similarity > 0.8 && readme.length < 20000) {
+              if (_function.similarity > 1.5 && readme.length < 10000) {
                 console.log("function pattern hit", _function.function_name);
-                // const functionReadme = await fetchGithubReadMe(
-                //   _function.owner,
-                //   _function.repo,
-                //   _function.file_path
-                // );
                 readme += `\n\n${_function.content}`;
               }
             }
             console.log("readme char size", readme.length);
-            // const packageInfo = await fetchPackageInfo(pkg);
-            // console.log("packageInfo", packageInfo);
-            // const isDynamicReadme =
-            //   packageInfo.readme_map?.type === "dynamic_path";
-            // if (isDynamicReadme) {
-            //   const dynamic_setters = packageInfo.readme_map?.dynamic_setters;
-            // TODO: recursively loop until you have all the readmes you need to fetch & attach
-            // for (const setter of dynamic_setters) {
-            //   const selectDynamicSetter = await generateObject({
-            //     model: models.claude35Sonnet,
-            //     schema: z.object({
-            //       scopes: z.array(z.string()),
-            //     }),
-            //     system: `Pick the most relevant scopes that suit the task`,
-            //     prompt: `Select the most relevant readmes for the package ${pkg}`,
-            //   });
-            // }
-            // }
             console.log("fetched readme for ", pkg);
             return { readme, package: pkg.package, reason: pkg.readmeSearch };
           } catch (error) {

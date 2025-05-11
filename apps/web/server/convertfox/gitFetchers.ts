@@ -51,7 +51,14 @@ export async function fetchGithubText(
 export async function fetchText(url: string) {
   try {
     console.log("fetching", url);
-    const encodedPath = encodeURIComponent(url);
+    let finalUrl = url;
+    if (url.startsWith("https://github.com/")) {
+      // Convert GitHub URL to raw content URL
+      finalUrl = url
+        .replace("https://github.com/", "https://raw.githubusercontent.com/")
+        .replace("/blob/", "/refs/heads/");
+    }
+    const encodedPath = encodeURI(finalUrl);
     const response = await fetch(encodedPath);
     const data = await response.text();
     return data;

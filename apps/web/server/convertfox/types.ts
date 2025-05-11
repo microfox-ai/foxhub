@@ -76,10 +76,20 @@ export const taskRequiredInfo = z.object({
 });
 export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
+export const codeTemplateType = z.enum(["plain_sls", "upstash_sls"]);
+export type CodeTemplateType = z.infer<typeof codeTemplateType>;
+
+export const codeTemplateAddon = z.enum([
+  "sls_puppeteer_chrome",
+  "sls_upstash_redis",
+]);
+export type CodeTemplateAddon = z.infer<typeof codeTemplateAddon>;
 export const taskStructure = z.object({
-  templateType: z
-    .enum(["plain", "upstash"])
-    .describe("The type of template to use"),
+  templateType: codeTemplateType.describe("The type of template to use"),
+  templateAddons: z
+    .array(codeTemplateAddon)
+    .optional()
+    .describe("The addons to use"),
   dbSchemas: z
     .array(
       z.object({

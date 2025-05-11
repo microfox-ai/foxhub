@@ -2,7 +2,7 @@ import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-import { TaskInstanceMetaType } from "../../convertfox/types";
+import { codeTemplateType, TaskInstanceMetaType } from "../../convertfox/types";
 import { models } from "../../models";
 import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { fetchPackageDocs } from "../tool/fetchPackageDocs";
@@ -23,7 +23,9 @@ export const genCronJobs = async (
         type: "cron",
         taskInstanceMeta,
         cron: cronJob,
-        template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
+        template_type:
+          taskInstanceMeta.taskStructure?.templateType ??
+          codeTemplateType.enum.plain_sls,
         clientRequest,
       });
       console.log("generating cron job", cronJob.name);

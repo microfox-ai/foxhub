@@ -1,5 +1,6 @@
 import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
 import {
+  codeTemplateType,
   extraEnvVariables,
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
@@ -11,7 +12,7 @@ import {
   INTERNAL_TEMPLATE_UPSTASH_ROOT,
   INTERNAL_TEMPLATE_MONGODB_ROOT,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
-  fetchTemplateRoot,
+  fetchTemplateDir,
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
 import {
@@ -34,7 +35,9 @@ export const genEnvCollector = async (
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
-  const templateType = taskInstanceMeta.taskStructure?.templateType ?? "plain";
+  const templateType =
+    taskInstanceMeta.taskStructure?.templateType ??
+    codeTemplateType.enum.plain_sls;
   let envs = envVariablesUsed;
   let templatedEnvs: any[] = [];
   try {

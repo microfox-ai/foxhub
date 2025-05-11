@@ -1,5 +1,5 @@
-import { TaskIntegrations } from "@/server/convertfox/types";
-import { fetchTemplateRoot } from "../tool/writeToFile";
+import { CodeTemplateType, TaskIntegrations } from "@/server/convertfox/types";
+import { fetchTemplateDir } from "../tool/writeToFile";
 import path from "path";
 import { readFile } from "fs/promises";
 import { ClientRequest, CLIENTSECRETSTATUS } from "@prisma/client";
@@ -17,10 +17,10 @@ export interface InternalTemplateEnv {
 }
 
 export const templateEnvsFromTaskIntegrations = async (
-  template_type: "plain" | "upstash" | "mongodb"
+  template_type: CodeTemplateType
 ) => {
   const envsJSON = await readFile(
-    path.join(process.cwd(), fetchTemplateRoot(template_type), "envs.json"),
+    path.join(process.cwd(), fetchTemplateDir(template_type), "envs.json"),
     "utf8"
   );
   const templatedEnvs = JSON.parse(envsJSON);
@@ -28,7 +28,7 @@ export const templateEnvsFromTaskIntegrations = async (
 };
 
 export const getClientSecretsFromTemplateEnvs = async (
-  template_type: "plain" | "upstash" | "mongodb"
+  template_type: CodeTemplateType
 ) => {
   const templatedEnvs = await templateEnvsFromTaskIntegrations(template_type);
   const packageBasedEnvs: Record<

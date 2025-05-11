@@ -20,6 +20,9 @@ import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { codingSystemPrompt } from "../buildfox/prompt.coding";
 import { editFile, readFile } from "./tool/editFile";
 
+// TODO: add support for modifying an unkonwn file not passed in the files list,
+// for example, changing schedule means modifying the serverless.yml file
+// it also has to update the taskInstanceMeta
 export const hotfixFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody

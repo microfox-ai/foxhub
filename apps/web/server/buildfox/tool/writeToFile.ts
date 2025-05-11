@@ -1,3 +1,4 @@
+import { codeTemplateType, CodeTemplateType } from "@/server/convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
@@ -11,17 +12,12 @@ export const INTERNAL_TEMPLATE_PLAIN_ROOT = `server/buildfox/templates/serverles
 export const INTERNAL_TEMPLATE_UPSTASH_ROOT = `server/buildfox/templates/serverless/upstash`;
 export const INTERNAL_TEMPLATE_MONGODB_ROOT = `server/buildfox/templates/serverless/mongodb`;
 
-export const fetchTemplateRoot = (
-  templateType: "plain" | "upstash" | "mongodb" | undefined
-) => {
-  if (templateType === "plain") {
+export const fetchTemplateDir = (templateType?: CodeTemplateType) => {
+  if (templateType === codeTemplateType.enum.plain_sls) {
     return INTERNAL_TEMPLATE_PLAIN_ROOT;
   }
-  if (templateType === "upstash") {
+  if (templateType === codeTemplateType.enum.upstash_sls) {
     return INTERNAL_TEMPLATE_UPSTASH_ROOT;
-  }
-  if (templateType === "mongodb") {
-    return INTERNAL_TEMPLATE_MONGODB_ROOT;
   }
   return INTERNAL_TEMPLATE_PLAIN_ROOT;
 };
@@ -66,6 +62,7 @@ export const getFilePath = async (
   // Write file content
   return { fileWritePath, dirPath, rootDir };
 };
+
 export const writeToFileSystem = async (
   props: {
     fileName: string;
@@ -220,7 +217,7 @@ export const updateSteps = async (
 export const writeToFile = (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
-  templateType?: "plain" | "upstash" | "mongodb"
+  templateType?: CodeTemplateType
 ) => {
   return tool({
     description: "Write code to a specific file in the project",
@@ -276,7 +273,7 @@ export const writeToFile = (
           const packageJson = await fs.readFile(
             path.join(
               process.cwd(),
-              fetchTemplateRoot(templateType),
+              fetchTemplateDir(templateType),
               "package.json"
             ),
             "utf8"

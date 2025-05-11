@@ -14,6 +14,7 @@ export interface OpenAPISchema {
   items?: OpenAPISchema;
   required?: string[];
   example?: any;
+  enum?: string[];
 }
 
 export interface OpenAPIContent {

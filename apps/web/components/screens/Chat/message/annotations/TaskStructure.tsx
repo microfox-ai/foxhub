@@ -3,7 +3,7 @@ import { CheckCircle, Clock, FileText, GitFork, PackageIcon, Target } from "luci
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { codeTemplateType, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { ActionButtons } from "./ActionButtons";
 
 interface UIAnnotation {
@@ -95,7 +95,7 @@ export const TaskStructure = ({
                         )}
                     </TabsList>
 
-                    {object.dbSchemas && object.dbSchemas.length > 0 && object.templateType === "upstash" && (
+                    {object.dbSchemas && object.dbSchemas.length > 0 && object.templateType === codeTemplateType.enum.upstash_sls && (
                         <TabsContent value="schemas" className="mt-4">
                             <div className="grid gap-4">
                                 {object.dbSchemas.map((schema) => (

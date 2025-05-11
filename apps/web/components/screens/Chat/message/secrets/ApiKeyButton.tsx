@@ -1,13 +1,5 @@
-import { Key, CheckCircle2, Plus, Pencil, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { TaskIntegrationPlatform } from "@/server/convertfox/types";
-import { useMemo, useState } from "react";
-import { APIKeyDialog } from "./APIKeyDialog";
-import { ClientSecret, ClientSecretTemplate } from "@prisma/client";
-import { ClientSecretPackageType, ClientSecretApiType, ClientSecretVariable } from "@/server/types";
-import { Constructor, KeyVariableConfig } from "../types";
-import useSWR, { KeyedMutator } from "swr";
-import { useParams } from "next/navigation";
+import { SecretFormProvider } from "@/components/screens/mybots/providers/SecretFormProvider";
+import { SecretProvider } from "@/components/screens/mybots/providers/SecretProvider";
 import {
     Select,
     SelectContent,
@@ -15,18 +7,18 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { ClientSecretApiType, ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { SecretProvider } from "@/components/screens/mybots/providers/SecretProvider";
-import { SecretFormProvider } from "@/components/screens/mybots/providers/SecretFormProvider";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { ClientSecret, CLIENTSECRETSTATUS, ClientSecretTemplate } from "@prisma/client";
+import { CheckCircle2, Loader2, Plus } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import useSWR, { KeyedMutator } from "swr";
+import { Constructor, KeyVariableConfig } from "../types";
+import { APIKeyDialog } from "./APIKeyDialog";
 import { TemplateDialog } from "./TemplateDialog";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { getBotImage } from "@/components/screens/mybots/providers/types";
 
 export const ApiKeyButton = ({
     packageInfo,
@@ -66,9 +58,9 @@ export const ApiKeyButton = ({
             revalidateOnFocus: true,
         }
     );
-    console.log("botSecretsData", botSecretsData);
     const botSecrets = botSecretsData?.clientSecrets;
     const botTemplates = botSecretsData?.clientSecretTemplates;
+    const { user } = useAuth();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedPlatform, setSelectedPlatform] = useState<any | null>(
@@ -79,7 +71,7 @@ export const ApiKeyButton = ({
     const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
     const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
-    const packageApiType = constructor?.apiType as ClientSecretApiType;
+    const apiType = constructor?.apiType as ClientSecretApiType;
     const [isLoading, setIsLoading] = useState(false);
 
     // Find the current API key secret from secretsData
@@ -99,21 +91,47 @@ export const ApiKeyButton = ({
     const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
         secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === constructor?.name
     );
-    const isAllRequiredKeysFilled = useMemo(() => {
-        if (apiKeySecret && constructor && constructor.requiredKeys) {
-            //console.log("apiKeySecret", apiKeySecret, constructor.requiredKeys);
-            return apiKeySecret ? constructor.requiredKeys.every(
-                (keyInfo: KeyVariableConfig) =>
-                    (apiKeySecret.variables as any[]).some(
-                        (variable: ClientSecretVariable) =>
-                            variable.key === keyInfo.key && variable.value?.trim()
-                    )
-            ) : false;
+    const apiKeyConstructor = packageInfo?.constructors.find((c: Constructor) => c.name === apiKeySecret?.packageConstructor);
+    const isAllKeysFilled = useMemo(() => {
+        if (apiKeySecret) {
+            if (apiKeyConstructor?.auth === "oauth2") {
+                return (apiKeySecret?.variables as any[]).every(
+                    (variable: ClientSecretVariable) =>
+                        variable.value?.trim() !== "" &&
+                        oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
+                            if (variable.key === "SCOPES") return true;
+                            return key.key === variable.key;
+                        })
+                )
+            }
+            else {
+                return constructor.requiredKeys.every(
+                    (keyInfo: KeyVariableConfig) =>
+                        (apiKeySecret.variables as any[]).some(
+                            (variable: ClientSecretVariable) =>
+                                variable.key === keyInfo.key && variable.value?.trim()
+                        )
+                )
+            }
         }
         return false;
-    }, [packageInfo, apiKeySecret, constructor]);
+    }, [packageInfo, apiKeySecret, apiKeyConstructor]);
 
-    //console.log("apiKeySecret", packageInfo, secretsData);
+    //--------------FO OAUTH-------------------
+    //console.log("apiKeySecret", packageInfo, secretsData);]
+    const oauthConstructor = packageInfo?.constructors.find(
+        (c: Constructor) => c.auth === "oauth2"
+    );
+    const hasAllAuthRelatedKeys = apiKeySecret
+        ? (apiKeySecret?.variables as any[]).every(
+            (variable: ClientSecretVariable) =>
+                variable.value?.trim() !== "" &&
+                oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
+                    if (variable.key === "SCOPES") return true;
+                    return key.key === variable.key;
+                })
+        )
+        : false;
 
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {
@@ -125,7 +143,13 @@ export const ApiKeyButton = ({
                 clientRequestIdToRemove: requestParamId,
             });
         }
-        if (value === "add_new") {
+        if (value === "connect") {
+            setIsLoading(false);
+            setSelectedPlatform(packageInfo);
+            await handleConnect(packageInfo, oauthConstructor?.authEndpoint);
+            setIsLoading(false);
+        }
+        else if (value === "add_new") {
             if (apiKeySecret) {
                 setSelectedBotSecret(null);
             }
@@ -160,51 +184,60 @@ export const ApiKeyButton = ({
         }
     };
 
-    // If there are no bot secrets, show the direct "Add Bot" button
-    // if (!botSecrets || botSecrets.length === 0) {
-    //     return (
-    //         <>
-    //             <div className="relative">
-    //                 <Button
-    //                     variant="ghost"
-    //                     size="sm"
-    //                     className="p-0 hover:bg-gray-100 relative"
-    //                     onClick={() => {
-    //                         setSelectedPlatform(platform);
-    //                         setIsDialogOpen(true);
-    //                     }}
-    //                 >
-    //                     <Key className="h-4 w-4" />
-    //                     {packageApiType === ClientSecretApiType.BOT_TOKEN ? "Add Bot" : "Add API Key"}
-    //                 </Button>
-    //                 {!isAllRequiredKeysFilled ? (
-    //                     <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400" />
-    //                 ) : (
-    //                     <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-4 w-4 rounded-full text-green-500" />
-    //                 )}
-    //             </div>
+    const [connecting, setConnecting] = useState<Record<string, boolean>>({});
 
-    //             {selectedPlatform && (
-    //                 <APIKeyDialog
-    //                     mutateSecrets={mutateSecrets}
-    //                     isOpen={isDialogOpen}
-    //                     onClose={async (submitted) => {
-    //                         setIsDialogOpen(false);
-    //                         setSelectedPlatform(null);
-    //                         if (submitted) {
-    //                             await mutateSecrets();
-    //                         }
-    //                     }}
-    //                     platformName={selectedPlatform.name}
-    //                     pkg={selectedPlatform.packageInfo}
-    //                     apiKeySecret={secretsData?.clientSecrets?.find((secret) =>
-    //                         secret !== undefined && secret !== null && secret.packageName === selectedPlatform.packageInfo?.name && secret.packageConstructor === constructor?.name
-    //                     )}
-    //                 />
-    //             )}
-    //         </>
-    //     );
-    // }
+    const handleConnect = async (packageInfo: any, authEndpoint: string) => {
+        try {
+            setConnecting((prevState: Record<string, boolean>) => ({
+                ...prevState,
+                [packageInfo.name]: true,
+            }));
+
+            // Create empty DB client secret doc
+            const data = await PortalSdk.postData(`/api/client-secrets`, {
+                clientRequestId: requestParamId,
+                botProjectId: projectParamId,
+                name: packageInfo?.title,
+                packageName: packageInfo?.name,
+                packageConstructor: oauthConstructor?.name,
+                packageType: ClientSecretPackageType.OAUTH2,
+                userId: user?.id,
+                status: CLIENTSECRETSTATUS.EMPTY,
+                botConfig: [],
+                variables: [
+                    ...constructor.internalKeys.map((key: KeyVariableConfig) => ({
+                        key: key.key,
+                        value: key.defaultValue
+                            ? Array.isArray(key.defaultValue)
+                                ? key.defaultValue.join(",")
+                                : key.defaultValue
+                            : "",
+                        isOptional: false,
+                    })),
+                ] as ClientSecretVariable[],
+                addToClientRequest: true,
+            });
+
+            document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;
+            localStorage.setItem(authEndpoint.replace(/^\//, ""), data.id);
+
+            const width = 500;
+            const height = 600;
+            const left = window.screenX + (window.outerWidth - width) / 2;
+            const top = window.screenY + (window.outerHeight - height) / 2;
+            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
+
+            window.open(authEndpoint, "_blank", features);
+        } catch (error) {
+            console.error("Error connecting:", error);
+        } finally {
+            setConnecting((prevState: Record<string, boolean>) => ({
+                ...prevState,
+                [packageInfo.name]: false,
+            }));
+        }
+    };
+
 
     return (
         <>
@@ -215,10 +248,11 @@ export const ApiKeyButton = ({
                         {isLoading ? (
                             <div className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-xs text-gray-500">Processing...</span>
+                                <span className="text-xs text-gray-500">
+                                    {connecting[packageInfo.name] ? "Connecting..." : "Processing..."}</span>
                             </div>
                         ) : (
-                            <SelectValue placeholder={packageApiType === ClientSecretApiType.BOT_TOKEN ? "Bot" : "API Key"} />
+                            <SelectValue placeholder={apiType === ClientSecretApiType.BOT_TOKEN ? "Bot" : "API Key"} />
                         )}
                     </SelectTrigger>
                     <SelectContent className="">
@@ -226,7 +260,8 @@ export const ApiKeyButton = ({
                             <SelectItem key={secret.id} value={secret.id}
                                 className="flex items-center justify-between gap-2 py-3 cursor-pointer"
                             >
-                                <div className="flex flex-col items-start gap-2">
+                                <div className="flex flex-row items-center gap-2">
+                                    <img src={getBotImage(secret)} className="h-6 w-6 rounded-full" />
                                     <span className="leading-none w-full">{secret.name || "Unnamed Bot"}</span>
                                     {/* <span className="text-xs text-gray-500">
                                         key: {secret.id ? `${secret.id.substring(0, 4)}...${secret.id.substring(secret.id.length - 4)}` : ''}
@@ -234,6 +269,12 @@ export const ApiKeyButton = ({
                                 </div>
                             </SelectItem>
                         ))}
+                        {oauthConstructor && (
+                            <SelectItem value="connect" className="flex items-center gap-2 cursor-pointer">
+                                <img src={"/images/default-bot-avatar.png"} className="h-6 w-6 rounded-full" />
+                                {hasAllAuthRelatedKeys ? "Microfox" : " Microfox"}
+                            </SelectItem>
+                        )}
                         {botTemplates?.filter((template) => !botSecrets?.some((secret) => secret.templateId === template.id))
                             .map((template) => (
                                 <SelectItem key={template.id} value={"template_" + template.id} className="flex items-center gap-2 cursor-pointer">
@@ -243,12 +284,12 @@ export const ApiKeyButton = ({
                             ))}
                         <SelectItem value="add_new" className="flex items-center gap-2 cursor-pointer">
                             <Plus className="h-4 w-4" />
-                            {packageApiType === ClientSecretApiType.BOT_TOKEN ? "Add New Bot" : "Add New API Key"}
+                            {apiType === ClientSecretApiType.BOT_TOKEN ? "Create New Bot" : "Create New API Key"}
                         </SelectItem>
                     </SelectContent>
                 </Select>
 
-                {!isAllRequiredKeysFilled ? (
+                {!isAllKeysFilled ? (
                     <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400" />
                 ) : (
                     <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-4 w-4 rounded-full text-green-500" />
@@ -291,8 +332,7 @@ export const ApiKeyButton = ({
                         setSelectedTemplateSecret(null);
                     }}
                     selectedTemplate={botTemplates?.find((template) => template.id === selectedTemplateSecret) || null}
-                    botTemplates={botTemplates}
-                    botSecrets={botSecrets}
+                    secretsData={botSecretsData}
                     packageInfo={packageInfo}
                     mutateSecrets={mutateSecrets}
                     mutateBotSecrets={mutateBotSecrets}

@@ -366,6 +366,43 @@ const PreviewWindow = () => {
 
     switch (schema.type) {
       case "string":
+        if (schema.enum) {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder={getPlaceholder(
+                          key,
+                          "string",
+                          currentEndpointData?.method === "GET",
+                          schema.example
+                        )} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {schema.enum?.map((value) => (
+                        <SelectItem key={value} value={value} className="text-sm">
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
         if (schema.format === "date-time") {
           return (
             <FormField

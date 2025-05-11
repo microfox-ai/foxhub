@@ -1,6 +1,7 @@
 import { createPullRequest } from "@/server/buildfox/createPullRequest";
 import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { findLastElementWith } from "@/utils/helpers/array";
+import { addGithubSecretsToRepo } from "@/utils/services/db_functions/createNewBotProject";
 import {
   getClientRequest,
   getTaskInstanceMeta,
@@ -25,18 +26,17 @@ import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCharacter } from "../hellofox/default";
 import { models } from "../models";
 import { genCronJobs } from "./geenrators/genCronJobs";
-import { genDbCode } from "./geenrators/genDbCode";
+import { genDbRedisHelper } from "./geenrators/helperFiles/genDbRedisHelper";
 import { genEnvCollector } from "./geenrators/genEnvCollector";
-import { genFinalCode } from "./geenrators/genFinalCode";
-import { genInitialCode } from "./geenrators/genInitialCode";
+import { genServerlessFinalCode } from "./geenrators/finalFiles/genFinalCode";
+import { genInitialServerlessCode } from "./geenrators/genInitialCode";
 import { genLambdaCode } from "./geenrators/genLambdaCode";
 import { generateStatsReport } from "./helper/generateStatsReport";
+import { getServiceName } from "./helper/getServiceName";
 import { octokitSdk } from "./helper/gitHelpers";
 import { pushToGit } from "./helper/pushToGit";
 import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
-import { addGithubSecretsToRepo } from "@/utils/services/db_functions/createNewBotProject";
-import { getServiceName } from "./helper/getServiceName";
-import { prisma } from "@/prisma/prisma";
+import { genHelperFiles } from "./geenrators/helperFiles/genHelperFiles";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -145,18 +145,19 @@ export const buildFoxRouter: ServerStreamingFunction<
     });
   }
 
-  await genInitialCode(props, taskInstanceMeta, clientRequest);
+  await genInitialServerlessCode(props, taskInstanceMeta, clientRequest);
 
-  await genDbCode(props, taskInstanceMeta, clientRequest);
+  // generate helper files - like redis, chrome, etc...
+  await genHelperFiles(props, taskInstanceMeta, clientRequest);
 
-  //write/modify cron jobs
+  // write/modify cron jobs
   await genCronJobs(props, taskInstanceMeta, clientRequest);
 
   // write/modify lambda functions
   await genLambdaCode(props, taskInstanceMeta, clientRequest);
 
   // write/modify root files - index.ts, package.json, serverless.yml, etc.
-  await genFinalCode(props, taskInstanceMeta, clientRequest);
+  await genServerlessFinalCode(props, taskInstanceMeta, clientRequest);
 
   // re-add core env variables, for they might have been changed
   await addGithubSecretsToRepo({
@@ -226,24 +227,12 @@ export const buildFoxRouter: ServerStreamingFunction<
     },
   });
 
-  if (clientRequest.prNumber) {
-    try {
-      await octokitSdk.rest.issues.createComment({
-        owner: PROJECT_REPO_OWNER,
-        repo: clientRequest.repoName ?? "",
-        issue_number: clientRequest.prNumber,
-        body: generateStatsReport(taskInstanceMetaUpdated as any),
-      });
-    } catch (error) {
-      console.error("Error sending message to github", error);
-    }
-  }
-
   dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "envCollector",
     persona: "buildfox",
     text: `Need Some Minor Details !`,
+    codeFiles: newFilesList as any[],
     envVariablesAll: envVariablesUsedUnique as any[],
     packagesUsed: packagesUsedUnique as any[],
     envVariablesCollect: envVariables as any[],
@@ -271,6 +260,7 @@ export const buildFoxRouter: ServerStreamingFunction<
       objectType: "buttons",
       persona: "buildfox",
       text: `All Done !`,
+      codeFiles: newFilesList as any[],
       buttons: [
         {
           action: "highlightInput",
@@ -292,6 +282,18 @@ export const buildFoxRouter: ServerStreamingFunction<
   // TODO: require a router for further file modifications if needed (means changing the prompts & input Data should be the file)
   // TODO: shiftMinion to deployfox
   try {
+    if (clientRequest.prNumber) {
+      try {
+        await octokitSdk.rest.issues.createComment({
+          owner: PROJECT_REPO_OWNER,
+          repo: clientRequest.repoName ?? "",
+          issue_number: clientRequest.prNumber,
+          body: generateStatsReport(taskInstanceMetaUpdated as any),
+        });
+      } catch (error) {
+        console.error("Error sending message to github", error);
+      }
+    }
     await slackBotSdk.sendMessage({
       text: `BuildFox has finished building the project for - ${clientRequest.title} ✅`,
       blocks: [

@@ -17,7 +17,10 @@ import {
   PUBLISHED_SHARD_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import {
+  CodeTemplateType,
+  TaskInstanceMetaType,
+} from "@/server/convertfox/types";
 import { createPullRequest } from "../buildfox/createPullRequest";
 import { getServiceName } from "../buildfox/helper/getServiceName";
 import { MinionType } from "@/components/screens/hooks/convertors";
@@ -153,7 +156,7 @@ export const installFoxRouter: ServerStreamingFunction<
   // at this step, create template secrets as needed
   // create secrets
   const templateSecrets = await getClientSecretsFromTemplateEnvs(
-    templateType as "upstash"
+    templateType as CodeTemplateType
   );
 
   if (templateSecrets.length > 0) {

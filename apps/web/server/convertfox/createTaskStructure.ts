@@ -1,5 +1,8 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import {
+  CodeTemplateAddon,
+  codeTemplateAddon,
+  codeTemplateType,
   TaskInfo,
   TaskInstanceMetaType,
   TaskIntegrations,
@@ -75,8 +78,8 @@ export const createTaskStructure = async (
         - you then create the lambda functions, if any.
         - if the code file might require packages other than the ones mentioned here, also include them in the genrated functions & cronJobs
         - you also decide the template type to use for the task.
-          - plain: for simple tasks that do not require a db or a state in the serverless function.
-          - upstash: for tasks that require a state/minor database in the serverless function.
+          - plain_sls: for simple tasks that do not require a db or a state in the serverless function.
+          - upstash_sls: for tasks that require a state/minor database in the serverless function.
         - create dbSchemas only if is truly required to share data across the lifecyle or multiple different lambda functions (like cron jobs).
         ---
         some rules
@@ -92,27 +95,36 @@ export const createTaskStructure = async (
     //   //dataStream.write(chunk as any);
     // }
     const response = await result;
-    const object = response.object;
+
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
       model: models.googleGeminiTwoFive.modelId,
       usage: response.usage,
     });
 
-    console.log("result", response.object);
+    const object = { ...response.object };
+    let templateAddons: CodeTemplateAddon[] = [];
+    if (
+      taskInstanceMeta.taskIntegrations?.platforms.some((p) =>
+        p.name.includes("puppeteer")
+      )
+    ) {
+      templateAddons.push(codeTemplateAddon.enum.sls_puppeteer_chrome);
+    }
+    if (
+      taskInstanceMeta.taskStructure?.templateType ===
+      codeTemplateType.enum.upstash_sls
+    ) {
+      templateAddons.push(codeTemplateAddon.enum.sls_upstash_redis);
+    }
+    object.templateAddons = templateAddons;
+
+    console.log("result", object);
 
     dataStream.writeMessageAnnotation({
       type: "thinking",
       content: "Task Structure Generated.",
     });
-    //   result.mergeIntoDataStream(dataStream, {
-    //     experimental_sendFinish: false,
-    //   });
-    //result.toTextStreamResponse();
-    //result.textStream.pipeTo(dataStream);
-
-    //dataStream.merge(result.fullStream)
-
     //const object = await result.object;
     // console.log("object", object);
     await updateTaskInstanceMeta({
@@ -123,13 +135,6 @@ export const createTaskStructure = async (
       },
     });
 
-    // TODO: enable this, or refactor the serviceName setting functionality
-    // if (requestBody.clientRequestId) {
-    //   await updateClientRequest({
-    //     clientRequestId: requestBody.clientRequestId,
-    //     serviceName: getServiceName(clientRequest, taskInstanceMeta),
-    //   });
-    // }
     dataStream.writeMessageAnnotation({
       type: "ui",
       objectType: "taskStructure",

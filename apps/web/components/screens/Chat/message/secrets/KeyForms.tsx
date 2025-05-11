@@ -191,26 +191,24 @@ export const KeyForms = ({
                         >
                             Cancel
                         </Button>
-                        {(form.formState.isDirty) && (
-                            <Button
-                                type="submit"
-                                disabled={isUpdating}
-                                variant="ghost"
-                                className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 hover:border-green-300"
-                            >
-                                {isUpdating ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Updating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckIcon className="h-4 w-4 mr-2" />
-                                        Save Changes
-                                    </>
-                                )}
-                            </Button>
-                        )}
+                        <Button
+                            type="submit"
+                            disabled={isUpdating}
+                            variant="ghost"
+                            className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 hover:border-green-300"
+                        >
+                            {isUpdating ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Updating...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckIcon className="h-4 w-4 mr-2" />
+                                    Save Changes
+                                </>
+                            )}
+                        </Button>
                     </div>
                 </div>
             )}

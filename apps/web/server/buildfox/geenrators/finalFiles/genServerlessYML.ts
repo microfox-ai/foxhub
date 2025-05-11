@@ -1,17 +1,17 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "../../convertfox/types";
+import { TaskInstanceMetaType } from "../../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { generateText } from "ai";
 import {
-  fetchTemplateRoot,
+  fetchTemplateDir,
   getFilePath,
   writeToFile,
-} from "../tool/writeToFile";
-import { models } from "../../models";
-import { codingSystemPrompt } from "../prompt.coding";
+} from "../../tool/writeToFile";
+import { models } from "../../../models";
+import { codingSystemPrompt } from "../../prompt.coding";
 import dedent from "dedent";
-import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-import { getServiceName } from "../helper/getServiceName";
+import { TokenUsageAnalyticsTracker } from "../../../analytics/helper";
+import { getServiceName } from "../../helper/getServiceName";
 import YAML from "yaml";
 import path from "path";
 import fs from "fs/promises";
@@ -80,7 +80,7 @@ export const genServerlessYML = async (
 ) => {
   const serverlessYmlPath = path.join(
     process.cwd(),
-    fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+    fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
     "serverless.yml"
   );
   const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");

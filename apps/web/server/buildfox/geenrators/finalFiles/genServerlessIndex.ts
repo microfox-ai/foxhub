@@ -1,10 +1,10 @@
 import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
 import { models } from "@/server/models";
 import {
-  fetchTemplateRoot,
+  fetchTemplateDir,
   getFilePath,
   writeToFile,
-} from "../tool/writeToFile";
+} from "../../tool/writeToFile";
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { TaskInstanceMetaType } from "@/server/convertfox/types";
@@ -12,7 +12,7 @@ import path from "path";
 import fs from "fs/promises";
 import { generateText } from "ai";
 import dedent from "dedent";
-import { codingSystemPrompt } from "../prompt.coding";
+import { codingSystemPrompt } from "../../prompt.coding";
 import YAML from "yaml";
 
 export const genServerlessIndex = async (
@@ -23,7 +23,7 @@ export const genServerlessIndex = async (
 ) => {
   const indexTsPath = path.join(
     process.cwd(),
-    fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+    fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
     "index.txt"
   );
   const indexTs = await fs.readFile(indexTsPath, "utf8");

@@ -106,8 +106,10 @@ export const envsPrompt = async (
   
               You MUST NOT WRITE MOCK CODE or placeholders, it should be production ready code.
               - DO NOT write like this:
-               - // Replace this with your personam mail
-              - write production ready code, and either create envs for information, or use input parameters or request body from the event object to get theese variables from user side.  
-
+               - // Replace this with your personam mail.
+              - write PRODUCTION READY code,
+              - DO NOT self assume or hard code variables in the code
+              - create envs for information that is variable or you dont have access to yet
+              - If possiblue, use input parameters or request body from the event object to get theese variables instead of env variables.
             `;
 };

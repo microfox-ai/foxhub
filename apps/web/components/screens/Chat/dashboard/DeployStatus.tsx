@@ -121,7 +121,7 @@ export const DeployStatus = () => {
         initialDeployStep: taskInstanceMeta?.deployStep,
     });
 
-    console.log("clientDeployment", clientDeployment);
+    //console.log("clientDeployment", clientDeployment);
     const { setActiveTab } = useTabUi();
 
     if (!deployStep)

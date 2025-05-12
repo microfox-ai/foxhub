@@ -63,6 +63,8 @@ const PreviewWindow = () => {
     setSelectedMethod,
     setSelectedEndpoint,
     currentEndpointData,
+    error,
+    setError
   } = useApiDoc();
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -295,6 +297,7 @@ const PreviewWindow = () => {
       console.error("Request preparation error:", error);
     } finally {
       console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       // Then fetch logs, regardless of API call outcome
       await fetchServerlessLogs({
         clientDeploymentId: (deploymentInfo as ClientDeployment).id,
@@ -745,6 +748,40 @@ const PreviewWindow = () => {
     );
   };
 
+
+  const [errorServerlessLogs, setErrorServerlessLogs] = useState<any | null>(null);
+  const [showErrorLogs, setShowErrorLogs] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!error) return;
+    const fetchErrorLogs = async () => {
+      try {
+        if (deploymentInfo) {
+          const endpointLink = `${deploymentInfo.baseUrl}/${deploymentInfo.stage.toLowerCase()}/docs.json`;
+          await fetchServerlessLogs({
+            clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+            endpointLink: endpointLink,
+            setServerlessLogs: setErrorServerlessLogs
+          });
+          setFetchError(null); // Clear any previous errors
+        }
+      } catch (err) {
+        console.error("Error fetching serverless logs:", err);
+        setFetchError(err instanceof Error ? err.message : "Failed to fetch server logs");
+        setErrorServerlessLogs(null);
+      }
+    };
+    fetchErrorLogs();
+  }, [error, deploymentInfo]);
+
+
+  // setError(null);
+  // setErrorServerlessLogs(null);
+  // setShowErrorLogs(false);
+  // setFetchError(null);
+
+
   if (!deploymentInfo && apiDoc) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -762,6 +799,93 @@ const PreviewWindow = () => {
           </div>
         </div>
         <p className="text-sm p-4">There is an error loading the deployment info, can you refresh the page?</p>
+      </div>
+    );
+  }
+
+
+  if (error) {
+
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-background">
+        <div className="sticky top-0 z-10 flex flex-col border-b bg-white shadow-sm">
+          <div className="flex mb-2 gap-4 items-center bg-zinc-100 px-3 py-2">
+            <X
+              className="cursor-pointer h-4 w-4 text-gray-500 hover:text-gray-700"
+              onClick={() => handleRightCollapse(!isRightCollapsed)}
+            />
+            <div className="flex gap-2 items-center">
+              <p className="text-base font-medium">Preview</p>
+              <Monitor className="h-4 w-4 " />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          <p className="text-sm">There is an error loading the deployment info, checking the log...</p>
+
+          {fetchError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+              <p className="text-sm text-red-700">{fetchError}</p>
+            </div>
+          )}
+
+          {errorServerlessLogs && (
+            <>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowErrorLogs(!showErrorLogs)}
+                  className="flex w-full items-center justify-between rounded-lg border bg-white p-3 hover:bg-neutral-50"
+                >
+                  <span className="text-xs font-medium">View Server Logs</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showErrorLogs ? 'rotate-180' : ''}`} />
+                </button>
+                {showErrorLogs && (
+                  <div className="overflow-hidden rounded-lg border bg-white">
+                    <div className="p-3">
+                      <pre className="max-h-[20vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
+                        {JSON.stringify(errorServerlessLogs, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-row justify-between w-full gap-2">
+                <Button
+                  type="submit"
+                  variant={"default"}
+                  onClick={() => {
+                    const errorAttachment = {
+                      functionLink: `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
+                      serverlessLogs: errorServerlessLogs,
+                      error: error,
+                      deploymentInfo: deploymentInfo,
+                      fetchError: fetchError
+                    }
+                    console.log("errorAttachment", errorAttachment);
+                    setSubmitAnnotations((sa) => {
+                      const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
+                      const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
+                      return [
+                        ...newAnnotations,
+                        {
+                          type: "body",
+                          key: "api_errors",
+                          value: [...(existingErrorAttachment?.value || []), errorAttachment]
+                        }
+                      ]
+                    });
+                    setActiveTab("chat")
+                    handleRightCollapse(true);
+                  }}
+                  className="w-full"
+                >
+                  <ArrowLeftIcon className="h-3 w-3" />
+                  <span className="ml-2">Auto Fix this Error</span>
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     );
   }

@@ -3,7 +3,10 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import dedent from "dedent";
 import { promises as fs } from "fs";
 import path from "path";
-import { TaskInstanceMetaType } from "../../../convertfox/types";
+import {
+  codeTemplateAddon,
+  TaskInstanceMetaType,
+} from "../../../convertfox/types";
 import {
   fetchTemplateDir,
   readAllGenFilesList,
@@ -38,17 +41,45 @@ export const genServerlessFinalCode = async (
       allGenFilesList
     );
 
+    const packageJsonPath =
+      allGenFilesList?.find((file) => file.fileName === "package.json")
+        ?.filePath ?? "";
     // modify the package.json file to support all the functions & cron jobs
     await updateJsonFile(
-      taskInstanceMeta?.taskStructure?.templateType,
+      packageJsonPath?.replace("/package.json", ""),
       "package.json",
       (packageJsonContent) => {
+        let newPackageJsonContent = { ...packageJsonContent };
         taskInstanceMeta.taskIntegrations?.platforms?.forEach((platform) => {
           if (platform.package && platform.package != "@microfox/null") {
-            packageJsonContent.dependencies[platform.package] = "*";
+            newPackageJsonContent.dependencies[platform.package] = "*";
           }
         });
-        return packageJsonContent;
+        taskInstanceMeta.taskStructure?.templateAddons?.forEach((addon) => {
+          if (addon === codeTemplateAddon.enum.sls_upstash_redis) {
+            newPackageJsonContent.dependencies["@upstash/redis"] = "*";
+          } else if (addon === codeTemplateAddon.enum.sls_puppeteer_chrome) {
+            newPackageJsonContent.dependencies["superagent"] = "*";
+            newPackageJsonContent.dependencies["@serverless-chrome/lambda"] =
+              "*";
+            newPackageJsonContent.dependencies["puppeteer"] = "*";
+          }
+        });
+        allGenFilesList.forEach((file) => {
+          const packagesUsed = (file.meta as any)?.packagesUsed;
+          if (packagesUsed && packagesUsed?.length > 0) {
+            packagesUsed.forEach((pkg: any) => {
+              if (
+                pkg.package &&
+                pkg != "@microfox/null" &&
+                !newPackageJsonContent.dependencies[pkg]
+              ) {
+                newPackageJsonContent.dependencies[pkg] = "*";
+              }
+            });
+          }
+        });
+        return newPackageJsonContent;
       },
       clientRequest
     );

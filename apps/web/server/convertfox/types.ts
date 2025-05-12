@@ -20,12 +20,12 @@ export const taskIntegrationPlatform = z.object({
     .default(false)
     .describe("Whether this platform is optional"),
   // TODO: this is better done post the platforms are created.
-  preferredAuth: z
-    .enum(["oauth", "apiKey"])
-    .describe(
-      "The preferred auth method for the platform based on the given task"
-    )
-    .optional(),
+  // preferredAuth: z
+  //   .enum(["oauth", "apiKey", "none"])
+  //   .describe(
+  //     "The preferred auth method for the platform based on the given task"
+  //   )
+  //   .optional(),
   package: z.string().describe("The package name of the platform").optional(),
   functionSearch: z
     .string()
@@ -111,11 +111,13 @@ export const taskStructure = z.object({
           .describe(
             "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
           ),
-        description: z.string().describe("What does this lambda function do"),
+        description: z
+          .string()
+          .describe("What does this lambda function do in a single line"),
         brief: z
           .string()
           .describe(
-            "A brief step by step description of what does this lambda function does"
+            "A complete step by step description of what does this lambda function code do"
           ),
         endResult: z
           .string()
@@ -126,7 +128,7 @@ export const taskStructure = z.object({
         path: z.string().describe("The path of the end point"),
         packagesUsed: z
           .array(z.string())
-          .describe("The packages used in this lambda function"),
+          .describe("All packages that might be used in this lambda function"),
       })
     )
     .describe("An array of lambda functions that are needed for the task"),
@@ -137,9 +139,11 @@ export const taskStructure = z.object({
         brief: z
           .string()
           .describe(
-            "A brief step by step description of what does this lambda function does"
+            "A complete step by step description of what does this cron job code do"
           ),
-        description: z.string().describe("What does this cron job do"),
+        description: z
+          .string()
+          .describe("What does this cron job do in a single line"),
         endResult: z
           .string()
           .describe("What is the end result of this cron job"),
@@ -162,7 +166,7 @@ export const taskStructure = z.object({
           .describe("The cron expression of the cron job"),
         packagesUsed: z
           .array(z.string())
-          .describe("The packages used in this cron job"),
+          .describe("All packages that might be used in this cron job"),
       })
       .describe("The cron jobs that are needed for the task")
   ),

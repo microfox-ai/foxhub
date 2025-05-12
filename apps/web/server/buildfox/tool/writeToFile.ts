@@ -1,4 +1,8 @@
-import { codeTemplateType, CodeTemplateType } from "@/server/convertfox/types";
+import {
+  codeTemplateAddon,
+  codeTemplateType,
+  CodeTemplateType,
+} from "@/server/convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
@@ -12,12 +16,21 @@ export const INTERNAL_TEMPLATE_PLAIN_ROOT = `server/buildfox/templates/serverles
 export const INTERNAL_TEMPLATE_UPSTASH_ROOT = `server/buildfox/templates/serverless/upstash`;
 export const INTERNAL_TEMPLATE_MONGODB_ROOT = `server/buildfox/templates/serverless/mongodb`;
 
+export const INTERNAL_TEMPLATE_ADDON_PUPPETEER_ROOT = `server/buildfox/templates/serverless/addons/puppeteer`;
+
 export const fetchTemplateDir = (templateType?: CodeTemplateType) => {
   if (templateType === codeTemplateType.enum.plain_sls) {
     return INTERNAL_TEMPLATE_PLAIN_ROOT;
   }
   if (templateType === codeTemplateType.enum.upstash_sls) {
     return INTERNAL_TEMPLATE_UPSTASH_ROOT;
+  }
+  return INTERNAL_TEMPLATE_PLAIN_ROOT;
+};
+
+export const fetchAddonDir = (addon: string) => {
+  if (addon === codeTemplateAddon.enum.sls_puppeteer_chrome) {
+    return INTERNAL_TEMPLATE_ADDON_PUPPETEER_ROOT;
   }
   return INTERNAL_TEMPLATE_PLAIN_ROOT;
 };
@@ -269,31 +282,31 @@ export const writeToFile = (
           clientRequest
         );
 
-        if (packagesUsed && packagesUsed?.length > 0) {
-          const packageJson = await fs.readFile(
-            path.join(
-              process.cwd(),
-              fetchTemplateDir(templateType),
-              "package.json"
-            ),
-            "utf8"
-          );
-          const packageJsonContent = JSON.parse(packageJson);
-          packagesUsed?.forEach((pkg) => {
-            if (!packageJsonContent.dependencies[pkg]) {
-              packageJsonContent.dependencies[pkg] = "*";
-            }
-          });
-          writeToFileSystemAndUpdateSteps(
-            {
-              fileName: "package.json",
-              filePath: "",
-              fileType: "json",
-              content: dedent`${JSON.stringify(packageJsonContent)}`,
-            },
-            clientRequest
-          );
-        }
+        // if (packagesUsed && packagesUsed?.length > 0) {
+        //   const packageJson = await fs.readFile(
+        //     path.join(
+        //       process.cwd(),
+        //       fetchTemplateDir(templateType),
+        //       "package.json"
+        //     ),
+        //     "utf8"
+        //   );
+        //   const packageJsonContent = JSON.parse(packageJson);
+        //   packagesUsed?.forEach((pkg) => {
+        //     if (!packageJsonContent.dependencies[pkg]) {
+        //       packageJsonContent.dependencies[pkg] = "*";
+        //     }
+        //   });
+        //   writeToFileSystemAndUpdateSteps(
+        //     {
+        //       fileName: "package.json",
+        //       filePath: "",
+        //       fileType: "json",
+        //       content: dedent`${JSON.stringify(packageJsonContent)}`,
+        //     },
+        //     clientRequest
+        //   );
+        // }
         // Construct full path from repo root
       } catch (error) {
         console.log("error", error);

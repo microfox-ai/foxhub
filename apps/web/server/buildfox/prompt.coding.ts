@@ -73,7 +73,7 @@ export const codingSystemPrompt = (
       writingCoreFunctions
         ? `
     - to fetch the docs on a package, use the following tool:
-      - fetch_package_docs (only supports @microfox packages for now)
+      - fetch_package_docs
     `
         : ""
     }
@@ -81,7 +81,6 @@ export const codingSystemPrompt = (
     A few things about your workflow:
     - You first carefully analyse the requirements, and then plan what needs to be done.
     - You then critisize your plan, and then refine it to this specific task & keep maximum code in a single file.
-    - You always try to use @microfox/ packages, unless that package is not available.
     - If you know a package is going to be used, then you can fetch the docs on it using the fetch_package_docs tool.
     - If a package doc is not available, then you can use your own knowledge to integrate said platform
     - You then write the code for the task
@@ -185,7 +184,7 @@ export const codingFunctionPrompt = async ({
           
             The code should be created in the src/functions directory.
             Make sure to use the necessary imports from the packages when needed.
-            Always call fetch_package_docs for the packages that start with @microfox to better understand how to use them.
+            Always call fetch_package_docs for all the packages to better understand how to use them.
             Use named exports for the function.
             Also export the doc file for the function.
             Only use the packages that are listed above in the project.

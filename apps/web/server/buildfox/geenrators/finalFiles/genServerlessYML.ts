@@ -1,8 +1,12 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "../../../convertfox/types";
+import {
+  codeTemplateAddon,
+  TaskInstanceMetaType,
+} from "../../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { generateText } from "ai";
 import {
+  fetchAddonDir,
   fetchTemplateDir,
   getFilePath,
   writeToFile,
@@ -15,6 +19,7 @@ import { getServiceName } from "../../helper/getServiceName";
 import YAML from "yaml";
 import path from "path";
 import fs from "fs/promises";
+import { updateYMLFile } from "../../helper/updateYMLFile";
 
 // Validation function to check serverless.yml configuration
 const validateServerlessYML = (
@@ -164,6 +169,23 @@ export const genServerlessYML = async (
   // Read and validate the generated serverless.yml content
   const generatedContent = await fs.readFile(generatedFilePath, "utf8");
   const validation = validateServerlessYML(generatedContent);
+
+  await updateYMLFile(
+    generatedFilePath.replace("/serverless.yml", ""),
+    "serverless.yml",
+    (config) => {
+      let newConfig = { ...config };
+      newConfig.plugins = {
+        ...newConfig.plugins,
+        exclude: [
+          ...(newConfig.plugins?.exclude ?? []),
+          "node_modules/puppeteer/.local-browsers/**",
+        ],
+      };
+      return newConfig;
+    },
+    clientRequest
+  );
 
   if (!validation.isValid) {
     console.error("Serverless.yml validation errors:", validation.errors);

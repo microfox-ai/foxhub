@@ -23,9 +23,13 @@ export const helperFilesContext = async (
       file.filePath.includes("/helpers/")
     );
     if (allHelperFiles.length > 0) {
-      const allHelperFilesContent = allHelperFiles.map((file) =>
-        fs.readFile(path.join(process.cwd(), file.filePath), "utf8")
-      );
+      const allHelperFilesContent = allHelperFiles.map(async (file) => {
+        const content = await fs.readFile(
+          path.join(process.cwd(), file.filePath),
+          "utf8"
+        );
+        return `FileName: ${file.fileName}\n Content: ${content}\n`;
+      });
       writtenHelperFilesContent = (
         await Promise.all(allHelperFilesContent)
       ).join("\n");
@@ -45,5 +49,5 @@ export const helperFilesContext = async (
     - If any extra redis saving is needed, make sure you null check the variables first, before saving them to redis.`
     }
     make sure the imports follow the '.js' extension like this for imports from other folders:
-    import { exampleHelper } from '../helpers/exampleHelper.js'`;
+    import { exampleHelper } from '../helpers/fileName.js'`;
 };

@@ -8,8 +8,10 @@ import { getPackageList } from "./getInternalPackages";
 import { fetchPackageInfo } from "./gitFetchers";
 import { TaskInstanceMetaType, taskIntegrations } from "./types";
 import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
+import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
 
 // IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
+// THIS OPERATION IS USELESSY CALLING AI TOO MANY TIMES BECAUSE OF IMPORPER EMBEDDING USAGE.
 export const createTaskIntegrations = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
@@ -32,11 +34,9 @@ export const createTaskIntegrations = async (
   const textPlatformsStream = streamText({
     model: models.googleGeminiPro,
     system: `
-        You analyse the task information & find the platforms we need to integrate with.
+        You analyse the task information & find the platforms & internal packages we need to integrate with.
         You return all the third party platforms we need to integrate with (along with specific needs for each platform).
-        You also return if there are alternatives for third party platforms.
-        platforms can be of different types - social media, payment, email, or tools like excel, google sheets, etc.
-        In house
+        You als return all the internal packages we need to integrate with (along with specific needs for each package).
         ---
         You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer
@@ -46,11 +46,11 @@ export const createTaskIntegrations = async (
         At the end of the loop you output an Answer
         ___
         Answer format:
-        platforms:
-        - name: <a specificplatform name>
-          reason: <reason for integrating with this specific platform>
-          type: <type of platform>
-          alternatives: <alternative platforms for this platform>
+        packages:
+        - name: <a specific platform/internal package name>
+          reason: <reason for integrating with this specific platform/internal package>
+          type: <type of platform/internal package>
+          alternatives: <alternative platforms/internal packages for this platform/internal package>
         ---
         Exclude the following platforms from the list:
         - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
@@ -88,6 +88,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
   // serach internal packages for each platform & attach them to the platform
   const packageList = await getPackageList();
   const stablePackageNames = packageList.stablePackages;
+  const semiStablePackageNames = packageList.semiStablePackages;
   const externalPackageNames = packageList.externalPackages;
 
   // Filter down all packages from both stablePackageNames and externalPackageNames
@@ -116,8 +117,8 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     }),
     prompt: `
     platforms: ${textOfPlatforms}
-    internal packages: ${stablePackageNames}
-    external packages: ${externalPackageNames}
+    internal packages: ${stablePackageNames.join(", ")}${IN_STAGING ? `${semiStablePackageNames.join(", ")}` : ""}
+    external packages: ${externalPackageNames.join(", ")}
     `,
   });
 
@@ -168,17 +169,18 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     usage: filteredPackagesResult.usage,
   });
 
+  console.log("validInternalPackagesWithInfo", filteredInternalPackages);
+  console.log("filteredExternalPackages", filteredExternalPackages);
+  console.log("textOfPlatforms", textOfPlatforms);
+
   // TODO: pick all packages as relatedPackages, not just one, & then select at a second step.
   const packageResult = await generateObject({
     model: models.googleGeminiPro,
     system: `
     You are an expert fullstack developer.
     You are given a list of platforms .
-    Search for existing internal packages that can be used to integrate with the platforms.
-    Check if the picked external package has all the functionalities needed for the task.
-    If internal package does not have the required functionalities for the task, 
-    search for external packages.
-    If no related external package is found, 
+    Search for existing internal packages & external packages that we support can be used to integrate with each platforms.
+    If no related package is found, 
     use @microfox/null.
     Ignore all conditional platforms.
     ---
@@ -192,6 +194,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     task summary: ${taskInfo.summary}
     platforms: ${textOfPlatforms}
     ----
+    platform we support:
     internal packages: ${validInternalPackagesWithInfo.map((pkg) => `Name: ${pkg.name}\nDescription: ${pkg.packageInfo?.description}\nFunctionalities: ${pkg.functionalities.join(", ")}`).join("\n")}
     external packages: ${filteredExternalPackages}
     `,
@@ -214,6 +217,11 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
       });
     }
   });
+
+  console.log(
+    "platforms",
+    platforms.map((p) => p.name + "-" + p.package)
+  );
 
   let finalPlatforms = await Promise.all(
     platforms

@@ -32,8 +32,6 @@ export async function POST(req: NextRequest) {
       templateId,
     } = body;
 
-    console.log("body", body);
-
     if (!botProjectId || !userId || !variables) {
       return NextResponse.json(
         { error: "Missing required fields" },

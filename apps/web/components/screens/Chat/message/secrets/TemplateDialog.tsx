@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Constructor } from "../types";
 import { OAuthButton } from "./OAuthButton";
+import { SecretTemplateMetadata } from "@/components/screens/secretTemplates/SecretTemplates";
 
 interface TemplateDialogProps {
     isOpen: boolean;
@@ -124,10 +125,11 @@ export const TemplateDialog = ({
                             <h4 className="text-3xl font-medium">Hello, {user?.name}</h4>
                             <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                                 <p className="text-sm">
-                                    You are trying to connect to {packageInfo?.name} using:
+                                    You are trying to connect to {packageInfo?.title} using {" "}
                                     {selectedTemplate?.name}
                                     <br />
-                                    This integratind comes in packed with Microfox's servers.
+                                    <br />
+                                    {(selectedTemplate?.metadata as any as SecretTemplateMetadata)?.introMessage || "This integratind comes in packed with Microfox's servers and maybe applicable for additional charges.."}
                                 </p>
                             </div>
                         </div>

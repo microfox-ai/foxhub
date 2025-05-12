@@ -253,32 +253,6 @@ export const buildFoxRouter: ServerStreamingFunction<
       },
     ],
   });
-
-  if (envVariables.length === 0) {
-    dataStream.writeMessageAnnotation({
-      type: "ui",
-      objectType: "buttons",
-      persona: "buildfox",
-      text: `All Done !`,
-      codeFiles: newFilesList as any[],
-      buttons: [
-        {
-          action: "highlightInput",
-          text: "Make changes",
-          type: "deny",
-          className: "bg-neutral-200 text-black hover:bg-neutral-300",
-        },
-        {
-          action: "shiftMinion",
-          actionText: "Test Automation !",
-          text: "Test Automation !",
-          type: "confirm",
-          className: "bg-green-500 text-white hover:bg-green-600",
-          value: "deployfox",
-        },
-      ],
-    });
-  }
   // TODO: require a router for further file modifications if needed (means changing the prompts & input Data should be the file)
   // TODO: shiftMinion to deployfox
   try {

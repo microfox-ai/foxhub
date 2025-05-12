@@ -312,7 +312,7 @@ export async function addGithubSecretsToRepo({
         "utf8"
       );
       const upstashEnvs = JSON.parse(upstashEnvsFile);
-      console.log("upstashEnvs", upstashEnvs);
+      //console.log("upstashEnvs", upstashEnvs);
       // PROD TODO: the envs only are for staging, production envs need to be added manually in env variables
       for (const env of upstashEnvs) {
         createOrUpdateRepoVariable({

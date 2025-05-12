@@ -18,6 +18,8 @@ export async function POST(req: NextRequest) {
       packageName,
       packageConstructor,
       packageType,
+      templateType,
+      metadata,
     } = body;
 
     if (!templateId || !name || !type) {
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
         packageName,
         packageConstructor,
         packageType,
+        templateType,
+        metadata,
       },
     });
 

@@ -8,7 +8,22 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ClientSecret } from "@prisma/client";
-import { HelpCircle, Key, Plus, CheckCircle2 } from "lucide-react";
+import {
+  HelpCircle,
+  Key,
+  Plus,
+  CheckCircle2,
+  CodeIcon,
+  ChevronDown,
+  FolderIcon,
+  FileText,
+  FileCode,
+  FileJson,
+  FileType,
+  FileImage,
+  FileIcon,
+  PencilIcon
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -42,11 +57,145 @@ interface EnvCollectorProps {
   hideMetaInfo?: boolean;
 }
 
+interface CodeFile {
+  fileName: any;
+  filePath: any;
+  fileType: any;
+  meta: any;
+}
+
+interface FileNode {
+  name: string;
+  type: string;
+  children?: Record<string, FileNode>;
+  isFile: boolean;
+}
+
+const getFileIcon = (fileType: string) => {
+  const type = fileType.toLowerCase();
+  if (type.includes('json')) return <FileJson className="w-3 h-3 text-yellow-500" />;
+  if (type.includes('typescript') || type.includes('tsx')) return <FileCode className="w-3 h-3 text-blue-500" />;
+  if (type.includes('javascript') || type.includes('jsx')) return <FileCode className="w-3 h-3 text-yellow-400" />;
+  if (type.includes('css')) return <FileCode className="w-3 h-3 text-pink-500" />;
+  if (type.includes('html')) return <FileCode className="w-3 h-3 text-orange-500" />;
+  if (type.includes('image')) return <FileImage className="w-3 h-3 text-green-500" />;
+  if (type.includes('text')) return <FileText className="w-3 h-3 text-gray-500" />;
+  return <FileIcon className="w-3 h-3 text-gray-500" />;
+};
+
+const FileTreeItem = ({ node, name, level = 0 }: { node: FileNode; name: string; level?: number }) => {
+  const [isOpen, setIsOpen] = useState(true);
+  const isFolder = !node.isFile;
+
+  return (
+    <div className="flex flex-col">
+      <div className={cn(
+        "flex items-center gap-2 py-1 relative",
+        level > 0 && "pl-3"
+      )}>
+        {level > 0 && (
+          <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-700" />
+        )}
+        {isFolder ? (
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+          >
+            <ChevronDown
+              className={cn(
+                "w-3 h-3 transition-transform duration-200",
+                isOpen ? "transform rotate-180" : ""
+              )}
+            />
+            <FolderIcon className="w-3 h-3 text-blue-400" />
+            <span className="text-xs">{name}</span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            {getFileIcon(node.type)}
+            <span className="text-xs text-gray-400">{name}</span>
+            {node.type && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">
+                {node.type}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      {isFolder && isOpen && node.children && (
+        <div className="flex flex-col">
+          {Object.entries(node.children)
+            .sort(([aName, aNode], [bName, bNode]) => {
+              if (aNode.isFile !== bNode.isFile) {
+                return aNode.isFile ? 1 : -1;
+              }
+              return aName.localeCompare(bName);
+            })
+            .map(([childName, childNode]) => (
+              <FileTreeItem
+                key={childName}
+                node={childNode}
+                name={childName}
+                level={level + 1}
+              />
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const buildFileTree = (files: CodeFile[]): Record<string, FileNode> => {
+  const tree: Record<string, FileNode> = {};
+  const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.split('/').slice(0, -1).join('/') || '';
+  const rewrittenFiles = files.map((file) => ({
+    ...file,
+    filePath: file.filePath.replace(rootDir, '')
+  }));
+
+  rewrittenFiles.forEach((file) => {
+    const pathParts = file.filePath.split('/').filter(Boolean); // Filter out empty strings
+    const fileName = pathParts.pop()!;
+
+    // If no path parts, it's a root level file
+    if (pathParts.length === 0) {
+      tree[fileName] = {
+        name: fileName,
+        type: file.fileType || '',
+        isFile: true
+      };
+      return;
+    }
+
+    // Handle nested files
+    let currentLevel = tree;
+    pathParts.forEach((part: string) => {
+      if (!currentLevel[part]) {
+        currentLevel[part] = {
+          name: part,
+          type: '',
+          children: {},
+          isFile: false
+        };
+      }
+      currentLevel = currentLevel[part].children!;
+    });
+
+    currentLevel[fileName] = {
+      name: fileName,
+      type: file.fileType || '',
+      isFile: true
+    };
+  });
+
+  return tree;
+};
+
 export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCollectorProps) => {
   const annotation = uiAnnotation as any;
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
-  const [showDocDialog, setShowDocDialog] = useState(false);
-  const [selectedEnv, setSelectedEnv] = useState<any>(null);
+  const [showCodeFiles, setShowCodeFiles] = useState(false);
+  const [showEnvVars, setShowEnvVars] = useState(true);
   const [envValues, setEnvValues] = useState<Record<string, string>>({});
   const params = useParams();
   const requestParamId = params?.request_id;
@@ -65,6 +214,7 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     }
   );
   const customSecret = secretsData?.clientSecrets?.[0];
+  const codeFiles = annotation.codeFiles as CodeFile[];
 
   // Populate form with existing values when secret is found
   useEffect(() => {
@@ -153,20 +303,19 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     );
   });
 
-  if (envVariables.length === 0) {
-    return null;
-  }
+  const fileTree = buildFileTree(codeFiles);
 
   return (
     <>
       <motion.div
         key={uiAnnotation.objectType + idx}
-        className={`flex flex-col gap-6 bg-white rounded-xl ${hideMetaInfo ? "" : "p-4 my-4 border border-gray-100 shadow-lg"}`}
+        className={`flex flex-col gap-2 bg-white rounded-xl ${hideMetaInfo ? "" : "p-4 my-4 border border-gray-100 shadow-lg"}`}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.3 }}
       >
+
         {!hideMetaInfo && (
           <div className="">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -177,63 +326,109 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
             </p>
           </div>)}
 
-        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-          {envVariables?.map((env: any) => (
-            <div
-              key={env.env + env.name}
-              className="flex items-center justify-between  pb-3 last:border-b-0 last:pb-0"
-            >
-              <div className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-gray-500" />
-                <span className="font-medium text-gray-900">{env.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TooltipProvider delayDuration={3000}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="text-blue-500 hover:text-blue-600 transition-colors p-1 rounded-md border border-blue-100 bg-blue-50 hover:bg-blue-100"
-                        onClick={() => {
-                          setSelectedEnv(env);
-                          setShowDocDialog(true);
-                        }}
-                      >
-                        <HelpCircle className="h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="right"
-                      className="max-w-[250px] text-xs bg-blue-50 text-blue-900 border border-blue-100 shadow-sm px-3 py-2 [&>svg]:hidden"
-                      showArrow={false}
-                    >
-                      <p>Click for detailed documentation</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+        <div className="flex flex-col gap-2 bg-neutral-900 rounded-lg p-2">
+          <button
+            onClick={() => setShowCodeFiles(!showCodeFiles)}
+            className="flex items-center justify-between w-full"
+          >
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <CodeIcon className="w-4 h-4" />
+              Code Files
+            </h3>
+            <ChevronDown
+              className={cn(
+                "w-4 h-4 text-white transition-transform duration-200",
+                showCodeFiles ? "transform rotate-180" : ""
+              )}
+            />
+          </button>
+          {showCodeFiles && (
+            <div className="flex flex-col gap-1 rounded-lg p-2">
+              {Object.entries(fileTree)
+                .sort(([aName, aNode], [bName, bNode]) => {
+                  if (aNode.isFile !== bNode.isFile) {
+                    return aNode.isFile ? 1 : -1;
+                  }
+                  return aName.localeCompare(bName);
+                })
+                .map(([name, node]) => (
+                  <FileTreeItem key={name} node={node} name={name} />
+                ))}
             </div>
-          ))}
+          )}
         </div>
 
-        <div className="flex gap-2">
-          <div className="relative">
-            <Button
-              variant="outline"
-              className="text-blue-500 hover:bg-blue-50 border-blue-100 bg-blue-50 hover:text-blue-600 transition"
-              onClick={() => setShowAddEnvModal(true)}
-            >
-              <Plus className="w-4 h-4 " />
-              {!hasAllRequiredKeys ? "Add the keys" : "Update the keys"}
-            </Button>
-            {!hasAllRequiredKeys ? (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 animate-pulse" />
-            ) : (
-              <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-5 w-5 rounded-full text-green-500" />
-            )}
-          </div>
+        <div className={cn(
+          "flex flex-col gap-2 rounded-lg p-2",
+          hasAllRequiredKeys ? "bg-neutral-900" : "bg-neutral-100"
+        )}>
+          <button
+            onClick={() => setShowEnvVars(!showEnvVars)}
+            className="flex items-center justify-between w-full"
+          >
+            <h3 className={cn(
+              "text-sm font-semibold flex items-center gap-2",
+              hasAllRequiredKeys ? "text-white" : "text-black"
+            )}>
+              <Key className="w-4 h-4" />
+              Secret keys
+            </h3>
+            <ChevronDown
+              className={cn(
+                "w-4 h-4 transition-transform duration-200",
+                hasAllRequiredKeys ? "text-white" : "text-black",
+                showEnvVars ? "transform rotate-180" : ""
+              )}
+            />
+          </button>
+          {showEnvVars && (
+            <div className="flex flex-col gap-0 rounded-lg p-2">
+              {envVariables?.map((env: any) => (
+                <div
+                  key={env.env + env.name}
+                  className={cn(
+                    "flex items-center justify-between py-2 border-b last:border-b-0 last:pb-0",
+                    hasAllRequiredKeys ? "border-gray-700" : "border-gray-200"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "font-medium text-xs",
+                      hasAllRequiredKeys ? "text-gray-300" : "text-gray-900"
+                    )}>{env.name}</span>
+                    {customSecret?.variables?.some((variable: any) =>
+                      variable.key === env.env && variable.value?.trim()
+                    ) ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <HelpCircle className="w-4 h-4 text-yellow-500" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {showEnvVars && (
+            <div className="relative px-2 pb-3">
+              <Button
+                variant="outline"
+                className={cn(
+                  "transition",
+                  hasAllRequiredKeys
+                    ? "text-gray-300 hover:bg-neutral-800 border-neutral-700 bg-neutral-800 hover:text-white"
+                    : "text-blue-500 hover:bg-blue-50 border-blue-100 bg-blue-50 hover:text-blue-600"
+                )}
+                onClick={() => setShowAddEnvModal(true)}
+              >
+                {hasAllRequiredKeys ?
+                  <PencilIcon className="w-4 h-4" />
+                  : <Plus className="w-4 h-4" />
+                }
+                {!hasAllRequiredKeys ? "Add the keys" : "Update the keys"}
+              </Button>
+            </div>
+          )}
         </div>
-
         {hasAllRequiredKeys && (
           <ActionButtons
             buttons={uiAnnotation.buttons}
@@ -251,62 +446,6 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
         initialValues={envValues}
       />
 
-      <Dialog open={showDocDialog} onOpenChange={setShowDocDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
-              <HelpCircle className="h-5 w-5" />
-              {selectedEnv?.name} Documentation
-            </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500">
-              Detailed information about this environment variable
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900">Description</h4>
-              <p className="text-sm text-gray-600">{selectedEnv?.what}</p>
-            </div>
-
-            {selectedEnv?.how && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-gray-900">How to Set Up</h4>
-                <div className="space-y-3">
-                  {selectedEnv.how
-                    .split("\n")
-                    .map((line: string, i: number) => (
-                      <div key={line + i} className="flex gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-medium">
-                          {i + 1}
-                        </span>
-                        <div className="flex-1 prose prose-sm max-w-none">
-                          <Markdown>{line}</Markdown>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {selectedEnv?.examples && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-gray-900">Examples</h4>
-                <div className="space-y-2">
-                  {selectedEnv.examples.map((example: string, i: number) => (
-                    <div
-                      key={example + i}
-                      className="bg-gray-50 p-3 rounded-md"
-                    >
-                      <Markdown>{example}</Markdown>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

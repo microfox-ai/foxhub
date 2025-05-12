@@ -6,6 +6,13 @@ import {
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { genDbRedisHelper } from "./genDbRedisHelper";
 import { ClientRequest } from "@prisma/client";
+import {
+  fetchAddonDir,
+  fetchTemplateDir,
+  writeToFileSystemAndUpdateSteps,
+} from "../../tool/writeToFile";
+import path from "path";
+import fs from "fs/promises";
 
 export const genHelperFiles = async (
   props: StreamingFucntionProps<any, any>,
@@ -13,24 +20,29 @@ export const genHelperFiles = async (
   clientRequest: ClientRequest
 ) => {
   let _taskInstanceMeta = { ...taskInstanceMeta };
-  if (
-    taskInstanceMeta.taskStructure?.templateAddons?.includes(
-      codeTemplateAddon.enum.sls_upstash_redis
-    )
-  ) {
-    _taskInstanceMeta = await genDbRedisHelper(
-      props,
-      taskInstanceMeta,
-      clientRequest
-    );
-  }
-
-  if (
-    taskInstanceMeta.taskStructure?.templateAddons?.includes(
-      codeTemplateAddon.enum.sls_puppeteer_chrome
-    )
-  ) {
-    // TODO: Add related helper code files for this
+  for (const addon of taskInstanceMeta.taskStructure?.templateAddons ?? []) {
+    if (addon === codeTemplateAddon.enum.sls_upstash_redis) {
+      _taskInstanceMeta = await genDbRedisHelper(
+        props,
+        taskInstanceMeta,
+        clientRequest
+      );
+    } else if (addon === codeTemplateAddon.enum.sls_puppeteer_chrome) {
+      // TODO: Add related helper code files for this
+      const chromeHelper = await fs.readFile(
+        path.join(process.cwd(), fetchAddonDir(addon), "chromeScript.txt"),
+        "utf8"
+      );
+      writeToFileSystemAndUpdateSteps(
+        {
+          fileName: "chromeScript.ts",
+          filePath: "",
+          fileType: "ts",
+          content: chromeHelper,
+        },
+        clientRequest
+      );
+    }
   }
   return _taskInstanceMeta;
 };

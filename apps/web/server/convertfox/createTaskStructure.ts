@@ -84,6 +84,7 @@ export const createTaskStructure = async (
         ---
         some rules
         - Never use theese packages - axios
+        - Cron functions cannot call the created lambda functions.
         `,
       schema: taskStructure,
       maxRetries: 3,
@@ -106,15 +107,12 @@ export const createTaskStructure = async (
     let templateAddons: CodeTemplateAddon[] = [];
     if (
       taskInstanceMeta.taskIntegrations?.platforms.some((p) =>
-        p.name.includes("puppeteer")
+        p.package?.includes("puppeteer")
       )
     ) {
       templateAddons.push(codeTemplateAddon.enum.sls_puppeteer_chrome);
     }
-    if (
-      taskInstanceMeta.taskStructure?.templateType ===
-      codeTemplateType.enum.upstash_sls
-    ) {
+    if (object?.templateType === codeTemplateType.enum.upstash_sls) {
       templateAddons.push(codeTemplateAddon.enum.sls_upstash_redis);
     }
     object.templateAddons = templateAddons;

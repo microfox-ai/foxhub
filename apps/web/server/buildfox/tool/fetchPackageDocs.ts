@@ -23,6 +23,8 @@ async function fetchGithubReadMe(
   const data = await response.text();
   return data;
 }
+
+const EXCLUDED_PACKAGES_LIST = ["@upstash/redis"];
 /** this should be removed from tools */
 export const fetchPackageDocs = (
   props: StreamingFucntionProps<any, any>,
@@ -31,14 +33,14 @@ export const fetchPackageDocs = (
 ) => {
   return tool({
     description:
-      "Fetch required docs for a package to understand how to use it",
+      "Fetch All related docs for each package to understand how to use it",
     parameters: z.object({
-      microfoxPackages: z.array(
+      packages: z.array(
         z.object({
           package: z
             .string()
             .describe(
-              "The exact names of the microfox packages to fetch docs for (@microfox/core , @microfox/aws-ses etc..)"
+              "The exact names of all the packages to fetch docs for (@microfox/core , @slack/web-api, etc..)"
             ),
           readmeSearch: z
             .string()
@@ -48,18 +50,13 @@ export const fetchPackageDocs = (
             .optional(),
         })
       ),
-      externalPackages: z
-        .array(z.string())
-        .describe(
-          "The exact names of the external packages to fetch docs for (@slack/web-api google-api-nodejs-client, stripe etc..)"
-        ),
     }),
-    execute: async ({ microfoxPackages, externalPackages }, options) => {
-      console.log("microfoxPackages", microfoxPackages);
-      console.log("externalPackages", externalPackages);
-      const fetchReadMePackages = microfoxPackages.filter(
-        (pkg) =>
-          pkg.package.includes("@microfox/") && pkg.package != "@microfox/null"
+    execute: async ({ packages }, options) => {
+      console.log("packages", packages);
+      const fetchReadMePackages = packages.filter((pkg) =>
+        pkg.package.includes("@microfox/")
+          ? pkg.package != "@microfox/null"
+          : !EXCLUDED_PACKAGES_LIST.includes(pkg.package)
       );
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
@@ -91,8 +88,12 @@ export const fetchPackageDocs = (
                 //console.log("constructorReadme", constructorReadme);
               }
             }
+
+            const pakageExactName = pkg.package.startsWith("@microfox/")
+              ? pkg.package
+              : `@ext_${pkg.package.replaceAll("/", "#")}`;
             const microfoxFunction = await semanticFunctionSearch(
-              pkg.package,
+              pakageExactName,
               pkg.readmeSearch
             );
             //console.log("functions", microfoxFunction);
@@ -108,7 +109,10 @@ export const fetchPackageDocs = (
           } catch (error) {
             console.error("Error fetching README:", error);
             return {
-              readme: "",
+              readme:
+                "No readme found for this package " +
+                pkg.package +
+                ", Use your own knowledge.",
               package: pkg.package,
               reason: pkg.readmeSearch,
             };
@@ -122,19 +126,7 @@ export const fetchPackageDocs = (
         readmes.filter((r) => r.readme === "").map((r) => r.package)
       );
 
-      return readmes.concat(
-        microfoxPackages
-          .filter((pkg) => !pkg.package.includes("@microfox/"))
-          .map((pkg) => ({
-            readme: " No readme found for this package " + pkg.package,
-            package: pkg.package,
-            reason: pkg.readmeSearch,
-          }))
-      );
-      // find my package, get some initial understanding of the package
-      // accordingly fetch the readme that is most relevant for the integration
-
-      // TODO: and then pass chunks of it to the LLM to understand the package
+      return readmes;
     },
   });
 };

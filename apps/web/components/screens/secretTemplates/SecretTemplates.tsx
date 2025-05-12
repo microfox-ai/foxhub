@@ -30,6 +30,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 
+
+export interface SecretTemplateMetadata {
+    introMessage: string;
+    permissions: string[];
+}
+
 export const SecretTemplates = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -45,6 +51,7 @@ export const SecretTemplates = () => {
         packageName: string;
         packageConstructor: string;
         packageType: string;
+        metadata: SecretTemplateMetadata;
     }>({
         templateId: "",
         name: "",
@@ -55,6 +62,10 @@ export const SecretTemplates = () => {
         packageName: "",
         packageConstructor: "",
         packageType: "",
+        metadata: {
+            introMessage: "",
+            permissions: []
+        }
     });
 
     const { user } = useAuth();
@@ -120,6 +131,10 @@ export const SecretTemplates = () => {
             packageName: template.packageName || "",
             packageConstructor: template.packageConstructor || "",
             packageType: template.packageType || "",
+            metadata: template.metadata as { introMessage: string; permissions: string[] } || {
+                introMessage: "",
+                permissions: []
+            }
         });
         setIsEditing(true);
         setIsDialogOpen(true);
@@ -146,6 +161,7 @@ export const SecretTemplates = () => {
                             `${formData.packageName}/${formData.packageConstructor}`,
                     variables: formData.variables,
                     botConfig: formData.botConfig,
+                    metadata: formData.metadata
                 }),
             });
 
@@ -165,6 +181,10 @@ export const SecretTemplates = () => {
                 packageName: "",
                 packageConstructor: "",
                 packageType: "",
+                metadata: {
+                    introMessage: "",
+                    permissions: []
+                }
             });
             toast.success(`Template ${isEditing ? 'updated' : 'created'} successfully`);
         } catch (error) {
@@ -271,6 +291,7 @@ export const SecretTemplates = () => {
         generateTemplateId();
     }, []);
 
+    const [newPermission, setNewPermission] = useState("");
 
     if (!user?.email?.includes("@themoondevs.com") && !IN_DEV) {
         return (
@@ -298,6 +319,10 @@ export const SecretTemplates = () => {
                         packageName: "",
                         packageConstructor: "",
                         packageType: "",
+                        metadata: {
+                            introMessage: "",
+                            permissions: []
+                        }
                     });
                     setIsDialogOpen(true);
                 }}>
@@ -605,6 +630,79 @@ export const SecretTemplates = () => {
                                             </Button>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Metadata</Label>
+                                <div className="space-y-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="introMessage">Intro Message</Label>
+                                        <Textarea
+                                            id="introMessage"
+                                            value={formData.metadata.introMessage}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    metadata: {
+                                                        ...formData.metadata,
+                                                        introMessage: e.target.value
+                                                    }
+                                                })
+                                            }
+                                            placeholder="Enter introduction message"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Permissions</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={newPermission}
+                                                onChange={(e) => setNewPermission(e.target.value)}
+                                                placeholder="Enter permission"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (newPermission.trim()) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            metadata: {
+                                                                ...formData.metadata,
+                                                                permissions: [...formData.metadata.permissions, newPermission.trim()]
+                                                            }
+                                                        });
+                                                        setNewPermission("");
+                                                    }
+                                                }}
+                                            >
+                                                Add
+                                            </Button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {formData.metadata.permissions.map((permission, index) => (
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <span className="text-sm">{permission}</span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setFormData({
+                                                                ...formData,
+                                                                metadata: {
+                                                                    ...formData.metadata,
+                                                                    permissions: formData.metadata.permissions.filter((_, i) => i !== index)
+                                                                }
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

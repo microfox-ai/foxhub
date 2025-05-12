@@ -7,19 +7,15 @@ import fs from "fs/promises";
 import { ClientRequest } from "@prisma/client";
 
 export const updateJsonFile = async (
-  templateType: CodeTemplateType,
+  rootDir: string,
   filePath: string,
   mutate: (jsonContent: any) => any,
   clientRequest: ClientRequest
 ) => {
-  const packageJsonPath = path.join(
-    process.cwd(),
-    fetchTemplateDir(templateType),
-    filePath
-  );
+  const packageJsonPath = path.join(process.cwd(), rootDir, filePath);
   const packageJson = await fs.readFile(packageJsonPath, "utf8");
   const packageJsonContent = JSON.parse(packageJson);
-  writeToFileSystemAndUpdateSteps(
+  await writeToFileSystemAndUpdateSteps(
     {
       fileName: filePath,
       filePath: "",

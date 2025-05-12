@@ -84,6 +84,8 @@ export const editFile = (
           sha: currentSha, // Provide SHA if updating an existing file
         });
 
+        // TODO: check for any new added envs that are not in the type:custom, add them there, now.
+
         props.dataStream.writeMessageAnnotation({
           type: "update",
           content: `Successfully updated ${filePath.split("/").pop()}`,

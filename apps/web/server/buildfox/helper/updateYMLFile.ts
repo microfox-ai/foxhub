@@ -20,8 +20,8 @@ export const updateYMLFile = async (
     {
       fileName: filePath,
       filePath: "",
-      fileType: "json",
-      content: dedent`${JSON.stringify(mutate(fileContentParsed))}`,
+      fileType: "yml",
+      content: YAML.stringify(mutate(fileContentParsed)),
     },
     clientRequest
   );

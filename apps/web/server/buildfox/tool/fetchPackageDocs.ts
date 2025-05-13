@@ -56,7 +56,8 @@ export const fetchPackageDocs = (
       const fetchReadMePackages = packages.filter((pkg) =>
         pkg.package.includes("@microfox/")
           ? pkg.package != "@microfox/null"
-          : !EXCLUDED_PACKAGES_LIST.includes(pkg.package)
+          : !EXCLUDED_PACKAGES_LIST.includes(pkg.package) &&
+            !pkg.package.startsWith("@types/")
       );
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {

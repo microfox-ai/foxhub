@@ -1358,15 +1358,13 @@ const PreviewWindow = () => {
                       )}
                       {serverlessLogs && (
                         <div className="flex flex-col items-center justify-between mb-3">
-                          {(response.status >= 200 && response.status < 300) && (
-                            <Textarea
-                              className="w-full mb-3"
-                              value={modificationInstructions}
-                              placeholder="Enter any  modification instructions you want"
-                              onChange={(e) => setModificationInstructions(e.target.value)}
-                              rows={3}
-                            />
-                          )}
+                          <Textarea
+                            className="w-full mb-3"
+                            value={modificationInstructions}
+                            placeholder="Enter any  modification instructions you want"
+                            onChange={(e) => setModificationInstructions(e.target.value)}
+                            rows={3}
+                          />
                           <div className="flex flex-row justify-between w-full gap-2">
                             <Button
                               type="submit"

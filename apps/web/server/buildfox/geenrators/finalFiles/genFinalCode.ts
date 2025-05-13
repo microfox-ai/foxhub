@@ -59,10 +59,10 @@ export const genServerlessFinalCode = async (
           if (addon === codeTemplateAddon.enum.sls_upstash_redis) {
             newPackageJsonContent.dependencies["@upstash/redis"] = "*";
           } else if (addon === codeTemplateAddon.enum.sls_puppeteer_chrome) {
-            newPackageJsonContent.dependencies["superagent"] = "*";
-            newPackageJsonContent.dependencies["@serverless-chrome/lambda"] =
-              "*";
-            newPackageJsonContent.dependencies["puppeteer"] = "*";
+            //newPackageJsonContent.dependencies["puppeteer"] = "*";
+            newPackageJsonContent.dependencies["puppeteer-core"] = "*";
+            //newPackageJsonContent.dependencies["@sparticuz/chromium-min"] = "*";
+            newPackageJsonContent.dependencies["@sparticuz/chromium"] = "*";
           }
         });
         allGenFilesList.forEach((file) => {

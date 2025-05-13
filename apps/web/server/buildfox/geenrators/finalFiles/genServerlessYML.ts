@@ -175,13 +175,50 @@ export const genServerlessYML = async (
     "serverless.yml",
     (config) => {
       let newConfig = { ...config };
-      newConfig.plugins = {
-        ...newConfig.plugins,
-        exclude: [
-          ...(newConfig.plugins?.exclude ?? []),
-          "node_modules/puppeteer/.local-browsers/**",
-        ],
-      };
+      newConfig.provider.timeout = 30;
+      // newConfig.plugins = [
+      //   ...(newConfig.plugins ?? []),
+      //   "serverless-plugin-chrome",
+      // ];
+      // newConfig.package = {
+      //   ...newConfig.package,
+      //   exclude: [
+      //     ...(newConfig.package?.exclude ?? []),
+      //     "node_modules/puppeteer/.local-browsers/**",
+      //   ],
+      // };
+      if (
+        taskInstanceMeta.taskStructure?.templateAddons?.includes(
+          codeTemplateAddon.enum.sls_puppeteer_chrome
+        )
+      ) {
+        newConfig.provider.timeout = 600;
+        //newConfig.provider.memorySize = 1024;
+        newConfig.functions = Object.entries(newConfig.functions).reduce(
+          (acc, [functionName, functionConfig]) => {
+            if (functionName === "getDocs") {
+              return {
+                ...acc,
+                [functionName]: functionConfig,
+              };
+            }
+            // return {
+            //   ...acc,
+            //   [functionName]: functionConfig,
+            // };
+            return {
+              ...acc,
+              [functionName]: {
+                ...(functionConfig as any),
+                layers: [
+                  "arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
+                ],
+              },
+            };
+          },
+          {}
+        );
+      }
       return newConfig;
     },
     clientRequest

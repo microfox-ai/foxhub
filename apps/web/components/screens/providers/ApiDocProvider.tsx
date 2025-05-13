@@ -20,6 +20,7 @@ interface ApiDocContextType {
   endpoints: Endpoint[];
   isLoading: boolean;
   error: Error | null;
+  setError: (error: Error | null) => void;
   selectedEndpoint: string | null;
   selectedMethod: HttpMethod | null;
   setSelectedEndpoint: (path: string) => void;
@@ -116,6 +117,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         endpoints,
         isLoading,
         error,
+        setError,
         selectedEndpoint,
         selectedMethod,
         setSelectedEndpoint,

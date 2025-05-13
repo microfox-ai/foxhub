@@ -161,7 +161,6 @@ const useSecretFormContextInternal = () => {
 
         if (botToEdit.clientRequestIds.length > 0) {
             toast.info("Bot has running jobs. Upadating information in all running jobs.");
-            return;
         }
 
         try {

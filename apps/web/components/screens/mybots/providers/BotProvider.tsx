@@ -77,7 +77,7 @@ const useBotsContextInternal = () => {
   useEffect(() => {
     if (selectedProjectSecretsData?.clientSecrets) {
       setBots(
-        selectedProjectSecretsData.clientSecrets.map(mapClientSecretToBot)
+        selectedProjectSecretsData.clientSecrets?.filter((secret) => secret.templateId == undefined).map(mapClientSecretToBot)
       );
     }
   }, [selectedProjectSecretsData]);

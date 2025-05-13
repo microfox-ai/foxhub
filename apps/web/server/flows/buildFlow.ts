@@ -18,7 +18,8 @@ import {
   MinionTypeType,
 } from "@/components/screens/hooks/convertors";
 import { hotfixFoxRouter } from "../hotfixfox/_hotfixRouter";
-
+import { publishFoxRouter } from "../publishfox/_publishFoxRouter";
+import { installFoxRouter } from "../installfox/_installFoxRouter";
 // hellofox, convertfox, buildfox, deployfox, testfox.
 export const buildFlow: ServerStreamingFunction<
   any,
@@ -115,6 +116,7 @@ export const buildFlow: ServerStreamingFunction<
           "Rebuild-App",
           "Redeploy-App",
           "Casual-Chat",
+          "Publish-App-to-Store",
         ]),
         reason: z.string(),
       }),
@@ -146,6 +148,8 @@ export const buildFlow: ServerStreamingFunction<
         return buildFoxRouter(props);
       case "Redeploy-App":
         return deployFoxRouter(props);
+      case "Publish-App-to-Store":
+        return publishFoxRouter(props);
       default:
         props.dataStream.writeMessageAnnotation({
           type: "error",
@@ -168,6 +172,10 @@ export const buildFlow: ServerStreamingFunction<
         return deployFoxRouter(props);
       case MinionType.HotFixFox:
         return hotfixFoxRouter(props);
+      case MinionType.PublishFox:
+        return publishFoxRouter(props);
+      case MinionType.InstallFox:
+        return installFoxRouter(props);
       default:
         props.dataStream.writeMessageAnnotation({
           type: "error",

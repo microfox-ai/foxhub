@@ -1,8 +1,12 @@
-import { TaskIntegrations } from "@/server/convertfox/types";
-import { fetchTemplateRoot } from "../tool/writeToFile";
+import { CodeTemplateType, TaskIntegrations } from "@/server/convertfox/types";
+import { fetchTemplateDir } from "../tool/writeToFile";
 import path from "path";
 import { readFile } from "fs/promises";
-import { CLIENTSECRETSTATUS } from "@prisma/client";
+import { ClientRequest, CLIENTSECRETSTATUS } from "@prisma/client";
+import { createNewClientSecret } from "@/utils/services/db_functions/secrets_helper";
+import { addClientSecretToClientRequest } from "@/utils/services/db_functions/secrets_helper";
+import { updateClientSecret } from "@/utils/services/db_functions/secrets_helper";
+import { clientSecretExists } from "@/utils/services/db_functions/secrets_helper";
 
 export interface InternalTemplateEnv {
   key: string;
@@ -13,10 +17,10 @@ export interface InternalTemplateEnv {
 }
 
 export const templateEnvsFromTaskIntegrations = async (
-  template_type: "plain" | "upstash" | "mongodb"
+  template_type: CodeTemplateType
 ) => {
   const envsJSON = await readFile(
-    path.join(process.cwd(), fetchTemplateRoot(template_type), "envs.json"),
+    path.join(process.cwd(), fetchTemplateDir(template_type), "envs.json"),
     "utf8"
   );
   const templatedEnvs = JSON.parse(envsJSON);
@@ -24,7 +28,7 @@ export const templateEnvsFromTaskIntegrations = async (
 };
 
 export const getClientSecretsFromTemplateEnvs = async (
-  template_type: "plain" | "upstash" | "mongodb"
+  template_type: CodeTemplateType
 ) => {
   const templatedEnvs = await templateEnvsFromTaskIntegrations(template_type);
   const packageBasedEnvs: Record<
@@ -65,4 +69,37 @@ export const getClientSecretsFromTemplateEnvs = async (
     });
   }
   return templateSecrets;
+};
+
+export const addTemplateSecretsToClientRequest = async (
+  clientRequest: ClientRequest,
+  templateSecrets: any[]
+) => {
+  for (const secret of templateSecrets) {
+    const existingClientSecret = await clientSecretExists(
+      clientRequest.botProjectId,
+      clientRequest.id,
+      secret.type
+    );
+    if (existingClientSecret) {
+      // in case if they are updated
+      await updateClientSecret(existingClientSecret.id, {
+        ...secret,
+      });
+      await addClientSecretToClientRequest(
+        existingClientSecret.id,
+        clientRequest.id
+      );
+    } else {
+      await createNewClientSecret({
+        ...secret,
+        botProjectId: clientRequest.botProjectId,
+        userId: clientRequest.userId,
+        clientRequestIds: [clientRequest.id],
+        clientDeploymentIds: [],
+        botConfig: secret.botConfig ?? [],
+        isHidden: true,
+      });
+    }
+  }
 };

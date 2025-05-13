@@ -1,0 +1,16 @@
+import chromium from "@sparticuz/chromium";
+
+chromium.setGraphicsMode = false;
+
+export const puppeteerLaunchProps = {
+  args: chromium.args,
+  defaultViewport: chromium.defaultViewport,
+  executablePath: await chromium.executablePath(),
+  headless: true,
+};
+
+// Use the above helper function like this:
+
+// import { puppeteerLaunchProps } from "./helpers/chromeScript.js";
+// const browser = await puppeteer.launch(puppeteerLaunchProps);
+// const page = await browser.newPage();

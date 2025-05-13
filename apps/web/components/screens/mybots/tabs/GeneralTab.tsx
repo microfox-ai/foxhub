@@ -71,7 +71,16 @@ const GeneralTab = ({
                 </div>
             )}
 
-            <RequiredKeysForm form={form} requiredKeys={requiredKeys} />
+            {botToEdit?.isHidden ? (
+                <div className="border-t border-neutral-200 pt-10 mt-10">
+                    <h3 className="text-xs flex items-center gap-2 font-medium text-neutral-500 uppercase tracking-widest">
+                        <KeyIcon className="h-4 w-4 mr-2" />
+                        The bot keys are hidden, as this is an internal bot.
+                    </h3>
+                </div>
+            ) : (
+                <RequiredKeysForm form={form} requiredKeys={requiredKeys} />
+            )}
 
             {botToEdit?.defaultConfig && botToEdit?.defaultConfig?.length > 0 && (
                 <div className="border-t border-neutral-200 pt-10 mt-10">

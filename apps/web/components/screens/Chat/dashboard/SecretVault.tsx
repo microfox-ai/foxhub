@@ -163,7 +163,7 @@ export const SecretVault = () => {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg border border-gray-200">
-                                            {isOAuthRequired && (
+                                            {isOAuthRequired && !isApiKeyRequired && (
                                                 <OAuthButton
                                                     packageInfo={platform?.packageInfo}
                                                     secretsData={allSecrets}

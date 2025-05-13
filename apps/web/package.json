@@ -31,6 +31,8 @@
     "@microfox/google-oauth": "^1.0.3",
     "@microfox/google-sdk": "^1.0.2",
     "@microfox/linkedin-oauth": "^1.0.4",
+    "@microfox/reddit-oauth": "^1.1.2",
+    "@microfox/slack-oauth": "^1.0.2",
     "@microfox/slack-web-tiny": "^1.0.3",
     "@microfox/whatsapp-business": "^1.0.2",
     "@mui/material": "^6.4.7",

@@ -157,12 +157,13 @@ export const ProjectDropdown = ({
                         setValue(currentValue === value ? "" : currentValue);
                         setOpen(false);
                         if (selectedProject?.id !== currentValue) {
-                          setSelectedProject(
-                            projects.find(
-                              (_project) => _project.id === currentValue
-                            )
-                          );
-                          router.push(`/project/${currentValue}`);
+                          let _project = projects.find(
+                            (_project) => _project.id === currentValue
+                          )
+                          if (_project) {
+                            setSelectedProject(_project as any);
+                            router.push(`/project/${currentValue}`);
+                          }
                         }
                       }}
                       className={`${value === project.id ? "font-bold" : ""}`}

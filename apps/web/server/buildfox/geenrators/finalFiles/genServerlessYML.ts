@@ -1,20 +1,25 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "../../convertfox/types";
+import {
+  codeTemplateAddon,
+  TaskInstanceMetaType,
+} from "../../../convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { generateText } from "ai";
 import {
-  fetchTemplateRoot,
+  fetchAddonDir,
+  fetchTemplateDir,
   getFilePath,
   writeToFile,
-} from "../tool/writeToFile";
-import { models } from "../../models";
-import { codingSystemPrompt } from "../prompt.coding";
+} from "../../tool/writeToFile";
+import { models } from "../../../models";
+import { codingSystemPrompt } from "../../prompt.coding";
 import dedent from "dedent";
-import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-import { getServiceName } from "../helper/getServiceName";
+import { TokenUsageAnalyticsTracker } from "../../../analytics/helper";
+import { getServiceName } from "../../helper/getServiceName";
 import YAML from "yaml";
 import path from "path";
 import fs from "fs/promises";
+import { updateYMLFile } from "../../helper/updateYMLFile";
 
 // Validation function to check serverless.yml configuration
 const validateServerlessYML = (
@@ -80,7 +85,7 @@ export const genServerlessYML = async (
 ) => {
   const serverlessYmlPath = path.join(
     process.cwd(),
-    fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+    fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
     "serverless.yml"
   );
   const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");
@@ -164,6 +169,60 @@ export const genServerlessYML = async (
   // Read and validate the generated serverless.yml content
   const generatedContent = await fs.readFile(generatedFilePath, "utf8");
   const validation = validateServerlessYML(generatedContent);
+
+  await updateYMLFile(
+    generatedFilePath.replace("/serverless.yml", ""),
+    "serverless.yml",
+    (config) => {
+      let newConfig = { ...config };
+      newConfig.provider.timeout = 30;
+      // newConfig.plugins = [
+      //   ...(newConfig.plugins ?? []),
+      //   "serverless-plugin-chrome",
+      // ];
+      // newConfig.package = {
+      //   ...newConfig.package,
+      //   exclude: [
+      //     ...(newConfig.package?.exclude ?? []),
+      //     "node_modules/puppeteer/.local-browsers/**",
+      //   ],
+      // };
+      if (
+        taskInstanceMeta.taskStructure?.templateAddons?.includes(
+          codeTemplateAddon.enum.sls_puppeteer_chrome
+        )
+      ) {
+        newConfig.provider.timeout = 600;
+        //newConfig.provider.memorySize = 1024;
+        newConfig.functions = Object.entries(newConfig.functions).reduce(
+          (acc, [functionName, functionConfig]) => {
+            if (functionName === "getDocs") {
+              return {
+                ...acc,
+                [functionName]: functionConfig,
+              };
+            }
+            // return {
+            //   ...acc,
+            //   [functionName]: functionConfig,
+            // };
+            return {
+              ...acc,
+              [functionName]: {
+                ...(functionConfig as any),
+                layers: [
+                  "arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
+                ],
+              },
+            };
+          },
+          {}
+        );
+      }
+      return newConfig;
+    },
+    clientRequest
+  );
 
   if (!validation.isValid) {
     console.error("Serverless.yml validation errors:", validation.errors);

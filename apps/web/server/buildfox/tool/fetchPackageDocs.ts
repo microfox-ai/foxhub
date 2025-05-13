@@ -1,7 +1,9 @@
 import {
   fetchGithubJson,
   fetchGithubText,
+  fetchPackageInfo,
   fetchPackageReadme,
+  fetchText,
 } from "@/server/convertfox/gitFetchers";
 import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import { models } from "@/server/models";
@@ -9,6 +11,7 @@ import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateObject, tool } from "ai";
 import { z } from "zod";
+import { semanticFunctionSearch } from "./functionSearch";
 
 async function fetchGithubReadMe(
   owner: string,
@@ -20,6 +23,8 @@ async function fetchGithubReadMe(
   const data = await response.text();
   return data;
 }
+
+const EXCLUDED_PACKAGES_LIST = ["@upstash/redis"];
 /** this should be removed from tools */
 export const fetchPackageDocs = (
   props: StreamingFucntionProps<any, any>,
@@ -28,61 +33,90 @@ export const fetchPackageDocs = (
 ) => {
   return tool({
     description:
-      "Fetch required docs for a package to understand how to use it",
+      "Fetch All related docs for each package to understand how to use it",
     parameters: z.object({
-      microfoxPackages: z
-        .array(z.string())
-        .describe(
-          "The exact names of the microfox packages to fetch docs for (@microfox/core , @microfox/aws-ses etc..)"
-        ),
-      externalPackages: z
-        .array(z.string())
-        .describe(
-          "The exact names of the external packages to fetch docs for (@slack/web-api google-api-nodejs-client, stripe etc..)"
-        ),
+      packages: z.array(
+        z.object({
+          package: z
+            .string()
+            .describe(
+              "The exact names of all the packages to fetch docs for (@microfox/core , @slack/web-api, etc..)"
+            ),
+          readmeSearch: z
+            .string()
+            .describe(
+              "What functions of this package would be needed, to implement the task"
+            )
+            .optional(),
+        })
+      ),
     }),
-    execute: async ({ microfoxPackages, externalPackages }, options) => {
-      console.log("microfoxPackages", microfoxPackages);
-      console.log("externalPackages", externalPackages);
-      const fetchReadMePackages = microfoxPackages.filter(
-        (pkg) => pkg.includes("@microfox/") && pkg != "@microfox/null"
+    execute: async ({ packages }, options) => {
+      console.log("packages", packages);
+      const fetchReadMePackages = packages.filter((pkg) =>
+        pkg.package.includes("@microfox/")
+          ? pkg.package != "@microfox/null"
+          : !EXCLUDED_PACKAGES_LIST.includes(pkg.package) &&
+            !pkg.package.startsWith("@types/")
       );
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;
           props.dataStream.writeMessageAnnotation({
             type: "loading",
-            content: `Fetching documentation for ${pkg}`,
+            content: `Fetching documentation for ${pkg.package} - ${pkg.readmeSearch}`,
           });
           try {
-            let mainReadme = await fetchPackageReadme(pkg);
+            // let thisPlatform =
+            //   taskInstanceMeta?.taskIntegrations?.platforms.find(
+            //     (p) => p.package === pkg
+            //   );
+            let mainReadme = await fetchPackageReadme(pkg.package);
+            let packageInfo = await fetchPackageInfo(pkg.package);
+            let constructorPath;
             readme = mainReadme;
-            // let packageInfo = await fetchGithubJson(
-            //   "microfox-ai",
-            //   "microfox",
-            //   `/refs/heads/main/packages/${pkg.replace("@microfox/", "")}/package-info.json`
-            // );
-            // const isDynamicReadme =
-            //   packageInfo.readme_map?.type === "dynamic_path";
-            // if (isDynamicReadme) {
-            //   const dynamic_setters = packageInfo.readme_map?.dynamic_setters;
-            // TODO: recursively loop until you have all the readmes you need to fetch & attach
-            // for (const setter of dynamic_setters) {
-            //   const selectDynamicSetter = await generateObject({
-            //     model: models.claude35Sonnet,
-            //     schema: z.object({
-            //       scopes: z.array(z.string()),
-            //     }),
-            //     system: `Pick the most relevant scopes that suit the task`,
-            //     prompt: `Select the most relevant readmes for the package ${pkg}`,
-            //   });
-            // }
-            // }
+            if (!pkg.readmeSearch) {
+              console.log("no reason for this platform", pkg);
+              return { readme, package: pkg };
+            }
+            if (packageInfo.readme_map?.all_readmes?.length > 0) {
+              constructorPath = packageInfo.readme_map?.all_readmes.find(
+                (r: any) => r.type === "constructor"
+              )?.path;
+              if (constructorPath) {
+                const constructorReadme = await fetchText(constructorPath);
+                readme += `\n\n${constructorReadme}`;
+                //console.log("constructorReadme", constructorReadme);
+              }
+            }
+
+            const pakageExactName = pkg.package.startsWith("@microfox/")
+              ? pkg.package
+              : `@ext_${pkg.package.replaceAll("/", "#")}`;
+            const microfoxFunction = await semanticFunctionSearch(
+              pakageExactName,
+              pkg.readmeSearch
+            );
+            //console.log("functions", microfoxFunction);
+            for (const _function of microfoxFunction) {
+              if (_function.similarity > 1.5 && readme.length < 10000) {
+                console.log("function pattern hit", _function.function_name);
+                readme += `\n\n${_function.content}`;
+              }
+            }
+            console.log("readme char size", readme.length);
             console.log("fetched readme for ", pkg);
-            return { readme, package: pkg };
+            return { readme, package: pkg.package, reason: pkg.readmeSearch };
           } catch (error) {
             console.error("Error fetching README:", error);
-            return { readme: "", package: pkg };
+            return {
+              readme:
+                "No readme found for this package " +
+                pkg.package +
+                ", Use your own knowledge.",
+              package: pkg.package,
+              reason: pkg.readmeSearch,
+            };
           }
         })
       );
@@ -93,18 +127,7 @@ export const fetchPackageDocs = (
         readmes.filter((r) => r.readme === "").map((r) => r.package)
       );
 
-      return readmes.concat(
-        microfoxPackages
-          .filter((pkg) => !pkg.includes("@microfox/"))
-          .map((pkg) => ({
-            readme: " No readme found for this package " + pkg,
-            package: pkg,
-          }))
-      );
-      // find my package, get some initial understanding of the package
-      // accordingly fetch the readme that is most relevant for the integration
-
-      // TODO: and then pass chunks of it to the LLM to understand the package
+      return readmes;
     },
   });
 };

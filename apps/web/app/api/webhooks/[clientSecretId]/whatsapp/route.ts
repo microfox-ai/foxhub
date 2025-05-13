@@ -197,6 +197,7 @@ export async function POST(
       phoneNumberId: businessPhoneNumberId,
       businessAccountId: businessAccountId,
       accessToken: businessAccessToken,
+      version: "v22.0",
     });
 
     const messageText = message?.type === "text" ? message?.text?.body : "";

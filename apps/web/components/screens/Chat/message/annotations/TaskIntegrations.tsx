@@ -27,11 +27,13 @@ interface UIAnnotation {
 interface TaskIntegrationsProps {
     uiAnnotation: UIAnnotation;
     idx: number;
+    hideMetaInfo?: boolean;
 }
 
 export const TaskIntegrations = ({
     uiAnnotation,
     idx,
+    hideMetaInfo = false,
 }: TaskIntegrationsProps) => {
     const platforms = uiAnnotation.object.platforms as TaskIntegrationPlatform[];
     const params = useParams<{
@@ -169,20 +171,22 @@ export const TaskIntegrations = ({
     return (
         <motion.div
             key={uiAnnotation.objectType + idx}
-            className="flex flex-col gap-6 p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg"
+            className={`flex flex-col gap-6  ${hideMetaInfo ? "" : "p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg"}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
         >
-            <div className="">
-                <h3 className="text-lg font-semibold text-gray-900">
-                    Configure Integration Settings
-                </h3>
-                <p className="text-sm text-gray-500">
-                    Please configure the required integrations to continue
-                </p>
-            </div>
+            {!hideMetaInfo && (
+                <div className="">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        Configure Integration Settings
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                        Please configure the required integrations to continue
+                    </p>
+                </div>
+            )}
 
             <div className="grid gap-4">
                 {platforms
@@ -212,7 +216,7 @@ export const TaskIntegrations = ({
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 rounded-lg border border-gray-200">
-                                                {isOAuthRequired && (
+                                                {isOAuthRequired && !isApiKeyRequired && (
                                                     <OAuthButton
                                                         packageInfo={packageInfo}
                                                         secretsData={secretsData}
@@ -239,20 +243,21 @@ export const TaskIntegrations = ({
                     })}
             </div>
 
-            <ActionButtons
-                buttons={uiAnnotation.buttons}
-                areKeysRequired={platforms.some(
-                    (p) =>
-                        !p.optional &&
-                        (p.packageInfo?.constructors.some(
-                            (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
-                        ) ||
-                            p.packageInfo?.constructors.some(
-                                (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
-                            ))
-                )}
-                areKeysFilled={areKeysFilled}
-            />
+            {uiAnnotation.buttons && uiAnnotation.buttons.length > 0 &&
+                (<ActionButtons
+                    buttons={uiAnnotation.buttons}
+                    areKeysRequired={platforms.some(
+                        (p) =>
+                            !p.optional &&
+                            (p.packageInfo?.constructors.some(
+                                (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
+                            ) ||
+                                p.packageInfo?.constructors.some(
+                                    (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
+                                ))
+                    )}
+                    areKeysFilled={areKeysFilled}
+                />)}
         </motion.div>
     );
 }; 

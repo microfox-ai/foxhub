@@ -18,55 +18,24 @@ import { BotProject, REQUESTSTATUS } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import { ClientRequest } from "@prisma/client";
-import { MinionFlow } from "../hooks/convertors";
+import { MinionFlow, MinionFlowType } from "../hooks/convertors";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
 }
-interface ClientProjectContextType {
-  clientRequestId: string | null;
-  projectId: string | null;
-  selectedProject: BotProjectWithRequests | null;
-  selectedRequest: ClientRequest | null;
-  projects: BotProjectWithRequests[] | any[];
-  isLoading: boolean;
-  createNewEmptyRequest: () => Promise<void>;
-  setSelectedProject: (project: BotProjectWithRequests | any) => void;
-  setSelectedRequest: Dispatch<SetStateAction<ClientRequest | null>>;
-  selectedProjectClientRequests: ClientRequest[];
-  selectedProjectClientRequestsLoading: boolean;
-  submitAnnotations: { type: "body", key: string, value: any }[];
-  setSubmitAnnotations: Dispatch<SetStateAction<{ type: "body", key: string, value: any }[]>>;
-}
 
-const ClientProjectContext = createContext<
-  ClientProjectContextType | undefined
->(undefined);
+type ClientProjectContextType = ReturnType<typeof useClientProjectContext>;
 
-export function useClientProject() {
-  const context = useContext(ClientProjectContext);
-  if (context === undefined) {
-    throw new Error(
-      "useClientProject must be used within a ClientProjectProvider"
-    );
-  }
-  return context;
-}
+const ClientProjectContext = createContext<ClientProjectContextType | undefined>(undefined);
 
-interface ClientProjectProviderProps {
-  children: ReactNode;
-}
-
-export function ClientProjectProvider({
-  children,
-}: ClientProjectProviderProps) {
+function useClientProjectContext() {
   const [selectedProject, setSelectedProject] = useState<BotProjectWithRequests | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(null);
   const { user } = useAuth();
   const router = useRouter();
 
   const [submitAnnotations, setSubmitAnnotations] = useState<{ type: "body", key: string, value: any }[]>([]);
-
+  const [autoSubmit, setAutoSubmit] = useState<string | null>(null);
   const params = useParams<{
     project_id?: string;
     request_id?: string;
@@ -78,9 +47,9 @@ export function ClientProjectProvider({
     data: projects = [],
     error,
     isLoading,
-  } = useSWR(
+  } = useSWR<BotProjectWithRequests[]>(
     user?.id ? `/api/bot-project?userId=${user?.id}` : null,
-    async (url) => await fetch(url).then((res) => res.json())
+    async (url: string) => await fetch(url).then((res) => res.json())
   );
 
   const {
@@ -89,7 +58,7 @@ export function ClientProjectProvider({
     isLoading: selectedProjectClientRequestsLoading,
   } = useSWR(
     selectedProject?.id ? `/api/client-requests?botProjectId=${selectedProject?.id}` : null,
-    async (url) => await fetch(url).then((res) => res.json())
+    async (url: string) => await fetch(url).then((res) => res.json())
   );
 
   useEffect(() => {
@@ -108,17 +77,9 @@ export function ClientProjectProvider({
         }
       }
     }
-    //else {
-    // const personalSpace = projects.find(
-    //   (p: any) => p.name === "Personal Space"
-    // );
-    // if (personalSpace) {
-    //   setSelectedProject(personalSpace);
-    // }
-    //}
   }, [projectParamId, requestParamId, projects]);
 
-  const createNewEmptyRequest = async () => {
+  const createNewEmptyRequest = async (flow?: MinionFlowType, annotations?: any[], _autoSubmit?: string) => {
     if (!user || !selectedProject) {
       toast.error("User or project not found");
       return;
@@ -141,10 +102,10 @@ export function ClientProjectProvider({
       PortalSdk.postData(`/api/client-requests/create-empty`, {
         userId: user.id,
         botProjectId: selectedProject.id,
-        MinionFlow: MinionFlow.BuildFlow
+        minionFlow: flow ?? MinionFlow.BuildFlow
       }),
       {
-        loading: "Creating new request...",
+        loading: "Starting new session...",
         success: (newRequest) => {
           analytics.track("Client Request Created From Request Page", {
             userId: user.id,
@@ -154,16 +115,18 @@ export function ClientProjectProvider({
             timestamp: new Date().toISOString(),
           });
 
+          setSubmitAnnotations(annotations ?? []);
+          setAutoSubmit(_autoSubmit ?? null);
           setSelectedRequest(newRequest);
           router.push(`/project/${selectedProject.id}/request/${newRequest.id}`);
-          return "Request created successfully!";
+          return "Session created successfully!";
         },
-        error: "Failed to create request. Please try again."
+        error: "Failed to create session. Please try again."
       }
     );
   };
 
-  const value = {
+  return {
     clientRequestId: requestParamId ?? null,
     projectId: projectParamId ?? null,
     selectedProject,
@@ -173,12 +136,33 @@ export function ClientProjectProvider({
     createNewEmptyRequest,
     setSelectedProject,
     setSelectedRequest,
-    selectedProjectClientRequests: selectedProjectClientRequests?.data ?? [],
+    selectedProjectClientRequests: (selectedProjectClientRequests?.data ?? []) as ClientRequest[],
     selectedProjectClientRequestsLoading,
     submitAnnotations,
-    setSubmitAnnotations
+    setSubmitAnnotations,
+    autoSubmit,
+    setAutoSubmit
   };
+}
 
+export function useClientProject() {
+  const context = useContext(ClientProjectContext);
+  if (context === undefined) {
+    throw new Error(
+      "useClientProject must be used within a ClientProjectProvider"
+    );
+  }
+  return context;
+}
+
+interface ClientProjectProviderProps {
+  children: ReactNode;
+}
+
+export function ClientProjectProvider({
+  children,
+}: ClientProjectProviderProps) {
+  const value = useClientProjectContext();
   return (
     <ClientProjectContext.Provider value={value}>
       {children}

@@ -36,7 +36,9 @@ const ResizableSidebar = () => {
         <Sidebar
           selectedProject={selectedProject}
           onSelectRequest={setSelectedRequest}
-          onNewRequest={createNewEmptyRequest}
+          onNewRequest={() => {
+            createNewEmptyRequest();
+          }}
           onOpenConfig={(project: any) => { }}
           isCollapsed={isLeftCollapsed}
           onCollapse={handleLeftCollapse}

@@ -47,6 +47,7 @@ export const useDeployStatus = ({
         (url: string) => fetch(url).then((res) => res.json()),
         {
             refreshInterval: pingerInterval,
+            revalidateOnMount: true
         }
     );
 

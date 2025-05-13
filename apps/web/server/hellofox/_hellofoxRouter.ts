@@ -94,7 +94,6 @@ export const hellofoxRouter: ServerStreamingFunction<
     `,
   }); // 4. Query type (query, modification, answer, confirmation)
 
-  //console.log("classification", classification);
   dataStream.writeMessageAnnotation({
     type: "metadata",
     object: classification,

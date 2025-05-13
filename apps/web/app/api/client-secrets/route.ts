@@ -29,9 +29,8 @@ export async function POST(req: NextRequest) {
       botConfig,
       updateDeployments,
       isHidden,
+      templateId,
     } = body;
-
-    console.log("body", body);
 
     if (!botProjectId || !userId || !variables) {
       return NextResponse.json(
@@ -53,6 +52,7 @@ export async function POST(req: NextRequest) {
       packageType,
       botConfig,
       isHidden: isHidden ?? false,
+      templateId,
     });
 
     if (addToClientRequest) {
@@ -87,6 +87,7 @@ export async function GET(req: NextRequest) {
     const withPackageInfos = searchParams.get("withPackageInfos");
     const packageTypes = searchParams.get("packageTypes");
     const status = searchParams.get("status");
+    const includeTemplateSecrets = searchParams.get("includeTemplateSecrets");
 
     const whereClause = {
       ...(id ? { id } : {}),
@@ -106,7 +107,32 @@ export async function GET(req: NextRequest) {
     const clientSecrets = await prisma.clientSecret.findMany({
       where: whereClause,
     });
-    const finalClientSecrets = [];
+    let finalClientSecrets = [];
+    let finalTemplateSecrets = [];
+
+    if (includeTemplateSecrets === "true") {
+      const templateSecrets = await prisma.clientSecretTemplate.findMany({
+        where: {
+          packageName,
+        },
+      });
+      //console.log("templateSecrets", templateSecrets);
+      for (const templateSecret of templateSecrets) {
+        let packageInfo = null;
+        if (
+          withPackageInfos === "true" &&
+          templateSecret.packageName &&
+          (templateSecret.packageType === ClientSecretPackageType.APIKEY ||
+            templateSecret.packageType === ClientSecretPackageType.OAUTH2)
+        ) {
+          packageInfo = await fetchPackageInfo(templateSecret.packageName);
+        }
+        finalTemplateSecrets.push({
+          ...templateSecret,
+          packageInfo,
+        });
+      }
+    }
 
     for (const clientSecret of clientSecrets) {
       let packageInfo = null;
@@ -125,7 +151,10 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { clientSecrets: finalClientSecrets },
+      {
+        clientSecrets: finalClientSecrets,
+        clientSecretTemplates: finalTemplateSecrets,
+      },
       { status: 200 }
     );
   } catch (error) {

@@ -2,24 +2,19 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import {
-  MICROFOX_LOGO,
-  MySlackChannels,
-  slackBotSdk,
-} from "@/utils/services/slackBotSdk";
-import { DEPLOY_STAGE } from "@prisma/client";
 import {
   defaultCallbackResultBody,
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
 import { generateObject, generateText } from "ai";
-import { models } from "../models";
 import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-import { codingSystemPrompt } from "../buildfox/prompt.coding";
+import { models } from "../models";
 import { editFile, readFile } from "./tool/editFile";
 
+// TODO: add support for modifying an unkonwn file not passed in the files list,
+// for example, changing schedule means modifying the serverless.yml file
+// it also has to update the taskInstanceMeta
 export const hotfixFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -121,6 +116,10 @@ export const hotfixFoxRouter: ServerStreamingFunction<
         system: `
         You are a highly skilled fullstack developer with extensive knoledge in typescript, nodejs, etc...
 
+        Ground rules:
+        - make sure the imports follow the '.js' extension like this for imports from other folders:
+        import { exampleHelper } from '../helpers/fileName.js'
+        
 
         Tool use:
         - to edit the code, use the following tools:
@@ -173,6 +172,7 @@ export const hotfixFoxRouter: ServerStreamingFunction<
     }
   }
 
+  // TODO: check for any new added envs that in the type:custom, add not yet filled, ask to be filled, now
   props.dataStream.writeMessageAnnotation({
     type: "ui",
     objectType: "hotFixes",

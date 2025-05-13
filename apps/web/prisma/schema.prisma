@@ -28,6 +28,7 @@ model User {
   onboardingData     Json?
   projectPermissions ProjectPermission[]
   isBetaAccess       Boolean?
+  shardPages         ShardPage[]
 }
 
 model FoxTemplate {
@@ -176,6 +177,7 @@ model ClientSecret {
   packageName         String?
   packageType         String?
   isHidden            Boolean?
+  templateId          String?
   botProject          BotProject         @relation(fields: [botProjectId], references: [id])
 }
 
@@ -185,6 +187,7 @@ model ClientSecretTemplate {
   templateType        String?            // free, markup, testing, official
   name                String
   type                String
+  imageUrl            String?
   variables           Json[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -192,6 +195,7 @@ model ClientSecretTemplate {
   packageConstructor  String?
   packageName         String?
   packageType         String?
+  metadata            Json?
 }
 
 model ClientDeployment {
@@ -282,4 +286,32 @@ enum PROJECTROLE {
 enum PROJECT_ACCESS_TYPE {
   READ
   WRITE
+}
+
+// ------- StorePresence ---------
+
+model ShardPage {
+  id             String   @id @default(uuid())
+  taskInstanceMeta Json
+  status         SHARD_PAGE_STATUS @default(UNPUBLISHED)
+  category       String[]
+  clientRequestMeta Json
+  repoDir        String
+  title          String?
+  description    String?
+  video_url      String?
+  thumbnail_url  String?
+  banner_url     String?
+  version        String
+  versionNumber  String
+  creatorId      String
+  clientRequestId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  creator        User     @relation(fields: [creatorId], references: [id])
+}
+
+enum SHARD_PAGE_STATUS {
+  UNPUBLISHED
+  PUBLISHED
 }

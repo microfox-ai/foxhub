@@ -1,5 +1,9 @@
 import dedent from "dedent";
-import { TaskInstanceMetaType } from "../convertfox/types";
+import {
+  codeTemplateType,
+  CodeTemplateType,
+  TaskInstanceMetaType,
+} from "../convertfox/types";
 import { TaskStructure } from "../convertfox/types";
 import path from "path";
 import {
@@ -7,6 +11,7 @@ import {
   INTERNAL_TEMPLATE_UPSTASH_ROOT,
   INTERNAL_TEMPLATE_MONGODB_ROOT,
   readAllGenFilesList,
+  fetchTemplateDir,
 } from "./tool/writeToFile";
 import fs from "fs/promises";
 import { ClientRequest } from "@prisma/client";
@@ -14,7 +19,10 @@ import { envsFromTaskIntegrations } from "./helper/coreEnvsFromTaskIntegrations"
 import { templateEnvsFromTaskIntegrations } from "./helper/templateEnvsFromTaskIntegrations";
 import { prisma } from "@/prisma/prisma";
 import { ClientSecretVariable } from "../types";
-
+import { baseFilePrompt } from "./prompts/basePrompt";
+import { packagesPrompt } from "./prompts/packagesPrompt";
+import { envsPrompt } from "./prompts/envsPrompt";
+import { helperFilesContext } from "./prompts/helperFilesContext";
 export const codingSystemPrompt = (
   step: "backend" | "frontend",
   writingCoreFunctions: boolean = false
@@ -65,7 +73,7 @@ export const codingSystemPrompt = (
       writingCoreFunctions
         ? `
     - to fetch the docs on a package, use the following tool:
-      - fetch_package_docs (only supports @microfox packages for now)
+      - fetch_package_docs
     `
         : ""
     }
@@ -73,7 +81,6 @@ export const codingSystemPrompt = (
     A few things about your workflow:
     - You first carefully analyse the requirements, and then plan what needs to be done.
     - You then critisize your plan, and then refine it to this specific task & keep maximum code in a single file.
-    - You always try to use @microfox/ packages, unless that package is not available.
     - If you know a package is going to be used, then you can fetch the docs on it using the fetch_package_docs tool.
     - If a package doc is not available, then you can use your own knowledge to integrate said platform
     - You then write the code for the task
@@ -121,15 +128,10 @@ export const codingFunctionPrompt = async ({
   taskInstanceMeta: TaskInstanceMetaType;
   function?: TaskStructure["lambdaFunctions"][0];
   cron?: TaskStructure["cronJobs"][0];
-  template_type: "plain" | "upstash" | "mongodb";
+  template_type: CodeTemplateType;
   clientRequest?: ClientRequest;
 }) => {
-  const rootDir =
-    template_type === "plain"
-      ? INTERNAL_TEMPLATE_PLAIN_ROOT
-      : template_type === "upstash"
-        ? INTERNAL_TEMPLATE_UPSTASH_ROOT
-        : INTERNAL_TEMPLATE_MONGODB_ROOT;
+  const rootDir = fetchTemplateDir(template_type);
 
   const lambdaExample = await fs.readFile(
     path.join(process.cwd(), rootDir, "function.txt"),
@@ -140,155 +142,33 @@ export const codingFunctionPrompt = async ({
     "utf8"
   );
 
-  // TODO: for redis, create a standard pattern just like prisma
-  let writtenHelperFilesContent: string | null = null;
-  let previousEnvs: string[] = [];
-  if (clientRequest && template_type != "plain") {
-    const files = await readAllGenFilesList(clientRequest);
-    previousEnvs = previousEnvs.concat(
-      files.flatMap((file) => (file.meta as any).envVariablesUsed)
-    );
-    const redisFile = files.filter((file) =>
-      file.filePath.includes("/helpers/redis")
-    );
-    if (redisFile.length > 0) {
-      const redisFilePath = redisFile[0]?.filePath;
-      if (redisFilePath) {
-        writtenHelperFilesContent = await fs.readFile(
-          path.join(process.cwd(), redisFilePath),
-          "utf8"
-        );
-      }
-    }
-  }
+  let files = await readAllGenFilesList(clientRequest!);
 
-  const templateEnvs = await templateEnvsFromTaskIntegrations(template_type);
-  let coreEnvs: string[] = [];
-  const requiredEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(
-        taskInstanceMeta.taskIntegrations,
-        "requiredKeys"
-      )
-    : [];
-  coreEnvs = coreEnvs.concat(requiredEnvs);
-  const oauthEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(
-        taskInstanceMeta.taskIntegrations,
-        "internalKeys"
-      )
-    : [];
-  coreEnvs = coreEnvs.concat(oauthEnvs);
-  let configEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "botConfig")
-    : [];
-  if (
-    configEnvs.length > 0 &&
-    clientRequest &&
-    clientRequest?.mentionedClientSecretIds?.length > 0
-  ) {
-    const clientSecrets = await prisma.clientSecret.findMany({
-      where: {
-        id: {
-          in: clientRequest?.mentionedClientSecretIds,
-        },
-      },
-    });
-    const filletBotConfig: ClientSecretVariable[] = clientSecrets.flatMap(
-      (secret) => secret.botConfig
-    ) as any[];
-    console.log("filled botconfigs", filletBotConfig);
-    configEnvs = configEnvs.filter(
-      (env) =>
-        filletBotConfig.find(
-          (c) => c && c.key === env && c.value != undefined && c.value != null
-        ) != undefined
-    );
-    console.log("configEnvs filtered", configEnvs);
-    coreEnvs = coreEnvs.concat(configEnvs);
+  if (!clientRequest) {
+    return ``;
   }
-
-  previousEnvs = previousEnvs.filter(
-    (env) => !templateEnvs.includes(env) && !coreEnvs.includes(env)
-  );
 
   //console.log("templateEnvs", templateEnvs);
   //console.log("coreEnvs", coreEnvs);
 
   return dedent`You are requested to write a serverless function for the following requirement:
-            Task Summary: ${taskInstanceMeta?.taskInfo?.summary}
             
-            ${
-              type === "lambda"
-                ? `Function:
-            - Name: ${_function?.name}
-            - Description: ${_function?.description}
-            - Brief: ${_function?.brief}
-            Endpoint Details:
-            - Path: ${_function?.path}
-            - Method: ${_function?.method}`
-                : `Cron Job:
-            - Name: ${_cron?.name}
-            - Description & Schedule: ${_cron?.description}
-            - Result of the cron job: ${_cron?.endResult}
-            - Cron Expression: ${_cron?.cronExpression}
-            - Brief: ${_cron?.brief}
-            `
-            }
+            Task Summary: ${taskInstanceMeta?.taskInfo?.summary}
+            ${baseFilePrompt(type, type === "lambda" ? _function : _cron)}
 
-            The following packages are installed in the project:
-            - ${taskInstanceMeta?.taskIntegrations?.platforms
-              ?.filter((platform) => platform?.package != "@microfox/null")
-              .map((platform) => platform?.package)
-              .join("\n - ")}
-            ${
-              template_type === "mongodb"
-                ? "- @mongoose"
-                : template_type === "upstash"
-                  ? "- @upstash/redis"
-                  : ""
-            }
-            - dotenv
-            - @types/aws-lambda
+            ${packagesPrompt(taskInstanceMeta)}
 
-            The following env variables are already present in the project:
-            ${templateEnvs.map((env: any) => `- ${env.key}`).join("\n")}
-            ${coreEnvs.map((env) => `- ${env}`).join("\n")}
-            ${previousEnvs.map((env) => `- ${env}`).join("\n")}
+            ${await envsPrompt(clientRequest, taskInstanceMeta, files, type)}
 
-            ${
-              /** TODO: this requires improving because cron would still add new variables, as it doesnt have a way to collect them,  so use redis as env var storage across all functions */
-              type === "cron"
-                ? "if new env variables are needed, other than theese, you can add them to the project."
-                : "if new variables are needed, other than theese, you can either add new env variables in the same format as above, or use input parameters or request body from the incoming aws event object to get theese variables from user side."
-            }
-            only create/use process.env variables, if absolutely needed security wise, otherwise use input parameters or request body from the event object to get theese variables from user side.
-
-            ${
-              writtenHelperFilesContent
-                ? `The following redis helper functions are exported from helpers/redis.js, make use of them if needed:
-            ${writtenHelperFilesContent}
-            `
-                : ""
-            }
-            ${
-              template_type === "upstash"
-                ? `
-            - If any extra redis saving is needed, make sure you null check the variables first, before saving them to redis.
-            `
-                : ""
-            }
-            make sure the imports follow the '.js' extension like this for imports from other folders:
-            import { exampleHelper } from '../helpers/exampleHelper.js'
+            ${await helperFilesContext(clientRequest, taskInstanceMeta, files)}
 
             Requirements:
             - Use TypeScript
             - Implement proper error handling
             ${
-              template_type === "mongodb"
-                ? "- Use Mongoose client (import mongoose from 'mongoose') for database operations"
-                : template_type === "upstash"
-                  ? "use @upstash/redis for state management - only if data needs to be persisted acrosss function calls"
-                  : ""
+              template_type === codeTemplateType.enum.upstash_sls
+                ? "use @upstash/redis for state management - only if data needs to be persisted acrosss function calls"
+                : ""
             }
             - Follow Serverless best practices
             - Add proper Docs
@@ -304,7 +184,7 @@ export const codingFunctionPrompt = async ({
           
             The code should be created in the src/functions directory.
             Make sure to use the necessary imports from the packages when needed.
-            Always call fetch_package_docs for the packages that start with @microfox to better understand how to use them.
+            Always call fetch_package_docs for all the packages to better understand how to use them.
             Use named exports for the function.
             Also export the doc file for the function.
             Only use the packages that are listed above in the project.

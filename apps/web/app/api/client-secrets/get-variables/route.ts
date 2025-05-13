@@ -3,8 +3,6 @@ import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
-// TODO: also insert UPSTASH envs if this taskInstanceMeta.taskStructure.templateType === "upstash"
-// TODO: also insert MONGODB envs if this taskInstanceMeta.taskStructure.templateType === "mongodb"
 export async function GET(req: NextRequest) {
   try {
     // Check for the microfox-api-key in the request headers

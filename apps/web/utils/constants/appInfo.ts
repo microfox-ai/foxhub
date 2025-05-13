@@ -24,6 +24,11 @@ export const APP_BASE_FOR_SHARD =
   IN_DEV
     ? "https://staging.microfox.app"
     : "https://microfox.app";
+export const IN_STAGING =
+  process.env.NEXT_PUBLIC_APP_BASE_URL === "https://staging.microfox.app" ||
+  IN_DEV
+    ? true
+    : false;
 
 export const PUBLIC_ROUTES = [
   "/",

@@ -20,13 +20,22 @@ export const taskIntegrationPlatform = z.object({
     .default(false)
     .describe("Whether this platform is optional"),
   // TODO: this is better done post the platforms are created.
-  preferredAuth: z
-    .enum(["oauth", "apiKey"])
+  // preferredAuth: z
+  //   .enum(["oauth", "apiKey", "none"])
+  //   .describe(
+  //     "The preferred auth method for the platform based on the given task"
+  //   )
+  //   .optional(),
+  package: z.string().describe("The package name of the platform").optional(),
+  functionSearch: z
+    .string()
     .describe(
-      "The preferred auth method for the platform based on the given task"
+      "What functions of this package would be needed, and for what reason"
     )
     .optional(),
-  package: z.string().describe("The package name of the platform").optional(),
+  scopes: z
+    .array(z.string())
+    .describe("The scopes needed for this particular task."),
   packageInfo: z.any().optional(),
 });
 export type TaskIntegrationPlatform = z.infer<typeof taskIntegrationPlatform>;
@@ -67,10 +76,20 @@ export const taskRequiredInfo = z.object({
 });
 export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
+export const codeTemplateType = z.enum(["plain_sls", "upstash_sls"]);
+export type CodeTemplateType = z.infer<typeof codeTemplateType>;
+
+export const codeTemplateAddon = z.enum([
+  "sls_puppeteer_chrome",
+  "sls_upstash_redis",
+]);
+export type CodeTemplateAddon = z.infer<typeof codeTemplateAddon>;
 export const taskStructure = z.object({
-  templateType: z
-    .enum(["plain", "upstash"])
-    .describe("The type of template to use"),
+  templateType: codeTemplateType.describe("The type of template to use"),
+  templateAddons: z
+    .array(codeTemplateAddon)
+    .optional()
+    .describe("The addons to use"),
   dbSchemas: z
     .array(
       z.object({
@@ -92,11 +111,13 @@ export const taskStructure = z.object({
           .describe(
             "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
           ),
-        description: z.string().describe("What does this lambda function do"),
+        description: z
+          .string()
+          .describe("What does this lambda function do in a single line"),
         brief: z
           .string()
           .describe(
-            "A brief step by step description of what does this lambda function does"
+            "A complete step by step description of what does this lambda function code do"
           ),
         endResult: z
           .string()
@@ -107,41 +128,47 @@ export const taskStructure = z.object({
         path: z.string().describe("The path of the end point"),
         packagesUsed: z
           .array(z.string())
-          .describe("The packages used in this lambda function"),
+          .describe("All packages that might be used in this lambda function"),
       })
     )
     .describe("An array of lambda functions that are needed for the task"),
   cronJobs: z.array(
-    z.object({
-      name: z.string().describe("The name of this cron job"),
-      brief: z
-        .string()
-        .describe(
-          "A brief step by step description of what does this lambda function does"
-        ),
-      description: z.string().describe("What does this cron job do"),
-      endResult: z.string().describe("What is the end result of this cron job"),
-      endPoint: z.object({
-        url: z.string().describe("The url of the end point"),
-        method: z
-          .enum(["GET", "POST", "PUT", "DELETE"])
-          .describe("The method of the end point"),
-        body: z.any().describe("The body of the end point"),
-        headers: z.any().describe("The headers of the end point"),
-      }),
-      isolated: z
-        .boolean()
-        .default(false)
-        .describe(
-          "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
-        ),
-      cronExpression: z
-        .string()
-        .describe("The cron expression of the cron job"),
-      packagesUsed: z
-        .array(z.string())
-        .describe("The packages used in this cron job"),
-    })
+    z
+      .object({
+        name: z.string().describe("The name of this cron job"),
+        brief: z
+          .string()
+          .describe(
+            "A complete step by step description of what does this cron job code do"
+          ),
+        description: z
+          .string()
+          .describe("What does this cron job do in a single line"),
+        endResult: z
+          .string()
+          .describe("What is the end result of this cron job"),
+        // endPoint: z.object({
+        //   url: z.string().describe("The url of the end point"),
+        //   method: z
+        //     .enum(["GET", "POST", "PUT", "DELETE"])
+        //     .describe("The method of the end point"),
+        //   body: z.any().describe("The body of the end point"),
+        //   headers: z.any().describe("The headers of the end point"),
+        // }),
+        isolated: z
+          .boolean()
+          .default(false)
+          .describe(
+            "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
+          ),
+        cronExpression: z
+          .string()
+          .describe("The cron expression of the cron job"),
+        packagesUsed: z
+          .array(z.string())
+          .describe("All packages that might be used in this cron job"),
+      })
+      .describe("The cron jobs that are needed for the task")
   ),
   // userInteractions: z.array(
   //   z
@@ -178,6 +205,7 @@ export const buildingStep = z.object({
   endTime: z.string(),
   envVariablesUsed: z.array(z.string()).optional(),
   packagesUsed: z.array(z.string()).optional(),
+  envsToCollect: z.array(z.any()).optional(),
 });
 export type BuildingStep = z.infer<typeof buildingStep>;
 

@@ -58,8 +58,9 @@ const BotForm = ({ mode }: BotFormProps) => {
 
   const selectedConstructor =
     mode === "create"
+      //TODO: make this selectable in UI instead of auto setting to 0 index
       ? packageInfo?.constructors[0]
-      : botToEdit?.packageInfo?.constructors[0];
+      : botToEdit?.packageInfo?.constructors?.find((constructor: Constructor) => constructor.name === botToEdit?.packageConstructor);
 
   useEffect(() => {
     if (packageInfo) {

@@ -77,18 +77,23 @@ const AuthPopupWindow = async ({
       return <div>Authorization Failed!</div>;
     }
 
+    const accessToken =
+      "accessToken" in tokenResponse ? tokenResponse.accessToken : tokenResponse.access_token;
+    const refreshToken =
+      "refreshToken" in tokenResponse ? tokenResponse.refreshToken : null;
+
     const keyValuePairs = (clientSecret.variables as any[] as ClientSecretVariable[]).map((variable: ClientSecretVariable) => {
-      if ((variable.key as string).includes("_ACCESS_TOKEN")) {
+      if ((variable.key as string).includes("_ACCESS_TOKEN") || (variable.key as string).includes("_BOT_TOKEN") || (variable.key as string).includes("_OAUTH_TOKEN")) {
         return {
           key: variable.key,
-          value: tokenResponse.accessToken,
+          value: accessToken,
           isOptional: false,
         };
       }
-      if ((variable.key as string).includes("_REFRESH_TOKEN")) {
+      if ((variable.key as string).includes("_REFRESH_TOKEN") && refreshToken) {
         return {
           key: variable.key,
-          value: tokenResponse.refreshToken,
+          value: refreshToken,
           isOptional: false,
         };
       }

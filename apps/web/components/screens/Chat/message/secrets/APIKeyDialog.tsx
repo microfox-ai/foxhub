@@ -106,7 +106,7 @@ export const APIKeyDialog = ({
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4 pl-2 pb-6 min-h-[200px] max-h-[400px] overflow-y-auto scrollbar-thin">
+            <div className="space-y-4 pl-2 min-h-[200px] max-h-[400px] overflow-y-auto scrollbar-thin">
               <KeyForms
                 packageInfo={packageInfo}
                 packageName={packageName}

@@ -1,7 +1,7 @@
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
-import { TaskInstanceMetaType } from "../../convertfox/types";
+import { codeTemplateType, TaskInstanceMetaType } from "../../convertfox/types";
 import { models } from "../../models";
 import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { writeToFile } from "../tool/writeToFile";
@@ -27,7 +27,9 @@ export const genLambdaCode = async (
         type: "lambda",
         taskInstanceMeta,
         function: _function,
-        template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
+        template_type:
+          taskInstanceMeta.taskStructure?.templateType ??
+          codeTemplateType.enum.plain_sls,
         clientRequest,
       });
       console.log("generating lambda function", _function.name);
@@ -37,6 +39,7 @@ export const genLambdaCode = async (
         prompt,
         toolChoice: "auto",
         maxSteps: 2,
+        maxRetries: 5,
         maxTokens: 5000,
         tools: {
           write_to_file: writeToFile(

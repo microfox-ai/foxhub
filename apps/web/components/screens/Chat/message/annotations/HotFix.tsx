@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { ClientSecret } from "@prisma/client";
 import { HelpCircle, Key, Plus, CheckCircle2, FileWarningIcon, EditIcon, ChevronDown } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -45,12 +45,26 @@ export const HotFixes = ({ uiAnnotation, idx }: HotFixesProps) => {
     const annotation = uiAnnotation as any;
     const filesFixed = annotation.filesFixed;
     const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
+    const [expandedTexts, setExpandedTexts] = useState<Record<string, boolean>>({});
+    const textRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     const toggleExpand = (filePath: string) => {
         setExpandedFiles(prev => ({
             ...prev,
             [filePath]: !prev[filePath]
         }));
+    };
+
+    const toggleTextExpand = (textId: string) => {
+        setExpandedTexts(prev => ({
+            ...prev,
+            [textId]: !prev[textId]
+        }));
+    };
+
+    const isTextTruncated = (element: HTMLDivElement | null | undefined) => {
+        if (!element) return false;
+        return element.scrollHeight > element.clientHeight;
     };
 
     return (
@@ -105,15 +119,55 @@ export const HotFixes = ({ uiAnnotation, idx }: HotFixesProps) => {
                                     >
                                         <div className="w-full border-b border-gray-200 pb-2 mb-2"></div>
                                         {file.errorContext && (
-                                            <div className="flex items-start justify-start gap-2 ">
+                                            <div className="flex items-start justify-start gap-2">
                                                 <FileWarningIcon className="w-4 h-4 min-w-4 min-h-4 mt-0.5" />
-                                                <span className="line-clamp-3 text-sm text-gray-500 ">{file.errorContext}</span>
+                                                <div className="flex flex-col gap-1 w-full">
+                                                    <div
+                                                        ref={el => {
+                                                            textRefs.current[`error-${file.filePath}`] = el;
+                                                        }}
+                                                        className={cn(
+                                                            "text-sm text-gray-500",
+                                                            !expandedTexts[`error-${file.filePath}`] && "line-clamp-3"
+                                                        )}
+                                                    >
+                                                        {file.errorContext}
+                                                    </div>
+                                                    {isTextTruncated(textRefs.current[`error-${file.filePath}`]) && (
+                                                        <button
+                                                            onClick={() => toggleTextExpand(`error-${file.filePath}`)}
+                                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium self-start"
+                                                        >
+                                                            {expandedTexts[`error-${file.filePath}`] ? "Show Less" : "Read More"}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                         {file.modification && (
                                             <div className="flex items-start justify-start gap-2">
                                                 <EditIcon className="w-4 h-4 min-w-4 min-h-4 mt-0.5" />
-                                                <span className="line-clamp-3 text-sm text-gray-500 ">{file.modification}</span>
+                                                <div className="flex flex-col gap-1 w-full">
+                                                    <div
+                                                        ref={el => {
+                                                            textRefs.current[`mod-${file.filePath}`] = el;
+                                                        }}
+                                                        className={cn(
+                                                            "text-sm text-gray-500",
+                                                            !expandedTexts[`mod-${file.filePath}`] && "line-clamp-3"
+                                                        )}
+                                                    >
+                                                        {file.modification}
+                                                    </div>
+                                                    {isTextTruncated(textRefs.current[`mod-${file.filePath}`]) && (
+                                                        <button
+                                                            onClick={() => toggleTextExpand(`mod-${file.filePath}`)}
+                                                            className="text-sm text-blue-600 hover:text-blue-700 font-medium self-start"
+                                                        >
+                                                            {expandedTexts[`mod-${file.filePath}`] ? "Show Less" : "Read More"}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </motion.div>

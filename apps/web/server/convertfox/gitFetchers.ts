@@ -48,9 +48,18 @@ export async function fetchGithubText(
   }
 }
 
-export async function fetchtext(url: string) {
+export async function fetchText(url: string) {
   try {
-    const response = await fetch(url);
+    console.log("fetching", url);
+    let finalUrl = url;
+    if (url.startsWith("https://github.com/")) {
+      // Convert GitHub URL to raw content URL
+      finalUrl = url
+        .replace("https://github.com/", "https://raw.githubusercontent.com/")
+        .replace("/blob/", "/refs/heads/");
+    }
+    const encodedPath = encodeURI(finalUrl);
+    const response = await fetch(encodedPath);
     const data = await response.text();
     return data;
   } catch (error) {

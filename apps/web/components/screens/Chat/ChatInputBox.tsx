@@ -33,8 +33,8 @@ export default function ChatInputBox({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
-  const { selectedRequest, submitAnnotations, setSubmitAnnotations } = useClientProject();
-  const { handleSubmit, setInput, messages } = useMicrofoxChat();
+  const { selectedRequest, submitAnnotations, setSubmitAnnotations, autoSubmit, setAutoSubmit } = useClientProject();
+  const { handleSubmit, setInput, messages, status } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     //console.log("textareaRef", textareaRef.current);
@@ -64,6 +64,9 @@ export default function ChatInputBox({
   };
 
   const handleSend = (e?: any) => {
+    if (status != "ready") {
+      return;
+    }
     const isFirstMessage = messages.length === 0;
     const minionFlow: any = isFirstMessage ? selectedRequest?.minionFlow ?? MinionFlow.BuildFlow : undefined;
     let minionType: any = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
@@ -93,6 +96,14 @@ export default function ChatInputBox({
       setInput("Fix the following")
     }
   }, [apiErrors]);
+
+  useEffect(() => {
+    if (autoSubmit) {
+      setInput(autoSubmit);
+      setAutoSubmit(null);
+      handleSend();
+    }
+  }, [autoSubmit, status]);
 
   return (
     <div className={cn("w-full overflow-visible", className)}>

@@ -2,18 +2,17 @@ import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
 import dedent from "dedent";
-import { TaskInstanceMetaType } from "../../convertfox/types";
-import { models } from "../../models";
-import { codingSystemPrompt } from "../prompt.coding";
-import {
-  fetchTemplateRoot,
-  writeToFile,
-  writeToFileSystemAndUpdateSteps,
-} from "../tool/writeToFile";
-import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 import fs from "fs/promises";
 import path from "path";
-export const genDbCode = async (
+import { TokenUsageAnalyticsTracker } from "../../../analytics/helper";
+import { TaskInstanceMetaType } from "../../../convertfox/types";
+import { models } from "../../../models";
+import { codingSystemPrompt } from "../../prompt.coding";
+import { fetchTemplateDir, writeToFile } from "../../tool/writeToFile";
+
+// I need a helper mapper for file to fetch from (use addons to support this)
+
+export const genDbRedisHelper = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
@@ -24,29 +23,28 @@ export const genDbCode = async (
   // });
 
   // await result.text;
-  //console.log("result", result.usage);
+  // console.log("result", result.usage);
 
-  if (taskInstanceMeta.taskStructure?.templateType === "upstash") {
-    // write helpers/redis.txt for upstash
-    // modify the serverless.yml file to support all the functions & cron jobs
-    props.dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Generating redis db setups..",
-    });
+  // write helpers/redis.txt for upstash
+  // modify the serverless.yml file to support all the functions & cron jobs
+  props.dataStream.writeMessageAnnotation({
+    type: "thinking",
+    content: "Generating redis db setups..",
+  });
 
-    const redisHelper = await fs.readFile(
-      path.join(
-        process.cwd(),
-        fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
-        "redis.txt"
-      ),
-      "utf8"
-    );
+  const redisHelper = await fs.readFile(
+    path.join(
+      process.cwd(),
+      fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
+      "redis.txt"
+    ),
+    "utf8"
+  );
 
-    const result = await generateText({
-      model: models.claude35Sonnet,
-      system: codingSystemPrompt("backend"),
-      prompt: dedent`You are requested to modify a redis.ts file for the following requirement:
+  const result = await generateText({
+    model: models.claude35Sonnet,
+    system: codingSystemPrompt("backend"),
+    prompt: dedent`You are requested to modify a redis.ts file for the following requirement:
                 The following functions are to be generated for the task:
                 ${taskInstanceMeta?.taskStructure?.lambdaFunctions?.map((func) => func.name + " - " + func.description).join("\n - ")}
 
@@ -75,29 +73,28 @@ export const genDbCode = async (
     
                 make sure you skip the packagesUsed field in the tool call.
                 `,
-      tools: {
-        write_to_file: writeToFile(
-          props,
-          clientRequest,
-          taskInstanceMeta?.taskStructure?.templateType
-        ),
-      },
-      toolChoice: "required",
-      maxSteps: 1,
-      maxTokens: 3000,
-      maxRetries: 1,
-      onStepFinish: (step) => {
-        console.log("step", step.usage);
-      },
-    });
-    console.log("result", result.usage);
+    tools: {
+      write_to_file: writeToFile(
+        props,
+        clientRequest,
+        taskInstanceMeta?.taskStructure?.templateType
+      ),
+    },
+    toolChoice: "required",
+    maxSteps: 1,
+    maxTokens: 3000,
+    maxRetries: 1,
+    onStepFinish: (step) => {
+      console.log("step", step.usage);
+    },
+  });
+  console.log("result", result.usage);
 
-    TokenUsageAnalyticsTracker.trackUsage({
-      ...props.requestBody,
-      model: models.claude35Sonnet.modelId,
-      usage: result.usage,
-    });
-  }
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...props.requestBody,
+    model: models.claude35Sonnet.modelId,
+    usage: result.usage,
+  });
 
   return taskInstanceMeta;
 };

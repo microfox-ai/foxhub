@@ -120,6 +120,8 @@ export const DeployStatus = () => {
         pingerInterval: 10000,
         initialDeployStep: taskInstanceMeta?.deployStep,
     });
+
+    //console.log("clientDeployment", clientDeployment);
     const { setActiveTab } = useTabUi();
 
     if (!deployStep)

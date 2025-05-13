@@ -1,5 +1,6 @@
 import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
 import {
+  codeTemplateType,
   extraEnvVariables,
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
@@ -11,7 +12,7 @@ import {
   INTERNAL_TEMPLATE_UPSTASH_ROOT,
   INTERNAL_TEMPLATE_MONGODB_ROOT,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
-  fetchTemplateRoot,
+  fetchTemplateDir,
 } from "../tool/writeToFile";
 import { readFile } from "fs/promises";
 import {
@@ -23,7 +24,10 @@ import {
 } from "@/utils/services/db_functions/secrets_helper";
 import { ClientRequest, CLIENTSECRETSTATUS } from "@prisma/client";
 import { envsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
-import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
+import {
+  addTemplateSecretsToClientRequest,
+  templateEnvsFromTaskIntegrations,
+} from "../helper/templateEnvsFromTaskIntegrations";
 import { getClientSecretsFromTemplateEnvs } from "../helper/templateEnvsFromTaskIntegrations";
 export const genEnvCollector = async (
   props: StreamingFucntionProps<any, any>,
@@ -31,7 +35,9 @@ export const genEnvCollector = async (
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
-  const templateType = taskInstanceMeta.taskStructure?.templateType ?? "plain";
+  const templateType =
+    taskInstanceMeta.taskStructure?.templateType ??
+    codeTemplateType.enum.plain_sls;
   let envs = envVariablesUsed;
   let templatedEnvs: any[] = [];
   try {
@@ -49,33 +55,7 @@ export const genEnvCollector = async (
     const templateSecrets =
       await getClientSecretsFromTemplateEnvs(templateType);
 
-    for (const secret of templateSecrets) {
-      const existingClientSecret = await clientSecretExists(
-        clientRequest.botProjectId,
-        clientRequest.id,
-        secret.type
-      );
-      if (existingClientSecret) {
-        // in case if they are updated
-        await updateClientSecret(existingClientSecret.id, {
-          ...secret,
-        });
-        await addClientSecretToClientRequest(
-          existingClientSecret.id,
-          clientRequest.id
-        );
-      } else {
-        await createNewClientSecret({
-          ...secret,
-          botProjectId: clientRequest.botProjectId,
-          userId: clientRequest.userId,
-          clientRequestIds: [clientRequest.id],
-          clientDeploymentIds: [],
-          botConfig: secret.botConfig ?? [],
-          isHidden: true,
-        });
-      }
-    }
+    await addTemplateSecretsToClientRequest(clientRequest, templateSecrets);
 
     // also filter out the env variables from the taskInstanceMeta.taskIntegrations.platforms.packages
     // NOTE: packageInfo exists even though it is not in type

@@ -1,4 +1,4 @@
-import { HttpMethod } from "../../PreviewWindow/types";
+import { HttpMethod } from "@/utils/services/OpenAPIToolsClient";
 import { EndpointCard } from "./EndpointCard";
 
 interface EndpointListProps {

@@ -5,7 +5,7 @@ import { ClientDeployment } from "@prisma/client";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
 import { useClientProject } from "../../providers/ClientProjectProvider";
-import { HttpMethod } from "../../PreviewWindow/types";
+import { HttpMethod } from "@/utils/services/OpenAPIToolsClient";
 import { useLayout } from "../../providers/LayoutProvider";
 import { useApiDoc } from "../../providers/ApiDocProvider";
 import { DeployStatus } from "./DeployStatus";

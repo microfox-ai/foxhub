@@ -1,7 +1,9 @@
 import { prisma } from "@/prisma/prisma";
 import { getServiceName } from "@/server/buildfox/helper/getServiceName";
-import { DeployStep, TaskInstanceMetaType } from "@/server/convertfox/types";
+import { DeployStep, TaskInstanceMetaType, TaskStructure } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { deleteEmbedding, embedApiEndpoints } from "@/utils/services/embeddings/embedFunctions";
+import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
 import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
 import {
   MICROFOX_LOGO,
@@ -104,14 +106,14 @@ export async function POST(req: NextRequest) {
     //   });
     // }
 
-    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+    let taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
       where: {
         id: originClientRequestId,
       },
     });
 
     if (taskInstanceMeta) {
-      await updateTaskInstanceMeta({
+      taskInstanceMeta = await updateTaskInstanceMeta({
         clientRequestId: originClientRequestId,
         otherData: {
           deployStep: {
@@ -140,6 +142,15 @@ export async function POST(req: NextRequest) {
     //   },
     // });
 
+    if (taskInstanceMeta) {
+      await embedApiEndpoints({
+        taskStructure: taskInstanceMeta?.taskStructure as TaskStructure,
+        docData: newMetadata?.docData as OpenAPIDoc,
+        botProjectId: botProjectId,
+        originClientRequestId: originClientRequestId,
+        userId: userId,
+      });
+    }
     const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();
 
     await slackBotSdk.sendMessage({
@@ -246,6 +257,9 @@ export async function DELETE(req: NextRequest) {
     await prisma.clientDeployment.delete({
       where: { id },
     });
+
+    // Delete the embedding
+    await deleteEmbedding(id);
 
     // Notify in chat about deletion
     // TODO: VISHWAJEET - no need to send a mesaage i think, but will have to take a look later

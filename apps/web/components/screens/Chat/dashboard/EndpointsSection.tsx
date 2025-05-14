@@ -1,5 +1,5 @@
 import { Loader2, XCircle, Package, Split } from "lucide-react";
-import { HttpMethod } from "../../PreviewWindow/types";
+import { HttpMethod } from "@/utils/services/OpenAPIToolsClient";
 import { EndpointList } from "./EndpointList";
 
 interface EndpointsSectionProps {

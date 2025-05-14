@@ -134,7 +134,7 @@ export async function embedApiEndpoints({
                                 doc_text: docText,
                                 embedding,
                                 metadata: {
-                                    docData,
+                                    openApiSchema: docData,
                                     function_type: fn ? 'lambda' : cron ? 'cron' : "unknown",
                                     ...(fn && { endpoint_structure: fn }),
                                     ...(cron && { endpoint_structure: cron })
@@ -168,7 +168,7 @@ export async function embedApiEndpoints({
                                 is_public: false,
                                 stage: stage,
                                 metadata: {
-                                    docData,
+                                    openApiSchema: docData,
                                     function_type: fn ? 'lambda' : cron ? 'cron' : "unknown",
                                     ...(fn && { endpoint_structure: fn }),
                                     ...(cron && { endpoint_structure: cron })

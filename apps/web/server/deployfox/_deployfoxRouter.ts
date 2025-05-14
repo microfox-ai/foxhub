@@ -154,7 +154,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   await slackBotSdk.sendMessage({
     icon_url: MICROFOX_LOGO,
     channel: MySlackChannels.microfox_updates,
-    text: `Deployfox triggered ${stage} a deployment for ${clientRequest.title} ${
+    text: `Deployfox triggered ${(stage ?? DEPLOY_STAGE.STAGING).toLowerCase()} deployment for ${clientRequest.title} ${
       runId ? `with runId ${runId}` : ""
     }`,
   });

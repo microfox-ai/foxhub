@@ -267,6 +267,21 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         loadFileContent();
     }, [activeFile]);
 
+    // Add keyboard shortcut support for saving
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                event.preventDefault();
+                if (activeFile && isModified) {
+                    saveFileContent();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [activeFile, isModified, saveFileContent]);
+
     const handleFileSelect = (file: FileTreeNode) => {
         if (!file.isFolder) {
             setActiveFile(file);

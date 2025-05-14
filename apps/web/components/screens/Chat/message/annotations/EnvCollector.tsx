@@ -148,14 +148,14 @@ const FileTreeItem = ({ node, name, level = 0 }: { node: FileNode; name: string;
 
 const buildFileTree = (files: CodeFile[]): Record<string, FileNode> => {
   const tree: Record<string, FileNode> = {};
-  const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.split('/').slice(0, -1).join('/') || '';
+  const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.replaceAll("\\", "/").split('/').slice(0, -1).join('/') || '';
   const rewrittenFiles = files.map((file) => ({
     ...file,
-    filePath: file.filePath.replace(rootDir, '')
+    filePath: file.filePath.replaceAll("\\", "/").replace(rootDir, '')
   }));
 
   rewrittenFiles.forEach((file) => {
-    const pathParts = file.filePath.split('/').filter(Boolean); // Filter out empty strings
+    const pathParts = file.filePath.replaceAll("\\", "/").split('/').filter(Boolean); // Filter out empty strings
     const fileName = pathParts.pop()!;
 
     // If no path parts, it's a root level file

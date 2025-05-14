@@ -60,19 +60,19 @@ const getFileIconCmp = (fileType: string) => {
 
 const buildFileTree = (files: BuildFile[]): FileTreeNode[] => {
     // Find the root directory based on package.json
-    const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.split('/').slice(0, -1).join('/') || '';
+    const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.replaceAll("\\", "/").split('/').slice(0, -1).join('/') || '';
 
     // Rewrite file paths relative to the root directory
     const rewrittenFiles = files.map((file) => ({
         ...file,
-        filePath: file.filePath.replace(rootDir, '')
+        filePath: file.filePath.replaceAll("\\", "/").replace(rootDir, '')
     }));
 
     const root: FileTreeNode = { id: 'root', name: 'root', path: '', isFolder: true, children: [], fileType: 'folder' };
 
     rewrittenFiles.forEach(file => {
         if (!file.filePath) return;
-        const parts = file.filePath.split('/').filter(p => p);
+        const parts = file.filePath.replaceAll("\\", "/").split('/').filter(p => p);
         let currentNode = root;
 
         parts.forEach((part, index) => {
@@ -198,7 +198,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         try {
             setIsLoading(true);
             const response = await fetch(
-                `/api/files?owner=${PROJECT_REPO_OWNER}&repo=${selectedRequest.repoName}&branch=${selectedRequest.prBranch}&filePath=${encodeURIComponent(filePath.replace(selectedRequest.repoName + "/", ''))}`
+                `/api/files?owner=${PROJECT_REPO_OWNER}&repo=${selectedRequest.repoName}&branch=${encodeURIComponent(selectedRequest.prBranch)}&filePath=${encodeURIComponent(filePath.replaceAll("\\", "/").replace(selectedRequest.repoName + "/", ''))}`
             );
             if (!response.ok) {
                 throw new Error('Failed to fetch file content');
@@ -217,7 +217,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
     const saveFileContent = async () => {
         if (!activeFile || !selectedRequest || !selectedRequest.repoName || !selectedRequest.prBranch) return;
 
-        const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath?.replace(selectedRequest.repoName + "/", '');
+        const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath?.replaceAll("\\", "/").replace(selectedRequest.repoName + "/", '');
         try {
             setIsSaving(true);
             const response = await fetch('/api/files', {

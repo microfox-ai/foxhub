@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const response = await octokit.rest.repos.getContent({
       owner,
       repo,
-      path: filePath,
+      path: filePath.replaceAll("\\", "/"),
       ref: branch,
     });
 
@@ -66,7 +66,7 @@ export async function PUT(request: NextRequest) {
     const currentFile = await octokit.rest.repos.getContent({
       owner,
       repo,
-      path: filePath,
+      path: filePath.replaceAll("\\", "/"),
       ref: branch,
     });
 
@@ -77,13 +77,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const fileName = filePath.split("/").pop() || filePath;
+    const fileName = filePath.replaceAll("\\", "/").split("/").pop() || filePath;
     const commitMessage = `nodeploy: microfox: update ${fileName}`;
 
     const response = await octokit.rest.repos.createOrUpdateFileContents({
       owner,
       repo,
-      path: filePath,
+      path: filePath.replaceAll("\\", "/"),
       message: commitMessage,
       content: Buffer.from(content).toString("base64"),
       sha: currentFile.data.sha,

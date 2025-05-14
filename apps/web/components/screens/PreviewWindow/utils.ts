@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { OpenAPIOperation, OpenAPIParameter, OpenAPISchema } from "./types";
+import { OpenAPIOperation, OpenAPIParameter, OpenAPISchema } from "@/utils/services/OpenAPIToolsClient";
 
 // Function to get color class based on HTTP method
 export const getMethodColor = (method: string) => {

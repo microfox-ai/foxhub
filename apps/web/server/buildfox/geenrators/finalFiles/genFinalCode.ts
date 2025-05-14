@@ -46,7 +46,10 @@ export const genServerlessFinalCode = async (
         ?.filePath ?? "";
     // modify the package.json file to support all the functions & cron jobs
     await updateJsonFile(
-      packageJsonPath?.replace("/package.json", ""),
+      packageJsonPath?.replace("/package.json", "").replace(
+        "\\package.json",
+        ""
+      ),
       "package.json",
       (packageJsonContent) => {
         let newPackageJsonContent = { ...packageJsonContent };

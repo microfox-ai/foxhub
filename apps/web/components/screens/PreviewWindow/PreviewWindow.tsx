@@ -44,7 +44,7 @@ import {
   OpenAPIPath,
   OpenAPIDoc,
   OpenAPIResponse,
-} from "./types";
+} from "@/utils/services/OpenAPIToolsClient";
 import { useApiDoc } from "../providers/ApiDocProvider";
 import { useDeployStatus } from "../providers/useDeployStatus";
 import { ClientDeployment } from "@prisma/client";

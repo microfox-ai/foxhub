@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMethodColor } from "../../PreviewWindow/utils";
-import { HttpMethod } from "../../PreviewWindow/types";
+import { HttpMethod } from "@/utils/services/OpenAPIToolsClient";
 
 interface EndpointCardProps {
     endpoint: {

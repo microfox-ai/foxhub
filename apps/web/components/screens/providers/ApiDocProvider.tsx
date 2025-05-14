@@ -5,7 +5,7 @@ import {
   OpenAPIOperation,
   OpenAPIDoc,
   OpenAPIPath,
-} from "../PreviewWindow/types";
+} from "@/utils/services/OpenAPIToolsClient";
 
 export interface Endpoint {
   path: string;

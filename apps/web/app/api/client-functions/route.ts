@@ -2,7 +2,7 @@ import { prisma } from "@/prisma/prisma";
 import { getServiceName } from "@/server/buildfox/helper/getServiceName";
 import { DeployStep, TaskInstanceMetaType, TaskStructure } from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import { embedApiEndpoints } from "@/utils/services/embeddings/embedFunctions";
+import { deleteEmbedding, embedApiEndpoints } from "@/utils/services/embeddings/embedFunctions";
 import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
 import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
 import {
@@ -257,6 +257,9 @@ export async function DELETE(req: NextRequest) {
     await prisma.clientDeployment.delete({
       where: { id },
     });
+
+    // Delete the embedding
+    await deleteEmbedding(id);
 
     // Notify in chat about deletion
     // TODO: VISHWAJEET - no need to send a mesaage i think, but will have to take a look later

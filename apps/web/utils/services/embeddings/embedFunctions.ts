@@ -149,3 +149,18 @@ export async function embedApiEndpoints({
         throw error;
     }
 }
+
+export async function deleteEmbedding(origin_client_request_id: string) {
+    try {
+        const { error } = await supabase
+            .from('api_embeddings')
+            .delete()
+            .eq('origin_client_request_id', origin_client_request_id);
+
+        if (error) {
+            console.error('Failed to delete embedding:', error);
+        }
+    } catch (error) {
+        console.error('Failed to delete embedding:', error);
+    }
+}

@@ -2,12 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { embed } from './geminiEmbed';
 import { OpenAPIDoc } from '@/utils/services/OpenAPIToolsClient'
 import { TaskStructure } from '@/server/convertfox/types'
-import dotenv from "dotenv";
-dotenv.config();
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 type EmbedApiEndpointsArgs = {
     taskStructure: TaskStructure,
@@ -25,6 +22,8 @@ export async function embedApiEndpoints({
     userId
 }: EmbedApiEndpointsArgs) {
     try {
+        console.log("SUPABASE_URL embedfunctions", SUPABASE_URL);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         if (!docData || !docData.paths) {
             throw new Error('Invalid OpenAPI document: missing paths');
         }
@@ -154,6 +153,8 @@ export async function embedApiEndpoints({
 
 export async function deleteEmbedding(origin_client_request_id: string) {
     try {
+        console.log("SUPABASE_URL embedfunctions", SUPABASE_URL);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         const { error } = await supabase
             .from('api_embeddings')
             .delete()

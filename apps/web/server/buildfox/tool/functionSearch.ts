@@ -7,6 +7,7 @@ dotenv.config();
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
+console.log("SUPABASE_URL functionSearch", SUPABASE_URL);
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const TABLE = "docs_embeddings";

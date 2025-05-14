@@ -133,7 +133,12 @@ export async function embedApiEndpoints({
                             .update({
                                 doc_text: docText,
                                 embedding,
-                                metadata: { cron, lambda: fn || null },
+                                metadata: {
+                                    openApiSchema: docData,
+                                    function_type: fn ? 'lambda' : cron ? 'cron' : "unknown",
+                                    ...(fn && { endpoint_structure: fn }),
+                                    ...(cron && { endpoint_structure: cron })
+                                },
                                 updated_at: new Date().toISOString()
                             })
                             .eq('id', existing.id);
@@ -163,9 +168,11 @@ export async function embedApiEndpoints({
                                 is_public: false,
                                 stage: stage,
                                 metadata: {
-                                    cron: cron || null,
-                                    lambda: fn || null
-                                }
+                                    openApiSchema: docData,
+                                    function_type: fn ? 'lambda' : cron ? 'cron' : "unknown",
+                                    ...(fn && { endpoint_structure: fn }),
+                                    ...(cron && { endpoint_structure: cron })
+                                },
                             });
 
                         if (insertError) {

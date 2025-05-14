@@ -211,6 +211,149 @@ interface APIResponse {
  * Provides methods for calling API operations and generating AI SDK-compatible tools
  */
 export class OpenAPIToolsClient {
+  private clients: SingleOpenAPIToolsClient[] = [];
+  private initialized: boolean = false;
+
+  constructor(options: OpenAPIToolsClientOptions | OpenAPIToolsClientOptions[]) {
+    // Convert single option to array for unified handling
+    const optionsArray = Array.isArray(options) ? options : [options];
+    
+    // Create a client for each option
+    optionsArray.forEach((opt, index) => {
+      this.clients.push(new SingleOpenAPIToolsClient({
+        ...opt,
+        schema: typeof opt.schema === 'string' ? JSON.parse(opt.schema) : opt.schema,
+        name: opt.name || `${(opt.schema as OpenAPIDoc).info.title.toLowerCase().replace(/ /g, '_')}`
+      }));
+    });
+  }
+
+  /**
+   * Initialize all clients
+   */
+  async init(): Promise<OpenAPIToolsClient> {
+    if (this.initialized) {
+      return this;
+    }
+
+    try {
+      // Initialize all clients in parallel, each will parse its schema
+      await Promise.all(this.clients.map(client => client.init()));
+      this.initialized = true;
+      return this;
+    } catch (error) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Unknown error during initialization';
+
+      throw new Error(`Failed to initialize OpenAPI clients: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * List all available API operations from all OpenAPI schemas
+   */
+  async listOperations() {
+    if (!this.initialized) {
+      throw new Error('Clients not initialized. Call init() first.');
+    }
+
+    // Get operations from all clients
+    const allOperationsResults = await Promise.all(
+      this.clients.map(client => client.listOperations())
+    );
+
+    // Combine operations from all clients with properly namespaced IDs
+    const operations = allOperationsResults.flatMap(
+      (result, index) => {
+        const client = this.clients[index];
+        if (!client) return []; // Skip if client is undefined
+        
+        return result.operations.map((op) => ({
+          ...op,
+          // Add client name to ID to avoid conflicts
+          id: `${client.getName()}-${op.id}`
+        }));
+      }
+    );
+
+    return { operations };
+  }
+
+  /**
+   * Call a specific API operation from any client
+   */
+  async callOperation(id: string, args: Record<string, any> = {}, options?: ToolExecuteOptions) {
+    if (!this.initialized) {
+      throw new Error('Clients not initialized. Call init() first.');
+    }
+
+    // Extract client name and operation ID
+    const [clientName, operationId] = id.split(':');
+    if (!clientName || !operationId) {
+      throw new Error(`Invalid operation ID format: ${id}. Expected format: "clientName:operationId"`);
+    }
+
+    // Find the client
+    const client = this.clients.find(c => c.getName() === clientName);
+    if (!client) {
+      throw new Error(`Client "${clientName}" not found.`);
+    }
+
+    // Call the operation on the client
+    return client.callOperation(operationId, args, options);
+  }
+
+  /**
+   * Returns a set of tools generated from all OpenAPI schemas
+   */
+  async tools({ 
+    schemas = 'automatic',
+    validateParameters = false 
+  }: { 
+    schemas?: ToolSchemas;
+    validateParameters?: boolean; // When true, validates parameters against the schema
+  } = {}): Promise<ToolSet> {
+    if (!this.initialized) {
+      throw new Error('Clients not initialized. Call init() first.');
+    }
+
+    // Get tools from all clients
+    const allToolsResults = await Promise.all(
+      this.clients.map(client => client.tools({ 
+        schemas,
+        validateParameters  // Pass validation option to each client
+      }))
+    );
+
+    // Combine tools from all clients
+    const combinedTools: ToolSet = {};
+    
+    allToolsResults.forEach((toolSet, index) => {
+      const client = this.clients[index];
+      if (!client) return; // Skip if client is undefined (shouldn't happen)
+      
+      const clientName = client.getName();
+      
+      Object.entries(toolSet).forEach(([key, tool]) => {
+        // Create a namespaced key to avoid collisions
+        const namespacedKey = `${clientName}-${key}`;
+        
+        combinedTools[namespacedKey] = {
+          ...tool,
+          name: namespacedKey, // Update name to include namespace
+        };
+      });
+    });
+
+    return combinedTools;
+  }
+}
+
+/**
+ * Individual client for interacting with a single API described by an OpenAPI schema
+ */
+class SingleOpenAPIToolsClient {
   private schema: OpenAPIDoc;
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
@@ -236,9 +379,16 @@ export class OpenAPIToolsClient {
   }
 
   /**
+   * Get client name
+   */
+  getName(): string {
+    return this.name;
+  }
+
+  /**
    * Initialize the client
    */
-  async init(): Promise<OpenAPIToolsClient> {
+  async init(): Promise<SingleOpenAPIToolsClient> {
     if (this.initialized) {
       return this;
     }
@@ -500,65 +650,6 @@ export class OpenAPIToolsClient {
   }
 
   /**
-   * Convert OpenAPI parameters and request body to JSON Schema
-   */
-  private buildParametersSchema(operation: OpenAPIOperation & { path: string; method: string }): ToolSchema['parameters'] {
-    const schema: ToolSchema['parameters'] = {
-      type: 'object',
-      properties: {},
-      required: []
-    };
-
-    // Add parameters
-    if (operation.parameters) {
-      for (const param of operation.parameters) {
-        // Use param schema if available, otherwise create simple string schema
-        schema.properties[param.name] = param.schema || { type: 'string' };
-
-        // Add description if available
-        if (param.description) {
-          schema.properties[param.name].description = param.description;
-        }
-
-        // Add to required list if parameter is required
-        if (param.required && schema.required) {
-          schema.required.push(param.name);
-        }
-      }
-    }
-
-    // Add request body properties
-    if (operation.requestBody?.content?.['application/json']?.schema) {
-      const bodySchema = operation.requestBody.content['application/json'].schema;
-
-      if (bodySchema.type === 'object' && bodySchema.properties) {
-        // For object types, merge properties into the main schema
-        Object.entries(bodySchema.properties).forEach(([key, propSchema]) => {
-          schema.properties[key] = propSchema;
-
-          // Add required properties
-          if (bodySchema.required && schema.required) {
-            for (const reqKey of bodySchema.required) {
-              if (reqKey === key) {
-                schema.required.push(key);
-              }
-            }
-          }
-        });
-      } else {
-        // For non-object types (array, string, etc.), add a 'body' property
-        schema.properties.body = bodySchema;
-
-        if (operation.requestBody.required && schema.required) {
-          schema.required.push('body');
-        }
-      }
-    }
-
-    return schema;
-  }
-
-  /**
    * Convert operation to JSON Schema
    */
   private convertOperationToJsonSchema(operation: OpenAPIOperation & { path: string; method: string }): JsonSchema & { type: 'object' } {
@@ -614,35 +705,6 @@ export class OpenAPIToolsClient {
       schema[key] = this.convertOpenApiSchemaToJsonSchema(value, new Set());
     }
     return schema;
-  }
-
-  /**
-   * Extract response type from operation
-   */
-  private extractResponseType(operation: OpenAPIOperation): JsonSchema | null {
-    const successResponse = operation.responses['200'] || operation.responses['201'] || operation.responses['202'] || operation.responses['204'];
-    if (!successResponse || !successResponse.content) return null;
-
-    if (successResponse.content['application/json']?.schema) {
-      const returnSchema = this.convertOpenApiSchemaToJsonSchema(
-        successResponse.content['application/json'].schema,
-        new Set(),
-        false
-      );
-      returnSchema['$defs'] = this.convertComponentsToJsonSchema();
-
-      if (successResponse.description && !returnSchema.description) {
-        returnSchema.description = successResponse.description;
-      }
-
-      return returnSchema;
-    }
-
-    if (successResponse.content['image/png'] || successResponse.content['image/jpeg']) {
-      return { type: 'string', format: 'binary', description: successResponse.description || '' };
-    }
-
-    return { type: 'string', description: successResponse.description || '' };
   }
 
   /**
@@ -850,7 +912,13 @@ export class OpenAPIToolsClient {
   /**
    * Returns a set of tools generated from the OpenAPI schema
    */
-  async tools({ schemas = 'automatic' }: { schemas?: ToolSchemas } = {}): Promise<ToolSet> {
+  async tools({ 
+    schemas = 'automatic',
+    validateParameters = false 
+  }: { 
+    schemas?: ToolSchemas;
+    validateParameters?: boolean; // When true, validates parameters against the schema
+  } = {}): Promise<ToolSet> {
     if (!this.initialized) {
       throw new Error('Client not initialized. Call init() first.');
     }
@@ -887,7 +955,28 @@ export class OpenAPIToolsClient {
           // Throw if aborted
           options?.abortSignal?.throwIfAborted();
 
-          // Call the operation
+          // If validation is enabled, validate the arguments
+          if (validateParameters) {
+            try {
+              // Parse and validate arguments against the schema
+              const validatedArgs = zodSchema.parse(args);
+              return self.callOperation(id, validatedArgs, options);
+            } catch (error) {
+              // Format validation errors in a user-friendly way
+              if (error instanceof z.ZodError) {
+                const formattedError = new Error(
+                  `Parameter validation failed: ${error.errors.map(e => 
+                    `${e.path.join('.')}: ${e.message}`
+                  ).join(', ')}`
+                );
+                formattedError.name = 'ValidationError';
+                throw formattedError;
+              }
+              throw error;
+            }
+          }
+
+          // Call the operation without validation
           return self.callOperation(id, args, options);
         }
       };
@@ -959,27 +1048,41 @@ async function parseSchema(config: SchemaConfig | OpenAPIDoc | string): Promise<
  * Create an OpenAPI client for interacting with an API described by an OpenAPI schema
  * The client can be used to call API operations directly or generate AI SDK-compatible tools
  * 
- * @param options Client configuration options
+ * @param options Client configuration options (single or array for multiple schemas)
  * @returns OpenAPIToolsClient instance
  */
-export async function createOpenAPIToolsClient(options: OpenAPIToolsClientOptions): Promise<OpenAPIToolsClient> {
+export async function createOpenAPIToolsClient(options: OpenAPIToolsClientOptions | OpenAPIToolsClientOptions[]): Promise<OpenAPIToolsClient> {
   try {
-    // Parse the schema
-    const parsedSchema = await parseSchema(options.schema);
-
-    // Create and initialize the client
-    const client = new OpenAPIToolsClient({
-      schema: parsedSchema,
-      baseUrl: options.baseUrl,
-      headers: options.headers,
-      onError: options.onError,
-      name: options.name
-    });
-
-    // Initialize the client and return it
-    return await client.init();
+    // Handle single option or array of options
+    const isArray = Array.isArray(options);
+    
+    if (isArray) {
+      // For multiple schemas, parse each one independently
+      const parsedOptions = await Promise.all(
+        options.map(async (opt) => {
+          const parsedSchema = await parseSchema(opt.schema);
+          return {
+            ...opt,
+            schema: parsedSchema
+          };
+        })
+      );
+      
+      // Create the client with parsed schemas
+      const client = new OpenAPIToolsClient(parsedOptions);
+      return await client.init();
+    } else {
+      // For a single schema
+      const parsedSchema = await parseSchema(options.schema);
+      const client = new OpenAPIToolsClient({
+        ...options,
+        schema: parsedSchema
+      });
+      return await client.init();
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Failed to create OpenAPI client: ${errorMessage}`);
     throw new Error(`Failed to create OpenAPI client: ${errorMessage}`);
   }
 }

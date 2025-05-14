@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
 
     let taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
       where: {
-        id: originClientRequestId,
+        originClientRequestId: originClientRequestId,
       },
     });
 
@@ -141,7 +141,6 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
-
     if (taskInstanceMeta) {
       await embedApiEndpoints({
         taskStructure: taskInstanceMeta?.taskStructure as TaskStructure,
@@ -149,6 +148,8 @@ export async function POST(req: NextRequest) {
         botProjectId: botProjectId,
         originClientRequestId: originClientRequestId,
         userId: userId,
+        stage: stage,
+        base_url: `${baseUrl}/${stage.toLowerCase()}`,
       });
     }
     const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();

@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { embed } from './geminiEmbed';
 import { OpenAPIDoc } from '@/utils/services/OpenAPIToolsClient'
 import { TaskStructure } from '@/server/convertfox/types'
+import dotenv from "dotenv";
+dotenv.config();
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;

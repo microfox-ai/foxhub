@@ -71,7 +71,6 @@ export const genServerlessFinalCode = async (
           if (packagesUsed && packagesUsed?.length > 0) {
             packagesUsed.forEach((pkg: any) => {
               if (
-                pkg.package &&
                 pkg != "@microfox/null" &&
                 !newPackageJsonContent.dependencies[pkg]
               ) {

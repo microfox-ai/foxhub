@@ -7,12 +7,12 @@ dotenv.config();
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
-console.log("SUPABASE_URL functionSearch", SUPABASE_URL);
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const TABLE = "docs_embeddings";
 
 async function listByPackage(pkg: string, limit = 10) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
   const { data, error } = await supabase
     .from(TABLE)
     .select("file_path,package_name,updated_at")
@@ -30,6 +30,7 @@ export async function semanticFunctionSearch(
   limit = 10
 ) {
   console.log(`\n🔍 Embedding query: "${query}"…`);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const qEmb = await embed(query);
   console.log("🧠 Query embedding obtained");
 

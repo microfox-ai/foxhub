@@ -22,7 +22,6 @@ export async function embedApiEndpoints({
     userId
 }: EmbedApiEndpointsArgs) {
     try {
-        console.log("SUPABASE_URL embedfunctions", SUPABASE_URL);
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         if (!docData || !docData.paths) {
             throw new Error('Invalid OpenAPI document: missing paths');
@@ -153,7 +152,6 @@ export async function embedApiEndpoints({
 
 export async function deleteEmbedding(origin_client_request_id: string) {
     try {
-        console.log("SUPABASE_URL embedfunctions", SUPABASE_URL);
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         const { error } = await supabase
             .from('api_embeddings')

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 
-type TabType = "chat" | "dashboard" | "history";
+type TabType = "chat" | "dashboard" | "history" | "code";
 
 interface TabUiContextType {
     activeTab: TabType;

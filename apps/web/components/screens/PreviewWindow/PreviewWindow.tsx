@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Play, X, Monitor, Clock, Square, ArrowLeftIcon, CheckIcon, ChevronDown } from "lucide-react";
+import { Copy, Play, X, Monitor, Clock, Square, ArrowLeftIcon, CheckIcon, ChevronDown, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   Form,
@@ -81,6 +81,7 @@ const PreviewWindow = () => {
   const [showLogs, setShowLogs] = useState(false);
   const { setSubmitAnnotations } = useClientProject();
   const { setActiveTab } = useTabUi()
+  const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
   //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
   const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
@@ -782,6 +783,24 @@ const PreviewWindow = () => {
   // setFetchError(null);
 
 
+  const refreshServerlessLogs = async () => {
+    if (!currentEndpointData || !deploymentInfo) return;
+
+    setIsRefreshingLogs(true);
+    try {
+      const endpointLink = `${BASE_URL}${currentEndpointData.path}`;
+      await fetchServerlessLogs({
+        clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+        endpointLink: endpointLink,
+        setServerlessLogs: setServerlessLogs
+      });
+    } catch (error) {
+      console.error("Error refreshing logs:", error);
+    } finally {
+      setIsRefreshingLogs(false);
+    }
+  };
+
   if (!deploymentInfo && apiDoc) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -1338,13 +1357,27 @@ const PreviewWindow = () => {
                         </div>)}
                       {serverlessLogs && (
                         <div className="space-y-2">
-                          <button
-                            onClick={() => setShowLogs(!showLogs)}
-                            className="flex w-full items-center justify-between rounded-lg border bg-white p-3 hover:bg-neutral-50"
-                          >
-                            <span className="text-xs font-medium">View Server Logs</span>
-                            <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-180' : ''}`} />
-                          </button>
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => setShowLogs(!showLogs)}
+                              className="flex w-full items-center justify-between rounded-lg border bg-white p-3 hover:bg-neutral-50"
+                            >
+                              <span className="text-xs font-medium">View Server Logs</span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    refreshServerlessLogs();
+                                  }}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                                  disabled={isRefreshingLogs}
+                                >
+                                  <RefreshCw className={`h-3 w-3 text-neutral-500 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
+                                </button>
+                                <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-180' : ''}`} />
+                              </div>
+                            </button>
+                          </div>
                           {showLogs && (
                             <div className="overflow-hidden rounded-lg border bg-white">
                               <div className="p-3">

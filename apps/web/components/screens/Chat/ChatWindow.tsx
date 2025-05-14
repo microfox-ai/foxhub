@@ -14,6 +14,8 @@ import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
 import MessageList from "./MessageList";
 import ConfigureTab from "./dashboard/ConfigureTab";
+import CodeStudio from "./code/CodeStudio";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
 
 export type AttachedMedia = {
   file: File;
@@ -54,12 +56,14 @@ function ChatWindow({
   } = useTabUi();
 
   const { hasScrolled, setHasScrolled, messagesEndRef, scrollToBottom } = useChatUI();
+  const { mutate: mutateTaskInstanceMeta } = useTaskInstanceMetaContext();
 
   const { isRightCollapsed, handleRightCollapse } = useLayout();
 
   const handleTabChange = (value: string) => {
     setPreviousTab(activeTab);
-    setActiveTab(value as "chat" | "dashboard" | "history");
+    setActiveTab(value as "chat" | "dashboard" | "history" | "code");
+    mutateTaskInstanceMeta()
     // Reset scroll state when switching tabs
     if (value !== "chat") {
       setHasScrolled(false);
@@ -181,6 +185,16 @@ function ChatWindow({
                   >
                     <div className="max-w-[800px] mx-auto">
                       <ConfigureTab />
+                    </div>
+                  </motion.div>
+                )}
+                {activeTab === "code" && (
+                  <motion.div
+                    key="code"
+                    className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
+                  >
+                    <div className="p-4 h-full mx-auto">
+                      <CodeStudio />
                     </div>
                   </motion.div>
                 )}

@@ -144,7 +144,7 @@ export const MessageWrapper = ({
               (
                 <LoadingIndicator message={message} />
               )}
-            {IN_DEV && (
+            {/* {IN_DEV && (
               <div className="text-xs bg-red-800">
                 {message.annotations?.map((a: any, idx: number) => (
                   <div key={idx + a.type} className="text-xs text-white bg-red-500 my-2">
@@ -152,7 +152,7 @@ export const MessageWrapper = ({
                   </div>
                 ))}
               </div>
-            )}
+            )} */}
 
             {message.content &&
               message.content.length > 0 &&

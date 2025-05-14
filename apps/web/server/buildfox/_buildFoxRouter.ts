@@ -231,7 +231,11 @@ export const buildFoxRouter: ServerStreamingFunction<
     type: "ui",
     objectType: "envCollector",
     persona: "buildfox",
-    text: `Need Some Minor Details !`,
+    text: envVariables.length > 0 ? `Need Some Minor Details !` : `All Done !`,
+    description:
+      envVariables.length > 0
+        ? `I need some more details to complete the build. Please add the secrets below.`
+        : `All done! You can now test your automation by clicking the button below.`,
     codeFiles: newFilesList as any[],
     envVariablesAll: envVariablesUsedUnique as any[],
     packagesUsed: packagesUsedUnique as any[],

@@ -14,11 +14,7 @@ export const helperFilesContext = async (
 ) => {
   // TODO: for redis, create a standard pattern just like prisma
   let writtenHelperFilesContent: string | null = null;
-  if (
-    clientRequest &&
-    taskInstanceMeta?.taskStructure?.templateType !=
-      codeTemplateType.enum.plain_sls
-  ) {
+  if (clientRequest) {
     const allHelperFiles = files.filter((file) =>
       file.filePath.includes("/helpers/")
     );
@@ -35,6 +31,7 @@ export const helperFilesContext = async (
       ).join("\n");
     }
   }
+
   return `
     ${
       writtenHelperFilesContent &&

@@ -24,7 +24,13 @@ async function fetchGithubReadMe(
   return data;
 }
 
-const EXCLUDED_PACKAGES_LIST = ["@upstash/redis"];
+const EXCLUDED_PACKAGES_LIST = [
+  "@upstash/redis",
+  "puppeteer",
+  "@sparticuz/chromium",
+  "puppeteer-core",
+  "dotenv",
+];
 /** this should be removed from tools */
 export const fetchPackageDocs = (
   props: StreamingFucntionProps<any, any>,
@@ -52,13 +58,13 @@ export const fetchPackageDocs = (
       ),
     }),
     execute: async ({ packages }, options) => {
-      console.log("packages", packages);
       const fetchReadMePackages = packages.filter((pkg) =>
         pkg.package.includes("@microfox/")
           ? pkg.package != "@microfox/null"
           : !EXCLUDED_PACKAGES_LIST.includes(pkg.package) &&
             !pkg.package.startsWith("@types/")
       );
+      console.log("packages", fetchReadMePackages);
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;
@@ -99,29 +105,38 @@ export const fetchPackageDocs = (
             );
             //console.log("functions", microfoxFunction);
             for (const _function of microfoxFunction) {
-              if (_function.similarity > 1.5 && readme.length < 10000) {
+              if (
+                _function.similarity > 1.5 &&
+                readme.length < 10000 &&
+                !_function.file_path.includes(`${pakageExactName}/README.md`)
+              ) {
                 console.log("function pattern hit", _function.function_name);
                 readme += `\n\n${_function.content}`;
               }
             }
             console.log("readme char size", readme.length);
             console.log("fetched readme for ", pkg);
-            return { readme, package: pkg.package, reason: pkg.readmeSearch };
+            return {
+              docs: readme,
+              package: pkg.package,
+              // reason: pkg.readmeSearch,
+            };
           } catch (error) {
             console.error("Error fetching README:", error);
             return {
-              readme:
+              docs:
                 "No readme found for this package " +
                 pkg.package +
                 ", Use your own knowledge.",
               package: pkg.package,
-              reason: pkg.readmeSearch,
+              //reason: pkg.readmeSearch,
             };
           }
         })
       );
 
       console.log("all readmes", readmes.map((r) => r.package).join(", "));
+      console.log("readmes", readmes);
       console.log(
         "readmes not found",
         readmes.filter((r) => r.readme === "").map((r) => r.package)

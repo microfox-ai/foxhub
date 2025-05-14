@@ -30,6 +30,11 @@ export const createTaskIntegrations = async (
     content: "Searching for platforms we need to integrate with",
   });
 
+  // serach internal packages for each platform & attach them to the platform
+  const packageList = await getPackageList();
+  const stablePackageNames = packageList.stablePackages;
+  const semiStablePackageNames = packageList.semiStablePackages;
+  const externalPackageNames = packageList.externalPackages;
   // first, get a text of all the platforms we need to integrate with for this task
   const textPlatformsStream = streamText({
     model: models.googleGeminiPro,
@@ -51,6 +56,11 @@ export const createTaskIntegrations = async (
           reason: <reason for integrating with this specific platform/internal package>
           type: <type of platform/internal package>
           alternatives: <alternative platforms/internal packages for this platform/internal package>
+        ----
+        IN BUILT PACKAGES SUPPORT:
+        ${stablePackageNames.join(", ")}
+        ${semiStablePackageNames.join(", ")}
+        ${externalPackageNames.join(", ")}
         ---
         Exclude the following platforms from the list:
         - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
@@ -85,11 +95,6 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     type: "thinking",
     content: `searching for related packages...`,
   });
-  // serach internal packages for each platform & attach them to the platform
-  const packageList = await getPackageList();
-  const stablePackageNames = packageList.stablePackages;
-  const semiStablePackageNames = packageList.semiStablePackages;
-  const externalPackageNames = packageList.externalPackages;
 
   // Filter down all packages from both stablePackageNames and externalPackageNames
   // that have any remote relation to the platforms in textOfPlatforms

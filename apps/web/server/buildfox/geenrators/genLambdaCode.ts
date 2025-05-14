@@ -32,7 +32,7 @@ export const genLambdaCode = async (
           codeTemplateType.enum.plain_sls,
         clientRequest,
       });
-      console.log("generating lambda function", _function.name);
+      console.log("generating lambda function", _function.name, prompt);
       const result = await generateText({
         model: models.claude35Sonnet,
         system: codingSystemPrompt("backend"),

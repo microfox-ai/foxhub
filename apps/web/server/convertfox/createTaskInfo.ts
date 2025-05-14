@@ -7,6 +7,7 @@ import { TaskInstanceMeta } from "@prisma/client";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
+import { getPackageList } from "./getInternalPackages";
 
 export const createTaskInfo = async (
   props: StreamingFucntionProps<any, any>,
@@ -15,10 +16,18 @@ export const createTaskInfo = async (
 ) => {
   const { dataStream, requestBody, responseBody } = props;
 
+  const messages = requestBody.messages.reduce((acc: any, message: any) => {
+    acc += `${message.role}: ${message.content}\n`;
+    return acc;
+  }, "");
   dataStream.writeMessageAnnotation({
     type: "thinking",
     content: "Creating your automation task",
   });
+  const packageList = await getPackageList();
+  const stablePackageNames = packageList.stablePackages;
+  const semiStablePackageNames = packageList.semiStablePackages;
+  const externalPackageNames = packageList.externalPackages;
   //console.log("taskInstanceMeta", taskInstanceMeta);
   const result = await generateObject({
     model: models.googleGeminiPro,
@@ -30,6 +39,10 @@ export const createTaskInfo = async (
         You need to re-create a task info based on the previous Info and the user query.
         ----
         ${getMicrofoxCapabilities()}
+        Packages/Platforms we support:
+        ${stablePackageNames.join(", ")}
+        ${semiStablePackageNames.join(", ")}
+        ${externalPackageNames.join(", ")}
         `
       : `
         You are a task expert and also have developer experience.
@@ -38,6 +51,10 @@ export const createTaskInfo = async (
         Make sure you read task summary, platforms properly, & our capabilities before you can generate the task details
         ----
         ${getMicrofoxCapabilities()}
+                Packages/Platforms we support:
+        ${stablePackageNames.join(", ")}
+        ${semiStablePackageNames.join(", ")}
+        ${externalPackageNames.join(", ")}
     `,
     schema: taskInfo,
     prompt: modification
@@ -47,6 +64,8 @@ export const createTaskInfo = async (
         `
       : `
         task summary: ${taskInstanceMeta.initialSummary}
+        Initial chat with users: 
+        ${messages}
         `,
   });
   dataStream.writeMessageAnnotation({

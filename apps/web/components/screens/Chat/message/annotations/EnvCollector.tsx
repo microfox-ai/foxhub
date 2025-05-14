@@ -47,6 +47,7 @@ interface UIAnnotation {
   objectType: string;
   object: Record<string, any>;
   text?: string;
+  description?: string;
   persona?: string;
   buttons?: any[];
 }
@@ -322,7 +323,7 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
               {uiAnnotation.text}
             </h3>
             <p className="text-sm text-gray-500">
-              Please provide the following information to continue
+              {uiAnnotation.description || "Please provide the following information to continue"}
             </p>
           </div>)}
 
@@ -358,77 +359,79 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
           )}
         </div>
 
-        <div className={cn(
-          "flex flex-col gap-2 rounded-lg p-2",
-          hasAllRequiredKeys ? "bg-neutral-900" : "bg-neutral-100"
-        )}>
-          <button
-            onClick={() => setShowEnvVars(!showEnvVars)}
-            className="flex items-center justify-between w-full"
-          >
-            <h3 className={cn(
-              "text-sm font-semibold flex items-center gap-2",
-              hasAllRequiredKeys ? "text-white" : "text-black"
-            )}>
-              <Key className="w-4 h-4" />
-              Secret keys
-            </h3>
-            <ChevronDown
-              className={cn(
-                "w-4 h-4 transition-transform duration-200",
-                hasAllRequiredKeys ? "text-white" : "text-black",
-                showEnvVars ? "transform rotate-180" : ""
-              )}
-            />
-          </button>
-          {showEnvVars && (
-            <div className="flex flex-col gap-0 rounded-lg p-2">
-              {envVariables?.map((env: any) => (
-                <div
-                  key={env.env + env.name}
-                  className={cn(
-                    "flex items-center justify-between py-2 border-b last:border-b-0 last:pb-0",
-                    hasAllRequiredKeys ? "border-gray-700" : "border-gray-200"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "font-medium text-xs",
-                      hasAllRequiredKeys ? "text-gray-300" : "text-gray-900"
-                    )}>{env.name}</span>
-                    {customSecret?.variables?.some((variable: any) =>
-                      variable.key === env.env && variable.value?.trim()
-                    ) ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <HelpCircle className="w-4 h-4 text-yellow-500" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {showEnvVars && (
-            <div className="relative px-2 pb-3">
-              <Button
-                variant="outline"
+        {envVariables.length > 0 && (
+          <div className={cn(
+            "flex flex-col gap-2 rounded-lg p-2",
+            hasAllRequiredKeys ? "bg-neutral-900" : "bg-neutral-100"
+          )}>
+            <button
+              onClick={() => setShowEnvVars(!showEnvVars)}
+              className="flex items-center justify-between w-full"
+            >
+              <h3 className={cn(
+                "text-sm font-semibold flex items-center gap-2",
+                hasAllRequiredKeys ? "text-white" : "text-black"
+              )}>
+                <Key className="w-4 h-4" />
+                Secret keys
+              </h3>
+              <ChevronDown
                 className={cn(
-                  "transition",
-                  hasAllRequiredKeys
-                    ? "text-gray-300 hover:bg-neutral-800 border-neutral-700 bg-neutral-800 hover:text-white"
-                    : "text-blue-500 hover:bg-blue-50 border-blue-100 bg-blue-50 hover:text-blue-600"
+                  "w-4 h-4 transition-transform duration-200",
+                  hasAllRequiredKeys ? "text-white" : "text-black",
+                  showEnvVars ? "transform rotate-180" : ""
                 )}
-                onClick={() => setShowAddEnvModal(true)}
-              >
-                {hasAllRequiredKeys ?
-                  <PencilIcon className="w-4 h-4" />
-                  : <Plus className="w-4 h-4" />
-                }
-                {!hasAllRequiredKeys ? "Add the keys" : "Update the keys"}
-              </Button>
-            </div>
-          )}
-        </div>
+              />
+            </button>
+            {showEnvVars && (
+              <div className="flex flex-col gap-0 rounded-lg p-2">
+                {envVariables?.map((env: any) => (
+                  <div
+                    key={env.env + env.name}
+                    className={cn(
+                      "flex items-center justify-between py-2 border-b last:border-b-0 last:pb-0",
+                      hasAllRequiredKeys ? "border-gray-700" : "border-gray-200"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "font-medium text-xs",
+                        hasAllRequiredKeys ? "text-gray-300" : "text-gray-900"
+                      )}>{env.name}</span>
+                      {customSecret?.variables?.some((variable: any) =>
+                        variable.key === env.env && variable.value?.trim()
+                      ) ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <HelpCircle className="w-4 h-4 text-yellow-500" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {showEnvVars && (
+              <div className="relative px-2 pb-3">
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "transition",
+                    hasAllRequiredKeys
+                      ? "text-gray-300 hover:bg-neutral-800 border-neutral-700 bg-neutral-800 hover:text-white"
+                      : "text-blue-500 hover:bg-blue-50 border-blue-100 bg-blue-50 hover:text-blue-600"
+                  )}
+                  onClick={() => setShowAddEnvModal(true)}
+                >
+                  {hasAllRequiredKeys ?
+                    <PencilIcon className="w-4 h-4" />
+                    : <Plus className="w-4 h-4" />
+                  }
+                  {!hasAllRequiredKeys ? "Add the keys" : "Update the keys"}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
         {hasAllRequiredKeys && (
           <ActionButtons
             buttons={uiAnnotation.buttons}

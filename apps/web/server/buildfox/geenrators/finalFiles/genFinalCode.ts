@@ -60,6 +60,7 @@ export const genServerlessFinalCode = async (
             newPackageJsonContent.dependencies["@upstash/redis"] = "*";
           } else if (addon === codeTemplateAddon.enum.sls_puppeteer_chrome) {
             //newPackageJsonContent.dependencies["puppeteer"] = "*";
+            delete newPackageJsonContent.dependencies["puppeteer"];
             newPackageJsonContent.dependencies["puppeteer-core"] = "*";
             //newPackageJsonContent.dependencies["@sparticuz/chromium-min"] = "*";
             newPackageJsonContent.dependencies["@sparticuz/chromium"] = "*";

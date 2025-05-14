@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { DEPLOY_STAGE, FUNCTIONTYPE } from '@prisma/client';
 
-const supabase = createClient(
-    process.env.EMBEDDING_SUPABASE_URL!,
-    process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!
-);
-
 // Simple schema validation
 function validate(body: any) {
     const { name, base_url, stage, type } = body;
@@ -18,6 +13,11 @@ function validate(body: any) {
 }
 
 export async function GET(req: NextRequest) {
+    const supabase = createClient(
+        process.env.EMBEDDING_SUPABASE_URL!,
+        process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const { data, error } = await supabase
         .from('public_deployments')
         .select('*');
@@ -27,6 +27,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    const supabase = createClient(
+        process.env.EMBEDDING_SUPABASE_URL!,
+        process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const body = await req.json();
     const err = validate(body);
     if (err) return NextResponse.json({ error: err }, { status: 400 });
@@ -42,6 +47,11 @@ export async function POST(req: NextRequest) {
 
 
 export async function DELETE(req: NextRequest) {
+    const supabase = createClient(
+        process.env.EMBEDDING_SUPABASE_URL!,
+        process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     const name = req.nextUrl.searchParams.get('name');
     if (!name) {
         return NextResponse.json({ error: 'Missing "name" query parameter' }, { status: 400 });

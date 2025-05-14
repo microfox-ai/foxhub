@@ -33,6 +33,7 @@ type OpenAPISchema = {
   properties?: Record<string, OpenAPISchema>;
   items?: OpenAPISchema;
   required?: string[];
+  example?: any;
   enum?: any[];
   default?: any;
   additionalProperties?: boolean | OpenAPISchema;
@@ -44,27 +45,28 @@ type OpenAPISchema = {
 
 type OpenAPIParameter = {
   name: string;
-  in: 'query' | 'path' | 'header' | 'cookie';
+  in: "query" | "path" | "header" | "cookie" | "body";
   required?: boolean;
   schema: OpenAPISchema;
   description?: string;
-};
+  example?: any;
+}
+
+type OpenAPIContent = {
+  schema: OpenAPISchema;
+}
 
 type OpenAPIResponse = {
   description: string;
   content?: {
-    [key: string]: {
-      schema: OpenAPISchema;
-    };
+    [key: string]: OpenAPIContent;
   };
 };
 
 type OpenAPIRequestBody = {
   required?: boolean;
   content: {
-    [key: string]: {
-      schema: OpenAPISchema;
-    };
+    [key: string]: OpenAPIContent;
   };
 };
 
@@ -78,6 +80,9 @@ type OpenAPIOperation = {
   responses: {
     [key: string]: OpenAPIResponse;
   };
+  instructions?: string;
+  method?: string;
+  path?: string;
 };
 
 type OpenAPIPath = {
@@ -987,6 +992,7 @@ export type {
   OpenAPIResponse,
   OpenAPIRequestBody,
   OpenAPIParameter,
+  OpenAPIContent,
   OpenAPIOperation,
   OpenAPIPath,
   OpenAPIDoc,

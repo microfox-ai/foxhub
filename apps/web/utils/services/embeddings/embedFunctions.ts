@@ -11,7 +11,9 @@ type EmbedApiEndpointsArgs = {
     docData: OpenAPIDoc,
     botProjectId: string | null,
     originClientRequestId: string | null,
-    userId: string | null
+    userId: string | null,
+    stage: string | null,
+    base_url: string | null
 }
 
 export async function embedApiEndpoints({
@@ -19,7 +21,9 @@ export async function embedApiEndpoints({
     docData,
     botProjectId,
     originClientRequestId,
-    userId
+    userId,
+    stage,
+    base_url
 }: EmbedApiEndpointsArgs) {
     try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -103,33 +107,75 @@ export async function embedApiEndpoints({
                         continue;
                     }
 
-                    const { error } = await supabase
+                    const { data: existing, error: fetchError } = await supabase
                         .from('api_embeddings')
-                        .upsert({
+                        .select('id')
+                        .match({
                             bot_project_id: botProjectId,
                             origin_client_request_id: originClientRequestId,
-                            user_id: userId,
-                            base_url: docData.servers?.[0]?.url || null,
-                            schema_path: '/docs.json',
+                            base_url: base_url,
                             endpoint_path: path,
-                            http_method: method.toUpperCase(),
-                            doc_text: docText,
-                            embedding,
-                            is_public: false,
-                            stage: 'STAGING',
-                            metadata: {
-                                cron: cron || null,
-                                lambda: fn || null
-                            }
-                        }, { onConflict: 'bot_project_id,endpoint_path,http_method' });
+                            http_method: method.toUpperCase()
+                        })
+                        .maybeSingle();
 
-                    if (error) {
-                        console.error(`Failed to upsert ${method.toUpperCase()} ${path}:`, error);
+                    if (fetchError) {
+                        console.error(`Fetch error for ${method} ${path}:`, fetchError);
                         results.failed++;
-                        results.errors.push({ path, method, error });
+                        results.errors.push({ path, method, error: fetchError });
+                        continue;
+                    }
+
+                    if (existing) {
+                        // 2) Update existing
+                        const { error: updateError } = await supabase
+                            .from('api_embeddings')
+                            .update({
+                                doc_text: docText,
+                                embedding,
+                                metadata: { cron, lambda: fn || null },
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', existing.id);
+
+                        if (updateError) {
+                            console.error(`Update error for ${method} ${path}:`, updateError);
+                            results.failed++;
+                            results.errors.push({ path, method, error: updateError });
+                        } else {
+                            console.log(`Updated embedding for ${method} ${path}`);
+                            results.success++;
+                        }
                     } else {
-                        console.log(`Upserted embedding for ${method.toUpperCase()} ${path}`);
-                        results.success++;
+                        // 3) Insert new
+                        const { error: insertError } = await supabase
+                            .from('api_embeddings')
+                            .insert({
+                                bot_project_id: botProjectId,
+                                origin_client_request_id: originClientRequestId,
+                                user_id: userId,
+                                base_url: base_url,
+                                schema_path: '/docs.json',
+                                endpoint_path: path,
+                                http_method: method.toUpperCase(),
+                                doc_text: docText,
+                                embedding,
+                                is_public: false,
+                                stage: stage,
+                                metadata: {
+                                    cron: cron || null,
+                                    lambda: fn || null
+                                }
+                            });
+
+                        if (insertError) {
+                            console.error(`Insert error for ${method} ${path}:`, insertError);
+                            results.failed++;
+                            results.errors.push({ path, method, error: insertError });
+                        } else {
+                            console.log(`Inserted embedding for ${method} ${path}`);
+                            results.success++;
+                        }
                     }
                 } catch (endpointError) {
                     console.error(`Processing error for ${method.toUpperCase()} ${path}:`, endpointError);

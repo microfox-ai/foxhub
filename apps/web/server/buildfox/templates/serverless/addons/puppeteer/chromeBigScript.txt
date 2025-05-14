@@ -2,7 +2,7 @@ import chromium from "@sparticuz/chromium";
 
 chromium.setGraphicsMode = false;
 
-export const sync puppeteerLaunchProps = () => {
+export const puppeteerLaunchProps = async () => {
     const path = await chromium.executablePath()
     return {
   args: chromium.args,

@@ -39,3 +39,23 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data, { status: 200 });
 }
+
+
+export async function DELETE(req: NextRequest) {
+    const name = req.nextUrl.searchParams.get('name');
+    if (!name) {
+        return NextResponse.json({ error: 'Missing "name" query parameter' }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+        .from('public_deployments')
+        .delete()
+        .eq('name', name);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data || (data as any[])?.length === 0) {
+        return NextResponse.json({ error: 'No record found to delete' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Deleted successfully' });
+}

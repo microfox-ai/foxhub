@@ -7,23 +7,27 @@ const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
 
 type EmbedApiEndpointsArgs = {
-    taskStructure: TaskStructure,
+    taskStructure?: TaskStructure,
     docData: OpenAPIDoc,
-    botProjectId: string | null,
-    originClientRequestId: string | null,
-    userId: string | null,
+    botProjectId?: string | null,
+    originClientRequestId?: string | null,
+    userId?: string | null,
     stage: string | null,
-    base_url: string | null
+    base_url: string | null,
+    isPublic: boolean,
+    schema_path: string | null,
 }
 
 export async function embedApiEndpoints({
     taskStructure,
     docData,
+    isPublic,
     botProjectId,
     originClientRequestId,
     userId,
     stage,
-    base_url
+    base_url,
+    schema_path
 }: EmbedApiEndpointsArgs) {
     try {
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -31,15 +35,21 @@ export async function embedApiEndpoints({
             throw new Error('Invalid OpenAPI document: missing paths');
         }
 
-        if (!taskStructure) {
+        if (!isPublic && !taskStructure) {
             throw new Error('Invalid task structure: data is missing');
         }
 
         // helper to find cron job for an endpoint path
         const findCron = (path: string) => {
+            if (isPublic) {
+                return null;
+            }
             // Normalize path by removing leading/trailing slashes
             const normalizedPath = path.replace(/^\/|\/$/g, '');
 
+            if (!taskStructure) {
+                return null;
+            }
             return taskStructure.cronJobs.find(c => {
                 // More flexible matching
                 const cronName = c.name.replace(/^\/|\/$/g, '');
@@ -52,10 +62,16 @@ export async function embedApiEndpoints({
 
         // helper to find lambda function metadata with more flexible matching
         const findLambda = (path: string, method: string) => {
+            if (isPublic) {
+                return null;
+            }
             // Normalize path and method for comparison
             const normalizedPath = path.replace(/^\/|\/$/g, '');
             const normalizedMethod = method.toUpperCase();
 
+            if (!taskStructure) {
+                return null;
+            }
             return taskStructure.lambdaFunctions.find(f => {
                 // Normalize lambda path for comparison
                 const lambdaPath = f.path.replace(/^\/|\/$/g, '');
@@ -107,7 +123,7 @@ export async function embedApiEndpoints({
                         docText += `  Packages: ${fn.packagesUsed.join(', ')}\n`;
                         docText += `  Interaction: ${fn.interactionType.join(', ')}\n`;
                     }
-                    if (!fn && !cron) {
+                    if (!fn && !cron && !isPublic) {
                         console.log(`No function or cron found for ${path} ${method}`);
                         continue;
                     }
@@ -141,10 +157,10 @@ export async function embedApiEndpoints({
 
                     const { data: existing, error: fetchError } = await supabase
                         .from('api_embeddings')
-                        .select('id')
+                        .select('*')
                         .match({
-                            bot_project_id: botProjectId,
-                            origin_client_request_id: originClientRequestId,
+                            ...(botProjectId ? { bot_project_id: botProjectId } : {}),
+                            ...(originClientRequestId ? { origin_client_request_id: originClientRequestId } : {}),
                             base_url: base_url,
                             endpoint_path: path,
                             http_method: method.toUpperCase()
@@ -165,9 +181,9 @@ export async function embedApiEndpoints({
                     const metadata = {
                         openApiSchema: docData,
                         endpointSchema: op,
-                        function_type,
+                        function_type: isPublic ? "lambda" : function_type,
                         // Include the endpoint structure regardless of type
-                        endpoint_structure: fn || cron || null
+                        ...(isPublic ? { endpoint_structure: fn || cron || null } : {})
                     };
 
                     if (existing) {
@@ -195,16 +211,16 @@ export async function embedApiEndpoints({
                         const { error: insertError } = await supabase
                             .from('api_embeddings')
                             .insert({
-                                bot_project_id: botProjectId,
-                                origin_client_request_id: originClientRequestId,
-                                user_id: userId,
+                                bot_project_id: botProjectId || null,
+                                origin_client_request_id: originClientRequestId || null,
+                                user_id: userId || null,
                                 base_url: base_url,
-                                schema_path: '/docs.json',
                                 endpoint_path: path,
                                 http_method: method.toUpperCase(),
+                                schema_path,
                                 doc_text: docText,
                                 embedding,
-                                is_public: false,
+                                is_public: isPublic,
                                 stage: stage,
                                 metadata,
                             });

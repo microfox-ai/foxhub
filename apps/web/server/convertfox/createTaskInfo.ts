@@ -4,7 +4,10 @@ import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { taskInfo, TaskInstanceMetaType } from "./types";
 import { models } from "../models";
 import { TaskInstanceMeta } from "@prisma/client";
-import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import {
+  updateClientRequest,
+  updateTaskInstanceMeta,
+} from "@/utils/services/db_functions/updateClientRequest";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
 import { getPackageList } from "./getInternalPackages";
@@ -79,6 +82,10 @@ export const createTaskInfo = async (
       ...taskInstanceMeta,
       taskInfo: result.object,
     },
+  });
+  await updateClientRequest({
+    clientRequestId: requestBody.clientRequestId,
+    title: result.object.name,
   });
   TokenUsageAnalyticsTracker.trackUsage({
     ...props.requestBody,

@@ -1,4 +1,20 @@
-export enum APP_ROUTES {}
+export enum APP_ROUTES {
+  index = "/",
+  cancellationPolicy = "/policies/cancellation-refund",
+  contactPolicy = "/policies/contact",
+  dataDeletionPolicy = "/policies/data-deletion",
+  privacyPolicy = "/policies/privacy-policy",
+  serviceDeliveryPolicy = "/policies/service-delivery",
+  termsOfService = "/policies/terms-of-service",
+}
+
+export const SOCIAL_ROUTES = {
+  telegram: "/",
+  twitter: "https://twitter.com/TheMoonDevs",
+  instagram: "https://www.instagram.com/themoondevs/",
+  linkedin: "https://www.linkedin.com/company/themoondevs",
+  discord: "https://discord.gg/kUuJFvEtJ6",
+};
 
 export enum GLOBAL_ROUTES {
   applicationForm = "/application/position/",

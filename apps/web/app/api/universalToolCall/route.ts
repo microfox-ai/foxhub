@@ -2,13 +2,6 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/prisma/prisma';
 
-// Ensure you have a 32-byte base64-encoded key in your .env, e.g.: ENCRYPTION_KEY
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-if (!ENCRYPTION_KEY) {
-    throw new Error('ENCRYPTION_KEY is not defined in environment variables');
-}
-const KEY = Buffer.from(ENCRYPTION_KEY, 'base64'); // 32 bytes
-
 /**
  * GET /api/universalToolCall
  * Query params:
@@ -19,6 +12,13 @@ const KEY = Buffer.from(ENCRYPTION_KEY, 'base64'); // 32 bytes
  * attaching an encrypted header 'client-env-variables'.
  */
 export async function GET(request: Request) {
+    // Ensure you have a 32-byte base64-encoded key in your .env, e.g.: ENCRYPTION_KEY
+    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+    if (!ENCRYPTION_KEY) {
+        throw new Error('ENCRYPTION_KEY is not defined in environment variables');
+    }
+    const KEY = Buffer.from(ENCRYPTION_KEY, 'base64'); // 32 bytes
+    
     const url = new URL(request.url);
     const publicApiUrl = url.searchParams.get('publicApiUrl');
     const clientSecretIds = url.searchParams.get('clientSecretIds');

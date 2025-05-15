@@ -36,12 +36,38 @@ export async function embedApiEndpoints({
         }
 
         // helper to find cron job for an endpoint path
-        const findCron = (path: string) =>
-            taskStructure.cronJobs.find(c => path.endsWith(c.name) || path.includes(c.name));
+        const findCron = (path: string) => {
+            // Normalize path by removing leading/trailing slashes
+            const normalizedPath = path.replace(/^\/|\/$/g, '');
 
-        // helper to find lambda function metadata
-        const findLambda = (path: string) =>
-            taskStructure.lambdaFunctions.find(f => f.path === path);
+            return taskStructure.cronJobs.find(c => {
+                // More flexible matching
+                const cronName = c.name.replace(/^\/|\/$/g, '');
+                return normalizedPath === cronName ||
+                    normalizedPath.endsWith(`/${cronName}`) ||
+                    normalizedPath.startsWith(`${cronName}/`) ||
+                    normalizedPath.includes(`/${cronName}/`);
+            });
+        };
+
+        // helper to find lambda function metadata with more flexible matching
+        const findLambda = (path: string, method: string) => {
+            // Normalize path and method for comparison
+            const normalizedPath = path.replace(/^\/|\/$/g, '');
+            const normalizedMethod = method.toUpperCase();
+
+            return taskStructure.lambdaFunctions.find(f => {
+                // Normalize lambda path for comparison
+                const lambdaPath = f.path.replace(/^\/|\/$/g, '');
+                const lambdaMethod = f.method.toUpperCase();
+
+                // Check if paths match (exactly or with minor differences) and if methods match
+                return (normalizedPath === lambdaPath ||
+                    normalizedPath.endsWith(lambdaPath) ||
+                    lambdaPath.endsWith(normalizedPath)) &&
+                    normalizedMethod === lambdaMethod;
+            });
+        };
 
         const results = {
             success: 0,
@@ -50,14 +76,16 @@ export async function embedApiEndpoints({
         };
 
         for (const [path, methods] of Object.entries(docData.paths)) {
+            console.log(`Processing path: ${path}`);
             for (const [method, op] of Object.entries(methods)) {
                 try {
+                    console.log(`Processing method: ${method}`);
                     // build doc_text
                     let docText = `ENDPOINT_PATH: ${method.toUpperCase()} ${path}\n`;
                     if (op.summary) docText += `SUMMARY: ${op.summary}\n`;
                     if (op.description) docText += `DESCRIPTION: ${op.description}\n`;
 
-                    const cron = findCron(path);
+                    let cron = findCron(path);
                     if (cron) {
                         docText += `\nCRON_JOB:\n`;
                         docText += `  Name: ${cron.name}\n`;
@@ -67,7 +95,7 @@ export async function embedApiEndpoints({
                         docText += `  End Result: ${cron.endResult}\n`;
                     }
 
-                    const fn = findLambda(path);
+                    let fn = findLambda(path, method);
                     if (fn) {
                         docText += `\nLAMBDA_FUNCTION:\n`;
                         docText += `  Name: ${fn.name}\n`;
@@ -78,6 +106,10 @@ export async function embedApiEndpoints({
                         docText += `  End Result: ${fn.endResult}\n`;
                         docText += `  Packages: ${fn.packagesUsed.join(', ')}\n`;
                         docText += `  Interaction: ${fn.interactionType.join(', ')}\n`;
+                    }
+                    if (!fn && !cron) {
+                        console.log(`No function or cron found for ${path} ${method}`);
+                        continue;
                     }
 
                     if (op.requestBody?.content?.['application/json']?.schema) {
@@ -126,6 +158,18 @@ export async function embedApiEndpoints({
                         continue;
                     }
 
+                    // Determine function type with improved logic
+                    const function_type = fn ? 'lambda' : cron ? 'cron' : "unknown";
+
+                    // Create metadata with endpoint structure based on what's available
+                    const metadata = {
+                        openApiSchema: docData,
+                        endpointSchema: op,
+                        function_type,
+                        // Include the endpoint structure regardless of type
+                        endpoint_structure: fn || cron || null
+                    };
+
                     if (existing) {
                         // 2) Update existing
                         const { error: updateError } = await supabase
@@ -133,12 +177,7 @@ export async function embedApiEndpoints({
                             .update({
                                 doc_text: docText,
                                 embedding,
-                                metadata: {
-                                    openApiSchema: docData,
-                                    function_type: fn ? 'lambda' : cron ? 'cron' : "unknown",
-                                    ...(fn && { endpoint_structure: fn }),
-                                    ...(cron && { endpoint_structure: cron })
-                                },
+                                metadata,
                                 updated_at: new Date().toISOString()
                             })
                             .eq('id', existing.id);
@@ -167,12 +206,7 @@ export async function embedApiEndpoints({
                                 embedding,
                                 is_public: false,
                                 stage: stage,
-                                metadata: {
-                                    openApiSchema: docData,
-                                    function_type: fn ? 'lambda' : cron ? 'cron' : "unknown",
-                                    ...(fn && { endpoint_structure: fn }),
-                                    ...(cron && { endpoint_structure: cron })
-                                },
+                                metadata,
                             });
 
                         if (insertError) {

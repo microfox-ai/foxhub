@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { DEPLOY_STAGE, FUNCTIONTYPE } from '@prisma/client';
+import { embedApiEndpoints } from '@/utils/services/embeddings/embedFunctions';
+import { OpenAPIDoc } from '@/utils/services/OpenAPIToolsClient';
 
 // Simple schema validation
 function validate(body: any) {
@@ -54,8 +56,10 @@ export async function POST(req: NextRequest) {
         console.log("body", body);
 
         const err = validate(body);
-        console.log("err", err);
-        if (err) return NextResponse.json({ error: err }, { status: 400 });
+        if (err) {
+            console.log("err", err);
+            return NextResponse.json({ error: err }, { status: 400 });
+        }
 
         const supabase = createClient(
             process.env.EMBEDDING_SUPABASE_URL!,
@@ -65,10 +69,23 @@ export async function POST(req: NextRequest) {
         // Upsert on unique name
         const { data, error } = await supabase
             .from('public_deployments')
-            .upsert(body, { onConflict: 'name,package_name' });
+            .upsert(body, { onConflict: 'name' });
 
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        return NextResponse.json(data, { status: 200 });
+        if (error) {
+            console.log("error", error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        await embedApiEndpoints({
+            docData: body.metadata.docs_data as OpenAPIDoc,
+            stage: body.stage,
+            base_url: `${body.base_url}`,
+            isPublic: true,
+            schema_path: null,
+          });
+        return NextResponse.json({
+            message: "Deployed successfully",
+        }, { status: 200 });
 
     } catch (error) {
         console.error('Error in POST request:', error);

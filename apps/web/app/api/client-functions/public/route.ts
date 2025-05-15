@@ -4,7 +4,7 @@ import { DEPLOY_STAGE, FUNCTIONTYPE } from '@prisma/client';
 
 // Simple schema validation
 function validate(body: any) {
-    const { name, package_name, base_url, stage, type } = body;
+    const { base_url, stage, type } = body;
     if (!base_url || typeof base_url !== 'string') return 'Invalid or missing "base_url"';
     if (!Object.values(DEPLOY_STAGE).includes(stage)) return 'Invalid "stage"';
     if (!Object.values(FUNCTIONTYPE).includes(type)) return 'Invalid "type"';
@@ -49,22 +49,31 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const supabase = createClient(
-        process.env.EMBEDDING_SUPABASE_URL!,
-        process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!
-    );
+    try {
+        const body = await req.json();
+        console.log("body", body);
 
-    const body = await req.json();
-    const err = validate(body);
-    if (err) return NextResponse.json({ error: err }, { status: 400 });
+        const err = validate(body);
+        console.log("err", err);
+        if (err) return NextResponse.json({ error: err }, { status: 400 });
 
-    // Upsert on unique name
-    const { data, error } = await supabase
-        .from('public_deployments')
-        .upsert(body, { onConflict: 'name,package_name' });
+        const supabase = createClient(
+            process.env.EMBEDDING_SUPABASE_URL!,
+            process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!
+        );
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data, { status: 200 });
+        // Upsert on unique name
+        const { data, error } = await supabase
+            .from('public_deployments')
+            .upsert(body, { onConflict: 'name,package_name' });
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(data, { status: 200 });
+
+    } catch (error) {
+        console.error('Error in POST request:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 }
 
 

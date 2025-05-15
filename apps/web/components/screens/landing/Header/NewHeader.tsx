@@ -100,7 +100,6 @@ const NewHeader = () => {
           <>
             <div className="flex items-center">
               <MenuItem label="Pricing" to="/pricing" />
-              <MenuItem label="Why us" to="/why-choose-us" />
               {/* <Link
                 href={'https://portal.themoondevs.com'}
                 className="cursor-pointer rounded-md border-2 border-transparent px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out hover:bg-[#414a4c] max-lg:hidden"

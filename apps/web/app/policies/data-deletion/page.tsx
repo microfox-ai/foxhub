@@ -149,7 +149,7 @@ const DataDeletion = () => {
       </section>
 
       <section>
-        <p className="text-sm text-gray-600">For assistance with data deletion or to report issues with this process, contact our privacy team at privacy@yourapp.com or call +1 (555) 234-5678 during business hours.</p>
+        <p className="text-sm text-gray-600">For assistance with data deletion or to report issues with this process, contact our privacy team at privacy@microfox.app .</p>
         <p className="text-sm text-gray-600 mt-2">Last updated: {new Date().toLocaleDateString()}</p>
       </section>
     </div>

@@ -115,7 +115,7 @@ const PrivacyPolicy = () => {
 
       <section>
         <p className="text-sm text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
-        <p className="text-sm text-gray-600 mt-2">For privacy inquiries, contact: privacy@yourapp.com</p>
+        <p className="text-sm text-gray-600 mt-2">For privacy inquiries, contact: contact@themoondevs.com</p>
       </section>
     </div>
   );

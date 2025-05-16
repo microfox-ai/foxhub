@@ -109,7 +109,7 @@ const BotForm = ({ mode }: BotFormProps) => {
   const requiredKeys =
     mode === "create"
       ? selectedConstructor?.requiredKeys
-      : botToEdit?.packageInfo?.constructors[0]?.requiredKeys;
+      : botToEdit?.packageInfo?.constructors?.find((constructor: Constructor) => constructor.name === botToEdit?.packageConstructor)?.requiredKeys;
 
 
   return (

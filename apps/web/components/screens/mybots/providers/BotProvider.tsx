@@ -21,7 +21,7 @@ import { useSearchParams } from "next/navigation";
 import { useSecret } from "./SecretProvider";
 import { Bot, mapClientSecretToBot } from "./types";
 
-const useBotsContextInternal = () => {
+const useBotsContextInternal = (packageTypes?: ClientSecretPackageType[]) => {
   const [bots, setBots] = useState<Bot[]>([]);
   const { selectedProject } = useClientProject();
   const { user } = useAuth();
@@ -66,7 +66,7 @@ const useBotsContextInternal = () => {
     mutate: refreshBots,
   } = useSWR<{ clientSecrets: ClientSecretWithPackageInfo[] }>(
     selectedProject?.id && user?.id
-      ? `/api/client-secrets?botProjectId=${selectedProject?.id}&userId=${user?.id}&withPackageInfos=true&packageTypes=${ClientSecretPackageType.APIKEY}`
+      ? `/api/client-secrets?botProjectId=${selectedProject?.id}&userId=${user?.id}&withPackageInfos=true&packageTypes=${packageTypes?.join(",")}`
       : null,
     async (url: string) => {
       const response = await PortalSdk.getData(url, {});
@@ -101,8 +101,8 @@ const BotContext = createContext<ReturnType<typeof useBotsContextInternal> | und
   undefined
 );
 
-export function BotProvider({ children }: { children: ReactNode }) {
-  const context = useBotsContextInternal();
+export function BotProvider({ children, packageTypes }: { children: ReactNode, packageTypes?: ClientSecretPackageType[] }) {
+  const context = useBotsContextInternal(packageTypes);
 
   return <BotContext.Provider value={context}>{children}</BotContext.Provider>;
 }

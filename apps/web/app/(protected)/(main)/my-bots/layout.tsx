@@ -2,7 +2,7 @@ import { BotHeader } from "@/components/screens/mybots/BotHeader";
 import { BotProvider } from "@/components/screens/mybots/providers/BotProvider";
 import { SecretProvider } from "@/components/screens/mybots/providers/SecretProvider";
 import { SecretFormProvider } from "@/components/screens/mybots/providers/SecretFormProvider";
-import { Bot } from "lucide-react";
+import { ClientSecretPackageType } from "@/server/types";
 
 export default function MyBotsLayout({
   children,
@@ -11,10 +11,10 @@ export default function MyBotsLayout({
 }) {
   return (
     <SecretProvider>
-      <BotProvider>
+      <BotProvider packageTypes={[ClientSecretPackageType.APIKEY]}>
         <SecretFormProvider>
           <div className="">
-            <BotHeader />
+            <BotHeader type="bots" />
             {children}
           </div>
         </SecretFormProvider>

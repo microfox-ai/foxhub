@@ -1,58 +1,57 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/prisma/prisma';
 
-/**
- * GET /api/universalToolCall
- * Query params:
- *   publicApiUrl: string (destination URL)
- *   clientSecretIds: comma-separated list of secret IDs
- *
- * Responds with a 307 redirect to publicApiUrl,
- * attaching an encrypted header 'client-env-variables'.
- */
-export async function GET(request: Request) {
-    // Ensure you have a 32-byte base64-encoded key in your .env, e.g.: ENCRYPTION_KEY
-    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
-    if (!ENCRYPTION_KEY) {
-        throw new Error('ENCRYPTION_KEY is not defined in environment variables');
-    }
-    const KEY = Buffer.from(ENCRYPTION_KEY, 'base64'); // 32 bytes
-    
-    const url = new URL(request.url);
-    const publicApiUrl = url.searchParams.get('publicApiUrl');
-    const clientSecretIds = url.searchParams.get('clientSecretIds');
+export async function middleware(request: NextRequest) {
+  const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+  if (!ENCRYPTION_KEY) {
+    throw new Error('ENCRYPTION_KEY is not defined in environment variables');
+  }
+  const KEY = Buffer.from(ENCRYPTION_KEY, 'base64'); // 32 bytes
 
-    if (!publicApiUrl || !clientSecretIds) {
-        return NextResponse.json(
-            { error: 'Missing publicApiUrl or clientSecretIds parameters.' },
-            { status: 400 }
-        );
-    }
+  const url = new URL(request.url);
+  const publicApiUrl = url.searchParams.get('publicApiUrl');
+  const clientSecretIds = url.searchParams.get('clientSecretIds');
 
-    // Fetch secrets from database
-    const secrets = await Promise.all(
-        clientSecretIds.split(',').map(async (id) => {
-            const record = await prisma.clientSecret.findUnique({ where: { id } });
-            return record?.variables || {};
-        })
+  if (!publicApiUrl || !clientSecretIds) {
+    return NextResponse.json(
+      { error: 'Missing publicApiUrl or clientSecretIds parameters.' },
+      { status: 400 }
     );
+  }
 
-    // Consolidate and stringify
-    const payload = JSON.stringify(secrets);
+  // Fetch and flatten secrets
+  const secretArrays = await Promise.all(
+    clientSecretIds.split(',').map(async (id) => {
+      const record = await prisma.clientSecret.findUnique({ where: { id } });
+      return (record?.variables || []) as Record<"key" | "value", string>[];
+    })
+  );
 
-    // Encryption: AES-256-GCM
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv('aes-256-gcm', KEY, iv);
-    const encrypted = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]);
-    const authTag = cipher.getAuthTag();
+  // Flatten into a single object: { key1: value1, key2: value2, ... }
+  const flatEnv: Record<string, string> = {};
+  for (const arr of secretArrays) {
+    for (const entry of arr) {
+      flatEnv[entry.key] = entry.value;
+    }
+  }
 
-    // Combine iv + authTag + ciphertext
-    const encryptedBundle = Buffer.concat([iv, authTag, encrypted]).toString('base64');
+  const payload = JSON.stringify(flatEnv);
+  console.log("payload", payload);
 
-    // Issue a 307 redirect with the encrypted header
-    const response = NextResponse.redirect(publicApiUrl, 307);
-    response.headers.set('client-env-variables', encryptedBundle);
+  // Encrypt using AES-256-GCM
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  const bundle = Buffer.concat([iv, authTag, encrypted]).toString('base64');
 
-    return response;
+  // Create URL with the bundle as a search parameter
+  const targetUrl = new URL(publicApiUrl);
+  targetUrl.searchParams.set('client-env-variables', encodeURIComponent(bundle));
+  
+  return NextResponse.redirect(targetUrl.toString(), 307);
 }
+
+// Allow all methods to use this logic
+export { middleware as GET, middleware as POST, middleware as PUT, middleware as DELETE, middleware as PATCH };

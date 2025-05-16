@@ -150,7 +150,6 @@ export async function POST(req: NextRequest) {
         userId: userId,
         stage: stage,
         base_url: `${baseUrl}/${stage.toLowerCase()}`,
-        isPublic: false,
         schema_path: "/docs.json",
       });
     }

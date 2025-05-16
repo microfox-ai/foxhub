@@ -79,7 +79,7 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const [showLogs, setShowLogs] = useState(false);
-  const { setSubmitAnnotations } = useClientProject();
+  const { setSubmitAnnotations, setAutoSubmit } = useClientProject();
   const { setActiveTab } = useTabUi()
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
@@ -297,7 +297,7 @@ const PreviewWindow = () => {
     } catch (error) {
       console.error("Request preparation error:", error);
     } finally {
-      console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
+      //console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
       await new Promise(resolve => setTimeout(resolve, 1000));
       // Then fetch logs, regardless of API call outcome
       await fetchServerlessLogs({

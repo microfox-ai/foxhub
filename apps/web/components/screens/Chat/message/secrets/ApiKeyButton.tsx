@@ -102,13 +102,6 @@ export const ApiKeyButton = ({
         );
     }, [secretsData, packageInfo, oauthConstructor]);
 
-    // Set the selected bot secret to the current oauth secret when it changes
-    useMemo(() => {
-        if (currentOauthSecret) {
-            setSelectedBotSecret(currentOauthSecret.id);
-        }
-    }, [currentOauthSecret]);
-
     const isAllKeysFilled = useMemo(() => {
         if (apiKeySecret) {
             return apiKeyConstructor?.requiredKeys.every(
@@ -144,6 +137,12 @@ export const ApiKeyButton = ({
                 })
         )
         : false;
+    // Set the selected bot secret to the current oauth secret when it changes
+    useMemo(() => {
+        if (currentOauthSecret && hasAllAuthRelatedKeys) {
+            setSelectedBotSecret("connect");
+        }
+    }, [currentOauthSecret, hasAllAuthRelatedKeys]);
 
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {

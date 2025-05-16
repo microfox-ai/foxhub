@@ -14,7 +14,7 @@ import {
   fetchTemplateDir,
 } from "./tool/writeToFile";
 import fs from "fs/promises";
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, ClientSecret } from "@prisma/client";
 import { envsFromTaskIntegrations } from "./helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "./helper/templateEnvsFromTaskIntegrations";
 import { prisma } from "@/prisma/prisma";
@@ -123,6 +123,7 @@ export const codingFunctionPrompt = async ({
   cron: _cron,
   template_type,
   clientRequest,
+  clientSecrets,
 }: {
   type: "lambda" | "cron";
   taskInstanceMeta: TaskInstanceMetaType;
@@ -130,6 +131,7 @@ export const codingFunctionPrompt = async ({
   cron?: TaskStructure["cronJobs"][0];
   template_type: CodeTemplateType;
   clientRequest?: ClientRequest;
+  clientSecrets: ClientSecret[];
 }) => {
   const rootDir = fetchTemplateDir(template_type);
 
@@ -158,7 +160,7 @@ export const codingFunctionPrompt = async ({
 
             ${packagesPrompt(taskInstanceMeta)}
 
-            ${await envsPrompt(clientRequest, taskInstanceMeta, files, type)}
+            ${await envsPrompt(clientRequest, clientSecrets, taskInstanceMeta, files, type)}
 
             ${await helperFilesContext(clientRequest, taskInstanceMeta, files)}
 

@@ -96,21 +96,27 @@ export const genServerlessYML = async (
     prompt: dedent`You are requested to modify a serverless.yml file for the following requirement:
           The following functions are generated for the task:
           ${allGenFilesList
-        ?.filter((file: any) => file.filePath.includes("/functions"))
-        .map((file: any) => file.fileName)
-        .join("\n - ")}
+            ?.filter((file: any) => file.filePath.includes("/functions"))
+            .map((file: any) => file.fileName)
+            .join("\n - ")}
+
+          if for lambda functions,
+          use theese methods:
+          ${taskInstanceMeta?.taskStructure?.lambdaFunctions
+            ?.map((lambda) => lambda.name + " - " + lambda.method)
+            .join("\n\n - ")}
 
           if for cron jobs, use theses cron expressions:
           ${taskInstanceMeta?.taskStructure?.cronJobs
-        ?.map(
-          (cron) =>
-            cron.name +
-            " - " +
-            cron.cronExpression +
-            "\n because: " +
-            cron.endResult
-        )
-        .join("\n\n - ")}
+            ?.map(
+              (cron) =>
+                cron.name +
+                " - " +
+                cron.cronExpression +
+                "\n because: " +
+                cron.endResult
+            )
+            .join("\n\n - ")}
 
           The input serverless.yml file is as follows:
           ${serverlessYml}
@@ -171,10 +177,9 @@ export const genServerlessYML = async (
   const validation = validateServerlessYML(generatedContent);
 
   await updateYMLFile(
-    generatedFilePath.replace("/serverless.yml", "").replace(
-      "\\serverless.yml",
-      ""
-    ),
+    generatedFilePath
+      .replace("/serverless.yml", "")
+      .replace("\\serverless.yml", ""),
     "serverless.yml",
     (config) => {
       let newConfig = { ...config };

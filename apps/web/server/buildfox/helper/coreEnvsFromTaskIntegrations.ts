@@ -8,13 +8,22 @@ import { TaskIntegrations } from "@/server/convertfox/types";
 //edge - platforms can be external (unkonw new kinds.)
 export const envsFromTaskIntegrations = (
   taskIntegrations: TaskIntegrations,
-  type?: "requiredKeys" | "allKeys" | "botConfig" | "internalKeys"
+  type?: "requiredKeys" | "allKeys" | "botConfig" | "internalKeys",
+  selectedConstructors?: string[]
 ) => {
   let coreEnvs: string[] | undefined = [];
   try {
     coreEnvs = taskIntegrations?.platforms?.flatMap((platform) =>
       ((platform as any).packageInfo as Package)?.constructors?.flatMap(
         (constructor: Constructor) => {
+          if (
+            selectedConstructors &&
+            !selectedConstructors.includes(
+              (platform as any).packageInfo?.name + "/" + constructor.name
+            )
+          ) {
+            return [];
+          }
           if (type === "requiredKeys") {
             return constructor.requiredKeys
               ?.map((key: KeyVariableConfig) => key.key)

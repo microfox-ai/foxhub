@@ -7,11 +7,3 @@ export const botFormSchema = z.object({
 });
 
 export type BotFormValues = z.infer<typeof botFormSchema>;
-
-export interface RequiredKeyInfo {
-  key: string;
-  displayName: string;
-  type?: string;
-  description?: string;
-  isOptional?: boolean;
-}

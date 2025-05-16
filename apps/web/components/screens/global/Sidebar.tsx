@@ -15,6 +15,7 @@ import {
   PanelLeftIcon,
   Plus,
   LayoutDashboard,
+  KeyRound,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
@@ -96,6 +97,15 @@ const navigationConfig: NavigationConfig[] = [
     ),
     label: "My Bots",
     href: "/my-bots",
+    requiresProject: true,
+  },
+  {
+    icon: <KeyRound strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <KeyRound strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "My Data",
+    href: "/my-data",
     requiresProject: true,
   },
   {

@@ -9,7 +9,9 @@ export const baseFilePrompt = (fileType: "lambda" | "cron", _function: any) => {
             - Brief: ${_function?.brief}
             Endpoint Details:
             - Path: ${_function?.path}
-            - Method: ${_function?.method}`
+            - Method: ${_function?.method}
+            - ${_function?.method === "GET" ? `- End point should not have a request body as it is a GET request` : ""}
+            `
       : `Cron Job:
             - Name: ${_function?.name}
             - Description & Schedule: ${_function?.description}

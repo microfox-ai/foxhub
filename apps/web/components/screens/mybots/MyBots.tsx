@@ -7,18 +7,20 @@ import { useState } from "react";
 import AddBotDialog from "./AddBotDialog";
 import { useBots } from "./providers/BotProvider";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 const MyBots = () => {
   const [isAddBotDialogOpen, setIsAddBotDialogOpen] = useState(false);
   const { bots, isLoading, error, stableBotPackages } = useBots();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleAddBot = () => {
     setIsAddBotDialogOpen(true);
   };
 
   const handleBotClick = (botId: string) => {
-    router.push(`/my-bots/edit?botId=${botId}`);
+    router.push(`${pathname}/edit?botId=${botId}`);
   };
 
   if (error) {
@@ -37,15 +39,17 @@ const MyBots = () => {
   return (
     <div className="grid mt-8 px-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
       {/* Add Bot Card */}
-      <div className="flex flex-col items-center">
-        <button
-          onClick={handleAddBot}
-          className="w-full aspect-square flex items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50 transition-colors"
-        >
-          <Plus className="h-8 w-8 text-gray-400" />
-        </button>
-        <span className="mt-3 text-sm font-medium text-gray-600">New Bot</span>
-      </div>
+      {pathname.includes("my-bots") && (
+        <div className="flex flex-col items-center">
+          <button
+            onClick={handleAddBot}
+            className="w-full aspect-square flex items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50 transition-colors"
+          >
+            <Plus className="h-8 w-8 text-gray-400" />
+          </button>
+          <span className="mt-3 text-sm font-medium text-gray-600">New Bot</span>
+        </div>
+      )}
 
       {isLoading
         ? [1, 2, 3, 4].map((i) => (

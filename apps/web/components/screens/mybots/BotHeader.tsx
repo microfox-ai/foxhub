@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useSecret } from "./providers/SecretProvider";
 
 
-export function BotHeader() {
+export function BotHeader({
+    type
+}: {
+    type: "bots" | "data"
+}) {
 
     const { botToEdit, botId } = useSecret();
     const botName = botId ? botToEdit?.name : null;
@@ -21,7 +25,7 @@ export function BotHeader() {
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
                         <BreadcrumbLink asChild>
-                            <Link href="/my-bots">My Bots</Link>
+                            <Link href={type === "bots" ? "/my-bots" : "/my-data"}>My {type}</Link>
                         </BreadcrumbLink>
                     </BreadcrumbItem>
                     {botName && botId && (

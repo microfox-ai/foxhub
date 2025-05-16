@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Copy, SettingsIcon, KeyIcon } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { BotFormValues } from "../types";
-import { RequiredKeyInfo } from "../types";
 import ConfigDetailsForm from "./ConfigDetails";
-import { Constructor, Package } from "../../Chat/message/types";
+import { Constructor, KeyVariableConfig, Package } from "../../Chat/message/types";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSecret } from "../providers/SecretProvider";
@@ -16,7 +15,7 @@ import RequiredKeysForm from "./RequiredKeysForm";
 
 interface GeneralTabProps {
     form: UseFormReturn<BotFormValues>;
-    requiredKeys: RequiredKeyInfo[];
+    requiredKeys: KeyVariableConfig[];
     packageInfo?: Package;
     packageName: string;
     selectedConstructor?: Constructor;
@@ -30,6 +29,8 @@ const GeneralTab = ({
     packageInfo,
 }: GeneralTabProps) => {
     const { mode, botToEdit } = useSecret();
+
+    const internalKeys = selectedConstructor?.internalKeys;
 
     return (
         <div className="space-y-6 pt-0">
@@ -80,6 +81,19 @@ const GeneralTab = ({
                 </div>
             ) : (
                 <RequiredKeysForm form={form} requiredKeys={requiredKeys} />
+            )}
+
+            {internalKeys && internalKeys.length > 0 && (
+                <div className="border-t border-neutral-200 pt-10 mt-10">
+                    <h3 className="text-xs flex items-center gap-2 font-medium text-neutral-500 uppercase tracking-widest">
+                        <KeyIcon className="h-4 w-4 mr-2" />
+                        Internal Keys
+                    </h3>
+                </div>
+            )}
+
+            {internalKeys && internalKeys.length > 0 && (
+                <RequiredKeysForm form={form} requiredKeys={internalKeys} hideKeys={["CLIENT_SECRET", "CLIENT_ID"]} />
             )}
 
             {botToEdit?.defaultConfig && botToEdit?.defaultConfig?.length > 0 && (

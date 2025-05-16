@@ -2,7 +2,7 @@ import {
   codeTemplateType,
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, ClientSecret } from "@prisma/client";
 import { envsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
 import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
 import { prisma } from "@/prisma/prisma";
@@ -10,6 +10,7 @@ import { ClientSecretVariable } from "@/server/types";
 
 export const envsPrompt = async (
   clientRequest: ClientRequest,
+  clientSecrets: ClientSecret[],
   taskInstanceMeta: TaskInstanceMetaType,
   files: any[],
   fileType: "lambda" | "cron"
@@ -32,19 +33,25 @@ export const envsPrompt = async (
   const requiredEnvs = taskInstanceMeta.taskIntegrations
     ? envsFromTaskIntegrations(
         taskInstanceMeta.taskIntegrations,
-        "requiredKeys"
+        "requiredKeys",
+        clientSecrets?.map((secret) => secret.type)
       )
     : [];
   coreEnvs = coreEnvs.concat(requiredEnvs);
   const oauthEnvs = taskInstanceMeta.taskIntegrations
     ? envsFromTaskIntegrations(
         taskInstanceMeta.taskIntegrations,
-        "internalKeys"
+        "internalKeys",
+        clientSecrets?.map((secret) => secret.type)
       )
     : [];
   coreEnvs = coreEnvs.concat(oauthEnvs);
   let configEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "botConfig")
+    ? envsFromTaskIntegrations(
+        taskInstanceMeta.taskIntegrations,
+        "botConfig",
+        clientSecrets?.map((secret) => secret.type)
+      )
     : [];
 
   // ONLY ADD THOSE CONFIG ENVS THAT ARE FILLED (SKIP UNFILLED)
@@ -79,8 +86,14 @@ export const envsPrompt = async (
   return `
      The following env variables are already present in the project:
             ${templateEnvs.map((env: any) => `- ${env.key}`).join("\n")}
-            ${coreEnvs.map((env) => `- ${env}`).join("\n")}
-            ${previousEnvs.map((env) => `- ${env}`).join("\n")}
+            ${coreEnvs
+              ?.filter((env) => env != undefined)
+              .map((env) => `- ${env}`)
+              .join("\n")}
+            ${previousEnvs
+              ?.filter((env) => env != undefined)
+              .map((env) => `- ${env}`)
+              .join("\n")}
 
             ${
               /** TODO: this requires improving because cron would still add new variables, as it doesnt have a way to collect them,  so use redis as env var storage across all functions */

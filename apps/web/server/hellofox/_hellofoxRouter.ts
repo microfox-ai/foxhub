@@ -226,6 +226,7 @@ export const hellofoxRouter: ServerStreamingFunction<
 
       DO NOT CALL ANY OTHER TOOL further, if isTaskBuildable is called.
       ${classification.type === "task-confirmation" && " YOU MUST CALL isTaskBuildable tool "}
+      use proper line breaks in your response.
       `,
       messages: lastFewMessages,
       toolCallStreaming: true,
@@ -286,6 +287,7 @@ export const hellofoxRouter: ServerStreamingFunction<
         Respond to the user's query in a short & concise manner.
         End the conversation asking on how you can be of help to the user.
         Never tell about your technicalities, unless asked.
+        use proper line breaks in your response.
         `,
       messages: lastFewMessages,
       onFinish: (result) => {

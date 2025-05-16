@@ -21,6 +21,11 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { useClientProject } from '../../providers/ClientProjectProvider';
 import { PROJECT_REPO_OWNER } from '@/utils/constants/githubInfo';
+import useSWR from 'swr';
+import { ClientSecretVariable } from '@/server/types';
+import { ClientSecret } from '@prisma/client';
+import { useParams } from 'next/navigation';
+import { IN_DEV } from '@/utils/constants/appInfo';
 
 // Define a simple type for file entries from taskInstanceMeta
 interface BuildFile {
@@ -251,15 +256,20 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
     useEffect(() => {
         const loadFileContent = async () => {
             if (activeFile) {
-                const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath;
-                if (!fullFilePath) {
-                    toast.error('File not found');
-                    return;
-                }
-                const content = await fetchFileContent(fullFilePath);
-                if (content !== null) {
-                    setEditorContent(content);
+                if (activeFile.id === ".env") {
+                    setEditorContent(envFile.content);
                     setIsModified(false);
+                } else {
+                    const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath;
+                    if (!fullFilePath) {
+                        toast.error('File not found');
+                        return;
+                    }
+                    const content = await fetchFileContent(fullFilePath);
+                    if (content !== null) {
+                        setEditorContent(content);
+                        setIsModified(false);
+                    }
                 }
             }
         };
@@ -317,6 +327,44 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                 return 'plaintext';
         }
     };
+    const params = useParams<{
+        project_id?: string;
+        request_id?: string;
+    }>();
+    const requestParamId = params?.request_id;
+    const { data: secretsData, mutate: mutateSecrets } = useSWR<{
+        clientSecrets: ClientSecret[];
+    }>(
+        requestParamId
+            ? `/api/client-secrets?clientRequestId=${requestParamId}&status=FILLED`
+            : null,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch secrets");
+            return res.json();
+        },
+        {
+            revalidateOnFocus: true,
+        }
+    );
+    const secrets = secretsData?.clientSecrets?.filter((secret) => !secret.isHidden) || [];
+    const envFile = useMemo(() => {
+        let variables = secrets.flatMap((secret: any) => (secret.variables ?? [])?.concat(secret.botConfig ?? []))?.filter((variable: ClientSecretVariable) => !variable.key.includes("CLIENT_"));
+        return {
+            id: ".env",
+            name: ".env",
+            path: ".env",
+            isFolder: false,
+            children: [],
+            content: variables.map((variable: ClientSecretVariable) => `${variable.key}=${variable.value}`).join('\n'),
+            fileType: "env"
+        }
+    }, [secrets]);
+
+    const handleEnvSelect = () => {
+        setActiveFile(envFile);
+        setIsModified(false);
+    }
 
     return (
         <ResizablePanelGroup direction="horizontal" className="h-full w-full rounded-lg border">
@@ -329,6 +377,9 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                         ))
                     ) : (
                         <p className="text-sm text-gray-500">No files available.</p>
+                    )}
+                    {IN_DEV && (
+                        <FileTreeItem key={".env"} node={envFile} onFileSelect={handleEnvSelect} />
                     )}
                 </div>
             </ResizablePanel>

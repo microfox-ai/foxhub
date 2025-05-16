@@ -1,28 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { prisma } from '@/prisma/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
+import { prisma } from "@/prisma/prisma";
 
-export async function middleware(request: NextRequest) {
+async function middleware(request: NextRequest) {
   const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
   if (!ENCRYPTION_KEY) {
-    throw new Error('ENCRYPTION_KEY is not defined in environment variables');
+    throw new Error("ENCRYPTION_KEY is not defined in environment variables");
   }
-  const KEY = Buffer.from(ENCRYPTION_KEY, 'base64'); // 32 bytes
+  const KEY = Buffer.from(ENCRYPTION_KEY, "base64"); // 32 bytes
 
   const url = new URL(request.url);
-  const publicApiUrl = url.searchParams.get('publicApiUrl');
-  const clientSecretIds = url.searchParams.get('clientSecretIds');
+  const publicApiUrl = url.searchParams.get("publicApiUrl");
+  const clientSecretIds = url.searchParams.get("clientSecretIds");
 
   if (!publicApiUrl || !clientSecretIds) {
     return NextResponse.json(
-      { error: 'Missing publicApiUrl or clientSecretIds parameters.' },
+      { error: "Missing publicApiUrl or clientSecretIds parameters." },
       { status: 400 }
     );
   }
 
   // Fetch and flatten secrets
   const secretArrays = await Promise.all(
-    clientSecretIds.split(',').map(async (id) => {
+    clientSecretIds.split(",").map(async (id) => {
       const record = await prisma.clientSecret.findUnique({ where: { id } });
       return (record?.variables || []) as Record<"key" | "value", string>[];
     })
@@ -40,9 +40,13 @@ export async function middleware(request: NextRequest) {
 
   // Encrypt using AES-256-GCM
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', KEY, iv);
-  const encrypted = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]);
+  const cipher = crypto.createCipheriv("aes-256-gcm", KEY, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(payload, "utf8"),
+    cipher.final(),
+  ]);
   const authTag = cipher.getAuthTag();
+
   const bundle = Buffer.concat([iv, authTag, encrypted]).toString('base64');
   
   // Make the Base64 URL-safe by replacing + with - and / with _
@@ -58,4 +62,10 @@ export async function middleware(request: NextRequest) {
 }
 
 // Allow all methods to use this logic
-export { middleware as GET, middleware as POST, middleware as PUT, middleware as DELETE, middleware as PATCH };
+export {
+  middleware as GET,
+  middleware as POST,
+  middleware as PUT,
+  middleware as DELETE,
+  middleware as PATCH,
+};

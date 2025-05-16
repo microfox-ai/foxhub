@@ -37,7 +37,6 @@ export async function middleware(request: NextRequest) {
   }
 
   const payload = JSON.stringify(flatEnv);
-  console.log("payload", payload);
 
   // Encrypt using AES-256-GCM
   const iv = crypto.randomBytes(12);

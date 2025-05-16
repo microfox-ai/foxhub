@@ -14,14 +14,12 @@ type EmbedApiEndpointsArgs = {
     userId?: string | null,
     stage: string | null,
     base_url: string | null,
-    isPublic: boolean,
     schema_path: string | null,
 }
 
 export async function embedApiEndpoints({
     taskStructure,
     docData,
-    isPublic,
     botProjectId,
     originClientRequestId,
     userId,
@@ -35,15 +33,12 @@ export async function embedApiEndpoints({
             throw new Error('Invalid OpenAPI document: missing paths');
         }
 
-        if (!isPublic && !taskStructure) {
+        if (!taskStructure) {
             throw new Error('Invalid task structure: data is missing');
         }
 
         // helper to find cron job for an endpoint path
         const findCron = (path: string) => {
-            if (isPublic) {
-                return null;
-            }
             // Normalize path by removing leading/trailing slashes
             const normalizedPath = path.replace(/^\/|\/$/g, '');
 
@@ -62,9 +57,6 @@ export async function embedApiEndpoints({
 
         // helper to find lambda function metadata with more flexible matching
         const findLambda = (path: string, method: string) => {
-            if (isPublic) {
-                return null;
-            }
             // Normalize path and method for comparison
             const normalizedPath = path.replace(/^\/|\/$/g, '');
             const normalizedMethod = method.toUpperCase();
@@ -123,7 +115,7 @@ export async function embedApiEndpoints({
                         docText += `  Packages: ${fn.packagesUsed.join(', ')}\n`;
                         docText += `  Interaction: ${fn.interactionType.join(', ')}\n`;
                     }
-                    if (!fn && !cron && !isPublic) {
+                    if (!fn && !cron) {
                         console.log(`No function or cron found for ${path} ${method}`);
                         continue;
                     }
@@ -181,9 +173,9 @@ export async function embedApiEndpoints({
                     const metadata = {
                         openApiSchema: docData,
                         endpointSchema: op,
-                        function_type: isPublic ? "lambda" : function_type,
+                        function_type: function_type,
                         // Include the endpoint structure regardless of type
-                        ...(isPublic ? { endpoint_structure: fn || cron || null } : {})
+                        ...(fn || cron ? { endpoint_structure: fn || cron || null } : {})
                     };
 
                     if (existing) {
@@ -220,7 +212,7 @@ export async function embedApiEndpoints({
                                 schema_path,
                                 doc_text: docText,
                                 embedding,
-                                is_public: isPublic,
+                                is_public: false,
                                 stage: stage,
                                 metadata,
                             });

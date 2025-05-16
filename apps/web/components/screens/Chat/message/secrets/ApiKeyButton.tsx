@@ -205,7 +205,7 @@ export const ApiKeyButton = ({
                 status: CLIENTSECRETSTATUS.EMPTY,
                 botConfig: [],
                 variables: [
-                    ...constructor.internalKeys.map((key: KeyVariableConfig) => ({
+                    ...oauthConstructor.internalKeys.map((key: KeyVariableConfig) => ({
                         key: key.key,
                         value: key.defaultValue
                             ? Array.isArray(key.defaultValue)

@@ -37,7 +37,6 @@ async function middleware(request: NextRequest) {
   }
 
   const payload = JSON.stringify(flatEnv);
-  console.log("payload", payload);
 
   // Encrypt using AES-256-GCM
   const iv = crypto.randomBytes(12);
@@ -47,15 +46,18 @@ async function middleware(request: NextRequest) {
     cipher.final(),
   ]);
   const authTag = cipher.getAuthTag();
-  const bundle = Buffer.concat([iv, authTag, encrypted]).toString("base64");
+
+  const bundle = Buffer.concat([iv, authTag, encrypted]).toString('base64');
+  
+  // Make the Base64 URL-safe by replacing + with - and / with _
+  const urlSafeBundle = bundle.replace(/\+/g, '-').replace(/\//g, '_');
+  // Remove padding = characters
+  const trimmedBundle = urlSafeBundle.replace(/=+$/, '');
 
   // Create URL with the bundle as a search parameter
   const targetUrl = new URL(publicApiUrl);
-  targetUrl.searchParams.set(
-    "client-env-variables",
-    encodeURIComponent(bundle)
-  );
-
+  targetUrl.searchParams.set('client-env-variables', trimmedBundle);
+  
   return NextResponse.redirect(targetUrl.toString(), 307);
 }
 

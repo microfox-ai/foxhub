@@ -228,6 +228,13 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     platforms.map((p) => p.name + "-" + p.package)
   );
 
+  let addedPlatforms: {
+    name: string;
+    package: string;
+    reason: string;
+    optional: boolean;
+    scopes: string[];
+  }[] = [];
   let finalPlatforms = await Promise.all(
     platforms
       .filter((platform) => platform.package != undefined)
@@ -238,6 +245,22 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
         if (!packageInfo) {
           packageInfo = await fetchPackageInfo(platform.package as string);
         }
+        if (
+          packageInfo.addedDependencies &&
+          packageInfo.addedDependencies.length > 0
+        ) {
+          packageInfo.addedDependencies.forEach((dependency: string) => {
+            if (!addedPlatforms.some((p) => p.package === dependency)) {
+              addedPlatforms.push({
+                name: dependency,
+                package: dependency,
+                reason: `This platform is added as it is a dependency of ${platform.name}`,
+                optional: true,
+                scopes: [],
+              });
+            }
+          });
+        }
         return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
       })
   );
@@ -245,6 +268,18 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
   finalPlatforms = finalPlatforms.filter(
     (platform) => (platform as any).packageInfo !== null
   );
+
+  addedPlatforms.forEach(async (platform) => {
+    const packageInfo = await fetchPackageInfo(platform.package);
+    finalPlatforms.push({
+      name: platform.name,
+      reason: platform.reason,
+      optional: platform.optional,
+      scopes: [],
+      package: platform.package,
+      packageInfo: packageInfo,
+    });
+  });
 
   TokenUsageAnalyticsTracker.trackUsage({
     ...props.requestBody,

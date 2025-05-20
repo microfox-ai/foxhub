@@ -405,7 +405,7 @@ export const updateClientSecretVariablesInDeployments = async (
       await updateLambdaEnvironmentVariables({
         functionName: clientDeployment.name,
         environmentVariables: envVars,
-        region: process.env.AWS_REGION ?? "us-east-1",
+        region: "us-east-1",
       });
     }
   }

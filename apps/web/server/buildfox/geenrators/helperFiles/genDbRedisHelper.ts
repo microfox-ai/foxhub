@@ -9,6 +9,9 @@ import { TaskInstanceMetaType } from "../../../convertfox/types";
 import { models } from "../../../models";
 import { codingSystemPrompt } from "../../prompt.coding";
 import { fetchTemplateDir, writeToFile } from "../../tool/writeToFile";
+import { envsPrompt } from "../../prompts/envsPrompt";
+import { prisma } from "@/prisma/prisma";
+import { fetchPackageDocs } from "../../tool/fetchPackageDocs";
 
 // I need a helper mapper for file to fetch from (use addons to support this)
 
@@ -41,16 +44,23 @@ export const genDbRedisHelper = async (
     "utf8"
   );
 
+  const clientSecrets = await prisma.clientSecret.findMany({
+    where: {
+      clientRequestIds: {
+        has: clientRequest.id,
+      },
+    },
+  });
+
   const result = await generateText({
     model: models.claude35Sonnet,
     system: codingSystemPrompt("backend"),
-    prompt: dedent`You are requested to modify a redis.ts file for the following requirement:
+    prompt: dedent`You are requested to modify a redis.ts helper file for the following requirements so that it supports the following functions & cron jobs:
+
                 The following functions are to be generated for the task:
                 ${taskInstanceMeta?.taskStructure?.lambdaFunctions?.map((func) => func.name + " - " + func.description).join("\n - ")}
-
                 The following cron jobs are to be generated for the task:
                 ${taskInstanceMeta?.taskStructure?.cronJobs?.map((cron) => cron.name + " - " + cron.cronExpression).join("\n - ")}
-    
                 The following is the task summary:
                 ${taskInstanceMeta?.taskInfo?.summary}
 
@@ -70,6 +80,13 @@ export const genDbRedisHelper = async (
                 2. understand the example redis helper file.
                 3. generate any helper functions that might be required inside the functions & cron jobs.
                 4. store the file at helpers/redis.ts
+
+                Key rules:-
+                1. this is only a helper for redis - so only getters, setters
+                2. some level of data processing is also good.
+                3. never use any external package in this helper other that @upstash/redis, 
+                4. create fallbacks for empty, null, undefined values.
+                5. do proper try, catch blcoks for json parse & stringify
     
                 make sure you skip the packagesUsed field in the tool call.
                 `,
@@ -79,6 +96,7 @@ export const genDbRedisHelper = async (
         clientRequest,
         taskInstanceMeta?.taskStructure?.templateType
       ),
+      fetch_package_docs: fetchPackageDocs(props, clientRequest),
     },
     toolChoice: "required",
     maxSteps: 1,

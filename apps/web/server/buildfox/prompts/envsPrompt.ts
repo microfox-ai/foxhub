@@ -13,7 +13,7 @@ export const envsPrompt = async (
   clientSecrets: ClientSecret[],
   taskInstanceMeta: TaskInstanceMetaType,
   files: any[],
-  fileType: "lambda" | "cron"
+  fileType: "lambda" | "cron" | "helper"
 ) => {
   let previousEnvs: string[] = [];
   if (

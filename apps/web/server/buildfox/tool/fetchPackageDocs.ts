@@ -136,7 +136,7 @@ export const fetchPackageDocs = (
       );
 
       console.log("all readmes", readmes.map((r) => r.package).join(", "));
-      console.log("readmes", readmes);
+      //console.log("readmes", readmes);
       console.log(
         "readmes not found",
         readmes.filter((r) => r.readme === "").map((r) => r.package)

@@ -18,6 +18,8 @@ export const baseFilePrompt = (fileType: "lambda" | "cron", _function: any) => {
             - Result of the cron job: ${_function?.endResult}
             - Cron Expression: ${_function?.cronExpression}
             - Brief: ${_function?.brief}
+            - DO NOT IMPORT ANY LAMBDA FUNCTIONS IN THE CRON JOB.
+            - ALL FUNCTIONALITY MUST BE IMPLEMENTED IN THE CRON JOB ITSELF FROM END TO END, NOT IN THE HELPER FILES (HELPER FILES ARE ONLY FOR STATE/DB MANAGEMENT).
             `
   }`;
 };

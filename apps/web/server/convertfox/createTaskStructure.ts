@@ -85,6 +85,7 @@ export const createTaskStructure = async (
         some rules
         - Never use theese packages - axios
         - Cron functions cannot call the created lambda functions.
+        - MAKE SURE THAT CRON JOBS BRIEF DOES NOT MENTION ANY LAMBDA FUNCTIONS.
         `,
       schema: taskStructure,
       maxRetries: 3,

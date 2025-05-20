@@ -7,7 +7,7 @@ import {
     DialogTitle
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
+import { ClientDeployment, ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { motion } from "framer-motion";
 import {
     AlertCircle,
@@ -20,7 +20,8 @@ import {
     Info,
     Loader2,
     PackageIcon,
-    Rocket
+    Rocket,
+    XIcon
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -35,6 +36,9 @@ import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { useDeployStatus } from "@/components/screens/providers/useDeployStatus";
 import { useTabUi } from "@/components/screens/providers/TabUiProvider";
 import { useMicrofoxChat } from "../../MicrofoxChatProvider";
+import { fetchServerlessLogs } from "@/components/screens/PreviewWindow/helpers";
+import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
+import { toast } from "sonner";
 
 interface UIAnnotation {
     objectType: string;
@@ -63,6 +67,7 @@ export const DeploymentsInfo = ({
     const { setDeploymentInfo } = useTaskInstanceMetaContext();
     const { append } = useMicrofoxChat();
     const { setActiveTab } = useTabUi();
+    const { setSubmitAnnotations, setAutoSubmit } = useClientProject();
     const { finalData, deployStep, clientRequest } = useDeployStatus({
         stage,
         runId,
@@ -90,6 +95,72 @@ export const DeploymentsInfo = ({
             })
         );
     };
+
+    const [serverlessLogs, setServerlessLogs] = useState<any>(null);
+    const [checkForErrors, setCheckForErrors] = useState<boolean>(false);
+    const debugIssue = () => {
+        setServerlessLogs(null);
+        setCheckForErrors(true);
+        const endpointLink = (finalData?.clientDeployment as ClientDeployment).baseUrl + "/" + deployStep?.stage?.toLowerCase() + "/docs.json";
+        toast.promise(
+            (async () => {
+                const logs = await fetchServerlessLogs({
+                    clientDeploymentId: (finalData?.clientDeployment).id,
+                    endpointLink,
+                    setServerlessLogs: setServerlessLogs
+                });
+
+                const errorAttachment = {
+                    functionLink: endpointLink,
+                    serverlessLogs: logs,
+                    deploymentInfo: finalData?.clientDeployment,
+                }
+
+                console.log("errorAttachment", errorAttachment);
+
+                setSubmitAnnotations((sa) => {
+                    const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
+                    const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
+                    return [
+                        ...newAnnotations,
+                        {
+                            type: "body",
+                            key: "api_errors",
+                            value: [...(existingErrorAttachment?.value || []), errorAttachment]
+                        }
+                    ]
+                });
+                setActiveTab("chat")
+                handleRightCollapse(true);
+            })(),
+            {
+                loading: 'Fetching deployment logs...',
+                success: 'Successfully gathered debug information',
+                error: 'Failed to fetch deployment logs'
+            }
+        );
+    };
+
+    const fetchLogs = () => {
+        setShowLogsDialog(true);
+        setServerlessLogs(null);
+        setCheckForErrors(true);
+        const endpointLink = (finalData?.clientDeployment as ClientDeployment).baseUrl + "/" + deployStep?.stage?.toLowerCase() + "/docs.json";
+        toast.promise(
+            (async () => {
+                const logs = await fetchServerlessLogs({
+                    clientDeploymentId: (finalData?.clientDeployment).id,
+                    endpointLink,
+                    setServerlessLogs: setServerlessLogs
+                });
+            })(),
+            {
+                loading: 'Fetching deployment logs...',
+                success: 'Successfully gathered debug information',
+                error: 'Failed to fetch deployment logs'
+            }
+        );
+    }
 
     const [elapsedTime, setElapsedTime] = useState(0);
     const [statusMessageIndex, setStatusMessageIndex] = useState(0);
@@ -293,6 +364,27 @@ export const DeploymentsInfo = ({
                     </div>
                 </div>
 
+                {deployStep.status === "failed" && (
+                    <div className="flex gap-2 mt-4">
+                        <Button
+                            variant="outline"
+                            className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+                            onClick={debugIssue}
+                        >
+                            <Rocket className="w-4 h-4" />
+                            Debug The Issue & Fix it.
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+                            onClick={fetchLogs}
+                        >
+                            <FileText className="w-4 h-4" />
+                            View Logs
+                        </Button>
+                    </div>
+                )}
+
                 {deployStep.status === "success" && (
                     <>
                         {deployStep.stage === DEPLOY_STAGE.STAGING ? (
@@ -353,6 +445,32 @@ export const DeploymentsInfo = ({
                 jobId={deployStep.metadata.job_id}
                 repoName={finalData?.clientDeployment?.repoName}
             />
+
+            <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
+                <DialogContent className="sm:max-w-[800px] max-h-[80vh]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+                            <FileText className="h-5 w-5" />
+                            Serverless Logs
+                        </DialogTitle>
+                        <DialogDescription className="text-sm text-gray-500">
+                            Detailed logs from the serverless deployment
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="relative mt-4">
+                        {!serverlessLogs ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                            </div>
+                        ) : (
+                            <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+                                {JSON.stringify(serverlessLogs, null, 2)}
+                            </pre>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };

@@ -254,7 +254,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
               addedPlatforms.push({
                 name: dependency,
                 package: dependency,
-                reason: `This platform is added as it is a dependency of ${platform.name}`,
+                reason: `This platform is added as it is a dependency of ${platform.name}. It is required for the functionality.`,
                 optional: true,
                 scopes: [],
               });

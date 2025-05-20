@@ -154,10 +154,12 @@ export const readAllGenFilesList = async (
      */
       const packagesUsed = fileContent
         .match(
-          /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"](@[^'"]+)['"]/g
+          /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"](?!\.|\/)(?!.*\.(js|jsx|ts|tsx)['"])([^'"]+)['"]/g
         )
         ?.map((match) => {
-          const matches = match.match(/from\s+['"](@[^'"]+)['"]/);
+          const matches = match.match(
+            /from\s+['"](?!\.|\/)(?!.*\.(js|jsx|ts|tsx)['"])([^'"]+)['"]/
+          );
           return matches?.[1];
         });
       const envVariablesUsed = fileContent

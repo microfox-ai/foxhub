@@ -10,7 +10,7 @@ export interface FetchApiOptions {
 export interface FetchLogsOptions {
   clientDeploymentId: string;
   endpointLink: string;
-  setServerlessLogs: (value: any) => void;
+  setServerlessLogs?: (value: any) => void;
 }
 
 export interface PrepareApiRequestOptions {
@@ -218,7 +218,7 @@ export async function makeApiCallWithResponseData(
 
 export async function fetchServerlessLogs(
   options: FetchLogsOptions
-): Promise<void> {
+): Promise<any> {
   const { clientDeploymentId, endpointLink, setServerlessLogs } = options;
 
   try {
@@ -231,9 +231,15 @@ export async function fetchServerlessLogs(
     });
     console.log("logs", logs);
     const logsData = await logs.json();
-    setServerlessLogs(logsData);
+    if (setServerlessLogs) {
+      setServerlessLogs(logsData);
+    }
+    return logsData;
   } catch (error) {
     console.error("Error fetching logs:", error);
-    setServerlessLogs(null);
+    if (setServerlessLogs) {
+      setServerlessLogs(null);
+    }
+    return null;
   }
 }

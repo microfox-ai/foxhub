@@ -86,7 +86,6 @@ export const deployFoxRouter: ServerStreamingFunction<
     clientRequest,
     mustRunId: true,
   });
-  console.log("runId", runId);
 
   if (!runId) {
     console.log("runId not found, getting latest run");

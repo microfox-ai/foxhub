@@ -154,14 +154,20 @@ export const readAllGenFilesList = async (
      */
       const packagesUsed = fileContent
         .match(
-          /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"](?!\.|\/)(?!.*\.(js|jsx|ts|tsx)['"])([^'"]+)['"]/g
+          /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"]([^'"]+)['"]/g
         )
         ?.map((match) => {
-          const matches = match.match(
-            /from\s+['"](?!\.|\/)(?!.*\.(js|jsx|ts|tsx)['"])([^'"]+)['"]/
-          );
-          return matches?.[1];
-        });
+          const matches = match.match(/from\s+['"]([^'"]+)['"]/);
+          const pkg = matches?.[1];
+          // Only include if it's a package (starts with @ or a letter, and doesn't contain . or /)
+          return pkg &&
+            !pkg.startsWith(".") &&
+            !pkg.startsWith("/") &&
+            !pkg.includes(".")
+            ? pkg
+            : undefined;
+        })
+        .filter(Boolean);
       const envVariablesUsed = fileContent
         .match(/process\.env\.([\w]+)/g)
         ?.map((match) => {
@@ -172,7 +178,10 @@ export const readAllGenFilesList = async (
         return {
           ...file,
           meta: {
-            packagesUsed: packagesUsed ?? [],
+            packagesUsed:
+              packagesUsed?.filter(
+                (pkg) => pkg != undefined && pkg != "undefined"
+              ) ?? [],
             envVariablesUsed: envVariablesUsed ?? [],
           },
         };

@@ -103,12 +103,15 @@ export async function getLambdaLogs({
       limit: 1,
     });
 
-    const logStreams = await logsClient.send(describeLogStreamsCommand);
-    if (!logStreams.logStreams?.[0]?.logStreamName) {
+    const logGroup = await logsClient.send(describeLogStreamsCommand);
+    if (!logGroup.logStreams?.[0]?.logStreamName) {
+      if (logGroup.logStreams?.length === 0) {
+        return [];
+      }
       throw new Error("No log streams found for the Lambda function");
     }
 
-    const logStreamName = logStreams.logStreams[0].logStreamName;
+    const logStreamName = logGroup.logStreams[0].logStreamName;
 
     // Get the log events
     const getLogEventsCommand = new GetLogEventsCommand({

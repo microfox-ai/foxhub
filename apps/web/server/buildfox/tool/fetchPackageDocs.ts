@@ -99,9 +99,15 @@ export const fetchPackageDocs = (
             const pakageExactName = pkg.package.startsWith("@microfox/")
               ? pkg.package
               : `@ext_${pkg.package.replaceAll("/", "#")}`;
+            const platform = taskInstanceMeta?.taskIntegrations?.platforms.find(
+              (p) => p.package === pkg.package
+            );
+            const readmeSearch = platform?.reason
+              ? pkg.readmeSearch // + `\n\n${platform?.reason}`
+              : pkg.readmeSearch;
             const microfoxFunction = await semanticFunctionSearch(
               pakageExactName,
-              pkg.readmeSearch
+              readmeSearch
             );
             //console.log("functions", microfoxFunction);
             for (const _function of microfoxFunction) {

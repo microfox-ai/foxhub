@@ -70,9 +70,10 @@ export async function GET(req: NextRequest) {
     const clientRequestId = req.nextUrl.searchParams.get("clientRequestId");
     const stage = req.nextUrl.searchParams.get("stage") as DEPLOY_STAGE;
     const runIdStr = req.nextUrl.searchParams.get("runId");
-    const runId = runIdStr ? parseInt(runIdStr, 10) : null;
+    let runId =
+      runIdStr && runIdStr !== "undefined" ? parseInt(runIdStr, 10) : null;
 
-    if (!clientRequestId || !stage || !runId) {
+    if (!clientRequestId || !stage) {
       return NextResponse.json(
         { error: "Missing required query parameters" },
         { status: 400 }
@@ -97,6 +98,21 @@ export async function GET(req: NextRequest) {
         { error: "ClientRequest not found" },
         { status: 404 }
       );
+    }
+
+    if (!runId) {
+      let latestRunId = await getLatestRunForClientRequest(
+        clientRequest,
+        stage
+      );
+      if (latestRunId) {
+        runId = latestRunId;
+      } else {
+        return NextResponse.json(
+          { error: "No latest run ID found" },
+          { status: 404 }
+        );
+      }
     }
 
     const clientDeployment = await getClientDeployment(clientRequestId);
@@ -126,6 +142,7 @@ export async function GET(req: NextRequest) {
         clientDeployment: lastRun?.shouldBreak ? clientDeployment : undefined,
         deployStep: lastRun?.taskInstanceMeta?.deployStep,
         taskInstanceMeta: lastRun?.taskInstanceMeta,
+        runId: runId,
       },
       { status: 200 }
     );

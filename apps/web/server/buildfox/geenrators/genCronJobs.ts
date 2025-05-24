@@ -32,7 +32,7 @@ export const genCronJobs = async (
       });
       console.log("generating cron job", cronJob.name);
       const result = await generateText({
-        model: models.claude35Sonnet,
+        model: models.googleGeminiTwoFive,
         system: codingSystemPrompt("backend"),
         prompt,
         toolChoice: "auto",
@@ -45,7 +45,11 @@ export const genCronJobs = async (
             clientRequest,
             taskInstanceMeta?.taskStructure?.templateType
           ),
-          fetch_package_docs: fetchPackageDocs(props, clientRequest),
+          fetch_package_docs: fetchPackageDocs(
+            props,
+            clientRequest,
+            taskInstanceMeta
+          ),
         },
         onStepFinish: (step) => {
           console.log("step", step.usage);

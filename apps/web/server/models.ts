@@ -27,7 +27,7 @@ export const models: Record<
   googleGeminiPro: google("gemini-1.5-pro", {
     structuredOutputs: true,
   }),
-  googleGeminiTwoFive: google("gemini-2.5-pro-exp-03-25", {
+  googleGeminiTwoFive: google("gemini-2.5-pro-preview-05-06", {
     structuredOutputs: true,
   }),
   claude35Sonnet: anthrophobic("claude-3-5-sonnet-20240620", {}),

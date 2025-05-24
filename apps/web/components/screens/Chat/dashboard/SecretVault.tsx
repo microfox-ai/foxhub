@@ -179,9 +179,9 @@ export const SecretVault = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <p className="text-sm text-gray-600 mt-3">
-                                        {platform?.packageInfo?.description}
-                                    </p>
+                                    {/* <p className="text-sm text-gray-600 mt-3">
+                                        platform?.packageInfo?.description
+                                    </p> */}
                                 </div>
                             </div>
                         </div>

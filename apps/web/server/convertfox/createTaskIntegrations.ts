@@ -9,6 +9,7 @@ import { fetchPackageInfo } from "./gitFetchers";
 import { TaskInstanceMetaType, taskIntegrations } from "./types";
 import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
 import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
+import dedent from "dedent";
 
 // IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
 // THIS OPERATION IS USELESSY CALLING AI TOO MANY TIMES BECAUSE OF IMPORPER EMBEDDING USAGE.
@@ -211,12 +212,12 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     if (platform?.package === "@microfox/null") {
       slackBotSdk.sendMessage({
         channel: MySlackChannels.reports,
-        text: `
+        text: dedent`
         Someone is trying to create a task
         & need ${platform?.name} integration in micro sdks 
         Task name: ${taskInfo.name}
         ----
-        Platform Info: ${JSON.stringify(platforms)}
+        Reason for Platform: ${platforms.find((p) => p.name === platform?.name)?.reason}
         ---
         `,
       });
@@ -228,107 +229,112 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     platforms.map((p) => p.name + "-" + p.package)
   );
 
-  let addedPlatforms: {
-    name: string;
-    package: string;
-    reason: string;
-    optional: boolean;
-    scopes: string[];
-  }[] = [];
-  let finalPlatforms = await Promise.all(
-    platforms
-      .filter((platform) => platform.package != undefined)
-      .map(async (platform) => {
-        let packageInfo = validInternalPackagesWithInfo.find(
-          (pkg) => pkg.name === platform.package
-        )?.packageInfo;
-        if (!packageInfo) {
-          packageInfo = await fetchPackageInfo(platform.package as string);
-        }
-        if (
-          packageInfo.addedDependencies &&
-          packageInfo.addedDependencies.length > 0
-        ) {
-          packageInfo.addedDependencies.forEach((dependency: string) => {
-            if (!addedPlatforms.some((p) => p.package === dependency)) {
-              addedPlatforms.push({
-                name: dependency,
-                package: dependency,
-                reason: `This platform is added as it is a dependency of ${platform.name}. It is required for the functionality.`,
-                optional: true,
-                scopes: [],
-              });
-            }
-          });
-        }
-        return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
-      })
-  );
+  try {
+    let addedPlatforms: {
+      name: string;
+      package: string;
+      reason: string;
+      optional: boolean;
+      scopes: string[];
+    }[] = [];
+    let finalPlatforms = await Promise.all(
+      platforms
+        .filter((platform) => platform.package != undefined)
+        .map(async (platform) => {
+          let packageInfo = validInternalPackagesWithInfo.find(
+            (pkg) => pkg.name === platform.package
+          )?.packageInfo;
+          if (!packageInfo) {
+            packageInfo = await fetchPackageInfo(platform.package as string);
+          }
+          if (
+            packageInfo.addedDependencies &&
+            packageInfo.addedDependencies.length > 0
+          ) {
+            packageInfo.addedDependencies.forEach((dependency: string) => {
+              if (!addedPlatforms.some((p) => p.package === dependency)) {
+                addedPlatforms.push({
+                  name: dependency,
+                  package: dependency,
+                  reason: `This platform is added as it is a dependency of ${platform.name}. It is required for the functionality.`,
+                  optional: true,
+                  scopes: [],
+                });
+              }
+            });
+          }
+          return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
+        })
+    );
 
-  finalPlatforms = finalPlatforms.filter(
-    (platform) => (platform as any).packageInfo !== null
-  );
+    finalPlatforms = finalPlatforms.filter(
+      (platform) => (platform as any).packageInfo !== null
+    );
 
-  addedPlatforms.forEach(async (platform) => {
-    const packageInfo = await fetchPackageInfo(platform.package);
-    finalPlatforms.push({
-      name: platform.name,
-      reason: platform.reason,
-      optional: platform.optional,
-      scopes: [],
-      package: platform.package,
-      packageInfo: packageInfo,
+    console.log("addedPlatforms", addedPlatforms?.length);
+    for (const _platform of addedPlatforms) {
+      const packageInfo = await fetchPackageInfo(_platform.package);
+      finalPlatforms.push({
+        name: _platform.name,
+        reason: _platform.reason,
+        optional: _platform.optional,
+        scopes: [],
+        package: _platform.package,
+        packageInfo: packageInfo,
+      });
+    }
+
+    TokenUsageAnalyticsTracker.trackUsage({
+      ...props.requestBody,
+      model: models.googleGeminiPro.modelId,
+      usage: packageResult.usage,
     });
-  });
 
-  TokenUsageAnalyticsTracker.trackUsage({
-    ...props.requestBody,
-    model: models.googleGeminiPro.modelId,
-    usage: packageResult.usage,
-  });
+    dataStream.writeMessageAnnotation({
+      type: "loading",
+      content: `Found ${finalPlatforms.length} platforms to integrate with`,
+    });
 
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: `Found ${finalPlatforms.length} platforms to integrate with`,
-  });
-
-  await updateTaskInstanceMeta({
-    clientRequestId: requestBody.clientRequestId,
-    taskInstanceMeta: {
-      ...taskInstanceMeta,
-      taskIntegrations: {
+    console.log("finalPlatforms", finalPlatforms.length);
+    await updateTaskInstanceMeta({
+      clientRequestId: requestBody.clientRequestId,
+      taskInstanceMeta: {
+        ...taskInstanceMeta,
+        taskIntegrations: {
+          platforms: finalPlatforms,
+        },
+      },
+    });
+    dataStream.writeMessageAnnotation({
+      type: "ui",
+      objectType: "taskIntegrations",
+      object: {
         platforms: finalPlatforms,
       },
-    },
-  });
-
-  dataStream.writeMessageAnnotation({
-    type: "ui",
-    objectType: "taskIntegrations",
-    object: {
-      platforms: finalPlatforms,
-    },
-    persona: "taskManager",
-    text: modification
-      ? `Finalise the integrations.`
-      : `Finalised the integrations.`,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Not Yet",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
-      },
-      {
-        action: "appendMessage",
-        text: "Confirm",
-        type: "confirm",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "Yes, Everything looks good to me.",
-        minionType: "convertfox",
-      },
-    ],
-  });
+      persona: "taskManager",
+      text: modification
+        ? `Finalise the integrations.`
+        : `Finalised the integrations.`,
+      buttons: [
+        {
+          action: "highlightInput",
+          text: "Not Yet",
+          type: "deny",
+          className: "bg-neutral-200 text-black hover:bg-neutral-300",
+        },
+        {
+          action: "appendMessage",
+          text: "Confirm",
+          type: "confirm",
+          className: "bg-green-500 text-white hover:bg-green-600",
+          value: "Yes, Everything looks good to me.",
+          minionType: "convertfox",
+        },
+      ],
+    });
+  } catch (error) {
+    console.log("error updating task instance meta", error);
+  }
 
   return packageResult.object;
 };

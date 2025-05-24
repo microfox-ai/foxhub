@@ -36,7 +36,7 @@ export const genLambdaCode = async (
       });
       console.log("generating lambda function", _function.name);
       const result = await generateText({
-        model: models.claude35Sonnet,
+        model: models.googleGeminiTwoFive,
         system: codingSystemPrompt("backend"),
         prompt,
         toolChoice: "auto",
@@ -49,7 +49,11 @@ export const genLambdaCode = async (
             clientRequest,
             taskInstanceMeta?.taskStructure?.templateType
           ),
-          fetch_package_docs: fetchPackageDocs(props, clientRequest),
+          fetch_package_docs: fetchPackageDocs(
+            props,
+            clientRequest,
+            taskInstanceMeta
+          ),
         },
         onStepFinish: (step) => {
           console.log("step", step.usage);

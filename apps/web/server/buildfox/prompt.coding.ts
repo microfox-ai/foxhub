@@ -82,6 +82,8 @@ export const codingSystemPrompt = (
     - You first carefully analyse the requirements, and then plan what needs to be done.
     - You then critisize your plan, and then refine it to this specific task & keep maximum code in a single file.
     - If you know a package is going to be used, then you can fetch the docs on it using the fetch_package_docs tool.
+    - if a package has ratelimits (mentioned in the docs), carefully check the docs on how to handle multiple requests.
+    - if you cant find any info on how to handle ratelimits, assume a default ratelimit, so try to handle multiple requests sequentially with inbetween delays.
     - If a package doc is not available, then you can use your own knowledge to integrate said platform
     - You then write the code for the task
     - You then modify other files of project if needed to support the new code
@@ -96,6 +98,14 @@ export const codingSystemPrompt = (
 
     YOU MUST NEVER WRITE ANY MOCK CODE, it should be production ready code.
     even if the packages are not available, you can use your own knowledge to integrate said platform.
+    DO NOT self assume or hard code placeholder variables in the code, create envs for information that you dont have access to yet
+    - DO NOT write like this:
+      - "yourmail@mail.com" // Replace this with your personam mail.
+    - WRITE like this:
+      - process.env.YOUR_MAIL_ID 
+
+    - Do not use path parameters in the request event of aws lambda functions, 
+      - use query parameters or request body instead.
 
     Critically, you must carefully analyze the results of each tool call you receive. 
     These outputs might mention error messages, files, or symbols you haven't considered yet.
@@ -150,6 +160,19 @@ export const codingFunctionPrompt = async ({
     return ``;
   }
 
+  let helperFileContext = await helperFilesContext(
+    clientRequest,
+    taskInstanceMeta,
+    files
+  );
+  let envsPromptContext = await envsPrompt(
+    clientRequest,
+    clientSecrets,
+    taskInstanceMeta,
+    files,
+    type
+  );
+
   //console.log("templateEnvs", templateEnvs);
   //console.log("coreEnvs", coreEnvs);
 
@@ -160,9 +183,9 @@ export const codingFunctionPrompt = async ({
 
             ${packagesPrompt(taskInstanceMeta)}
 
-            ${await envsPrompt(clientRequest, clientSecrets, taskInstanceMeta, files, type)}
+            ${envsPromptContext}
 
-            ${await helperFilesContext(clientRequest, taskInstanceMeta, files)}
+            ${helperFileContext}
 
             Requirements:
             - Use TypeScript
@@ -176,6 +199,7 @@ export const codingFunctionPrompt = async ({
             - Add proper Docs
             - Add appropriate comments
             - Return properly formatted responses
+            - Do not use Promise.all, use sequential processing with await inside a for loop
             - Return the response object with the proper headers like in example (always enable cors by default, & pick json response type by default, unless otherwise specified)
 
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:

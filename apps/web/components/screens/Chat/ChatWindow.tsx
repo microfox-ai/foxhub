@@ -16,6 +16,7 @@ import MessageList from "./MessageList";
 import ConfigureTab from "./dashboard/ConfigureTab";
 import CodeStudio from "./code/CodeStudio";
 import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import { HistoryTab } from "./history/HistoryTab";
 
 export type AttachedMedia = {
   file: File;
@@ -195,6 +196,16 @@ function ChatWindow({
                   >
                     <div className="p-4 h-full mx-auto">
                       <CodeStudio />
+                    </div>
+                  </motion.div>
+                )}
+                {activeTab === "history" && (
+                  <motion.div
+                    key="history"
+                    className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
+                  >
+                    <div className="p-4 h-full mx-auto">
+                      <HistoryTab />
                     </div>
                   </motion.div>
                 )}

@@ -26,7 +26,7 @@ export const packagesPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
                 (platform) =>
                   !EXCLUDED_PACKAGES_LIST.includes(platform?.package ?? "")
               )
-              .map((platform) => platform?.package)
+              .map((platform) => platform?.package + " - " + platform?.reason)
               .join("\n - ")}
             ${taskInstanceMeta?.taskStructure?.templateType === codeTemplateType.enum.upstash_sls ? "- @upstash/redis" : ""}
             - dotenv

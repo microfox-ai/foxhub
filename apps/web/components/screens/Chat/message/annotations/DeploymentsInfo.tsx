@@ -293,6 +293,7 @@ export const DeploymentsInfo = ({
         );
     }
 
+
     return (
         <>
             <div className="flex flex-col gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
@@ -336,7 +337,7 @@ export const DeploymentsInfo = ({
                         </div>
                         <div className="text-gray-500 mt-1 flex items-center gap-2">
                             PR #{deployStep.metadata.pull_requests[0].number}
-                            <Link href={`https://github.com/${PROJECT_REPO_OWNER}/${clientRequest?.repoName}/actions/runs/${runId}`} target="_blank" className="text-blue-500 hover:text-blue-600"> View Action</Link>
+                            <Link href={`https://github.com/${PROJECT_REPO_OWNER}/${clientRequest?.repoName}/actions/runs/${finalData?.runId}`} target="_blank" className="text-blue-500 hover:text-blue-600"> View Action</Link>
                         </div>
                     </div>
                 </div>

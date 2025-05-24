@@ -94,8 +94,8 @@ export const getClientSecretsFromTemplateEnvs = async (
         isOptional: false,
       },
       {
-        key: "MICROFOX_REDIS_URL_TRACKER",
-        value: process.env.MICROFOX_REDIS_URL_TRACKER,
+        key: "MICROFOX_REDIS_TOKEN_TRACKER",
+        value: process.env.MICROFOX_REDIS_TOKEN_TRACKER,
         isOptional: false,
       },
     ],

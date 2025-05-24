@@ -14,6 +14,8 @@ interface LambdaInvocation {
   endTimestamp?: number;
   additionalLogs: string[];
   functionName: string;
+  endpointPath?: string;
+  httpMethod?: string;
 }
 
 interface CloudWatchLogEvent {
@@ -55,12 +57,22 @@ export async function POST(req: NextRequest) {
     const functionBase = metadata.serverless.functionBase;
     const functions = metadata.serverless.functions;
 
+    // Create a map of function names to their details
+    const functionMap = new Map(
+      functions.map((func) => [
+        `${functionBase}-${func.functionName}`,
+        {
+          functionName: func.functionName,
+          endpointLink: func.endpointLink,
+        },
+      ])
+    );
+
     // Get logs from all functions
     const allLogs: CloudWatchLogEvent[] = [];
-    for (const func of functions) {
-      const functionName = `${functionBase}-${func.functionName}`;
+    for (const [fullFunctionName] of functionMap) {
       const logs = await getLambdaLogs({
-        functionName,
+        functionName: fullFunctionName,
         region: "us-east-1",
         limit: pageSize * 3, // Fetch more logs to ensure we have enough complete invocations
       });
@@ -83,13 +95,41 @@ export async function POST(req: NextRequest) {
 
         // Extract function name from the log group name
         const functionNameMatch = message.match(/\/aws\/lambda\/([^:]+)/);
-        const functionName = functionNameMatch?.[1] || "unknown";
+        const fullFunctionName = functionNameMatch?.[1] || "unknown";
+        const functionDetails = functionMap.get(fullFunctionName);
+
+        // Get endpoint details from OpenAPI spec
+        let endpointPath: string | undefined;
+        let httpMethod: string | undefined;
+        if (
+          functionDetails?.endpointLink &&
+          (clientDeployment as any).docData?.paths
+        ) {
+          const paths = (clientDeployment as any).docData.paths as Record<
+            string,
+            any
+          >;
+          for (const [path, methods] of Object.entries(paths)) {
+            for (const [method, details] of Object.entries(
+              methods as Record<string, any>
+            )) {
+              if (functionDetails.endpointLink.includes(path)) {
+                endpointPath = path;
+                httpMethod = method.toUpperCase();
+                break;
+              }
+            }
+            if (endpointPath) break;
+          }
+        }
 
         currentInvocation = {
           requestId: requestIdMatch[1],
           timestamp: cloudWatchLog.timestamp,
           additionalLogs: [],
-          functionName,
+          functionName: functionDetails?.functionName || "unknown",
+          endpointPath,
+          httpMethod,
         };
       } else if (message.startsWith("END RequestId:")) {
         // End of invocation

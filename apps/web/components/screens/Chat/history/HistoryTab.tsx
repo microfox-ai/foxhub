@@ -26,6 +26,8 @@ interface LambdaInvocation {
     endTimestamp?: number;
     additionalLogs: string[];
     functionName: string;
+    endpointPath?: string;
+    httpMethod?: string;
 }
 
 interface HistoryResponse {
@@ -126,6 +128,7 @@ export const HistoryTab = () => {
                         <TableRow>
                             <TableHead>Time</TableHead>
                             <TableHead>Function</TableHead>
+                            <TableHead>Endpoint</TableHead>
                             <TableHead>Duration</TableHead>
                             <TableHead>Memory Used</TableHead>
                             <TableHead>Memory Size</TableHead>
@@ -141,6 +144,18 @@ export const HistoryTab = () => {
                                 </TableCell>
                                 <TableCell className="font-mono text-xs">
                                     {invocation.functionName}
+                                </TableCell>
+                                <TableCell className="font-mono text-xs">
+                                    {invocation.httpMethod && invocation.endpointPath ? (
+                                        <span className="flex items-center gap-2">
+                                            <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+                                                {invocation.httpMethod}
+                                            </span>
+                                            {invocation.endpointPath}
+                                        </span>
+                                    ) : (
+                                        <span className="text-muted-foreground">-</span>
+                                    )}
                                 </TableCell>
                                 <TableCell>{invocation.duration.toFixed(2)} ms</TableCell>
                                 <TableCell>{invocation.maxMemoryUsed} MB</TableCell>

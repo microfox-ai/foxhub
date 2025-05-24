@@ -156,7 +156,8 @@ export const installFoxRouter: ServerStreamingFunction<
   // at this step, create template secrets as needed
   // create secrets
   const templateSecrets = await getClientSecretsFromTemplateEnvs(
-    templateType as CodeTemplateType
+    templateType as CodeTemplateType,
+    clientRequest
   );
 
   if (templateSecrets.length > 0) {

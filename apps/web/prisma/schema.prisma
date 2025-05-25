@@ -28,6 +28,7 @@ model User {
   onboardingData     Json?
   projectPermissions ProjectPermission[]
   isBetaAccess       Boolean?
+  isBillingVerified  Boolean?
   shardPages         ShardPage[]
 }
 

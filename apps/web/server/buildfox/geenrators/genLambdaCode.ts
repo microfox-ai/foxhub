@@ -30,13 +30,13 @@ export const genLambdaCode = async (
         function: _function,
         template_type:
           taskInstanceMeta.taskStructure?.templateType ??
-          codeTemplateType.enum.plain_sls,
+          codeTemplateType.enum.upstash_sls,
         clientRequest,
         clientSecrets,
       });
       console.log("generating lambda function", _function.name);
       const result = await generateText({
-        model: models.googleGeminiTwoFive,
+        model: models.claude35Sonnet,
         system: codingSystemPrompt("backend"),
         prompt,
         toolChoice: "auto",

@@ -148,6 +148,11 @@ export const fetchPackageDocs = (
         readmes.filter((r) => r.readme === "").map((r) => r.package)
       );
 
+      props.dataStream.writeMessageAnnotation({
+        type: "thinking",
+        content: `Coding with ${readmes.map((r) => r.package).join(", ")}`,
+      });
+
       return readmes;
     },
   });

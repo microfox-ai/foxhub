@@ -101,6 +101,13 @@ export const genServerlessIndex = async (
             
             make sure the imports follow the '.js' extension like this:
             import { getExternalData } from './functions/getExternalData.js'
+
+            make sure to use the correct function name in the import & export.
+            All imports & exports are in camelCase.
+            like this:
+            import { externalDataDocs } from './functions/ExternalData.js'
+            & not this:
+            import { ExternalDataDocs } from './functions/ExternalData.js'
   
             your workflow should be as follows:
             1. read the example index.ts file & keep it as a reference for how to write code.

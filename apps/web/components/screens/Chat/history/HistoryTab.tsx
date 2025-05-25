@@ -1,5 +1,6 @@
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import { useEffect, useState } from "react";
+import useSWR from "swr";
 import {
     Table,
     TableBody,
@@ -11,24 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
+import { LambdaInvocation } from "@/utils/helpers/tracking/lambda";
 
 dayjs.extend(relativeTime);
 
-interface LambdaInvocation {
-    requestId: string;
-    timestamp: number;
-    duration: number;
-    billedDuration: number;
-    memorySize: number;
-    maxMemoryUsed: number;
-    initDuration: number;
-    endTimestamp?: number;
-    additionalLogs: string[];
-    functionName: string;
-    endpointPath?: string;
-    httpMethod?: string;
-}
+
 
 interface HistoryResponse {
     invocations: LambdaInvocation[];
@@ -40,46 +29,21 @@ interface HistoryResponse {
 
 export const HistoryTab = () => {
     const { selectedRequest } = useClientProject();
-    const [history, setHistory] = useState<HistoryResponse | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
 
-    const fetchHistory = async (page: number = 1) => {
-        if (!selectedRequest?.id) return;
 
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await fetch("/api/client-functions/history", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    clientRequestId: selectedRequest.id,
-                    page,
-                    pageSize: 30,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to fetch history");
-            }
-
-            const data = await response.json();
-            setHistory(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to fetch history");
-        } finally {
-            setLoading(false);
+    const { data: history, error, isLoading, mutate } = useSWR<HistoryResponse>(
+        selectedRequest?.id ? `/api/client-functions/history?page=${page}&pageSize=30&clientRequestId=${selectedRequest?.id}` : null,
+        (url) => fetch(url).then(res => res.json()) as Promise<HistoryResponse>,
+        {
+            revalidateOnFocus: true,
         }
+    );
+
+    const handlePageChange = (newPage: number) => {
+        setPage(newPage);
+        mutate();
     };
-
-    useEffect(() => {
-        if (selectedRequest?.id) {
-            fetchHistory();
-        }
-    }, [selectedRequest?.id]);
 
     if (!selectedRequest) {
         return (
@@ -92,12 +56,12 @@ export const HistoryTab = () => {
     if (error) {
         return (
             <div className="flex items-center justify-center h-full">
-                <p className="text-destructive">{error}</p>
+                <p className="text-destructive">{error.message}</p>
             </div>
         );
     }
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -116,9 +80,22 @@ export const HistoryTab = () => {
     return (
         <div className="p-4 space-y-4">
             <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Lambda Invocation History</h2>
-                <div className="text-sm text-muted-foreground">
-                    Total Invocations: {history.total}
+                <h2 className="text-lg font-semibold">Raw Serverless History</h2>
+                <div className="flex items-center gap-4">
+                    <div className="text-sm text-muted-foreground">
+                        Total Invocations: {history.total}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                            await mutate();
+                            setPage(1);
+                        }}
+                        disabled={isLoading}
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    </Button>
                 </div>
             </div>
 
@@ -132,7 +109,7 @@ export const HistoryTab = () => {
                             <TableHead>Duration</TableHead>
                             <TableHead>Memory Used</TableHead>
                             <TableHead>Memory Size</TableHead>
-                            <TableHead>Init Duration</TableHead>
+                            <TableHead>Cost (USD)</TableHead>
                             <TableHead>Request ID</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -157,10 +134,10 @@ export const HistoryTab = () => {
                                         <span className="text-muted-foreground">-</span>
                                     )}
                                 </TableCell>
-                                <TableCell>{invocation.duration.toFixed(2)} ms</TableCell>
+                                <TableCell>{invocation.billedDuration.toFixed(2)} ms</TableCell>
                                 <TableCell>{invocation.maxMemoryUsed} MB</TableCell>
                                 <TableCell>{invocation.memorySize} MB</TableCell>
-                                <TableCell>{invocation.initDuration.toFixed(2)} ms</TableCell>
+                                <TableCell>${invocation.costUSD.toFixed(6)}</TableCell>
                                 <TableCell className="font-mono text-xs">
                                     {invocation.requestId}
                                 </TableCell>
@@ -173,18 +150,18 @@ export const HistoryTab = () => {
             <div className="flex justify-center gap-2">
                 <Button
                     variant="outline"
-                    onClick={() => fetchHistory(history.page - 1)}
-                    disabled={history.page === 1 || loading}
+                    onClick={() => handlePageChange(page - 1)}
+                    disabled={page === 1 || isLoading}
                 >
                     Previous
                 </Button>
                 <span className="flex items-center px-4">
-                    Page {history.page} of {history.totalPages}
+                    Page {page} of {history.totalPages}
                 </span>
                 <Button
                     variant="outline"
-                    onClick={() => fetchHistory(history.page + 1)}
-                    disabled={history.page === history.totalPages || loading}
+                    onClick={() => handlePageChange(page + 1)}
+                    disabled={page === history.totalPages || isLoading}
                 >
                     Next
                 </Button>

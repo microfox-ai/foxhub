@@ -4,7 +4,10 @@ import {
 } from "@/server/convertfox/types";
 import { ClientRequest, ClientSecret } from "@prisma/client";
 import { envsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
-import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
+import {
+  InternalTemplateEnv,
+  templateEnvsFromTaskIntegrations,
+} from "../helper/templateEnvsFromTaskIntegrations";
 import { prisma } from "@/prisma/prisma";
 import { ClientSecretVariable } from "@/server/types";
 
@@ -19,7 +22,7 @@ export const envsPrompt = async (
   if (
     clientRequest &&
     taskInstanceMeta.taskStructure?.templateType !=
-      codeTemplateType.enum.plain_sls
+      codeTemplateType.enum.upstash_sls
   ) {
     previousEnvs = previousEnvs.concat(
       files.flatMap((file) => (file.meta as any).envVariablesUsed)
@@ -27,7 +30,8 @@ export const envsPrompt = async (
   }
 
   const templateEnvs = await templateEnvsFromTaskIntegrations(
-    taskInstanceMeta.taskStructure?.templateType!
+    taskInstanceMeta.taskStructure?.templateType!,
+    clientRequest
   );
   let coreEnvs: string[] = [];
   const requiredEnvs = taskInstanceMeta.taskIntegrations
@@ -81,7 +85,8 @@ export const envsPrompt = async (
   }
 
   previousEnvs = previousEnvs.filter(
-    (env) => !templateEnvs.includes(env) && !coreEnvs.includes(env)
+    (env) =>
+      !templateEnvs.some((envJson: InternalTemplateEnv) => envJson.key === env)
   );
   return `
      The following env variables are already present in the project:

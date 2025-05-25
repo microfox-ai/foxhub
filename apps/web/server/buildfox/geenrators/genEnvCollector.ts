@@ -24,7 +24,7 @@ export const genEnvCollector = async (
 ) => {
   const templateType =
     taskInstanceMeta.taskStructure?.templateType ??
-    codeTemplateType.enum.plain_sls;
+    codeTemplateType.enum.upstash_sls;
   let envs = envVariablesUsed;
   let templatedEnvs: any[] = [];
   try {
@@ -34,7 +34,10 @@ export const genEnvCollector = async (
     });
 
     // 1. internal envs based on the template.
-    templatedEnvs = await templateEnvsFromTaskIntegrations(templateType);
+    templatedEnvs = await templateEnvsFromTaskIntegrations(
+      templateType,
+      clientRequest
+    );
     console.log(
       "rootEnvs Used",
       templatedEnvs.map((env) => env.key)

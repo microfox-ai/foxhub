@@ -105,13 +105,13 @@ export const TaskStructure = ({
                         )}
                     </TabsList>
 
-                    {object.dbSchemas && object.dbSchemas.length > 0 && object.templateType === codeTemplateType.enum.upstash_sls && (
+                    {object.dbSchemas && object.dbSchemas.length > 0 && (
                         <TabsContent value="schemas" className="mt-4">
                             <div className="grid gap-4">
                                 {object.dbSchemas.map((schema) => (
                                     <div
                                         key={schema.modelName}
-                                        className="bg-gray-50 rounded-lg p-4 space-y-2"
+                                        className="bg-gray-50 rounded-lg p-4 space-y-2 w-fit"
                                     >
                                         <div className="flex items-center justify-between">
                                             <span className="font-medium text-sm text-gray-900">
@@ -144,7 +144,7 @@ export const TaskStructure = ({
                                                 </span>
                                             </div>
                                         </div>
-                                        <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto">
+                                        <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto max-w-[350px]">
                                             {JSON.stringify(schema.jsonSchema, null, 2)}
                                         </pre>
                                     </div>

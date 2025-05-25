@@ -87,7 +87,7 @@ export const genDbRedisHelper = async (
                 3. never use any external package in this helper other that @upstash/redis, 
                 4. create fallbacks for empty, null, undefined values.
                 5. do proper try, catch blcoks for json parse & stringify
-                6. if JSON.parse, always typecheck if its a string before doing JSON.parse
+                6. if JSON.parse, always typecheck if its a string before doing JSON.parse, if its not string and an object instead directly return the object.
     
                 make sure you skip the packagesUsed field in the tool call.
                 `,

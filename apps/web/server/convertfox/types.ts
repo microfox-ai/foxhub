@@ -76,7 +76,7 @@ export const taskRequiredInfo = z.object({
 });
 export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
-export const codeTemplateType = z.enum(["plain_sls", "upstash_sls"]);
+export const codeTemplateType = z.enum(["upstash_sls"]); // "plain_sls"
 export type CodeTemplateType = z.infer<typeof codeTemplateType>;
 
 export const codeTemplateAddon = z.enum([
@@ -105,7 +105,7 @@ export const taskStructure = z.object({
   lambdaFunctions: z
     .array(
       z.object({
-        name: z.string().describe("The name of this lambda function"),
+        name: z.string().describe("The file name of this lambda function"),
         interactionType: z
           .array(z.enum(["ui", "api"]))
           .describe(
@@ -126,16 +126,13 @@ export const taskStructure = z.object({
           .enum(["GET", "POST", "PUT", "DELETE"])
           .describe("The method of the end point"),
         path: z.string().describe("The path of the end point"),
-        packagesUsed: z
-          .array(z.string())
-          .describe("All packages that might be used in this lambda function"),
       })
     )
     .describe("An array of lambda functions that are needed for the task"),
   cronJobs: z.array(
     z
       .object({
-        name: z.string().describe("The name of this cron job"),
+        name: z.string().describe("The file name of this cron job"),
         brief: z
           .string()
           .describe(
@@ -164,9 +161,6 @@ export const taskStructure = z.object({
         cronExpression: z
           .string()
           .describe("The cron expression of the cron job"),
-        packagesUsed: z
-          .array(z.string())
-          .describe("All packages that might be used in this cron job"),
       })
       .describe("The cron jobs that are needed for the task")
   ),

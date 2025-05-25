@@ -1,28 +1,18 @@
+import { ClientRequest, ClientSecret } from "@prisma/client";
 import dedent from "dedent";
+import fs from "fs/promises";
+import path from "path";
 import {
   codeTemplateType,
   CodeTemplateType,
   TaskInstanceMetaType,
+  TaskStructure,
 } from "../convertfox/types";
-import { TaskStructure } from "../convertfox/types";
-import path from "path";
-import {
-  INTERNAL_TEMPLATE_PLAIN_ROOT,
-  INTERNAL_TEMPLATE_UPSTASH_ROOT,
-  INTERNAL_TEMPLATE_MONGODB_ROOT,
-  readAllGenFilesList,
-  fetchTemplateDir,
-} from "./tool/writeToFile";
-import fs from "fs/promises";
-import { ClientRequest, ClientSecret } from "@prisma/client";
-import { envsFromTaskIntegrations } from "./helper/coreEnvsFromTaskIntegrations";
-import { templateEnvsFromTaskIntegrations } from "./helper/templateEnvsFromTaskIntegrations";
-import { prisma } from "@/prisma/prisma";
-import { ClientSecretVariable } from "../types";
 import { baseFilePrompt } from "./prompts/basePrompt";
-import { packagesPrompt } from "./prompts/packagesPrompt";
 import { envsPrompt } from "./prompts/envsPrompt";
 import { helperFilesContext } from "./prompts/helperFilesContext";
+import { packagesPrompt } from "./prompts/packagesPrompt";
+import { fetchTemplateDir, readAllGenFilesList } from "./tool/writeToFile";
 export const codingSystemPrompt = (
   step: "backend" | "frontend",
   writingCoreFunctions: boolean = false
@@ -118,6 +108,9 @@ export const codingSystemPrompt = (
     `;
 };
 
+// - In the file code content, Do not escape with \\ unnecessarily, it will break the code.
+// - In open api docs, use a combination of ""+"" to write the code.
+
 export const codingFileTypePrompt = (fileType: string) => {
   if (fileType === "") {
     return `
@@ -175,6 +168,10 @@ export const codingFunctionPrompt = async ({
 
   //console.log("templateEnvs", templateEnvs);
   //console.log("coreEnvs", coreEnvs);
+  const nameOfFunction =
+    type === "lambda"
+      ? _function?.name?.replaceAll(/[^a-zA-Z0-9]/g, "")
+      : _cron?.name?.replaceAll(/[^a-zA-Z0-9]/g, "");
 
   return dedent`You are requested to write a serverless function for the following requirement:
             
@@ -206,7 +203,7 @@ export const codingFunctionPrompt = async ({
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
 
             functionNaming should be like this:
-            ${type === "lambda" ? _function?.name?.replaceAll(/[^a-zA-Z0-9]/g, "") : _cron?.name?.replaceAll(/[^a-zA-Z0-9]/g, "")}.ts
+            ${nameOfFunction}.ts
           
             The code should be created in the src/functions directory.
             Make sure to use the necessary imports from the packages when needed.
@@ -222,12 +219,15 @@ export const codingFunctionPrompt = async ({
           Critically, if the packageDocs are available from fetch_package_docs tool, 
           do not make any assumptions of functions, properties that are not mentioned in the package docs.
 
-            Some instructions for docs
+            Some instructions for openapi docs
             - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
             - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.
             - the docs should be a pure string, do not insert any $ characters in the docs setup instructions.
             - only write setup instructions for the functions, not for the cron jobs.
             - only write setup instructions if it is meant to be configured as a webhook in external platform.
+
+            openapi docs export should be like this: 
+            export const ${type === "lambda" ? (nameOfFunction ?? "").charAt(0).toLowerCase() + (nameOfFunction ?? "").slice(1) : (nameOfFunction ?? "").charAt(0).toLowerCase() + (nameOfFunction ?? "").slice(1)}Docs in camelcase 
             `;
 };
 

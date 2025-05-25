@@ -19,9 +19,9 @@ export const INTERNAL_TEMPLATE_MONGODB_ROOT = `server/buildfox/templates/serverl
 export const INTERNAL_TEMPLATE_ADDON_PUPPETEER_ROOT = `server/buildfox/templates/serverless/addons/puppeteer`;
 
 export const fetchTemplateDir = (templateType?: CodeTemplateType) => {
-  if (templateType === codeTemplateType.enum.plain_sls) {
-    return INTERNAL_TEMPLATE_PLAIN_ROOT;
-  }
+  // if (templateType === codeTemplateType.enum.plain_sls) {
+  //   return INTERNAL_TEMPLATE_PLAIN_ROOT;
+  // }
   if (templateType === codeTemplateType.enum.upstash_sls) {
     return INTERNAL_TEMPLATE_UPSTASH_ROOT;
   }
@@ -284,7 +284,7 @@ export const writeToFile = (
             fileName,
             filePath,
             fileType,
-            content,
+            content: content.replace(/\\`/g, "`").replace(/\\'/g, "'"),
             meta: {
               packagesUsed,
               timestamp: new Date().toISOString(),

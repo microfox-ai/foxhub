@@ -26,13 +26,13 @@ export const genCronJobs = async (
         cron: cronJob,
         template_type:
           taskInstanceMeta.taskStructure?.templateType ??
-          codeTemplateType.enum.plain_sls,
+          codeTemplateType.enum.upstash_sls,
         clientRequest,
         clientSecrets,
       });
       console.log("generating cron job", cronJob.name);
       const result = await generateText({
-        model: models.googleGeminiTwoFive,
+        model: models.claude35Sonnet,
         system: codingSystemPrompt("backend"),
         prompt,
         toolChoice: "auto",

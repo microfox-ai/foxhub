@@ -248,6 +248,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
             packageInfo = await fetchPackageInfo(platform.package as string);
           }
           if (
+            packageInfo &&
             packageInfo.addedDependencies &&
             packageInfo.addedDependencies.length > 0
           ) {

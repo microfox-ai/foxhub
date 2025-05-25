@@ -38,9 +38,9 @@ export const genCronJobs = async (
         toolChoice: "auto",
         maxSteps: 2,
         maxRetries: 5,
-        maxTokens: 5000,
+        //maxTokens: 5000,
         tools: {
-          write_to_file: writeToFile(
+          write_code: writeToFile(
             props,
             clientRequest,
             taskInstanceMeta?.taskStructure?.templateType

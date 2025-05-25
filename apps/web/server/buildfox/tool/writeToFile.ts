@@ -255,18 +255,19 @@ export const writeToFile = (
       fileType: z
         .string()
         .describe("The type of file to write to - ts, tsx, json, etc"),
-      content: z.string().describe("The content to write to the file"),
-      packagesUsed: z
-        .array(z.string())
+      fileContent: z
+        .string()
         .describe(
-          "The packages used in the file - @microfox/core, @microfox/aws-ses etc.."
-        )
-        .optional(),
+          "The code content to write to the file - MUST required, as it holds the actual code"
+        ),
+      // packagesUsed: z
+      //   .array(z.string())
+      //   .describe(
+      //     "The packages used in the file - @microfox/core, @microfox/aws-ses etc.."
+      //   )
+      //   .optional(),
     }),
-    execute: async (
-      { fileName, filePath, fileType, content, packagesUsed },
-      options
-    ) => {
+    execute: async ({ fileName, filePath, fileType, fileContent }, options) => {
       try {
         console.log(
           "updatedFileContent",
@@ -284,9 +285,9 @@ export const writeToFile = (
             fileName,
             filePath,
             fileType,
-            content: content.replace(/\\`/g, "`").replace(/\\'/g, "'"),
+            content: fileContent.replace(/\\`/g, "`").replace(/\\'/g, "'"),
             meta: {
-              packagesUsed,
+              //packagesUsed,
               timestamp: new Date().toISOString(),
             },
           },

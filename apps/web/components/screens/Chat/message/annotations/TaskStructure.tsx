@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle, Clock, FileText, GitFork, Info, PackageIcon, Target } from "lucide-react";
+import { CheckCircle, Clock, FileText, GitFork, Info, PackageIcon, Target, ChevronDown, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,19 @@ export const TaskStructure = ({
 }: TaskStructureProps) => {
     const object = uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
     const [selectedBrief, setSelectedBrief] = useState<{ title: string; content: string } | null>(null);
+    const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
+
+    const toggleSchema = (modelName: string) => {
+        setExpandedSchemas(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(modelName)) {
+                newSet.delete(modelName);
+            } else {
+                newSet.add(modelName);
+            }
+            return newSet;
+        });
+    };
 
     return (
         <motion.div
@@ -111,21 +124,34 @@ export const TaskStructure = ({
                                 {object.dbSchemas.map((schema) => (
                                     <div
                                         key={schema.modelName}
-                                        className="bg-gray-50 rounded-lg p-4 space-y-2 w-fit"
+                                        className="bg-gray-50 rounded-lg p-4 space-y-2 w-full"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-medium text-sm text-gray-900">
-                                                {schema.modelName}
-                                            </span>
+                                        <div
+                                            className="flex items-center justify-between cursor-pointer"
+                                            onClick={() => toggleSchema(schema.modelName)}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {expandedSchemas.has(schema.modelName) ? (
+                                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                                ) : (
+                                                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                                                )}
+                                                <span className="font-medium text-sm text-gray-900">
+                                                    {schema.modelName}
+                                                </span>
+                                            </div>
                                             <div className="flex items-center gap-2">
                                                 <Dialog>
                                                     <DialogTrigger asChild>
                                                         <button
                                                             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                                                            onClick={() => setSelectedBrief({
-                                                                title: schema.modelName,
-                                                                content: `Database schema for ${schema.modelName}`
-                                                            })}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedBrief({
+                                                                    title: schema.modelName,
+                                                                    content: `Database schema for ${schema.modelName}`
+                                                                });
+                                                            }}
                                                         >
                                                             <Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
                                                         </button>
@@ -144,9 +170,18 @@ export const TaskStructure = ({
                                                 </span>
                                             </div>
                                         </div>
-                                        <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto max-w-[350px]">
-                                            {JSON.stringify(schema.jsonSchema, null, 2)}
-                                        </pre>
+                                        {expandedSchemas.has(schema.modelName) && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto w-full max-w-[350px]">
+                                                    {JSON.stringify(schema.jsonSchema, null, 2)}
+                                                </pre>
+                                            </motion.div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

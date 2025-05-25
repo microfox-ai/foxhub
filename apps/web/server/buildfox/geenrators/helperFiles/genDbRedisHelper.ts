@@ -52,10 +52,11 @@ export const genDbRedisHelper = async (
     },
   });
 
-  const result = await generateText({
-    model: models.claude35Sonnet,
-    system: codingSystemPrompt("backend"),
-    prompt: dedent`You are requested to modify a redis.ts helper file for the following requirements so that it supports the following functions & cron jobs:
+  try {
+    const result = await generateText({
+      model: models.claude35Sonnet,
+      system: codingSystemPrompt("backend"),
+      prompt: dedent`You are requested to modify a redis.ts helper file for the following requirements so that it supports the following functions & cron jobs:
 
                 The following functions are to be generated for the task:
                 ${taskInstanceMeta?.taskStructure?.lambdaFunctions?.map((func) => func.name + " - " + func.description).join("\n - ")}
@@ -91,33 +92,36 @@ export const genDbRedisHelper = async (
     
                 make sure you skip the packagesUsed field in the tool call.
                 `,
-    tools: {
-      write_to_file: writeToFile(
-        props,
-        clientRequest,
-        taskInstanceMeta?.taskStructure?.templateType
-      ),
-      fetch_package_docs: fetchPackageDocs(
-        props,
-        clientRequest,
-        taskInstanceMeta
-      ),
-    },
-    toolChoice: "required",
-    maxSteps: 1,
-    maxTokens: 3000,
-    maxRetries: 1,
-    onStepFinish: (step) => {
-      console.log("step", step.usage);
-    },
-  });
-  console.log("result", result.usage);
+      tools: {
+        write_code: writeToFile(
+          props,
+          clientRequest,
+          taskInstanceMeta?.taskStructure?.templateType
+        ),
+        fetch_package_docs: fetchPackageDocs(
+          props,
+          clientRequest,
+          taskInstanceMeta
+        ),
+      },
+      toolChoice: "required",
+      maxSteps: 1,
+      maxRetries: 3,
+      onStepFinish: (step) => {
+        console.log("step", step.usage);
+      },
+    });
+    console.log("result", result.usage);
 
-  TokenUsageAnalyticsTracker.trackUsage({
-    ...props.requestBody,
-    model: models.claude35Sonnet.modelId,
-    usage: result.usage,
-  });
+    TokenUsageAnalyticsTracker.trackUsage({
+      ...props.requestBody,
+      model: models.claude35Sonnet.modelId,
+      usage: result.usage,
+    });
+  } catch (error) {
+    console.error("error", error);
+    throw error;
+  }
 
   return taskInstanceMeta;
 };

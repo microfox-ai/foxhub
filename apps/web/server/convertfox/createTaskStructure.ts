@@ -56,7 +56,7 @@ export const createTaskStructure = async (
 
   try {
     const result = generateObject({
-      model: models.claude35Sonnet,
+      model: models.claudeDefault,
       system: taskPlanningPrompt(),
       prompt: `
         You are a sr. developer, who is tasked with creating a plan of action for a task.
@@ -86,6 +86,7 @@ export const createTaskStructure = async (
         - Never use theese packages - axios
         - Cron functions cannot call the created lambda functions.
         - MAKE SURE THAT CRON JOBS BRIEF DOES NOT MENTION ANY LAMBDA FUNCTIONS.
+        - paths dont have dynamic slugs, they are static.
         `,
       schema: taskStructure,
       maxRetries: 3,

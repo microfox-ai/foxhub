@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
     const logs = await getLambdaLogs({
       functionName: functionName,
       region: "us-east-1",
+      streamLimit: 1,
+      limit: 20,
     });
 
     return NextResponse.json({ logs });

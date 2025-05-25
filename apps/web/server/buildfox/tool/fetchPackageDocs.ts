@@ -41,21 +41,25 @@ export const fetchPackageDocs = (
     description:
       "Fetch All related docs for each package to understand how to use it",
     parameters: z.object({
-      packages: z.array(
-        z.object({
-          package: z
-            .string()
-            .describe(
-              "The exact names of all the packages to fetch docs for (@microfox/core , @slack/web-api, etc..)"
-            ),
-          readmeSearch: z
-            .string()
-            .describe(
-              "What functions of this package would be needed, to implement the task"
-            )
-            .optional(),
-        })
-      ),
+      packages: z
+        .array(
+          z.object({
+            package: z
+              .string()
+              .describe(
+                "The exact names of the packages to fetch docs for (@microfox/core , @slack/web-api, etc..)"
+              ),
+            readmeSearch: z
+              .string()
+              .describe(
+                "What functions of this package would be needed, to implement the task"
+              )
+              .optional(),
+          })
+        )
+        .describe(
+          "A list of packages to fetch docs which would be needed for the task"
+        ),
     }),
     execute: async ({ packages }, options) => {
       const fetchReadMePackages = packages.filter((pkg) =>
@@ -153,6 +157,7 @@ export const fetchPackageDocs = (
         content: `Coding with ${readmes.map((r) => r.package).join(", ")}`,
       });
 
+      // TODO: convert readme into a coding brief for this particular lambda function.
       return readmes;
     },
   });

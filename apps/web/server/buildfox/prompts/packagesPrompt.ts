@@ -13,7 +13,7 @@ export const packagesPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
       .filter(
         (platform) => !EXCLUDED_PACKAGES_LIST.includes(platform?.package ?? "")
       )
-      .map((platform) => platform?.package)
+      .map((platform) => platform?.package + " - " + platform?.reason)
       .join("\n - ")
   );
   return `

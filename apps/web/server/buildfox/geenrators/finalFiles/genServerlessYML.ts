@@ -140,7 +140,7 @@ export const genServerlessYML = async (
           make sure you must include the getDocs function, it is very important - it is available at dist/index.getDocs
           `,
     tools: {
-      write_to_file: writeToFile(
+      write_code: writeToFile(
         props,
         clientRequest,
         taskInstanceMeta?.taskStructure?.templateType

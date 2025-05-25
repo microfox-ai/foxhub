@@ -122,7 +122,7 @@ export const genServerlessIndex = async (
             make sure you rewrite the entire file instead of any diffs.
             `,
     tools: {
-      write_to_file: writeToFile(props, clientRequest),
+      write_code: writeToFile(props, clientRequest),
     },
     toolChoice: "required",
     maxSteps: 1,

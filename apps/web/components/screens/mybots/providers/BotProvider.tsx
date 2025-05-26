@@ -26,8 +26,8 @@ const useBotsContextInternal = (packageTypes?: ClientSecretPackageType[]) => {
   const { selectedProject } = useClientProject();
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const packageName = searchParams.get("package");
-  const _botId = searchParams.get("botId");
+  const packageName = searchParams?.get("package");
+  const _botId = searchParams?.get("botId");
 
   const { botToEdit, mode, refreshBotToEdit, botId, setBotId, isLoadingBotToEdit } = useSecret();
 

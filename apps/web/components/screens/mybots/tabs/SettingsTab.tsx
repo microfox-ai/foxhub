@@ -52,7 +52,7 @@ const SettingsTab = ({
                         <div>
                             <h3 className="text-sm font-medium text-red-800">Danger Zone</h3>
                             <p className="text-sm text-red-600 mt-1">
-                                {pathname.includes("my-bots") ? "Once you delete a bot, there is no going back. Please be certain." : "Once you remove data access, all running jobs will be stopped. Please be certain."}
+                                {pathname?.includes("my-bots") ? "Once you delete a bot, there is no going back. Please be certain." : "Once you remove data access, all running jobs will be stopped. Please be certain."}
                             </p>
                             <Button
                                 variant="outline"
@@ -67,7 +67,7 @@ const SettingsTab = ({
                                         Deleting...
                                     </>
                                 ) : (
-                                    pathname.includes("my-bots") ? "Delete Bot" : "Remove Data Access"
+                                    pathname?.includes("my-bots") ? "Delete Bot" : "Remove Data Access"
                                 )}
                             </Button>
                         </div>

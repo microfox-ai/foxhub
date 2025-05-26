@@ -4,7 +4,7 @@ import useSWRMutation from "swr/mutation";
 
 export async function* getCompletion(prompt: string, signal?: AbortSignal) {
   const url = new URL("/completion", "http://localhost:4000");
-  url.searchParams.append("prompt", prompt);
+  url.searchParams?.append("prompt", prompt);
 
   const res = await fetch(url, {
     method: "GET",

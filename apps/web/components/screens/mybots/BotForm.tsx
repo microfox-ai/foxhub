@@ -31,8 +31,8 @@ interface BotFormProps {
 
 const BotForm = ({ mode }: BotFormProps) => {
   const searchParams = useSearchParams();
-  const botId = searchParams.get("botId");
-  const packageName = searchParams.get("package");
+  const botId = searchParams?.get("botId");
+  const packageName = searchParams?.get("package");
   const { bots, stableBotPackages, refreshBots, botToEdit, isLoadingBotToEdit } = useBots();
   const { form, onSubmit, isDeleting, isUpdating, handleDelete, setPackageInfo, setSelectedConstructor } = useSecretForm();
   const [isInitialLoading, setIsInitialLoading] = useState(true);

@@ -14,7 +14,7 @@ export default async function handler(
     console.log("body", body);
     const slackWebhook = new SlackWebhookSdk(
       process.env.SLACK_SIGNING_SECRET!,
-      process.env.SLACK_WEBHOOK_URL!,
+      undefined,
       "nextjs"
     );
 

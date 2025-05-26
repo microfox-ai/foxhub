@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       packageType,
       templateType,
       metadata,
+      priceMarkupPercent,
     } = body;
 
     if (!templateId || !name || !type) {
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
         packageConstructor,
         packageType,
         templateType,
+        priceMarkupPercent,
         metadata,
       },
     });

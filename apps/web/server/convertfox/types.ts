@@ -251,7 +251,11 @@ export const extraEnvVariables = z.object({
     .string()
     .describe("Why is this env variable needed in a single line")
     .optional(),
-  how: z.string().describe("How to get this env from the platform"),
+  how: z
+    .string()
+    .describe(
+      "How/Where to get this env from the platform (if unkonwn on how, describe what this env variable is needed for)"
+    ),
   isSameAs: z
     .array(z.string())
     .describe("similar exisiting env variables that were duped in the code")

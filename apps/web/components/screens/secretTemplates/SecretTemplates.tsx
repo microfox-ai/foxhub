@@ -46,6 +46,7 @@ export const SecretTemplates = () => {
         name: string;
         type: string;
         templateType: string;
+        priceMarkupPercent: number;
         variables: ClientSecretVariable[];
         botConfig: ClientSecretVariable[];
         packageName: string;
@@ -60,6 +61,7 @@ export const SecretTemplates = () => {
         variables: [],
         botConfig: [],
         packageName: "",
+        priceMarkupPercent: 0,
         packageConstructor: "",
         packageType: "",
         metadata: {
@@ -131,6 +133,7 @@ export const SecretTemplates = () => {
             packageName: template.packageName || "",
             packageConstructor: template.packageConstructor || "",
             packageType: template.packageType || "",
+            priceMarkupPercent: template.priceMarkupPercent || 0,
             metadata: template.metadata as { introMessage: string; permissions: string[] } || {
                 introMessage: "",
                 permissions: []
@@ -181,6 +184,7 @@ export const SecretTemplates = () => {
                 packageName: "",
                 packageConstructor: "",
                 packageType: "",
+                priceMarkupPercent: 0,
                 metadata: {
                     introMessage: "",
                     permissions: []
@@ -305,7 +309,7 @@ export const SecretTemplates = () => {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-start gap-4 items-center mb-6">
                 <h1 className="text-2xl font-bold">Secret Templates</h1>
                 <Button onClick={() => {
                     setIsEditing(false);
@@ -319,6 +323,7 @@ export const SecretTemplates = () => {
                         packageName: "",
                         packageConstructor: "",
                         packageType: "",
+                        priceMarkupPercent: 0,
                         metadata: {
                             introMessage: "",
                             permissions: []
@@ -331,26 +336,33 @@ export const SecretTemplates = () => {
                 </Button>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid grid-cols-4 gap-4">
                 {templates?.clientSecretTemplates.map((template) => (
                     <div
                         key={template.id}
-                        className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                        className="col-span-1 px-4 pt-4 pb-2 border rounded-lg shadow-sm hover:shadow-md transition-shadow"
                     >
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="font-semibold">{template.name}</h3>
-                                <p className="text-sm text-gray-500">Type: {template.type}</p>
-                                <p className="text-sm text-gray-500">
-                                    Variables: {(template.variables as any[] as ClientSecretVariable[]).length}
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
+                        <div className="flex flex-col justify-between items-start">
+                            <h3 className="font-semibold">{template.name}
+
+                                <span className={`ml-2 text-sm text-white bg-blue-500 px-1 py-0 rounded-md ${template.templateType === "free" ? "bg-green-500" : template.templateType === "testing" ? "bg-yellow-500" : template.templateType === "markup" ? "bg-purple-500" : "bg-red-500"}`}> {template.templateType}</span>
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                                {template.packageName}
+                                <br />
+                                {template.packageConstructor}
+                                <br />
+                                Variables: {(template.variables as any[] as ClientSecretVariable[]).length}
+                                <br />
+                                Bot Configs: {(template.botConfig as any[] as ClientSecretVariable[]).length}
+                            </p>
+                            <div className="flex gap-2 mt-4">
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => openEditDialog(template)}
                                 >
+                                    Edit
                                     <Edit className="w-4 h-4" />
                                 </Button>
                                 <Button
@@ -361,6 +373,7 @@ export const SecretTemplates = () => {
                                         setIsDeleteDialogOpen(true);
                                     }}
                                 >
+                                    Delete
                                     <Trash2 className="w-4 h-4 text-red-500" />
                                 </Button>
                             </div>
@@ -424,6 +437,20 @@ export const SecretTemplates = () => {
                                         <RefreshCw className="w-4 h-4" />
                                     </Button>
                                 </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="priceMarkupPercent">Price Markup Percentage</Label>
+                                <Input
+                                    id="priceMarkupPercent"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={formData.priceMarkupPercent}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, priceMarkupPercent: Number(e.target.value) })
+                                    }
+                                    placeholder="Enter markup percentage"
+                                />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="packageName">Package Name</Label>
@@ -492,24 +519,43 @@ export const SecretTemplates = () => {
                                     <Select
                                         value=""
                                         onValueChange={(value) => {
-                                            const variable = availableVariables.find(v => v.key === value);
-                                            if (variable) {
+                                            if (value === "custom") {
                                                 setFormData({
                                                     ...formData,
                                                     variables: [
                                                         ...formData.variables,
                                                         {
-                                                            key: variable.key,
+                                                            key: "",
                                                             value: "",
                                                             isOptional: false,
-                                                            ui: variable.ui || {
+                                                            ui: {
                                                                 type: "text",
-                                                                label: variable.displayName,
-                                                                placeholder: variable.description
+                                                                label: "",
+                                                                placeholder: "Enter value"
                                                             }
                                                         }
                                                     ],
                                                 });
+                                            } else {
+                                                const variable = availableVariables.find(v => v.key === value);
+                                                if (variable) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        variables: [
+                                                            ...formData.variables,
+                                                            {
+                                                                key: variable.key,
+                                                                value: "",
+                                                                isOptional: false,
+                                                                ui: variable.ui || {
+                                                                    type: "text",
+                                                                    label: variable.displayName,
+                                                                    placeholder: variable.description
+                                                                }
+                                                            }
+                                                        ],
+                                                    });
+                                                }
                                             }
                                         }}
                                     >
@@ -517,6 +563,7 @@ export const SecretTemplates = () => {
                                             <SelectValue placeholder="Add Variable" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="custom">Custom Variable</SelectItem>
                                             {availableVariables.map((variable) => (
                                                 <SelectItem key={variable.key} value={variable.key}>
                                                     {variable.displayName || variable.key}
@@ -565,24 +612,43 @@ export const SecretTemplates = () => {
                                     <Select
                                         value=""
                                         onValueChange={(value) => {
-                                            const config = availableBotConfigs.find(c => c.key === value);
-                                            if (config) {
+                                            if (value === "custom") {
                                                 setFormData({
                                                     ...formData,
                                                     botConfig: [
                                                         ...formData.botConfig,
                                                         {
-                                                            key: config.key,
+                                                            key: "",
                                                             value: "",
                                                             isOptional: false,
-                                                            ui: config.ui || {
+                                                            ui: {
                                                                 type: "text",
-                                                                label: config.displayName,
-                                                                placeholder: config.description
+                                                                label: "",
+                                                                placeholder: "Enter value"
                                                             }
                                                         }
                                                     ],
                                                 });
+                                            } else {
+                                                const config = availableBotConfigs.find(c => c.key === value);
+                                                if (config) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        botConfig: [
+                                                            ...formData.botConfig,
+                                                            {
+                                                                key: config.key,
+                                                                value: "",
+                                                                isOptional: false,
+                                                                ui: config.ui || {
+                                                                    type: "text",
+                                                                    label: config.displayName,
+                                                                    placeholder: config.description
+                                                                }
+                                                            }
+                                                        ],
+                                                    });
+                                                }
                                             }
                                         }}
                                     >
@@ -590,6 +656,7 @@ export const SecretTemplates = () => {
                                             <SelectValue placeholder="Add Config" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="custom">Custom Config</SelectItem>
                                             {availableBotConfigs.map((config) => (
                                                 <SelectItem key={config.key} value={config.key}>
                                                     {config.displayName || config.key}

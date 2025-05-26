@@ -37,7 +37,7 @@ export const genCronJobs = async (
         prompt,
         toolChoice: "auto",
         maxSteps: 2,
-        maxRetries: 5,
+        maxRetries: 3,
         //maxTokens: 5000,
         tools: {
           write_code: writeToFile(
@@ -48,7 +48,12 @@ export const genCronJobs = async (
           fetch_package_docs: fetchPackageDocs(
             props,
             clientRequest,
-            taskInstanceMeta
+            taskInstanceMeta,
+            {
+              clientSecrets,
+              type: "cron",
+              _function: cronJob,
+            }
           ),
         },
         onStepFinish: (step) => {

@@ -244,7 +244,8 @@ export const writeToFile = (
   templateType?: CodeTemplateType
 ) => {
   return tool({
-    description: "Write code to a specific file in the project",
+    description:
+      "Write code to a specific file in the project. CRITICAL: fileContent parameter must contain complete, working code - never empty or placeholder text.",
     parameters: z.object({
       fileName: z.string().describe("The name of the file to write to"),
       filePath: z
@@ -257,8 +258,9 @@ export const writeToFile = (
         .describe("The type of file to write to - ts, tsx, json, etc"),
       fileContent: z
         .string()
+        .min(1, "fileContent cannot be empty - it must contain the actual code")
         .describe(
-          "The code content to write to the file - MUST required, as it holds the actual code"
+          "The code content to write to the file - MUST required, as it holds the actual code. This parameter is MANDATORY and must contain complete, working code."
         ),
       // packagesUsed: z
       //   .array(z.string())
@@ -269,6 +271,32 @@ export const writeToFile = (
     }),
     execute: async ({ fileName, filePath, fileType, fileContent }, options) => {
       try {
+        // Validate fileContent is not empty or placeholder
+        if (!fileContent || fileContent.trim().length === 0) {
+          throw new Error(
+            "fileContent parameter is required and cannot be empty. You must provide the complete, actual code content."
+          );
+        }
+
+        // Check for common placeholder patterns
+        const placeholderPatterns = [
+          /\/\/\s*code\s*goes\s*here/i,
+          /\/\/\s*todo/i,
+          /\/\/\s*implement/i,
+          /\/\/\s*placeholder/i,
+          /\/\*\s*code\s*goes\s*here\s*\*\//i,
+          /\/\*\s*todo\s*\*\//i,
+        ];
+
+        const hasPlaceholders = placeholderPatterns.some((pattern) =>
+          pattern.test(fileContent)
+        );
+        if (hasPlaceholders) {
+          throw new Error(
+            "fileContent contains placeholder text. You must provide complete, working code, not placeholders or TODO comments."
+          );
+        }
+
         console.log(
           "updatedFileContent",
           //updatedFileContent,
@@ -285,7 +313,7 @@ export const writeToFile = (
             fileName,
             filePath,
             fileType,
-            content: fileContent.replace(/\\`/g, "`").replace(/\\'/g, "'"),
+            content: fileContent, //.replace(/\\`/g, "`").replace(/\\'/g, "'"),
             meta: {
               //packagesUsed,
               timestamp: new Date().toISOString(),
@@ -293,33 +321,6 @@ export const writeToFile = (
           },
           clientRequest
         );
-
-        // if (packagesUsed && packagesUsed?.length > 0) {
-        //   const packageJson = await fs.readFile(
-        //     path.join(
-        //       process.cwd(),
-        //       fetchTemplateDir(templateType),
-        //       "package.json"
-        //     ),
-        //     "utf8"
-        //   );
-        //   const packageJsonContent = JSON.parse(packageJson);
-        //   packagesUsed?.forEach((pkg) => {
-        //     if (!packageJsonContent.dependencies[pkg]) {
-        //       packageJsonContent.dependencies[pkg] = "*";
-        //     }
-        //   });
-        //   writeToFileSystemAndUpdateSteps(
-        //     {
-        //       fileName: "package.json",
-        //       filePath: "",
-        //       fileType: "json",
-        //       content: dedent`${JSON.stringify(packageJsonContent)}`,
-        //     },
-        //     clientRequest
-        //   );
-        // }
-        // Construct full path from repo root
       } catch (error) {
         console.log("error", error);
         throw new Error("Failed to add file");
@@ -327,7 +328,6 @@ export const writeToFile = (
       return {
         success: true,
         message: `File ${fileName} updated successfully`,
-        //content: content,
         filePath: filePath,
         fileType: fileType,
       };

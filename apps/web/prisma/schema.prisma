@@ -190,6 +190,7 @@ model ClientSecretTemplate {
   type                String
   imageUrl            String?
   variables           Json[]
+  priceMarkupPercent  Int?
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   botConfig           Json[]             @default([])
@@ -208,6 +209,7 @@ model ClientDeployment {
   baseUrl               String
   stage                 DEPLOY_STAGE
   type                  FUNCTIONTYPE
+  status                DEPLOY_STATUS @default(TRIGGERED)
   docs                  String?
   endpoints             Json[]        @default([])
   schedules             Json[]        @default([])
@@ -261,6 +263,12 @@ enum DEPLOY_STAGE {
   PROD
   STAGING
   PREVIEW
+}
+
+enum DEPLOY_STATUS {
+  TRIGGERED
+  DEPLOYED
+  ARCHIVED
 }
 
 enum REQUESTSTATUS {

@@ -66,6 +66,7 @@ export const createTaskIntegrations = async (
         Exclude the following platforms from the list:
         - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
         - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
+        - Avoid meaningless platforms like "Webhooks", "HTTP Server" etc.
     `,
     prompt: `
 Name: ${taskInfo.name}
@@ -236,6 +237,7 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
       reason: string;
       optional: boolean;
       scopes: string[];
+      packageInfo: any;
     }[] = [];
     let finalPlatforms = await Promise.all(
       platforms
@@ -252,17 +254,21 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
             packageInfo.addedDependencies &&
             packageInfo.addedDependencies.length > 0
           ) {
-            packageInfo.addedDependencies.forEach((dependency: string) => {
-              if (!addedPlatforms.some((p) => p.package === dependency)) {
-                addedPlatforms.push({
-                  name: dependency,
-                  package: dependency,
-                  reason: `This platform is added as it is a dependency of ${platform.name}. It is required for the functionality.`,
-                  optional: true,
-                  scopes: [],
-                });
+            packageInfo.addedDependencies.forEach(
+              async (dependency: string) => {
+                if (!addedPlatforms.some((p) => p.package === dependency)) {
+                  const packageInfo = await fetchPackageInfo(dependency);
+                  addedPlatforms.push({
+                    name: dependency,
+                    package: dependency,
+                    reason: packageInfo.description,
+                    packageInfo: packageInfo,
+                    optional: true,
+                    scopes: [],
+                  });
+                }
               }
-            });
+            );
           }
           return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
         })
@@ -274,14 +280,13 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
 
     console.log("addedPlatforms", addedPlatforms?.length);
     for (const _platform of addedPlatforms) {
-      const packageInfo = await fetchPackageInfo(_platform.package);
       finalPlatforms.push({
         name: _platform.name,
         reason: _platform.reason,
         optional: _platform.optional,
         scopes: [],
         package: _platform.package,
-        packageInfo: packageInfo,
+        packageInfo: _platform.packageInfo,
       });
     }
 

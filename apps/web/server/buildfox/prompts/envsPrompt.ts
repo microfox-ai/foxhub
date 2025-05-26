@@ -80,7 +80,7 @@ export const envsPrompt = async (
           (c) => c && c.key === env && c.value != undefined && c.value != null
         ) != undefined
     );
-    console.log("configEnvs filtered", configEnvs);
+    //console.log("configEnvs filtered", configEnvs);
     coreEnvs = coreEnvs.concat(configEnvs);
   }
 
@@ -88,6 +88,7 @@ export const envsPrompt = async (
     (env) =>
       !templateEnvs.some((envJson: InternalTemplateEnv) => envJson.key === env)
   );
+
   return `
      The following env variables are already present in the project:
             ${templateEnvs.map((env: any) => `- ${env.key}`).join("\n")}
@@ -126,8 +127,11 @@ export const envsPrompt = async (
               - DO NOT write like this:
                - // Replace this with your personam mail.
               - write PRODUCTION READY code,
-              - DO NOT self assume or hard code variables in the code
-              - create envs for information that is variable or you dont have access to yet
-              - If possiblue, use input parameters or request body from the event object to get theese variables instead of env variables.
+
+              CRITICAL:
+              Always try to use queryStringparameters or body from the event object to get theese variables instead of ENV variables (as long as its not a cron job).
             `;
 };
+
+// - DO NOT self assume or hard code variables in the code
+// - create envs for information that is variable or you dont have access to yet

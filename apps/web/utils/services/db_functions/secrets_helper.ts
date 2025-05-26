@@ -446,14 +446,18 @@ export const updateDeploymentsOfClientSecret = async (
             }
           );
         }
-        await updateLambdaEnvironmentVariables({
-          functionName:
-            serverlessMetadata?.functionBase?.toLowerCase() +
-            "-" +
-            functionInfo.functionName,
-          region: "us-east-1",
-          environmentVariables: envVarsmap,
-        });
+        try {
+          await updateLambdaEnvironmentVariables({
+            functionName:
+              serverlessMetadata?.functionBase?.toLowerCase() +
+              "-" +
+              functionInfo.functionName,
+            region: "us-east-1",
+            environmentVariables: envVarsmap,
+          });
+        } catch (error) {
+          console.error("Error updating lambda environment variables", error);
+        }
       }
     }
   }

@@ -53,10 +53,10 @@ export const envsFromTaskIntegrations = (
         }
       )
     );
-    console.log(
-      "coreEnvs Used",
-      coreEnvs?.filter((env) => env !== undefined)
-    );
+    // console.log(
+    //   "coreEnvs Used",
+    //   coreEnvs?.filter((env) => env !== undefined)
+    // );
   } catch (error) {
     console.error("Error generating core envs", error);
   }

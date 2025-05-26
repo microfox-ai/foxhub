@@ -41,7 +41,7 @@ export const genLambdaCode = async (
         prompt,
         toolChoice: "auto",
         maxSteps: 2,
-        maxRetries: 5,
+        maxRetries: 3,
         //maxTokens: 5000,
         tools: {
           write_code: writeToFile(
@@ -52,7 +52,12 @@ export const genLambdaCode = async (
           fetch_package_docs: fetchPackageDocs(
             props,
             clientRequest,
-            taskInstanceMeta
+            taskInstanceMeta,
+            {
+              clientSecrets,
+              type: "lambda",
+              _function,
+            }
           ),
         },
         onStepFinish: (step) => {

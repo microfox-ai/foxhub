@@ -34,10 +34,16 @@ export const genServerlessIndex = async (
         filePath: file.filePath,
         fileType: file.fileType,
       });
+      const fileContent = await fs.readFile(file.filePath, "utf8");
+      // Match all exports including functions, constants, and types
+      const exports = fileContent.match(
+        /export (?:const|type|interface|class|function) (\w+)/g
+      );
       const relativePath = file.filePath.replace(rootDir, "");
       return {
         ...file,
         filePath: relativePath,
+        exports: exports || [],
       };
     })
   );
@@ -80,34 +86,32 @@ export const genServerlessIndex = async (
     system: codingSystemPrompt("backend"),
     prompt: dedent`You are requested to create an index.ts file for the following requirement & example:
   
-            The following function files are already generated for the task:
-            ${allFilesRelativeToRoot
-              ?.filter((file: any) => file.filePath?.includes("functions"))
-              ?.map(
-                (file: any) => `Name: ${file.fileName} - Path: ${file.filePath}`
-              )
-              .join("\n - ")}
-  
             The following are the function paths from the serverless.yml file for your reference when writing the docs in index.ts file:
             ${functionPaths
               .map(
                 (func) =>
-                  `Name: ${func.name} - Path: ${func.paths.map((p: { method: string; path: string }) => `${p.method} ${p.path}`).join("\n - ")}`
+                  `Name: ${func.name}Function - Path: ${func.paths.map((p: { method: string; path: string }) => `${p.method} ${p.path}`).join("\n - ")}`
               )
               .join("\n - ")}
   
             The example index.ts file is as follows:
             ${indexTs}
-            
-            make sure the imports follow the '.js' extension like this:
-            import { getExternalData } from './functions/getExternalData.js'
 
+            The exports from the generated files are as follows:
+            ${allFilesRelativeToRoot
+              ?.filter((file: any) => file.filePath?.includes("functions"))
+              ?.map(
+                (file: any) =>
+                  `Name: ${file.fileName} - Path: ${file.filePath}\nExports: ${file.exports?.join(", ") || "None"}`
+              )
+              .join("\n - ")}
+
+            CRITICALLY:
             make sure to use the correct function name in the import & export.
-            All imports & exports are in camelCase.
-            like this:
+            make sure the imports follow the '.js' extension like this:
+            like this:          
+            export { getExternalDataFunction } from './functions/getExternalData.js'
             import { externalDataDocs } from './functions/ExternalData.js'
-            & not this:
-            import { ExternalDataDocs } from './functions/ExternalData.js'
   
             your workflow should be as follows:
             1. read the example index.ts file & keep it as a reference for how to write code.

@@ -228,12 +228,14 @@ export const codingFunctionPrompt = async ({
             Complete example for a function stored at src/functions/${type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
             ${dedent`${type === "lambda" ? lambdaExample : cronExample}`}
 
-            functionNaming should be like this:
+            - file naming should be like this: 
             ${nameOfFunction}.ts in camelCase
+            - function should be exported like this:
+            export const ${nameOfFunction}Function = in CamelCase
+            - openapi docs export should be like this: 
+            export const ${nameOfFunction}Docs = in camelCase 
 
             Open Api Docs:
-            - openapi docs export should be like this: 
-            export const ${type === "lambda" ? (nameOfFunction ?? "").charAt(0).toLowerCase() + (nameOfFunction ?? "").slice(1) : (nameOfFunction ?? "").charAt(0).toLowerCase() + (nameOfFunction ?? "").slice(1)}Docs in camelCase 
             - If this function is a webhook, that can be triggered externally in another platform or app, you must detail in the docs, on how to setup this webhook there.
             - If this function is a cronjob, you must detail what this cron job does, and how to setup the cron job in the target platform.
             - the docs should be a pure string, do not insert any $ characters in the docs setup instructions.

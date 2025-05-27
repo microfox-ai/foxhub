@@ -12,26 +12,18 @@ export async function POST(req: NextRequest) {
   if (!event.body) {
     return NextResponse.json({ error: "No body" }, { status: 400 });
   }
-
-  console.log("slack_signing_secret", process.env.SLACK_SIGNING_SECRET);
-
-  console.log("event_body", event.body);
-  console.log("event_headers", event.headers);
-  try {
-    const verification = slackWebhookSdk.verifySignature(event.body, {
-      "x-slack-signature": event.headers["x-slack-signature"] ?? "",
-      "x-slack-request-timestamp": Number(
-        event.headers["x-slack-request-timestamp"] ?? "0"
-      ),
-    });
-    console.log("verification", verification);
-  } catch (err) {
-    console.log(err);
-  }
   const response = await slackWebhookSdk.verifyAndParseRequest(
     event.body,
     event.headers
   );
   const payload = response.payload;
+  console.log(
+    "payload",
+    payload.event.type,
+    "team_id",
+    payload.team_id,
+    "token",
+    payload.token
+  );
   return ApiGatewayAdapter.toNextResponse(response.response);
 }

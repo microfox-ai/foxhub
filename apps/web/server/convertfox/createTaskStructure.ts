@@ -88,7 +88,10 @@ export const createTaskStructure = async (
         - Cron functions cannot call the created lambda functions.
         - MAKE SURE THAT CRON JOBS BRIEF DOES NOT MENTION ANY LAMBDA FUNCTIONS.
         - paths dont have dynamic slugs, they are static.
-        - Keep the entire structure lean & sinple, with each function/cronjob doing end-to-end jobs (do not divide a job into multiple functions unless it absolutely makes sense).
+        - Keep the entire structure lean & sinple, with each function/cronjob doing end-to-end jobs 
+        - do not divide a job into multiple functions unless it absolutely makes sense
+        ---
+        
         `,
       schema: taskStructure,
       maxRetries: 3,

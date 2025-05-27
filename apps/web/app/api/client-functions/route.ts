@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
-    if (taskInstanceMeta && newMetadata?.docData) {
+    if (taskInstanceMeta && newMetadata?.docData?.paths?.length > 0) {
       await embedApiEndpoints({
         taskStructure: taskInstanceMeta?.taskStructure as TaskStructure,
         docData: newMetadata?.docData as OpenAPIDoc,

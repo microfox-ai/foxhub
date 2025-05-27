@@ -9,8 +9,9 @@ export const taskPlanningPrompt = () => {
     - using typescript deployed as aws lambda functions
     - cron jobs that can be scheduled to run in the backend
     - minimal user interfaces to accept any step-to-step commands like accept/reject suggestions or calling an endpoint via chat on button trigger or just printing the entire docs on frontend. 
-    - use postgresDB, for any data storage. 
-    - database is already setup, just need to add the schemas based on needs.
+    - database is already setup using upstash redis, just need to add the schemas based on needs.
+    - Do not overcreate too many lambda functions unless it is absolutely necessary.
+    - Do not overcreate too many cron jobs unless it is absolutely necessary.
     ____
     Do not write any code.
     only generate a step-by-step process of actions that will help you later.

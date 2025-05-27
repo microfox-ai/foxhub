@@ -126,6 +126,19 @@ export const codingFileTypePrompt = (fileType: string) => {
   }
 };
 //
+
+export const getFunctionNameFromKebabCase = (name_kebab_case: string) => {
+  return name_kebab_case
+    ?.split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((word, index) =>
+      index === 0
+        ? word.toLowerCase()
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join("");
+};
+
 export const codingFunctionPrompt = async ({
   type,
   taskInstanceMeta,
@@ -177,24 +190,8 @@ export const codingFunctionPrompt = async ({
   //console.log("coreEnvs", coreEnvs);
   const nameOfFunction =
     type === "lambda"
-      ? _function?.name
-          ?.split(/[^a-zA-Z0-9]+/)
-          .filter(Boolean)
-          .map((word, index) =>
-            index === 0
-              ? word.toLowerCase()
-              : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          )
-          .join("")
-      : _cron?.name
-          ?.split(/[^a-zA-Z0-9]+/)
-          .filter(Boolean)
-          .map((word, index) =>
-            index === 0
-              ? word.toLowerCase()
-              : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          )
-          .join("");
+      ? getFunctionNameFromKebabCase(_function?.name ?? "")
+      : getFunctionNameFromKebabCase(_cron?.name ?? "");
 
   //  ${helperFileContext}
   //

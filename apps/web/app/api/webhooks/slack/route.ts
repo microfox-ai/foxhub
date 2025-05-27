@@ -12,6 +12,9 @@ export async function POST(req: NextRequest) {
   if (!event.body) {
     return NextResponse.json({ error: "No body" }, { status: 400 });
   }
+
+  console.log("event_body", event.body);
+  console.log("event_headers", event.headers);
   const response = await slackWebhookSdk.verifyAndParseRequest(
     event.body,
     event.headers

@@ -108,17 +108,20 @@ export const genServerlessYML = async (
           ${taskInstanceMeta?.taskStructure?.lambdaFunctions
             ?.map(
               (lambda) =>
-                ` Function - 
+                ` name: ${lambda.name} \n
               path: ${lambda.path}\n
-              method: ${lambda.method}\n - handler: dist/index.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
+              method: ${lambda.method}\n
+              handler: dist/index.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
             )
             .join("\n\n - ")}
           ${taskInstanceMeta?.taskStructure?.cronJobs
             ?.map(
               (cron) => `
-              ${cron.name}Function -
-              method: post\n - handler: dist/index.${getFunctionNameFromKebabCase(cron.name)}Function.js
-              \n - schedule:\nrate: ${cron.cronExpression}`
+              name: ${cron.name} \n
+              method: post\n 
+              handler: dist/index.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
+              - schedule:\n
+                rate: ${cron.cronExpression}`
             )
             .join("\n\n - ")}
 

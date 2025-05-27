@@ -65,7 +65,9 @@ export class ApiGatewayAdapter {
    * @param request The Next.js Request
    * @returns APIGatewayProxyEvent object
    */
-  static toApiGatewayEvent(request: NextRequest): APIGatewayProxyEvent {
+  static async toApiGatewayEvent(
+    request: NextRequest
+  ): Promise<APIGatewayProxyEvent> {
     const url = new URL(request.url);
     const headers: Record<string, string> = {};
     const multiValueHeaders: Record<string, string[]> = {};
@@ -74,6 +76,8 @@ export class ApiGatewayAdapter {
     request.headers.forEach((value, key) => {
       headers[key] = value;
     });
+
+    const body = await request.json();
 
     return {
       httpMethod: request.method,
@@ -120,7 +124,7 @@ export class ApiGatewayAdapter {
         resourcePath: url.pathname,
       },
       resource: url.pathname,
-      body: request.body ? JSON.stringify(request.body) : null,
+      body: body ? JSON.stringify(body) : null,
       isBase64Encoded: false,
     };
   }

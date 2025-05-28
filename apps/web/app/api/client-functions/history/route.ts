@@ -1,11 +1,11 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata } from "@/server/types";
-import { getLambdaLogs } from "@/utils/services/db_functions/aws_helper";
+import { getLambdaLogs } from "@/utils/services/aws/aws_helper";
 import { NextRequest, NextResponse } from "next/server";
 import {
   LambdaInvocation,
   processLambdaLogs,
-} from "@/utils/helpers/tracking/lambda";
+} from "@/utils/services/aws/process-lambda-logs";
 
 export async function GET(req: NextRequest) {
   try {

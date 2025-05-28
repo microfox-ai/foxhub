@@ -17,13 +17,7 @@ export async function POST(req: NextRequest) {
     event.headers
   );
   const payload = response.payload;
-  console.log(
-    "payload",
-    payload.event.type,
-    "team_id",
-    payload.team_id,
-    "token",
-    payload.token
-  );
+  //console.log("payload", payload.event.type, "team_id", payload.team_id);
+  // get botToken from db based on team_id.
   return ApiGatewayAdapter.toNextResponse(response.response);
 }

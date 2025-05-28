@@ -1,6 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata } from "@/server/types";
-import { getLambdaLogs } from "@/utils/services/db_functions/aws_helper";
+import { getLambdaLogs } from "@/utils/services/aws/aws_helper";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {

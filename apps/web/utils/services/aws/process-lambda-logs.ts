@@ -1,5 +1,5 @@
 import { CloudWatchLogEvent } from "@/types/aws";
-import { calculateLambdaCost } from "../pricing/lambda";
+import { calculateLambdaCost } from "./lambda-pricing";
 
 export interface LambdaInvocation {
   requestId: string;
@@ -15,9 +15,10 @@ export interface LambdaInvocation {
   endpointPath?: string;
   httpMethod?: string;
   costUSD: number;
+  originalCostUSD: number;
 }
 
-interface FunctionDetails {
+export interface FunctionDetails {
   functionName: string;
   endpointLink?: string;
   size?: string | number;
@@ -110,6 +111,11 @@ export function processLambdaLogs(
           parseInt(memorySizeMatch[1]),
           parseFloat(durationMatch[1]),
           50
+        ),
+        originalCostUSD: calculateLambdaCost(
+          parseInt(memorySizeMatch[1]),
+          parseFloat(durationMatch[1]),
+          0
         ),
       });
       currentInvocation = {};

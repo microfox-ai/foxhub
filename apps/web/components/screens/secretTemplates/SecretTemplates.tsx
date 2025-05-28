@@ -36,6 +36,12 @@ export interface SecretTemplateMetadata {
     permissions: string[];
 }
 
+const addDefaultBotConfigs = ['_SECRET_TRACKING', '_SECRET_MARKUP_PERCENT'];
+const packagePrefix = (pkg: string) => {
+    return pkg?.replace("@microfox/", "")?.replace(/[- ]/g, '_')?.toUpperCase() ?? ""
+}
+
+
 export const SecretTemplates = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -612,6 +618,7 @@ export const SecretTemplates = () => {
                                     <Select
                                         value=""
                                         onValueChange={(value) => {
+                                            const defaultBotConfigs = addDefaultBotConfigs.map(c => `${packagePrefix(formData.packageName)}${c}`);
                                             if (value === "custom") {
                                                 setFormData({
                                                     ...formData,
@@ -629,7 +636,14 @@ export const SecretTemplates = () => {
                                                         }
                                                     ],
                                                 });
-                                            } else {
+                                            }
+                                            else if (defaultBotConfigs?.includes(value)) {
+                                                setFormData({
+                                                    ...formData,
+                                                    botConfig: [...formData.botConfig, { key: value, value: "", isOptional: false, ui: { type: "text", label: "", placeholder: "Enter value" } }]
+                                                });
+                                            }
+                                            else {
                                                 const config = availableBotConfigs.find(c => c.key === value);
                                                 if (config) {
                                                     setFormData({
@@ -660,6 +674,11 @@ export const SecretTemplates = () => {
                                             {availableBotConfigs.map((config) => (
                                                 <SelectItem key={config.key} value={config.key}>
                                                     {config.displayName || config.key}
+                                                </SelectItem>
+                                            ))}
+                                            {addDefaultBotConfigs.map((config) => (
+                                                <SelectItem key={`${packagePrefix(formData.packageName)}${config}`} value={`${packagePrefix(formData.packageName)}${config}`}>
+                                                    {config.toLowerCase().slice(1)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

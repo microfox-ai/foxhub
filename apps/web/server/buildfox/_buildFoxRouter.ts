@@ -37,6 +37,7 @@ import { octokitSdk } from "./helper/gitHelpers";
 import { pushToGit } from "./helper/pushToGit";
 import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
 import { genHelperFiles } from "./geenrators/helperFiles/genHelperFiles";
+import { prisma } from "@/prisma/prisma";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -145,16 +146,24 @@ export const buildFoxRouter: ServerStreamingFunction<
     });
   }
 
+  const clientSecrets = await prisma.clientSecret.findMany({
+    where: {
+      clientRequestIds: {
+        has: clientRequestId,
+      },
+    },
+  });
+
   await genInitialServerlessCode(props, taskInstanceMeta, clientRequest);
 
   // generate helper files - like redis, chrome, etc...
   await genHelperFiles(props, taskInstanceMeta, clientRequest);
 
   // write/modify cron jobs
-  await genCronJobs(props, taskInstanceMeta, clientRequest);
+  await genCronJobs(props, taskInstanceMeta, clientRequest, clientSecrets);
 
   // write/modify lambda functions
-  await genLambdaCode(props, taskInstanceMeta, clientRequest);
+  await genLambdaCode(props, taskInstanceMeta, clientRequest, clientSecrets);
 
   // write/modify root files - index.ts, package.json, serverless.yml, etc.
   await genServerlessFinalCode(props, taskInstanceMeta, clientRequest);

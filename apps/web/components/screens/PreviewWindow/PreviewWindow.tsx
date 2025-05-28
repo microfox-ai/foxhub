@@ -1,14 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Copy, Play, X, Monitor, Clock, Square, ArrowLeftIcon, CheckIcon, ChevronDown, RefreshCw } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -18,40 +10,42 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
-import { useLayout } from "../providers/LayoutProvider";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
-import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
-import { PortalSdk } from "@/utils/services/PortalSdk";
 import {
-  getMethodColor,
-  getStatusColor,
-  buildExampleUrl,
-  getPlaceholder,
-  getStatusText,
-} from "./utils";
-import {
+  FormValues,
   HTTP_METHODS,
   HttpMethod,
-  FormValues,
-  OpenAPISchema,
-  OpenAPIOperation,
-  OpenAPIPath,
-  OpenAPIDoc,
   OpenAPIResponse,
+  OpenAPISchema
 } from "@/utils/services/OpenAPIToolsClient";
-import { useApiDoc } from "../providers/ApiDocProvider";
-import { useDeployStatus } from "../providers/useDeployStatus";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ClientDeployment } from "@prisma/client";
-import { makeApiCallWithResponseData, fetchServerlessLogs, prepareApiRequest } from "./helpers";
-import { useMicrofoxChat } from "../Chat/MicrofoxChatProvider";
+import { ArrowLeftIcon, ChevronDown, Clock, Copy, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useApiDoc } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { useLayout } from "../providers/LayoutProvider";
 import { useTabUi } from "../providers/TabUiProvider";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import { fetchServerlessLogs, makeApiCallWithResponseData, prepareApiRequest } from "./helpers";
+import {
+  buildExampleUrl,
+  getMethodColor,
+  getPlaceholder,
+  getStatusColor,
+  getStatusText,
+} from "./utils";
 
 const PreviewWindow = () => {
   const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
@@ -79,7 +73,7 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const [showLogs, setShowLogs] = useState(false);
-  const { setSubmitAnnotations } = useClientProject();
+  const { setSubmitAnnotations, setAutoSubmit } = useClientProject();
   const { setActiveTab } = useTabUi()
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
@@ -297,7 +291,7 @@ const PreviewWindow = () => {
     } catch (error) {
       console.error("Request preparation error:", error);
     } finally {
-      console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
+      //console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
       await new Promise(resolve => setTimeout(resolve, 1000));
       // Then fetch logs, regardless of API call outcome
       await fetchServerlessLogs({

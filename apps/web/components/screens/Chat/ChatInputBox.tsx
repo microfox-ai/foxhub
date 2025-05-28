@@ -81,6 +81,7 @@ export default function ChatInputBox({
       minionType = MinionType.HotFixFox;
     }
     setSubmitAnnotations([]);
+    setAutoSubmit(null);
     handleSubmit(e, {
       body: {
         minionFlow: minionFlow,
@@ -94,13 +95,13 @@ export default function ChatInputBox({
   useEffect(() => {
     if (apiErrors?.value?.length > 0) {
       setInput("Fix the following")
+      textareaRef.current?.focus();
     }
   }, [apiErrors]);
 
   useEffect(() => {
     if (autoSubmit) {
       setInput(autoSubmit);
-      setAutoSubmit(null);
       handleSend();
     }
   }, [autoSubmit, status]);
@@ -136,9 +137,8 @@ export default function ChatInputBox({
         <textarea
           ref={textareaRef}
           placeholder="Ask anything"
-          className="flex-1 overflow-hidden bg-transparent px-2 py-2 text-gray-800 placeholder-gray-500 outline-none resize-none min-h-[42px]"
+          className="overflow-y-auto bg-transparent px-2 py-2 text-gray-800 placeholder-gray-500 outline-none resize-none min-h-[42px] max-h-[500px]"
           value={input}
-          rows={1}
           onChange={handleCustomInputChange}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {

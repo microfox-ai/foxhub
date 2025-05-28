@@ -5,7 +5,7 @@
 //     branchName: clientRequest.prBranch,
 //     repoName: clientRequest.repoName,
 //   });
-import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
+import { ClientRequest, DEPLOY_STAGE, DEPLOY_STATUS } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { uploadToRepo } from "../buildfox/helper/uploadToGit";
 import {
@@ -123,6 +123,17 @@ export const triggerDeployment = async (
       branch: clientRequest.prBranch,
       ...(sha ? { sha } : {}),
     });
+
+    try {
+      await prisma.clientDeployment.updateMany({
+        where: { originClientRequestId: clientRequest.id },
+        data: {
+          status: DEPLOY_STATUS.TRIGGERED,
+        },
+      });
+    } catch (error) {
+      console.log("error updating client deployment status", error);
+    }
 
     console.log("Created deployment trigger commit");
     return { sha: data.commit.sha };

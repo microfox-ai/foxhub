@@ -24,16 +24,18 @@ export function parseServerlessLogs(
     }
 
     if (currentSection === "endpoints") {
-      const endpointMatch = line.match(/(GET|POST)\s+-\s+(https:\/\/[^\s]+)/);
+      const endpointMatch = line.match(
+        /(GET|POST|PUT|DELETE|PATCH)\s+-\s+(https:\/\/[^\s]+)/
+      );
       if (endpointMatch && endpointMatch[2]) {
         endpoints.push(endpointMatch[2]);
       }
     } else if (currentSection === "functions") {
-      const functionMatch = line.match(/(\w+):\s+([^(]+)\s+\(([^)]+)\)/);
-      if (functionMatch && functionMatch[1] && functionMatch[3]) {
+      const functionMatch = line.match(/^\s*(\w+):\s+.*\(([^)]+)\)/);
+      if (functionMatch && functionMatch[1] && functionMatch[2]) {
         functions.push({
           functionName: functionMatch[1].trim(),
-          size: functionMatch[3].trim(),
+          size: functionMatch[2].trim(),
         });
       }
     }

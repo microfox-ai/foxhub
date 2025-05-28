@@ -1,6 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata } from "@/server/types";
-import { updateLambdaEnvironmentVariables } from "@/utils/services/db_functions/aws_helper";
+import { updateLambdaEnvironmentVariables } from "@/utils/services/aws/aws_helper";
 import {
   updateClientSecret,
   updateDeploymentsOfClientSecret,

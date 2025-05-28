@@ -4,9 +4,9 @@ import { APP_BASE_URL, PUBLIC_ROUTES } from "../constants/appInfo";
 
 export const updateSession = async (request: NextRequest) => {
   if (
-    request.nextUrl.pathname.startsWith("/api/client-secrets/get-variables") ||
-    request.nextUrl.pathname.startsWith("/api/webhooks") ||
-    request.nextUrl.pathname.startsWith("/api/whatsapp-verify")
+    request.nextUrl.pathname?.startsWith("/api/client-secrets/get-variables") ||
+    request.nextUrl.pathname?.startsWith("/api/webhooks") ||
+    request.nextUrl.pathname?.startsWith("/api/whatsapp-verify")
   ) {
     return NextResponse.next();
   }
@@ -54,7 +54,7 @@ export const updateSession = async (request: NextRequest) => {
       return NextResponse.next();
     }
 
-    if (request.nextUrl.pathname.startsWith("/api")) {
+    if (request.nextUrl.pathname?.startsWith("/api")) {
       const inputAPiKey = request.headers.get("microfox-api-key");
       const serverApiKey = process.env.MICROFOX_API_KEY;
       if (inputAPiKey === serverApiKey) {
@@ -70,12 +70,12 @@ export const updateSession = async (request: NextRequest) => {
     }
 
     // If there's no user or an error, redirect to login
-    if ((!user || userError) && !request.nextUrl.pathname.startsWith("/api")) {
+    if ((!user || userError) && !request.nextUrl.pathname?.startsWith("/api")) {
       //console.log("redirecting to", request.nextUrl.pathname);
       const redirectTo = `${APP_BASE_URL}${request.nextUrl.pathname}`;
       console.log("redirectTo", redirectTo);
       const redirectUrl = new URL("/login", APP_BASE_URL);
-      redirectUrl.searchParams.set("redirect_to", redirectTo);
+      redirectUrl.searchParams?.set("redirect_to", redirectTo);
       return NextResponse.redirect(redirectUrl);
     }
 

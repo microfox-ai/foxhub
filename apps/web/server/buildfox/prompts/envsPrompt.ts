@@ -2,23 +2,27 @@ import {
   codeTemplateType,
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, ClientSecret } from "@prisma/client";
 import { envsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
-import { templateEnvsFromTaskIntegrations } from "../helper/templateEnvsFromTaskIntegrations";
+import {
+  InternalTemplateEnv,
+  templateEnvsFromTaskIntegrations,
+} from "../helper/templateEnvsFromTaskIntegrations";
 import { prisma } from "@/prisma/prisma";
 import { ClientSecretVariable } from "@/server/types";
 
 export const envsPrompt = async (
   clientRequest: ClientRequest,
+  clientSecrets: ClientSecret[],
   taskInstanceMeta: TaskInstanceMetaType,
   files: any[],
-  fileType: "lambda" | "cron"
+  fileType: "lambda" | "cron" | "helper"
 ) => {
   let previousEnvs: string[] = [];
   if (
     clientRequest &&
     taskInstanceMeta.taskStructure?.templateType !=
-      codeTemplateType.enum.plain_sls
+      codeTemplateType.enum.upstash_sls
   ) {
     previousEnvs = previousEnvs.concat(
       files.flatMap((file) => (file.meta as any).envVariablesUsed)
@@ -26,25 +30,32 @@ export const envsPrompt = async (
   }
 
   const templateEnvs = await templateEnvsFromTaskIntegrations(
-    taskInstanceMeta.taskStructure?.templateType!
+    taskInstanceMeta.taskStructure?.templateType!,
+    clientRequest
   );
   let coreEnvs: string[] = [];
   const requiredEnvs = taskInstanceMeta.taskIntegrations
     ? envsFromTaskIntegrations(
         taskInstanceMeta.taskIntegrations,
-        "requiredKeys"
+        "requiredKeys",
+        clientSecrets?.map((secret) => secret.type)
       )
     : [];
   coreEnvs = coreEnvs.concat(requiredEnvs);
   const oauthEnvs = taskInstanceMeta.taskIntegrations
     ? envsFromTaskIntegrations(
         taskInstanceMeta.taskIntegrations,
-        "internalKeys"
+        "internalKeys",
+        clientSecrets?.map((secret) => secret.type)
       )
     : [];
   coreEnvs = coreEnvs.concat(oauthEnvs);
   let configEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "botConfig")
+    ? envsFromTaskIntegrations(
+        taskInstanceMeta.taskIntegrations,
+        "botConfig",
+        clientSecrets?.map((secret) => secret.type)
+      )
     : [];
 
   // ONLY ADD THOSE CONFIG ENVS THAT ARE FILLED (SKIP UNFILLED)
@@ -69,18 +80,26 @@ export const envsPrompt = async (
           (c) => c && c.key === env && c.value != undefined && c.value != null
         ) != undefined
     );
-    console.log("configEnvs filtered", configEnvs);
+    //console.log("configEnvs filtered", configEnvs);
     coreEnvs = coreEnvs.concat(configEnvs);
   }
 
   previousEnvs = previousEnvs.filter(
-    (env) => !templateEnvs.includes(env) && !coreEnvs.includes(env)
+    (env) =>
+      !templateEnvs.some((envJson: InternalTemplateEnv) => envJson.key === env)
   );
+
   return `
      The following env variables are already present in the project:
             ${templateEnvs.map((env: any) => `- ${env.key}`).join("\n")}
-            ${coreEnvs.map((env) => `- ${env}`).join("\n")}
-            ${previousEnvs.map((env) => `- ${env}`).join("\n")}
+            ${coreEnvs
+              ?.filter((env) => env != undefined)
+              .map((env) => `- ${env}`)
+              .join("\n")}
+            ${previousEnvs
+              ?.filter((env) => env != undefined)
+              .map((env) => `- ${env}`)
+              .join("\n")}
 
             ${
               /** TODO: this requires improving because cron would still add new variables, as it doesnt have a way to collect them,  so use redis as env var storage across all functions */
@@ -108,8 +127,11 @@ export const envsPrompt = async (
               - DO NOT write like this:
                - // Replace this with your personam mail.
               - write PRODUCTION READY code,
-              - DO NOT self assume or hard code variables in the code
-              - create envs for information that is variable or you dont have access to yet
-              - If possiblue, use input parameters or request body from the event object to get theese variables instead of env variables.
+
+              CRITICAL:
+              Always try to use queryStringparameters or body from the event object to get theese variables instead of ENV variables (as long as its not a cron job).
             `;
 };
+
+// - DO NOT self assume or hard code variables in the code
+// - create envs for information that is variable or you dont have access to yet

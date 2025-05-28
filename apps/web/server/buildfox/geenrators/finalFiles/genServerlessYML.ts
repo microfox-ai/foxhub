@@ -12,7 +12,10 @@ import {
   writeToFile,
 } from "../../tool/writeToFile";
 import { models } from "../../../models";
-import { codingSystemPrompt } from "../../prompt.coding";
+import {
+  codingSystemPrompt,
+  getFunctionNameFromKebabCase,
+} from "../../prompt.coding";
 import dedent from "dedent";
 import { TokenUsageAnalyticsTracker } from "../../../analytics/helper";
 import { getServiceName } from "../../helper/getServiceName";
@@ -90,27 +93,38 @@ export const genServerlessYML = async (
   );
   const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");
 
+  // The following functions are generated for the task:
+  // ${allGenFilesList
+  //   ?.filter((file: any) => file.filePath.includes("/functions"))
+  //   .map((file: any) => file.fileName + "Function")
+  //   .join("\n - ")}
+
   const result = await generateText({
     model: models.claude35Sonnet,
     system: codingSystemPrompt("backend"),
     prompt: dedent`You are requested to modify a serverless.yml file for the following requirement:
-          The following functions are generated for the task:
-          ${allGenFilesList
-        ?.filter((file: any) => file.filePath.includes("/functions"))
-        .map((file: any) => file.fileName)
-        .join("\n - ")}
 
-          if for cron jobs, use theses cron expressions:
+          The following functions are generated for the task:
+          ${taskInstanceMeta?.taskStructure?.lambdaFunctions
+            ?.map(
+              (lambda) =>
+                ` name: ${lambda.name} \n
+              path: ${lambda.path}\n
+              method: ${lambda.method}\n
+              handler: dist/index.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
+            )
+            .join("\n\n - ")}
           ${taskInstanceMeta?.taskStructure?.cronJobs
-        ?.map(
-          (cron) =>
-            cron.name +
-            " - " +
-            cron.cronExpression +
-            "\n because: " +
-            cron.endResult
-        )
-        .join("\n\n - ")}
+            ?.map(
+              (cron) => `
+              name: ${cron.name} \n
+              method: post\n 
+              handler: dist/index.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
+              - schedule:\n
+                rate: ${cron.cronExpression}`
+            )
+            .join("\n\n - ")}
+
 
           The input serverless.yml file is as follows:
           ${serverlessYml}
@@ -134,7 +148,7 @@ export const genServerlessYML = async (
           make sure you must include the getDocs function, it is very important - it is available at dist/index.getDocs
           `,
     tools: {
-      write_to_file: writeToFile(
+      write_code: writeToFile(
         props,
         clientRequest,
         taskInstanceMeta?.taskStructure?.templateType
@@ -171,14 +185,13 @@ export const genServerlessYML = async (
   const validation = validateServerlessYML(generatedContent);
 
   await updateYMLFile(
-    generatedFilePath.replace("/serverless.yml", "").replace(
-      "\\serverless.yml",
-      ""
-    ),
+    generatedFilePath
+      .replace("/serverless.yml", "")
+      .replace("\\serverless.yml", ""),
     "serverless.yml",
     (config) => {
       let newConfig = { ...config };
-      newConfig.provider.timeout = 30;
+      newConfig.provider.timeout = 60;
       // newConfig.plugins = [
       //   ...(newConfig.plugins ?? []),
       //   "serverless-plugin-chrome",

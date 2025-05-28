@@ -21,6 +21,7 @@ interface GetLambdaLogsParams {
   limit?: number;
   startTime?: number;
   endTime?: number;
+  streamLimit?: number;
 }
 
 /**
@@ -83,6 +84,7 @@ export async function getLambdaLogs({
   limit = 50,
   startTime,
   endTime,
+  streamLimit = 1,
 }: GetLambdaLogsParams): Promise<any[]> {
   try {
     const logsClient = new CloudWatchLogsClient({
@@ -93,34 +95,43 @@ export async function getLambdaLogs({
       },
     });
 
-    // Get the log stream name
+    // Get all log streams
     const logGroupName = `/aws/lambda/${functionName}`;
-    console.log(logGroupName, "logGroupName");
     const describeLogStreamsCommand = new DescribeLogStreamsCommand({
       logGroupName,
       orderBy: "LastEventTime",
       descending: true,
-      limit: 1,
+      limit: streamLimit,
     });
 
-    const logStreams = await logsClient.send(describeLogStreamsCommand);
-    if (!logStreams.logStreams?.[0]?.logStreamName) {
-      throw new Error("No log streams found for the Lambda function");
+    const logGroup = await logsClient.send(describeLogStreamsCommand);
+    if (!logGroup.logStreams || logGroup.logStreams.length === 0) {
+      return [];
     }
 
-    const logStreamName = logStreams.logStreams[0].logStreamName;
+    console.log(logGroup.logStreams.length, "logGroup.logStreams");
+    // Fetch logs from all streams
+    const allLogEvents = await Promise.all(
+      logGroup.logStreams.map(async (stream) => {
+        const getLogEventsCommand = new GetLogEventsCommand({
+          logGroupName,
+          logStreamName: stream.logStreamName,
+          limit,
+          startTime,
+          endTime,
+        });
 
-    // Get the log events
-    const getLogEventsCommand = new GetLogEventsCommand({
-      logGroupName,
-      logStreamName,
-      limit,
-      startTime,
-      endTime,
-    });
+        const logEvents = await logsClient.send(getLogEventsCommand);
+        return logEvents.events ?? [];
+      })
+    );
 
-    const logEvents = await logsClient.send(getLogEventsCommand);
-    return logEvents.events ?? [];
+    // Flatten and sort all log events by timestamp
+    const flattenedLogs = allLogEvents
+      .flat()
+      .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
+
+    return flattenedLogs;
   } catch (error) {
     console.error("Error fetching Lambda logs:", error);
     throw error;

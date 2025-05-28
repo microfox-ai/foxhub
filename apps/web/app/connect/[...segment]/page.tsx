@@ -52,7 +52,7 @@ const AuthPopupWindow = async ({
 
 
   const scopes = (clientSecret.variables as any[] as ClientSecretVariable[]).find(
-    (variable: any) => variable.key === "SCOPES"
+    (variable: any) => (variable.key as string).includes("SCOPES")
   )?.value;
 
   const providerInstance = mapProviderToAuthFunction(
@@ -97,7 +97,7 @@ const AuthPopupWindow = async ({
           isOptional: false,
         };
       }
-      if (variable.key === "SCOPES") {
+      if ((variable.key as string).includes("SCOPES")) {
         return {
           key: variable.key,
           value: scopes,

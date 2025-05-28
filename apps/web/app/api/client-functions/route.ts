@@ -1,8 +1,15 @@
 import { prisma } from "@/prisma/prisma";
 import { getServiceName } from "@/server/buildfox/helper/getServiceName";
-import { DeployStep, TaskInstanceMetaType, TaskStructure } from "@/server/convertfox/types";
+import {
+  DeployStep,
+  TaskInstanceMetaType,
+  TaskStructure,
+} from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import { deleteEmbedding, embedApiEndpoints } from "@/utils/services/embeddings/embedFunctions";
+import {
+  deleteEmbedding,
+  embedApiEndpoints,
+} from "@/utils/services/embeddings/embedFunctions";
 import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
 import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
 import {
@@ -10,7 +17,12 @@ import {
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
-import { DEPLOY_STAGE, FUNCTIONTYPE, TaskInstanceMeta } from "@prisma/client";
+import {
+  DEPLOY_STAGE,
+  DEPLOY_STATUS,
+  FUNCTIONTYPE,
+  TaskInstanceMeta,
+} from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create ClientDeployment
@@ -73,6 +85,7 @@ export async function POST(req: NextRequest) {
         name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
+        status: DEPLOY_STATUS.DEPLOYED,
         metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
@@ -86,6 +99,7 @@ export async function POST(req: NextRequest) {
         baseUrl,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
+        status: DEPLOY_STATUS.DEPLOYED,
         metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
@@ -141,7 +155,7 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
-    if (taskInstanceMeta) {
+    if (taskInstanceMeta && newMetadata?.docData?.paths?.length > 0) {
       await embedApiEndpoints({
         taskStructure: taskInstanceMeta?.taskStructure as TaskStructure,
         docData: newMetadata?.docData as OpenAPIDoc,
@@ -150,6 +164,7 @@ export async function POST(req: NextRequest) {
         userId: userId,
         stage: stage,
         base_url: `${baseUrl}/${stage.toLowerCase()}`,
+        schema_path: "/docs.json",
       });
     }
     const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();

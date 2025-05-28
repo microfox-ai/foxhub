@@ -17,6 +17,7 @@ export interface KeyVariableConfig {
   ui?: ConfigUi;
   instructions?: BotConfigInstructions;
   required?: boolean;
+  isOptional?: boolean;
 }
 
 export interface Constructor {

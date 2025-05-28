@@ -14,7 +14,9 @@ export const models: Record<
   | "googleGeminiFlash"
   | "googleGeminiPro"
   | "googleGeminiTwoFive"
+  | "claudeDefault"
   | "claude35Sonnet"
+  | "claude4Sonnet"
   | "claudeHaiku",
   {
     modelId: string;
@@ -27,9 +29,11 @@ export const models: Record<
   googleGeminiPro: google("gemini-1.5-pro", {
     structuredOutputs: true,
   }),
-  googleGeminiTwoFive: google("gemini-2.5-pro-exp-03-25", {
+  googleGeminiTwoFive: google("gemini-2.5-pro-preview-05-06", {
     structuredOutputs: true,
   }),
+  claudeDefault: anthrophobic("claude-4-sonnet-20250514", {}),
   claude35Sonnet: anthrophobic("claude-3-5-sonnet-20240620", {}),
+  claude4Sonnet: anthrophobic("claude-4-sonnet-20250514", {}),
   claudeHaiku: anthrophobic("claude-3-haiku-20240307", {}),
 };

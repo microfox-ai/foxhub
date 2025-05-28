@@ -1,4 +1,4 @@
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, ClientSecret } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
@@ -10,7 +10,8 @@ import { writeToFile } from "../tool/writeToFile";
 export const genCronJobs = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
-  clientRequest: ClientRequest
+  clientRequest: ClientRequest,
+  clientSecrets: ClientSecret[]
 ) => {
   props.dataStream.writeMessageAnnotation({
     type: "thinking",
@@ -25,8 +26,9 @@ export const genCronJobs = async (
         cron: cronJob,
         template_type:
           taskInstanceMeta.taskStructure?.templateType ??
-          codeTemplateType.enum.plain_sls,
+          codeTemplateType.enum.upstash_sls,
         clientRequest,
+        clientSecrets,
       });
       console.log("generating cron job", cronJob.name);
       const result = await generateText({
@@ -35,15 +37,24 @@ export const genCronJobs = async (
         prompt,
         toolChoice: "auto",
         maxSteps: 2,
-        maxRetries: 5,
-        maxTokens: 5000,
+        maxRetries: 3,
+        //maxTokens: 5000,
         tools: {
-          write_to_file: writeToFile(
+          write_code: writeToFile(
             props,
             clientRequest,
             taskInstanceMeta?.taskStructure?.templateType
           ),
-          fetch_package_docs: fetchPackageDocs(props, clientRequest),
+          fetch_package_docs: fetchPackageDocs(
+            props,
+            clientRequest,
+            taskInstanceMeta,
+            {
+              clientSecrets,
+              type: "cron",
+              _function: cronJob,
+            }
+          ),
         },
         onStepFinish: (step) => {
           console.log("step", step.usage);

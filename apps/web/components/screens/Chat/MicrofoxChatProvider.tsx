@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import { ChatUIMessageWithTypes, MinionFlow, MinionType } from "../hooks/convertors";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { useLayout } from "../providers/LayoutProvider";
 
 type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 
@@ -36,6 +37,7 @@ export interface MicrofoxChatProviderProps {
 export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOptions?: Partial<UseChatOptions>) => {
 
   const { setSelectedRequest } = useClientProject();
+  const { handleRightCollapse } = useLayout();
 
   const {
     data: serverMessages,
@@ -227,6 +229,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         return;
       }
 
+      handleRightCollapse(true);
+
       // fallback to the last known minion type & flow (if not set in the chatRequestOptions)
       let _minionType = (chatRequestOptions?.body as any)?.minionType ?? lastKnownMinionType ?? MinionType.Unknown;
       let _minionFlow = (chatRequestOptions?.body as any)?.minionFlow ?? lastKnownMinionFlow ?? clientRequest?.minionFlow ?? MinionFlow.Unknown;
@@ -268,7 +272,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
       });
       return id;
     },
-    [clientRequest, lastKnownMinionType, lastKnownMinionFlow, clientRequest?.minionFlow]
+    [clientRequest, lastKnownMinionType, lastKnownMinionFlow, clientRequest?.minionFlow, handleRightCollapse]
   );
 
   const handleRefresh = async (messageIndex: number) => {

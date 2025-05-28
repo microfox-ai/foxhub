@@ -12,8 +12,7 @@ import ResizableSidebar from "@/components/screens/global/ResizableSidebar";
 import LogoutElement from "@/components/auth/LogoutElement";
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  const isPlayground = pathname.includes("playground");
-  const isProject = pathname.includes("request");
+
   return (
     <FileUploadProvider>
       <ClientProjectProvider>
@@ -28,7 +27,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               className="!h-screen"
             >
               <ResizableSidebar />
-              {!pathname.includes("request") ? (
+              {!pathname?.includes("request") ? (
                 <ResizablePanel defaultSize={84}>
                   {/* {!isProject && <div className="h-16" />} */}
                   <div className="flex-1">{children}</div>
@@ -37,7 +36,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <>{children}</>
               )}
             </ResizablePanelGroup>
-            {!pathname.includes("request") && (
+            {!pathname?.includes("request") && (
               <div className="absolute top-10 right-10 z-100">
                 <LogoutElement />
               </div>

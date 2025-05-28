@@ -70,17 +70,19 @@ export const ApiKeyButton = ({
     const [selectedTemplateSecret, setSelectedTemplateSecret] = useState<string | null>(null);
     const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
-    const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
-    const apiType = constructor?.apiType as ClientSecretApiType;
     const [isLoading, setIsLoading] = useState(false);
 
     // Find the current API key secret from secretsData
+    const apiKeyConstructor = packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
+    const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
+        secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === apiKeyConstructor?.name
+    );
+    const apiType = apiKeyConstructor?.apiType as ClientSecretApiType;
     const currentApiKeySecret = useMemo(() => {
         return secretsData?.clientSecrets?.find((secret) =>
-            secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === constructor?.name
+            secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === apiKeyConstructor?.name
         );
-    }, [secretsData, packageInfo, constructor]);
-
+    }, [secretsData, packageInfo, apiKeyConstructor]);
     // Set the selected bot secret to the current API key secret when it changes
     useMemo(() => {
         if (currentApiKeySecret) {
@@ -88,42 +90,45 @@ export const ApiKeyButton = ({
         }
     }, [currentApiKeySecret]);
 
-    const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
-        secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === constructor?.name
-    );
-    const apiKeyConstructor = packageInfo?.constructors.find((c: Constructor) => c.name === apiKeySecret?.packageConstructor);
-    const isAllKeysFilled = useMemo(() => {
-        if (apiKeySecret) {
-            if (apiKeyConstructor?.auth === "oauth2") {
-                return (apiKeySecret?.variables as any[]).every(
-                    (variable: ClientSecretVariable) =>
-                        variable.value?.trim() !== "" &&
-                        oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
-                            if (variable.key === "SCOPES") return true;
-                            return key.key === variable.key;
-                        })
-                )
-            }
-            else {
-                return constructor.requiredKeys.every(
-                    (keyInfo: KeyVariableConfig) =>
-                        (apiKeySecret.variables as any[]).some(
-                            (variable: ClientSecretVariable) =>
-                                variable.key === keyInfo.key && variable.value?.trim()
-                        )
-                )
-            }
-        }
-        return false;
-    }, [packageInfo, apiKeySecret, apiKeyConstructor]);
-
-    //--------------FO OAUTH-------------------
-    //console.log("apiKeySecret", packageInfo, secretsData);]
     const oauthConstructor = packageInfo?.constructors.find(
         (c: Constructor) => c.auth === "oauth2"
     );
-    const hasAllAuthRelatedKeys = apiKeySecret
-        ? (apiKeySecret?.variables as any[]).every(
+    const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
+        secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
+    );
+    const currentOauthSecret = useMemo(() => {
+        return secretsData?.clientSecrets?.find((secret) =>
+            secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
+        );
+    }, [secretsData, packageInfo, oauthConstructor]);
+
+    const isAllKeysFilled = useMemo(() => {
+        if (apiKeySecret) {
+            return apiKeyConstructor?.requiredKeys.every(
+                (keyInfo: KeyVariableConfig) =>
+                    (apiKeySecret.variables as any[]).some(
+                        (variable: ClientSecretVariable) =>
+                            variable.key === keyInfo.key && variable.value?.trim()
+                    )
+            )
+        }
+        else if (oauthSecret) {
+            return (oauthSecret?.variables as any[]).every(
+                (variable: ClientSecretVariable) =>
+                    variable.value?.trim() !== "" &&
+                    oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
+                        if (variable.key === "SCOPES") return true;
+                        return key.key === variable.key;
+                    })
+            )
+        }
+        return false;
+    }, [packageInfo, apiKeySecret, apiKeyConstructor, oauthSecret]);
+
+    //--------------FOR OAUTH-------------------
+    //console.log("apiKeySecret", packageInfo, secretsData);]
+    const hasAllAuthRelatedKeys = oauthSecret
+        ? (oauthSecret?.variables as any[]).every(
             (variable: ClientSecretVariable) =>
                 variable.value?.trim() !== "" &&
                 oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
@@ -132,6 +137,12 @@ export const ApiKeyButton = ({
                 })
         )
         : false;
+    // Set the selected bot secret to the current oauth secret when it changes
+    useMemo(() => {
+        if (currentOauthSecret && hasAllAuthRelatedKeys) {
+            setSelectedBotSecret("connect");
+        }
+    }, [currentOauthSecret, hasAllAuthRelatedKeys]);
 
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {
@@ -205,7 +216,7 @@ export const ApiKeyButton = ({
                 status: CLIENTSECRETSTATUS.EMPTY,
                 botConfig: [],
                 variables: [
-                    ...constructor.internalKeys.map((key: KeyVariableConfig) => ({
+                    ...oauthConstructor.internalKeys.map((key: KeyVariableConfig) => ({
                         key: key.key,
                         value: key.defaultValue
                             ? Array.isArray(key.defaultValue)
@@ -272,7 +283,7 @@ export const ApiKeyButton = ({
                         {oauthConstructor && (
                             <SelectItem value="connect" className="flex items-center gap-2 cursor-pointer">
                                 <img src={"/images/default-bot-avatar.png"} className="h-6 w-6 rounded-full" />
-                                {hasAllAuthRelatedKeys ? "Microfox" : " Microfox"}
+                                {hasAllAuthRelatedKeys ? "Connected Microfox" : "Connect Microfox"}
                             </SelectItem>
                         )}
                         {botTemplates?.filter((template) => !botSecrets?.some((secret) => secret.templateId === template.id))

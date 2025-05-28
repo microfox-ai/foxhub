@@ -43,8 +43,10 @@ export const helperFilesContext = async (
         codeTemplateAddon.enum.sls_upstash_redis
       ) &&
       `
-    - If any extra redis saving is needed, make sure you null check the variables first, before saving them to redis.`
+    - If any extra redis saving is needed, make sure you null check the variables first, before saving them to redis.
+    - Always use the getters & setters exported from the helper file, do not create new redis clients unless absolutely needed.`
     }
     make sure the imports follow the '.js' extension like this for imports from other folders:
-    import { exampleHelper } from '../helpers/fileName.js'`;
+    import { exampleHelper } from '../helpers/fileName.js'
+    Its always in the helpers folders, so make sure to import from there.`;
 };

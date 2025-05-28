@@ -29,7 +29,7 @@ interface MessageHistoryResponse {
 
 export function MessageHistoryPage() {
     const searchParams = useSearchParams();
-    const clientRequestId = searchParams.get('id');
+    const clientRequestId = searchParams?.get('id');
     const [activeTab, setActiveTab] = useState<'messages' | 'json'>('messages');
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied'>('idle');
 

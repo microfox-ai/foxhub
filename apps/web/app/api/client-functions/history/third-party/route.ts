@@ -72,7 +72,11 @@ export async function GET(req: NextRequest) {
               packageInfo?.name === fullPackageName(usage?.package)
           );
           return { ...usage, packageInfo };
-        }),
+        })
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        ),
       total: usage.data?.length,
       page,
       pageSize,

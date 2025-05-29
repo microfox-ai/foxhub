@@ -80,8 +80,8 @@ export const publishFoxRouter: ServerStreamingFunction<
       targetPath: clientRequest.requestDir || "",
       sourceBranch: clientRequest.prBranch || "main",
       targetBranch: "main",
-      commitMessage: `nodeploy: Publishfox published shard for ${clientRequest.title}`,
-      excludeFiles: ["clientRequest.json"],
+      commitMessage: `[skip ci] Publishfox published shard for ${clientRequest.title}`,
+      excludeFiles: ["clientRequest.json", "CHANGELOG.md"],
     });
 
     // In future when action is outsourced to users.

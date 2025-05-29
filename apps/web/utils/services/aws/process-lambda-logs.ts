@@ -60,6 +60,11 @@ export function processLambdaLogs(
         }
       }
 
+      if (functionDetails.functionName === "getDocs") {
+        endpointPath = "/docs";
+        httpMethod = "GET";
+      }
+
       currentInvocation = {
         requestId: requestIdMatch[1],
         timestamp: log.timestamp,

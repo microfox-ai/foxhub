@@ -3,8 +3,14 @@ import {
   fetchLambdaUsage,
   LambdaUsageResult,
 } from "@/utils/services/aws/lambda-usage";
+import {
+  fetchThirdPartyUsage,
+  UsageReportMetadata,
+} from "@/utils/services/aws/third-party-usage";
 import { MicrofoxUsagePricing } from "@microfox/usage-pricing";
 import { NextResponse } from "next/server";
+
+export const maxDuration = 30;
 
 // POST
 export async function POST(req: Request) {
@@ -44,10 +50,12 @@ export async function POST(req: Request) {
       );
     }
 
+    console.log("search for date", dateKeyFull);
+
     // 1. Fetch lambda usage for the full day
     const lambdaUsage = await fetchLambdaUsage(requestId, clientDeployment, {
       pageSize: 100,
-      streamLimit: 10,
+      streamLimit: 20,
       startTime: new Date(new Date(dateKeyFull).setHours(0, 0, 0, 0)).getTime(),
       endTime: new Date(
         new Date(dateKeyFull).setHours(23, 59, 59, 999)
@@ -71,8 +79,13 @@ export async function POST(req: Request) {
           totalInvocations: lambdaUsage.totalInvocations,
           totalPrice: lambdaUsage.totalPrice,
           totalOriginalPrice: lambdaUsage.totalOriginalPrice,
-        },
-        thirdPartyUsage,
+        } as UsageReportMetadata["lambda"],
+        thirdParty: {
+          totalPrice: thirdPartyUsage.totalPrice,
+          packagebasedPricing: thirdPartyUsage.packagebasedPricing,
+          typeBasedPricing: thirdPartyUsage.typeBasedPricing,
+          totalInvocations: thirdPartyUsage.totalInvocations,
+        } as UsageReportMetadata["thirdParty"],
       } as any,
       usageLogs: {
         lambda: lambdaUsage.invocations,
@@ -142,7 +155,7 @@ export async function GET(req: Request) {
     }
 
     // 3. If it is today and no report exists, return processing status
-    return NextResponse.json({ status: "processing" });
+    return NextResponse.json({ status: "processing" }, { status: 200 });
   } catch (error) {
     console.error("Error in usage request GET:", error);
     return NextResponse.json(
@@ -153,46 +166,6 @@ export async function GET(req: Request) {
 }
 
 // Helper functions
-async function fetchThirdPartyUsage(requestId: string) {
-  // TODO: Implement actual third party usage fetching
-  const microfoxUsagePricing = new MicrofoxUsagePricing({
-    prefix: requestId,
-  });
-
-  const usage = await microfoxUsagePricing.getDailyUsage(undefined, {
-    limit: 1000000,
-    offset: 0,
-  });
-
-  console.log(usage);
-  const totalPrice = usage.data.reduce((acc, usage) => {
-    return acc + usage.priceUSD;
-  }, 0);
-
-  const packagebasedPricing: Record<string, number> = {};
-  usage.data.forEach((usage) => {
-    if (usage.package) {
-      packagebasedPricing[usage.package] =
-        (packagebasedPricing[usage.package] || 0) + usage.priceUSD;
-    }
-  });
-
-  const typeBasedPricing: Record<string, number> = {};
-  usage.data.forEach((usage) => {
-    if (usage.type) {
-      typeBasedPricing[usage.type] =
-        (typeBasedPricing[usage.type] || 0) + usage.priceUSD;
-    }
-  });
-
-  return {
-    ...usage,
-    totalPrice,
-    packagebasedPricing,
-    typeBasedPricing,
-  };
-}
-
 function calculateTotalPrice(
   lambdaUsage: LambdaUsageResult,
   thirdPartyUsage: Awaited<ReturnType<typeof fetchThirdPartyUsage>>

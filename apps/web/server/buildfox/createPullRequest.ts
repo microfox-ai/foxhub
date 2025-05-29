@@ -121,7 +121,7 @@ export async function createPullRequest({
       owner: PROJECT_REPO_OWNER,
       repo: botProject.githubRepoName,
       path: readmeFilePath,
-      message: `Add README for ${requestTitle}`,
+      message: `[skip ci] Add README for ${requestTitle}`,
       content: Buffer.from(`DESCRIPTION: ${description}`).toString("base64"),
       branch: newBranch,
     });
@@ -175,7 +175,7 @@ export async function createPullRequest({
       owner: PROJECT_REPO_OWNER,
       repo: botProject.githubRepoName,
       path: clientRequestFilePath,
-      message: `Add clientRequest.json for ${requestTitle}`,
+      message: `[skip ci] Add clientRequest.json for ${requestTitle}`,
       content: Buffer.from(
         JSON.stringify(updatedClientRequest, null, 2)
       ).toString("base64"),

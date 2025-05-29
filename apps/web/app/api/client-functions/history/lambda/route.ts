@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       clientDeployment,
       {
         pageSize: pageSize * 3,
-        streamLimit: 10,
+        streamLimit: 20,
       }
     );
 

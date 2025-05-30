@@ -244,6 +244,13 @@ export const modifyTaskStructureBasedOnCommitFiles = async (
     You need to understand the changes and update the meta information accordingly.
     only output the lambdaFunctions, cronJobs and dbSchemas that have been changed/updated.
     No need to output if a particular lambdaFunction, cronJob or dbSchema is not changed/updated.
+
+    Rules & Workflow:
+    Do not modify paths/method unless in the changes it was changed in serverless.yml file.
+    name: should be in camel case, without any extension.
+    modify/update brief, endResult, description, by understanding the code changes made.
+    if the code changes are minor/unwarrented to update the brief, endResult, description, do not update it.
+    brief: should be as detailed as possible of the code step by step (since you are only given the code diff, you need to only modify parts of the brief that are relevant to the code changes)
     `,
     prompt,
     schema: z.object({

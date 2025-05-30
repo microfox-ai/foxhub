@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
   octokitWebhook.onAny((event) => {
     console.log("event", event.name);
   });
+  console.log("event triggered", event.body.length, event.headers);
   const response = await octokitWebhook.verifyAndReceive(
     event.body,
     event.headers

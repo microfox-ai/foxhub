@@ -349,4 +349,16 @@ model UsageReport {
   updatedAt       DateTime      @updatedAt
 }
 
-// dateKey+clientRequest+cycle = unique
+// -------- Process Webhook Events ------
+
+model WebhookEvent {
+  id              String        @id @default(uuid())
+  status          String?
+  originClientRequestId   String?
+  originBotProjectId    String?
+  provider        String
+  event_id        String?
+  event_name      String?
+  payload         Json?
+  triggerRoute    Json?
+}

@@ -41,12 +41,10 @@ export const getCommitChanges = async ({
   enableGitFetch,
   commitSha,
   repoName,
-  filesChanged,
 }: {
   enableGitFetch: boolean;
   commitSha: string;
   repoName: string;
-  filesChanged: string[];
 }): Promise<CommitFile[]> => {
   let commitFiles: CommitFile[] = [];
 
@@ -416,17 +414,15 @@ export const modifyTaskInstanceMeta = async (
   taskInstanceMeta: TaskInstanceMeta,
   clientRequest: ClientRequest,
   {
-    filesChanged,
     enableGitFetch,
     commitSha,
   }: {
-    filesChanged: string[];
     enableGitFetch: boolean;
     commitSha: string;
   }
 ) => {
   let updatedTaskInstanceMeta = { ...taskInstanceMeta };
-  console.log("filesChanged", filesChanged);
+  //console.log("filesChanged", filesChanged);
 
   if (!taskInstanceMeta.taskStructure) {
     throw new Error("Task structure is not set");
@@ -440,7 +436,6 @@ export const modifyTaskInstanceMeta = async (
     enableGitFetch,
     commitSha,
     repoName: clientRequest.repoName!,
-    filesChanged,
   });
 
   // Update build step files based on commit changes

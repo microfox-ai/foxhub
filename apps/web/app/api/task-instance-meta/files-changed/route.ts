@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { fileChanges, clientRequestId, commitSha } = body;
+    const { clientRequestId, commitSha } = body;
 
-    if (!fileChanges || !clientRequestId) {
+    if (!clientRequestId) {
       return NextResponse.json(
         { error: "Missing filesChanged or clientRequestId parameter" },
         { status: 400 }
@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
       taskInstanceMeta,
       clientRequest,
       {
-        filesChanged: fileChanges,
         enableGitFetch: true,
         commitSha: commitSha,
       }

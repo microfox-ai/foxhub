@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   if (!event.body) {
     return NextResponse.json({ error: "No body" }, { status: 400 });
   }
-  octokitWebhook.onAny((event) => {
+  octokitWebhook.onAny(async (event) => {
     console.log("octokit event", event.name);
     if (event.name === "push") {
       console.log("push event", event.payload);
@@ -20,26 +20,57 @@ export async function POST(req: NextRequest) {
       const branch = ref.replace("refs/heads/", "");
       const repoName = repository.name;
       const commitMessage = head_commit.message;
-      prisma.clientRequest
-        .findFirst({
-          where: {
-            repoName,
-            prBranch: branch,
+      const ownerName = repository.owner.name;
+      const sha = head_commit.id;
+      const clientRequest = await prisma.clientRequest.findFirst({
+        where: {
+          repoName,
+          prBranch: branch,
+        },
+      });
+      if (!clientRequest) {
+        console.log("no client request found");
+        return;
+      }
+      console.log("client request found", clientRequest.id);
+      if (commitMessage.includes("deployfox")) {
+        console.log("deployfox commit", commitMessage);
+        // await prisma.webhookEvent.create({
+        //     data: {
+        //       status: "pending",
+        //       provider: "octokit",
+        //       event_id: event.id,
+        //       event_name: event.name,
+        //       payload: event.payload,
+        //       originClientRequestId: clientRequest.id,
+        //       triggerRoute: {
+
+        //       },
+        //     },
+        //   });
+      }
+      if (commitMessage.includes("updatefox")) {
+        console.log("buildfox commit", commitMessage);
+        await prisma.webhookEvent.create({
+          data: {
+            status: "pending",
+            provider: "octokit",
+            event_id: event.id,
+            event_name: event.name,
+            payload: event.payload,
+            originClientRequestId: clientRequest.id,
+            triggerRoute: {
+              path: "/task-instance-meta/files-changed",
+              method: "POST",
+              timeout: 60_000,
+              body: {
+                clientRequestId: clientRequest.id,
+                commitSha: sha,
+              },
+            },
           },
-        })
-        .then((clientRequest) => {
-          if (!clientRequest) {
-            console.log("no client request found");
-            return;
-          }
-          console.log("client request found", clientRequest.id);
-          if (commitMessage.includes("deployfox")) {
-            console.log("deployfox commit", commitMessage);
-          }
-          if (commitMessage.includes("updatefox")) {
-            console.log("buildfox commit", commitMessage);
-          }
         });
+      }
     }
   });
   //console.log("octokit event triggered", event.body.length);

@@ -22,11 +22,20 @@ npm install
 npm run build
 \`\`\`
 
-## Microfox Rules
+## Code Syntax Rules
 
 1. all functions must be exported in index.ts file & also shpuld match in serverless.yml file.
 2. all function must export OPEN Api Docs respective to them.
 3. imports of helper functions should always follow the format of .js ending.
+
+## Commit Changes
+Commit Message Must start with \`updatefox:\`
+
+\`\`\`bash
+git add .
+git commit -m "updatefox: add ${request.title}"
+git push
+\`\`\`
 
 ## License
 MIT

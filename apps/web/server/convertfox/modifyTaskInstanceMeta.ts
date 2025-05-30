@@ -21,48 +21,37 @@ import { models } from "../models";
 import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
-export const modifyTaskInstanceMeta = async (
-  taskInstanceMeta: TaskInstanceMeta,
-  clientRequest: ClientRequest,
-  {
-    filesChanged,
-    enableGitFetch,
-    commitSha,
-  }: {
-    filesChanged: string[];
-    enableGitFetch: boolean;
-    commitSha: string;
-  }
-) => {
-  let updatedTaskInstanceMeta = { ...taskInstanceMeta };
-  console.log("filesChanged", filesChanged);
+type CommitFile = {
+  filename: string;
+  status:
+    | "added"
+    | "removed"
+    | "modified"
+    | "renamed"
+    | "copied"
+    | "changed"
+    | "unchanged";
+  additions: number;
+  deletions: number;
+  changes: number;
+  patch?: string;
+};
 
-  if (!taskInstanceMeta.taskStructure) {
-    throw new Error("Task structure is not set");
-  }
-
-  if (!taskInstanceMeta.taskInfo) {
-    throw new Error("Task info is not set");
-  }
-
-  let commitFiles: Array<{
-    filename: string;
-    status:
-      | "added"
-      | "removed"
-      | "modified"
-      | "renamed"
-      | "copied"
-      | "changed"
-      | "unchanged";
-    additions: number;
-    deletions: number;
-    changes: number;
-    patch?: string;
-  }> = [];
+export const getCommitChanges = async ({
+  enableGitFetch,
+  commitSha,
+  repoName,
+  filesChanged,
+}: {
+  enableGitFetch: boolean;
+  commitSha: string;
+  repoName: string;
+  filesChanged: string[];
+}): Promise<CommitFile[]> => {
+  let commitFiles: CommitFile[] = [];
 
   // If enableGitFetch is true, use Octokit to get file diffs for the commitSha
-  if (enableGitFetch && commitSha && clientRequest.repoName) {
+  if (enableGitFetch && commitSha && repoName) {
     try {
       console.log(`Fetching file diffs for commit ${commitSha} using Octokit`);
 
@@ -73,7 +62,7 @@ export const modifyTaskInstanceMeta = async (
       // Get the commit details which includes file changes
       const { data: commitData } = await octokit.rest.repos.getCommit({
         owner: PROJECT_REPO_OWNER,
-        repo: clientRequest.repoName,
+        repo: repoName,
         ref: commitSha,
       });
 
@@ -91,14 +80,19 @@ export const modifyTaskInstanceMeta = async (
     }
   }
 
-  // TODO: based on files changed, update the task instance meta
-  const buildFiles = (taskInstanceMeta.buildingStep as any)?.files;
+  return commitFiles;
+};
+
+export const updateBuildStepFiles = (
+  buildingStep: any,
+  commitFiles: CommitFile[],
+  repoName: string
+) => {
+  const buildFiles = buildingStep?.files;
   const buildFilesMap = new Map<string, any>();
+
   buildFiles.forEach((file: any) => {
-    buildFilesMap.set(
-      file.filePath.replace(clientRequest.repoName + "/", ""),
-      file
-    );
+    buildFilesMap.set(file.filePath.replace(repoName + "/", ""), file);
   });
 
   commitFiles.forEach((file) => {
@@ -106,7 +100,7 @@ export const modifyTaskInstanceMeta = async (
     switch (file.status) {
       case "added":
         buildFilesMap.set(file.filename, {
-          filePath: clientRequest.repoName + "/" + file.filename,
+          filePath: repoName + "/" + file.filename,
           fileName: file.filename.split("/").pop(),
           fileType: file.filename.split(".").pop(),
           meta: {
@@ -119,7 +113,7 @@ export const modifyTaskInstanceMeta = async (
         break;
       case "modified":
         buildFilesMap.set(file.filename, {
-          filePath: clientRequest.repoName + "/" + file.filename,
+          filePath: repoName + "/" + file.filename,
           fileName: file.filename.split("/").pop(),
           fileType: file.filename.split(".").pop(),
           meta: {
@@ -129,7 +123,7 @@ export const modifyTaskInstanceMeta = async (
         break;
       case "changed":
         buildFilesMap.set(file.filename, {
-          filePath: clientRequest.repoName + "/" + file.filename,
+          filePath: repoName + "/" + file.filename,
           fileName: file.filename.split("/").pop(),
           fileType: file.filename.split(".").pop(),
           meta: {
@@ -142,11 +136,17 @@ export const modifyTaskInstanceMeta = async (
         break;
     }
   });
-  let updatedBuildFiles = Array.from(buildFilesMap.values());
-  (updatedTaskInstanceMeta.buildingStep as any).files = updatedBuildFiles;
 
+  return Array.from(buildFilesMap.values());
+};
+
+export const modifyTaskStructureBasedOnCommitFiles = async (
+  taskStructure: TaskInstanceMetaType["taskStructure"],
+  commitFiles: CommitFile[],
+  clientRequest: ClientRequest
+) => {
   let updatedTaskStructure = {
-    ...(taskInstanceMeta.taskStructure as TaskInstanceMetaType["taskStructure"]),
+    ...taskStructure,
   };
   const lambdaMap = new Map<string, TaskLambdaFunction>();
   const cronJobMap = new Map<string, TaskCronJob>();
@@ -157,16 +157,19 @@ export const modifyTaskInstanceMeta = async (
   `;
 
   updatedTaskStructure?.lambdaFunctions?.forEach((lambdaFunction) => {
-    lambdaMap.set(
-      getFunctionNameFromKebabCase(lambdaFunction.name) + ".ts",
-      lambdaFunction
-    );
+    lambdaMap.set(getFunctionNameFromKebabCase(lambdaFunction.name) + ".ts", {
+      ...lambdaFunction,
+      name: getFunctionNameFromKebabCase(lambdaFunction.name),
+    });
     prompt += dedent`
     lambdaFunction: ${JSON.stringify(lambdaMap)}
     `;
   });
   updatedTaskStructure?.cronJobs?.forEach((cronJob) => {
-    cronJobMap.set(getFunctionNameFromKebabCase(cronJob.name) + ".ts", cronJob);
+    cronJobMap.set(getFunctionNameFromKebabCase(cronJob.name) + ".ts", {
+      ...cronJob,
+      name: getFunctionNameFromKebabCase(cronJob.name),
+    });
     prompt += dedent`
     cronJob: ${JSON.stringify(cronJobMap)}
     `;
@@ -183,7 +186,7 @@ export const modifyTaskInstanceMeta = async (
   `;
 
   commitFiles.forEach((file) => {
-    const name = getKebabCaseFunctionNameFromCamelCase(
+    const name = getFunctionNameFromKebabCase(
       file.filename.split("/").pop()?.split(".")[0] ?? ""
     );
     const nameString = file.filename.includes("/functions/")
@@ -280,61 +283,99 @@ export const modifyTaskInstanceMeta = async (
   const generatedCronJobs = generateOutput.object.cronJobs;
   const generatedDbSchemas = generateOutput.object.dbSchemas;
 
+  if (!updatedTaskStructure.lambdaFunctions) {
+    updatedTaskStructure.lambdaFunctions = [];
+  }
+  if (!updatedTaskStructure.cronJobs) {
+    updatedTaskStructure.cronJobs = [];
+  }
+  if (!updatedTaskStructure.dbSchemas) {
+    updatedTaskStructure.dbSchemas = [];
+  }
+
   generatedLambdaFunctions.forEach(({ reason, ...lambdaFunction }) => {
-    const existingLambdaFunction = updatedTaskStructure.lambdaFunctions?.find(
-      (lambda) => lambda.name === lambdaFunction.name
-    );
-    if (existingLambdaFunction) {
-      updatedTaskStructure.lambdaFunctions =
-        updatedTaskStructure.lambdaFunctions?.map((lambda) => {
-          if (lambda.name === lambdaFunction.name) {
-            return lambdaFunction;
-          }
-          return lambda;
-        });
+    const existingLambdaFunctionIndex =
+      updatedTaskStructure.lambdaFunctions?.findIndex(
+        (lambda) =>
+          getFunctionNameFromKebabCase(lambda.name) ===
+          getFunctionNameFromKebabCase(lambdaFunction.name)
+      );
+    if (existingLambdaFunctionIndex && existingLambdaFunctionIndex >= 0) {
+      (updatedTaskStructure.lambdaFunctions as TaskLambdaFunction[])[
+        existingLambdaFunctionIndex
+      ] = {
+        ...(updatedTaskStructure.lambdaFunctions as TaskLambdaFunction[])[
+          existingLambdaFunctionIndex
+        ],
+        ...{
+          ...lambdaFunction,
+          name: getFunctionNameFromKebabCase(lambdaFunction.name),
+        },
+      };
     } else {
-      updatedTaskStructure.lambdaFunctions?.push(lambdaFunction);
+      updatedTaskStructure.lambdaFunctions?.push({
+        ...lambdaFunction,
+        name: getFunctionNameFromKebabCase(lambdaFunction.name),
+      });
     }
   });
 
   generatedCronJobs.forEach(({ reason, ...cronJob }) => {
-    const existingCronJob = updatedTaskStructure.cronJobs?.find(
-      (cron) => cron.name === cronJob.name
+    const existingCronJobIndex = updatedTaskStructure.cronJobs?.findIndex(
+      (cron) =>
+        getFunctionNameFromKebabCase(cron.name) ===
+        getFunctionNameFromKebabCase(cronJob.name)
     );
-    if (existingCronJob) {
-      updatedTaskStructure.cronJobs = updatedTaskStructure.cronJobs?.map(
-        (cron) => {
-          if (cron.name === cronJob.name) {
-            return cronJob;
-          }
-          return cron;
-        }
-      );
+    if (existingCronJobIndex && existingCronJobIndex >= 0) {
+      (updatedTaskStructure.cronJobs as TaskCronJob[])[existingCronJobIndex] = {
+        ...(updatedTaskStructure.cronJobs as TaskCronJob[])[
+          existingCronJobIndex
+        ],
+        ...{ ...cronJob, name: getFunctionNameFromKebabCase(cronJob.name) },
+      };
     } else {
-      updatedTaskStructure.cronJobs?.push(cronJob);
+      updatedTaskStructure.cronJobs?.push({
+        ...cronJob,
+        name: getFunctionNameFromKebabCase(cronJob.name),
+      });
     }
   });
 
   generatedDbSchemas.forEach(({ reason, ...dbSchema }) => {
-    const existingDbSchema = updatedTaskStructure.dbSchemas?.find(
-      (db) => db.modelName === dbSchema.modelName
+    const existingDbSchemaIndex = updatedTaskStructure.dbSchemas?.findIndex(
+      (db) =>
+        getFunctionNameFromKebabCase(db.modelName) ===
+        getFunctionNameFromKebabCase(dbSchema.modelName)
     );
-    if (existingDbSchema) {
-      updatedTaskStructure.dbSchemas = updatedTaskStructure.dbSchemas?.map(
-        (db) => {
-          if (db.modelName === dbSchema.modelName) {
-            return dbSchema;
-          }
-          return db;
-        }
-      );
+    if (existingDbSchemaIndex && existingDbSchemaIndex >= 0) {
+      (updatedTaskStructure.dbSchemas as TaskDBSchema[])[
+        existingDbSchemaIndex
+      ] = {
+        ...(updatedTaskStructure.dbSchemas as TaskDBSchema[])[
+          existingDbSchemaIndex
+        ],
+        ...{
+          ...dbSchema,
+          modelName: getFunctionNameFromKebabCase(dbSchema.modelName),
+        },
+      };
     } else {
-      updatedTaskStructure.dbSchemas?.push(dbSchema);
+      updatedTaskStructure.dbSchemas?.push({
+        ...dbSchema,
+        modelName: getFunctionNameFromKebabCase(dbSchema.modelName),
+      });
     }
   });
 
-  let updatedTaskInfo =
-    taskInstanceMeta.taskInfo as TaskInstanceMetaType["taskInfo"];
+  return updatedTaskStructure as TaskInstanceMetaType["taskStructure"];
+};
+
+export const modifyTaskInfoBasedOnChanges = async (
+  originalTaskInfo: TaskInstanceMetaType["taskInfo"],
+  originalTaskStructure: TaskInstanceMetaType["taskStructure"],
+  updatedTaskStructure: TaskInstanceMetaType["taskStructure"],
+  clientRequest: ClientRequest
+) => {
   const generatedTaskInfoOutput = await generateObject({
     model: models.claude4Sonnet,
     system: `
@@ -344,15 +385,15 @@ export const modifyTaskInstanceMeta = async (
     `,
     prompt: `
     The following is the task information that currently exists in the task:
-    ${JSON.stringify(updatedTaskInfo)}
+    ${JSON.stringify(originalTaskInfo)}
     The follwing is the task structure information that currently exists in the task:
-    ${JSON.stringify(taskInstanceMeta.taskStructure)}
+    ${JSON.stringify(originalTaskStructure)}
     The following is the modified task structure information output:
     ${JSON.stringify(updatedTaskStructure)}
     `,
     schema: taskInfo,
   });
-  updatedTaskInfo = generatedTaskInfoOutput.object;
+
   console.log("taskInfo Usage", generatedTaskInfoOutput.usage);
   TokenUsageAnalyticsTracker.trackUsage({
     userId: clientRequest.userId,
@@ -361,7 +402,63 @@ export const modifyTaskInstanceMeta = async (
     model: models.claude4Sonnet.modelId,
     usage: generatedTaskInfoOutput.usage,
   });
-  // TODO: update name, goal, summary acordingly.
+
+  return generatedTaskInfoOutput.object;
+};
+
+export const modifyTaskInstanceMeta = async (
+  taskInstanceMeta: TaskInstanceMeta,
+  clientRequest: ClientRequest,
+  {
+    filesChanged,
+    enableGitFetch,
+    commitSha,
+  }: {
+    filesChanged: string[];
+    enableGitFetch: boolean;
+    commitSha: string;
+  }
+) => {
+  let updatedTaskInstanceMeta = { ...taskInstanceMeta };
+  console.log("filesChanged", filesChanged);
+
+  if (!taskInstanceMeta.taskStructure) {
+    throw new Error("Task structure is not set");
+  }
+
+  if (!taskInstanceMeta.taskInfo) {
+    throw new Error("Task info is not set");
+  }
+
+  const commitFiles = await getCommitChanges({
+    enableGitFetch,
+    commitSha,
+    repoName: clientRequest.repoName!,
+    filesChanged,
+  });
+
+  // Update build step files based on commit changes
+  const updatedBuildFiles = updateBuildStepFiles(
+    taskInstanceMeta.buildingStep,
+    commitFiles,
+    clientRequest.repoName!
+  );
+  (updatedTaskInstanceMeta.buildingStep as any).files = updatedBuildFiles;
+
+  // Modify task structure based on commit files
+  const updatedTaskStructure = await modifyTaskStructureBasedOnCommitFiles(
+    taskInstanceMeta.taskStructure as TaskInstanceMetaType["taskStructure"],
+    commitFiles,
+    clientRequest
+  );
+
+  // Modify task info based on changes
+  const updatedTaskInfo = await modifyTaskInfoBasedOnChanges(
+    taskInstanceMeta.taskInfo as TaskInstanceMetaType["taskInfo"],
+    taskInstanceMeta.taskStructure as TaskInstanceMetaType["taskStructure"],
+    updatedTaskStructure,
+    clientRequest
+  );
 
   return {
     ...updatedTaskInstanceMeta,

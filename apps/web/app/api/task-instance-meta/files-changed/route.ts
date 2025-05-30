@@ -2,6 +2,8 @@ import { prisma } from "@/prisma/prisma";
 import { modifyTaskInstanceMeta } from "@/server/convertfox/modifyTaskInstanceMeta";
 import { NextRequest, NextResponse } from "next/server";
 
+export const maxDuration = 100; // 100 seconds
+
 export async function POST(req: NextRequest) {
   try {
     // Check for the microfox-api-key in the request headers

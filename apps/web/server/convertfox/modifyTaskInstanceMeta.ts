@@ -45,7 +45,6 @@ export const modifyTaskInstanceMeta = async (
     throw new Error("Task info is not set");
   }
 
-  let actualFilesChanged = filesChanged;
   let commitFiles: Array<{
     filename: string;
     status:
@@ -80,21 +79,11 @@ export const modifyTaskInstanceMeta = async (
 
       // Extract files that were changed in this commit
       commitFiles = commitData.files || [];
-      actualFilesChanged = commitFiles.map((file) => file.filename);
 
       console.log(
-        `Found ${actualFilesChanged.length} changed files from commit:`,
-        actualFilesChanged
+        `Found ${commitFiles.length} changed files from commit:`,
+        commitFiles
       );
-
-      // Optionally, you can also get detailed diff information
-      // The commitData.files array contains:
-      // - filename: string
-      // - status: 'added' | 'removed' | 'modified' | 'renamed' | 'copied' | 'changed' | 'unchanged'
-      // - additions: number
-      // - deletions: number
-      // - changes: number
-      // - patch: string (the actual diff)
     } catch (error) {
       console.error("Error fetching commit data from GitHub:", error);
       // Fall back to using the originally provided filesChanged array
@@ -235,6 +224,8 @@ export const modifyTaskInstanceMeta = async (
   updatedTaskStructure.lambdaFunctions = Array.from(lambdaMap.values());
   updatedTaskStructure.cronJobs = Array.from(cronJobMap.values());
   updatedTaskStructure.dbSchemas = dbSchemaMap.get("redis.ts")?.dbSchemas ?? [];
+
+  return taskInstanceMeta as any;
 
   console.log("prompt for generating modified task structure", prompt);
 

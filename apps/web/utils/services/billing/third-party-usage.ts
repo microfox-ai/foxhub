@@ -17,6 +17,15 @@ export interface UsageReportMetadata {
     typeBasedPricing: Record<string, number>;
     totalInvocations: number;
   };
+  ai: {
+    totalPrice: number;
+    totalInvocations: number;
+    totalOriginalPrice: number;
+    providerBasedPricing: Record<string, number>;
+    totalTokens: number;
+    totalPromptTokens: number;
+    totalCompletionTokens: number;
+  };
 }
 
 export interface ThirdPartyUsageResult {

@@ -1,7 +1,7 @@
-import { UsageReportMetadata } from "@/utils/services/aws/third-party-usage";
-import { UsageReport } from "@prisma/client";
+import { UsageReportMetadata } from "@/utils/services/billing/third-party-usage";
+import { UsageAnalytics, UsageReport } from "@prisma/client";
 import dayjs from "dayjs";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useSWR from "swr";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { convertBytes, convertSecondsToMinutes, formatNumberToCurrency, formatNumberToShort } from "@/utils/helpers/prettyprint";
 import { TimerIcon } from "lucide-react";
+import { UsageWithPricing } from "@microfox/usage-pricing";
+import { usageAnalyticsWithPrice } from "@/utils/services/billing/ai-usage";
+import { LambdaInvocation } from "@/utils/services/aws/process-lambda-logs";
 
 interface UsageBarProps {
     title: string;
@@ -78,6 +81,15 @@ export default function UsageReportbar({ requestId }: { requestId: string }) {
         }
     );
 
+    useEffect(() => {
+        if (usageReport?.updatedAt) {
+            const reportAge = dayjs().diff(dayjs(usageReport.updatedAt), 'hour');
+            if (reportAge >= 1) {
+                handleGenerateReport();
+            }
+        }
+    }, [usageReport?.updatedAt]);
+
     const handleGenerateReport = async () => {
         try {
             setIsGenerating(true);
@@ -102,6 +114,12 @@ export default function UsageReportbar({ requestId }: { requestId: string }) {
     };
 
     const usageReportMetadata = usageReport?.metadata as unknown as UsageReportMetadata;
+
+    const usageLogs = usageReport?.usageLogs as unknown as {
+        lambda: LambdaInvocation[];
+        thirdParty: UsageWithPricing[];
+        ai: usageAnalyticsWithPrice[];
+    };
 
     // Generate last 7 days for the dropdown
     const dateOptions = Array.from({ length: 7 }, (_, i) => {
@@ -158,7 +176,8 @@ export default function UsageReportbar({ requestId }: { requestId: string }) {
                         barColors={{ fill: "#22c55e", background: "#3b82f6" }}
                         labels={[
                             { color: "#22c55e", label: "Compute Cost", value: formatNumberToCurrency(usageReportMetadata.lambda.totalPrice) },
-                            { color: "#3b82f6", label: "Services Cost", value: formatNumberToCurrency(usageReportMetadata.thirdParty.totalPrice) }
+                            { color: "#3b82f6", label: "Services Cost", value: formatNumberToCurrency(usageReportMetadata.thirdParty.totalPrice) },
+                            { color: "#fbbf24", label: "AI Cost", value: formatNumberToCurrency(usageReportMetadata.ai.totalPrice) }
                         ]}
                     />
                     <UsageBar
@@ -173,17 +192,19 @@ export default function UsageReportbar({ requestId }: { requestId: string }) {
                         ]}
                     />
                     <UsageBar
-                        title="Third-Party"
-                        value={`${formatNumberToShort(usageReportMetadata.thirdParty.totalInvocations)}`}
+                        title="Third-Party & AI"
+                        value={`${formatNumberToShort(usageReportMetadata.thirdParty.totalInvocations + usageReportMetadata.ai.totalInvocations)}`}
                         limit={` / ${formatNumberToShort(1000)} Requests`}
                         barPercent={usageReportMetadata.thirdParty.totalInvocations / 1000}
                         labels={[
-                            { color: "#22c55e", label: "Cost", value: usageReportMetadata.thirdParty.totalPrice.toFixed(6) + " USD" },
+                            { color: "#fbbf24", label: "Internal AI Cost", value: usageReportMetadata.ai.totalPrice.toFixed(6) + " USD" },
+                            { color: "#22c55e", label: "3rd Party Cost", value: usageReportMetadata.thirdParty.totalPrice.toFixed(6) + " USD" },
                             ...Object.entries(usageReportMetadata.thirdParty.typeBasedPricing).map(([key, value]) => ({
                                 color: key === "llm" ? "#22c55e" : "#3b82f6",
                                 label: key === "llm" ? "Ai Models" : "APIs",
                                 value: formatNumberToCurrency(value as number),
-                            }))]}
+                            }))
+                        ]}
                     />
                 </div>
             ) : <div className="h-[200px] w-full flex items-center justify-center">

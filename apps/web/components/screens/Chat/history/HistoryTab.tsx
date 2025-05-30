@@ -2,8 +2,9 @@ import { useClientProject } from "@/components/screens/providers/ClientProjectPr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LambdaHistoryTab } from "./LambdaHistoryTab";
 import { ThirdPartyHistoryTab } from "./ThirdPartyHistoryTab";
-import { AudioWaveformIcon, Cpu, ExternalLink, Server, Split } from "lucide-react";
+import { AudioWaveformIcon, Cpu, ExternalLink, Server, SparkleIcon, Split } from "lucide-react";
 import UsageReportbar from "./UsageReportbar";
+import { AiUsageTab } from "./AiUsageTab";
 
 export const HistoryTab = () => {
     const { selectedRequest } = useClientProject();
@@ -35,12 +36,22 @@ export const HistoryTab = () => {
                             {/* <span className="text-[10px] text-muted-foreground">AI Models, API Services, etc.</span> */}
                         </div>
                     </TabsTrigger>
+                    <TabsTrigger value="ai" className="flex flex-row items-center gap-1 py-3">
+                        <SparkleIcon className="h-10 w-10 text-yellow-500" />
+                        <div className="flex flex-col items-start">
+                            <span className="text- font-medium">AI Usage</span>
+                            {/* <span className="text-[10px] text-muted-foreground">AI Models, API Services, etc.</span> */}
+                        </div>
+                    </TabsTrigger>
                 </TabsList>
                 <TabsContent value="lambda" className="h-[calc(100%-80px)]">
                     <LambdaHistoryTab />
                 </TabsContent>
                 <TabsContent value="third-party" className="h-[calc(100%-80px)]">
                     <ThirdPartyHistoryTab />
+                </TabsContent>
+                <TabsContent value="ai" className="h-[calc(100%-80px)]">
+                    <AiUsageTab />
                 </TabsContent>
             </Tabs>
         </div>

@@ -1,5 +1,5 @@
 import { CloudWatchLogEvent } from "@/types/aws";
-import { calculateLambdaCost } from "./lambda-pricing";
+import { calculateLambdaCost } from "../billing/lambda-pricing";
 
 export interface LambdaInvocation {
   requestId: string;

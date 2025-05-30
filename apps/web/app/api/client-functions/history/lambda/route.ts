@@ -1,7 +1,7 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata } from "@/server/types";
 import { NextRequest, NextResponse } from "next/server";
-import { fetchLambdaUsage } from "@/utils/services/aws/lambda-usage";
+import { fetchLambdaUsage } from "@/utils/services/billing/lambda-usage";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 30;

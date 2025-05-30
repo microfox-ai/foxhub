@@ -87,6 +87,7 @@ export const getLatestRunForClientRequest = async (
     owner: PROJECT_REPO_OWNER,
     repo: clientRequest.repoName ?? "",
     branch: clientRequest.prBranch ?? "",
+    workflow_id: "deploy.yml",
     // stage === DEPLOY_STAGE.STAGING
     //   ? (clientRequest.prBranch ?? "")
     //   : "project/master",

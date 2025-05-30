@@ -1,13 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import {
-  fetchLambdaUsage,
-  LambdaUsageResult,
-} from "@/utils/services/aws/lambda-usage";
-import {
-  fetchThirdPartyUsage,
-  UsageReportMetadata,
-} from "@/utils/services/aws/third-party-usage";
-import { MicrofoxUsagePricing } from "@microfox/usage-pricing";
+import { generateUsageReport } from "@/utils/services/billing/generate-usage-report";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 30;
@@ -25,97 +17,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get the client request to find associated functions
-    const clientRequest = await prisma.clientRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        deployedFunctions: true,
-      },
-    });
+    try {
+      const savedReport = await generateUsageReport(requestId, dateKeyFull);
 
-    if (!clientRequest) {
-      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+      // 5. Respond with status
+      return NextResponse.json({
+        status: "completed",
+        reportId: savedReport.id,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === "Request not found") {
+          return NextResponse.json(
+            { error: "Request not found" },
+            { status: 404 }
+          );
+        }
+        if (error.message === "Client deployment not found") {
+          return NextResponse.json(
+            { error: "Client deployment not found" },
+            { status: 404 }
+          );
+        }
+      }
+      throw error;
     }
-    // Get client deployment from client request
-    const clientDeployment = await prisma.clientDeployment.findFirst({
-      where: {
-        originClientRequestId: requestId,
-      },
-    });
-
-    if (!clientDeployment) {
-      return NextResponse.json(
-        { error: "Client deployment not found" },
-        { status: 404 }
-      );
-    }
-
-    console.log("search for date", dateKeyFull);
-
-    // 1. Fetch lambda usage for the full day
-    const lambdaUsage = await fetchLambdaUsage(requestId, clientDeployment, {
-      pageSize: 100,
-      streamLimit: 20,
-      startTime: new Date(new Date(dateKeyFull).setHours(0, 0, 0, 0)).getTime(),
-      endTime: new Date(
-        new Date(dateKeyFull).setHours(23, 59, 59, 999)
-      ).getTime(),
-    });
-
-    // 2. Fetch third party usage for the full day
-    const thirdPartyUsage = await fetchThirdPartyUsage(requestId);
-
-    // 3. Merge and create usage report
-    const usageReport = {
-      originClientRequestId: requestId,
-      priceUSD: calculateTotalPrice(lambdaUsage, thirdPartyUsage),
-      dateKey: dateKeyFull,
-      cycle: "daily",
-      computeTime: lambdaUsage.totalComputeTime,
-      metadata: {
-        lambda: {
-          totalComputeTime: lambdaUsage.totalComputeTime,
-          totalMemoryUsed: lambdaUsage.totalMemoryUsed,
-          totalInvocations: lambdaUsage.totalInvocations,
-          totalPrice: lambdaUsage.totalPrice,
-          totalOriginalPrice: lambdaUsage.totalOriginalPrice,
-        } as UsageReportMetadata["lambda"],
-        thirdParty: {
-          totalPrice: thirdPartyUsage.totalPrice,
-          packagebasedPricing: thirdPartyUsage.packagebasedPricing,
-          typeBasedPricing: thirdPartyUsage.typeBasedPricing,
-          totalInvocations: thirdPartyUsage.totalInvocations,
-        } as UsageReportMetadata["thirdParty"],
-      } as any,
-      usageLogs: {
-        lambda: lambdaUsage.invocations,
-        thirdParty: thirdPartyUsage.data,
-      } as any,
-    };
-
-    // 4. Save usage report to db
-    const existingReport = await prisma.usageReport.findFirst({
-      where: {
-        dateKey: usageReport.dateKey,
-        cycle: usageReport.cycle,
-        originClientRequestId: usageReport.originClientRequestId,
-      },
-    });
-
-    const savedReport = existingReport
-      ? await prisma.usageReport.update({
-          where: { id: existingReport.id },
-          data: usageReport,
-        })
-      : await prisma.usageReport.create({
-          data: usageReport,
-        });
-
-    // 5. Respond with status
-    return NextResponse.json({
-      status: "completed",
-      reportId: savedReport.id,
-    });
   } catch (error) {
     console.error("Error in usage request POST:", error);
     return NextResponse.json(
@@ -163,14 +89,4 @@ export async function GET(req: Request) {
       { status: 500 }
     );
   }
-}
-
-// Helper functions
-function calculateTotalPrice(
-  lambdaUsage: LambdaUsageResult,
-  thirdPartyUsage: Awaited<ReturnType<typeof fetchThirdPartyUsage>>
-): number {
-  const totalPrice = lambdaUsage.totalPrice + thirdPartyUsage.totalPrice;
-
-  return totalPrice;
 }

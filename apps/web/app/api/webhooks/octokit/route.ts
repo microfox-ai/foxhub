@@ -13,12 +13,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No body" }, { status: 400 });
   }
   octokitWebhook.onAny((event) => {
-    console.log("event", event.name);
+    console.log("octokit event", event.name);
     if (event.name === "push") {
       console.log("push event", event.payload);
       const { repository, ref, head_commit } = event.payload;
       const branch = ref.replace("refs/heads/", "");
-      const repoName = repository.full_name;
+      const repoName = repository.name;
       const commitMessage = head_commit.message;
       prisma.clientRequest
         .findFirst({

@@ -74,10 +74,12 @@ const buildFileTree = (files: BuildFile[]): FileTreeNode[] => {
     const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.replaceAll("\\", "/").split('/').slice(0, -1).join('/') || '';
 
     // Rewrite file paths relative to the root directory
-    const rewrittenFiles = files.map((file) => ({
-        ...file,
-        filePath: file.filePath.replaceAll("\\", "/").replace(rootDir, '')
-    }));
+    const rewrittenFiles = files
+        .filter((file) => file.filePath.replaceAll("\\", "/").includes(rootDir))
+        .map((file) => ({
+            ...file,
+            filePath: file.filePath.replaceAll("\\", "/").replace(rootDir, '')
+        }));
 
     const root: FileTreeNode = { id: 'root', name: 'root', path: '', isFolder: true, children: [], fileType: 'folder' };
 

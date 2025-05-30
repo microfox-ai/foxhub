@@ -109,7 +109,9 @@ export const modifyTaskInstanceMeta = async (
           filePath: clientRequest.repoName + "/" + file.filename,
           fileName: file.filename.split("/").pop(),
           fileType: file.filename.split(".").pop(),
-          meta: {},
+          meta: {
+            ...isInBuildFiles?.meta,
+          },
         });
         break;
       case "removed":
@@ -120,7 +122,9 @@ export const modifyTaskInstanceMeta = async (
           filePath: clientRequest.repoName + "/" + file.filename,
           fileName: file.filename.split("/").pop(),
           fileType: file.filename.split(".").pop(),
-          meta: {},
+          meta: {
+            ...isInBuildFiles?.meta,
+          },
         });
         break;
       case "changed":
@@ -128,7 +132,9 @@ export const modifyTaskInstanceMeta = async (
           filePath: clientRequest.repoName + "/" + file.filename,
           fileName: file.filename.split("/").pop(),
           fileType: file.filename.split(".").pop(),
-          meta: {},
+          meta: {
+            ...isInBuildFiles?.meta,
+          },
         });
         break;
       case "renamed":

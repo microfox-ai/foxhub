@@ -230,9 +230,6 @@ export const modifyTaskInstanceMeta = async (
   updatedTaskStructure.lambdaFunctions = Array.from(lambdaMap.values());
   updatedTaskStructure.cronJobs = Array.from(cronJobMap.values());
   updatedTaskStructure.dbSchemas = dbSchemaMap.get("redis.ts")?.dbSchemas ?? [];
-
-  return taskInstanceMeta as any;
-
   console.log("prompt for generating modified task structure", prompt);
 
   // generate

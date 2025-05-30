@@ -54,8 +54,8 @@ export async function genBuildStep({
         ...taskInstanceMeta,
         taskRequiredInfo: {
           customEnvVariables: (
-            taskInstanceMeta.taskRequiredInfo
-              ?.customEnvVariables as ExtraEnvVariable[]
+            (taskInstanceMeta.taskRequiredInfo
+              ?.customEnvVariables as ExtraEnvVariable[]) ?? []
           )
             .filter((env) => !envVariables?.some((e) => e.env === env.env))
             .concat(envVariables ?? []),

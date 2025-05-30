@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
+import { fetchAiUsage } from "@/utils/services/billing/ai-usage";
 import {
   fetchLambdaUsage,
   LambdaUsageResult,
@@ -8,8 +8,6 @@ import {
   fetchThirdPartyUsage,
   UsageReportMetadata,
 } from "@/utils/services/billing/third-party-usage";
-import { fetchAiUsage } from "@/utils/services/billing/ai-usage";
-import { MicrofoxUsagePricing } from "@microfox/usage-pricing";
 
 export class UsageReportError extends Error {
   constructor(

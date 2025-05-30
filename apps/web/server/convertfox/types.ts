@@ -1,5 +1,24 @@
 import { z } from "zod";
 
+export const extraEnvVariables = z.object({
+  env: z.string().describe("The env variable name"),
+  name: z.string().describe("A readable name for the env variable"),
+  what: z.string().describe("What is this env variable used for"),
+  why: z
+    .string()
+    .describe("Why is this env variable needed in a single line")
+    .optional(),
+  how: z
+    .string()
+    .describe(
+      "How/Where to get this env from the platform (if unkonwn on how, describe what this env variable is needed for)"
+    ),
+  // isSameAs: z
+  //   .array(z.string())
+  //   .describe("similar exisiting env variables that were duped in the code")
+  //   .optional(),
+});
+export type ExtraEnvVariable = z.infer<typeof extraEnvVariables>;
 // step1. generate a clear cut pure task info
 export const taskInfo = z.object({
   name: z.string().describe("a simple name for the task"),
@@ -61,18 +80,9 @@ export type TaskIntegrations = z.infer<typeof taskIntegrations>;
 
 // step3. get to know what information to collect from user
 export const taskRequiredInfo = z.object({
-  packages: z
-    .array(z.string())
-    .describe("The packages that are needed for the task"),
-  clientSecrets: z
-    .array(z.any())
-    .describe("The client secrets that are needed for the task"),
-  extraInfo: z
-    .array(z.any())
-    .describe(
-      "Any other information that is needed for the task in dictionary format"
-    ),
-  interactionType: z.enum(["ui", "api", "none"]),
+  customEnvVariables: z
+    .array(extraEnvVariables)
+    .describe("The custom env variables that are needed for the task"),
 });
 export type TaskRequiredInfo = z.infer<typeof taskRequiredInfo>;
 
@@ -242,23 +252,3 @@ export const taskInstance = z.object({
 
 export type TaskInstanceMetaType = z.infer<typeof taskInstance>;
 // the collected information must be stored NOT in the taskInstance record.
-
-export const extraEnvVariables = z.object({
-  env: z.string().describe("The env variable name"),
-  name: z.string().describe("A readable name for the env variable"),
-  what: z.string().describe("What is this env variable used for"),
-  why: z
-    .string()
-    .describe("Why is this env variable needed in a single line")
-    .optional(),
-  how: z
-    .string()
-    .describe(
-      "How/Where to get this env from the platform (if unkonwn on how, describe what this env variable is needed for)"
-    ),
-  isSameAs: z
-    .array(z.string())
-    .describe("similar exisiting env variables that were duped in the code")
-    .optional(),
-});
-export type ExtraEnvVariable = z.infer<typeof extraEnvVariables>;

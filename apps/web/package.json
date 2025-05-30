@@ -37,6 +37,7 @@
     "@microfox/slack-web-tiny": "^1.0.3",
     "@microfox/usage-pricing": "^0.0.8",
     "@microfox/usage-tracker": "^0.0.5",
+    "@microfox/webhook-octokit": "^1.0.1",
     "@microfox/webhook-slack": "^1.0.7",
     "@microfox/whatsapp-business": "^1.0.2",
     "@monaco-editor/react": "^4.7.0",

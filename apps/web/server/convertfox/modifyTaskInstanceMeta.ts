@@ -162,7 +162,7 @@ export const modifyTaskStructureBasedOnCommitFiles = async (
       name: getFunctionNameFromKebabCase(lambdaFunction.name),
     });
     prompt += dedent`
-    lambdaFunction: ${JSON.stringify(lambdaMap)}
+    lambdaFunction: ${JSON.stringify(lambdaFunction)}
     `;
   });
   updatedTaskStructure?.cronJobs?.forEach((cronJob) => {
@@ -171,13 +171,13 @@ export const modifyTaskStructureBasedOnCommitFiles = async (
       name: getFunctionNameFromKebabCase(cronJob.name),
     });
     prompt += dedent`
-    cronJob: ${JSON.stringify(cronJobMap)}
+    cronJob: ${JSON.stringify(cronJob)}
     `;
   });
   if (updatedTaskStructure?.dbSchemas) {
     dbSchemaMap.set("redis.ts", { dbSchemas: updatedTaskStructure?.dbSchemas });
     prompt += dedent`
-    dbSchema: ${JSON.stringify(dbSchemaMap)}
+    dbSchemas in redis.ts: ${JSON.stringify(dbSchemaMap.get("redis.ts"))}
     `;
   }
 
@@ -233,7 +233,6 @@ export const modifyTaskStructureBasedOnCommitFiles = async (
   updatedTaskStructure.lambdaFunctions = Array.from(lambdaMap.values());
   updatedTaskStructure.cronJobs = Array.from(cronJobMap.values());
   updatedTaskStructure.dbSchemas = dbSchemaMap.get("redis.ts")?.dbSchemas ?? [];
-  console.log("prompt for generating modified task structure", prompt);
 
   // generate
   const generateOutput = await generateObject({

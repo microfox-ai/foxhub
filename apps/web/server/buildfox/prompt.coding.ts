@@ -128,6 +128,12 @@ export const codingFileTypePrompt = (fileType: string) => {
 //
 
 export const getFunctionNameFromKebabCase = (name_kebab_case: string) => {
+  // Check if kebab case is detected (contains non-alphanumeric characters like hyphens)
+  if (!/[^a-zA-Z0-9]/.test(name_kebab_case)) {
+    // No kebab case detected, return as-is
+    return name_kebab_case;
+  }
+
   return name_kebab_case
     ?.split(/[^a-zA-Z0-9]+/)
     .filter(Boolean)

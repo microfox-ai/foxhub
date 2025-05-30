@@ -15,9 +15,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { filesChanged, clientRequestId, commitSha } = body;
+    const { fileChanges, clientRequestId, commitSha } = body;
 
-    if (!filesChanged || !clientRequestId) {
+    if (!fileChanges || !clientRequestId) {
       return NextResponse.json(
         { error: "Missing filesChanged or clientRequestId parameter" },
         { status: 400 }
@@ -31,27 +31,35 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!taskInstanceMeta) {
+    const clientRequest = await prisma.clientRequest.findFirst({
+      where: {
+        id: clientRequestId,
+      },
+    });
+
+    if (!taskInstanceMeta || !clientRequest) {
       return NextResponse.json(
-        { error: "Task instance meta not found" },
+        { error: "Task instance meta or client request not found" },
         { status: 404 }
       );
     }
 
-    const modifiedTaskInstanceMeta = modifyTaskInstanceMeta(taskInstanceMeta, {
-      filesChanged: filesChanged,
-      enableGitFetch: true,
-      commitSha: commitSha,
-    });
+    const modifiedTaskInstanceMeta = await modifyTaskInstanceMeta(
+      taskInstanceMeta,
+      clientRequest,
+      {
+        filesChanged: fileChanges,
+        enableGitFetch: true,
+        commitSha: commitSha,
+      }
+    );
 
     // Update the filesChanged in taskInfo
     await prisma.taskInstanceMeta.update({
       where: {
         id: taskInstanceMeta.id,
       },
-      data: {
-        ...modifiedTaskInstanceMeta,
-      },
+      data: modifiedTaskInstanceMeta as any,
     });
 
     return NextResponse.json({ success: true }, { status: 200 });

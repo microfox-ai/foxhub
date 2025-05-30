@@ -139,6 +139,12 @@ export const getFunctionNameFromKebabCase = (name_kebab_case: string) => {
     .join("");
 };
 
+export const getKebabCaseFunctionNameFromCamelCase = (
+  nameCamelCase: string
+) => {
+  return nameCamelCase.replace(/([A-Z])/g, "-$1").toLowerCase();
+};
+
 export const codingFunctionPrompt = async ({
   type,
   taskInstanceMeta,

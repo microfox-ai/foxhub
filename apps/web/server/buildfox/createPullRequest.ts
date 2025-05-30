@@ -157,7 +157,17 @@ export async function createPullRequest({
       prTargetBranch: pr.data.base.ref,
       templateVersion: botProject.templateVersion,
       metadata: {
-        pr: pr.data,
+        pr: {
+          html_url: pr.data.html_url,
+          url: pr.url,
+          title: pr.data.title,
+          body: pr.data.body,
+          created_at: pr.data.created_at,
+          updated_at: pr.data.updated_at,
+          closed_at: pr.data.closed_at,
+          merged_at: pr.data.merged_at,
+          merge_commit_sha: pr.data.merge_commit_sha,
+        },
         uniqueRequestTitle: uniqueRequestTitle,
         requestSubdir: _requestSubdir,
         requestFullDir: requestDir,

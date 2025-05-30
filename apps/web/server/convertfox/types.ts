@@ -84,6 +84,68 @@ export const codeTemplateAddon = z.enum([
   "sls_upstash_redis",
 ]);
 export type CodeTemplateAddon = z.infer<typeof codeTemplateAddon>;
+
+export const taskDBSchema = z.object({
+  modelName: z.string().describe("The name of the model"),
+  jsonSchema: z.any().describe("The schema of the model"),
+  key: z.string().describe("The key in the database").optional(),
+});
+export type TaskDBSchema = z.infer<typeof taskDBSchema>;
+
+export const taskLambdaFunction = z.object({
+  name: z.string().describe("The file name of this lambda function"),
+  interactionType: z
+    .array(z.enum(["ui", "api"]))
+    .describe(
+      "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
+    ),
+  description: z
+    .string()
+    .describe("What does this lambda function do in a single line"),
+  brief: z
+    .string()
+    .describe(
+      "A complete step by step description of what does this lambda function code do"
+    ),
+  endResult: z
+    .string()
+    .describe("What is the end result of this lambda function"),
+  method: z
+    .enum(["GET", "POST", "PUT", "DELETE"])
+    .describe("The method of the end point"),
+  path: z.string().describe("The path of the end point"),
+});
+export type TaskLambdaFunction = z.infer<typeof taskLambdaFunction>;
+
+export const taskCronJob = z.object({
+  name: z.string().describe("The file name of this cron job"),
+  brief: z
+    .string()
+    .describe(
+      "A complete step by step description of what does this cron job code do"
+    ),
+  description: z
+    .string()
+    .describe("What does this cron job do in a single line"),
+  endResult: z.string().describe("What is the end result of this cron job"),
+  // endPoint: z.object({
+  //   url: z.string().describe("The url of the end point"),
+  //   method: z
+  //     .enum(["GET", "POST", "PUT", "DELETE"])
+  //     .describe("The method of the end point"),
+  //   body: z.any().describe("The body of the end point"),
+  //   headers: z.any().describe("The headers of the end point"),
+  // }),
+  isolated: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
+    ),
+  cronExpression: z.string().describe("The cron expression of the cron job"),
+});
+export type TaskCronJob = z.infer<typeof taskCronJob>;
+
 export const taskStructure = z.object({
   templateType: codeTemplateType.describe("The type of template to use"),
   templateAddons: z
@@ -91,79 +153,17 @@ export const taskStructure = z.object({
     .optional()
     .describe("The addons to use"),
   dbSchemas: z
-    .array(
-      z.object({
-        modelName: z.string().describe("The name of the model"),
-        jsonSchema: z.any().describe("The schema of the model"),
-        key: z.string().describe("The key in the database").optional(),
-      })
-    )
+    .array(taskDBSchema)
     .optional()
     .describe(
       "The schemas of the models that are needed for the task (Optional)"
     ),
   lambdaFunctions: z
-    .array(
-      z.object({
-        name: z.string().describe("The file name of this lambda function"),
-        interactionType: z
-          .array(z.enum(["ui", "api"]))
-          .describe(
-            "When is this called - ui if from a user interaction, api for an api call, cron - if a scheduled cron job can take care of it"
-          ),
-        description: z
-          .string()
-          .describe("What does this lambda function do in a single line"),
-        brief: z
-          .string()
-          .describe(
-            "A complete step by step description of what does this lambda function code do"
-          ),
-        endResult: z
-          .string()
-          .describe("What is the end result of this lambda function"),
-        method: z
-          .enum(["GET", "POST", "PUT", "DELETE"])
-          .describe("The method of the end point"),
-        path: z.string().describe("The path of the end point"),
-      })
-    )
+    .array(taskLambdaFunction)
     .describe("An array of lambda functions that are needed for the task"),
-  cronJobs: z.array(
-    z
-      .object({
-        name: z.string().describe("The file name of this cron job"),
-        brief: z
-          .string()
-          .describe(
-            "A complete step by step description of what does this cron job code do"
-          ),
-        description: z
-          .string()
-          .describe("What does this cron job do in a single line"),
-        endResult: z
-          .string()
-          .describe("What is the end result of this cron job"),
-        // endPoint: z.object({
-        //   url: z.string().describe("The url of the end point"),
-        //   method: z
-        //     .enum(["GET", "POST", "PUT", "DELETE"])
-        //     .describe("The method of the end point"),
-        //   body: z.any().describe("The body of the end point"),
-        //   headers: z.any().describe("The headers of the end point"),
-        // }),
-        isolated: z
-          .boolean()
-          .default(false)
-          .describe(
-            "Whether this cron job is isolated / dependent on other lambda Functions or Cron Jobs"
-          ),
-        cronExpression: z
-          .string()
-          .describe("The cron expression of the cron job"),
-      })
-      .describe("The cron jobs that are needed for the task")
-  ),
+  cronJobs: z
+    .array(taskCronJob)
+    .describe("An array of cron jobs that are needed for the task"),
   // userInteractions: z.array(
   //   z
   //     .object({

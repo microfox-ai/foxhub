@@ -91,7 +91,7 @@ export const createTaskStructure = async (
         - Keep the entire structure lean & sinple, with each function/cronjob doing end-to-end jobs 
         - do not divide a job into multiple functions unless it absolutely makes sense
         ---
-        
+
         `,
       schema: taskStructure,
       maxRetries: 3,
@@ -106,7 +106,7 @@ export const createTaskStructure = async (
 
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
-      model: models.googleGeminiTwoFive.modelId,
+      model: models.claude4Sonnet.modelId,
       usage: response.usage,
     });
 

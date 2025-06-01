@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/web/**'
-      - '.github/workflows/prod-deploy.yml'
+      - "apps/web/**"
+      - ".github/workflows/prod-deploy.yml"
 
 permissions:
   contents: write
@@ -63,6 +63,10 @@ jobs:
           fi
 
           export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
+
+          # Clean Turbo cache
+          rm -rf .turbo
+          rm -rf apps/web/.next/cache
 
           if ! npm run build:ci; then
             echo "build-status=0" >> $GITHUB_OUTPUT

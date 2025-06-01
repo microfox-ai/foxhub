@@ -1,4 +1,4 @@
-import ShardView from "@/components/screens/store/ShardView";
+import ShardEdit from "@/components/screens/store/ShardEdit";
 
 const ShardViewPage = async ({
   params,
@@ -6,7 +6,7 @@ const ShardViewPage = async ({
   params: Promise<{ shardPageId: string }>;
 }) => {
   const { shardPageId } = await params;
-  return <ShardView shardPageId={shardPageId} />;
+  return <ShardEdit shardPageId={shardPageId} />;
 };
 
 export default ShardViewPage;

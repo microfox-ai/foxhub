@@ -30,7 +30,7 @@ jobs:
           PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
           PREVIEW_URL="https://preview-${PORT}.microfox.app"
           PM2_NAME="foxhub-${PR_NUMBER}"
-          
+
           echo "port=$PORT" >> $GITHUB_OUTPUT
           echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
           echo "pm2_name=$PM2_NAME" >> $GITHUB_OUTPUT
@@ -69,6 +69,10 @@ jobs:
           fi
 
           export DOTENV_KEY=${{ secrets.PREVIEW_DOTENV_KEY }}
+
+          # Clean Turbo cache
+          rm -rf .turbo
+          rm -rf apps/web/.next/cache
 
           if ! npm run build:ci; then
             echo "build-status=0" >> $GITHUB_OUTPUT

@@ -1,16 +1,27 @@
 import { prisma } from "@/prisma/prisma";
+import { SHARD_PAGE_STATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET all shard pages
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
   const userId = request.nextUrl.searchParams.get("userId");
+  const status = request.nextUrl.searchParams.get(
+    "status"
+  ) as SHARD_PAGE_STATUS;
+  if (status && !(status === "PUBLISHED" || status === "UNPUBLISHED")) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
 
   try {
     const shardPages = await prisma.shardPage.findMany({
       where: {
         ...(id ? { id } : {}),
         ...(userId ? { creatorId: userId } : {}),
+        ...(status && { status }),
+      },
+      include: {
+        creator: true,
       },
     });
 

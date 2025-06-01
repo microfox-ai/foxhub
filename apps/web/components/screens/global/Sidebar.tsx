@@ -15,6 +15,7 @@ import {
   PanelLeftIcon,
   Plus,
   LayoutDashboard,
+  Store,
   KeyRound,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
@@ -73,6 +74,14 @@ const navigationConfig: NavigationConfig[] = [
     ),
     label: "Dashboard",
     href: "/dashboard",
+  },
+  {
+    icon: <Store strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <Store strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "Store",
+    href: "/store",
   },
   {
     icon: <FileCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
@@ -172,28 +181,34 @@ export default function Sidebar({
             <ul
               className={`${isCollapsed ? "flex flex-col items-center gap-2" : "flex flex-col"}`}
             >
-              {navigationConfig.filter((item) =>
-                item.requiresProject ? selectedProject != null :
-                  !isCollapsed ? item.label !== "Chat" : true).map((item, index) => (
-                    <NavigationItem
-                      key={item.label}
-                      icon={item.icon}
-                      collapsedIcon={item.collapsedIcon}
-                      label={item.label}
-                      href={item.href}
-                      onClick={
-                        item.onClick
-                          ? () =>
-                            item.onClick?.({
-                              isCollapsed,
-                              onCollapse,
-                              setIsFeedbackModalOpen,
-                            })
-                          : undefined
-                      }
-                      isCollapsed={isCollapsed}
-                    />
-                  ))}
+              {navigationConfig
+                .filter((item) =>
+                  item.requiresProject
+                    ? selectedProject != null
+                    : !isCollapsed
+                      ? item.label !== "Chat"
+                      : true
+                )
+                .map((item, index) => (
+                  <NavigationItem
+                    key={item.label}
+                    icon={item.icon}
+                    collapsedIcon={item.collapsedIcon}
+                    label={item.label}
+                    href={item.href}
+                    onClick={
+                      item.onClick
+                        ? () =>
+                          item.onClick?.({
+                            isCollapsed,
+                            onCollapse,
+                            setIsFeedbackModalOpen,
+                          })
+                        : undefined
+                    }
+                    isCollapsed={isCollapsed}
+                  />
+                ))}
             </ul>
 
             {selectedProject && (
@@ -322,40 +337,44 @@ const RequestsList = ({
 
   return (
     <div className="my-4 mx-1 space-y-1">
-      <div className="text-xs font-medium mb-2 px-2 text-gray-500">
-        Tasks
-      </div>
+      <div className="text-xs font-medium mb-2 px-2 text-gray-500">Tasks</div>
       {(selectedProject as any)?.clientRequests?.length > 0 ? (
-        (selectedProject as any)?.clientRequests?.map((request: ClientRequest) => (
-          <Link
-            key={request?.id}
-            href={`/project/${selectedProject?.id}/request/${request?.id}`}
-            className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
-              ? "bg-gray-200 text-black"
-              : "hover:bg-gray-100"
-              }`}
-          >
-            {request.id === requestParamId ? (
-              <ChevronRight
-                style={{ marginRight: "0.5rem", height: "1rem", width: "1rem" }}
-              />
-            ) : (
-              <MessageSquare
-                style={{
-                  marginRight: "0.5rem",
-                  height: "1rem",
-                  width: "1rem",
-                  color: "#4c4c4c",
-                }}
-              />
-            )}
-            <span
-              className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
+        (selectedProject as any)?.clientRequests?.map(
+          (request: ClientRequest) => (
+            <Link
+              key={request?.id}
+              href={`/project/${selectedProject?.id}/request/${request?.id}`}
+              className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
+                  ? "bg-gray-200 text-black"
+                  : "hover:bg-gray-100"
+                }`}
             >
-              {request.title}
-            </span>
-          </Link>
-        ))
+              {request.id === requestParamId ? (
+                <ChevronRight
+                  style={{
+                    marginRight: "0.5rem",
+                    height: "1rem",
+                    width: "1rem",
+                  }}
+                />
+              ) : (
+                <MessageSquare
+                  style={{
+                    marginRight: "0.5rem",
+                    height: "1rem",
+                    width: "1rem",
+                    color: "#4c4c4c",
+                  }}
+                />
+              )}
+              <span
+                className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
+              >
+                {request.title}
+              </span>
+            </Link>
+          )
+        )
       ) : (
         <div className="px-4 py-2 text-sm text-muted-foreground">
           No requests

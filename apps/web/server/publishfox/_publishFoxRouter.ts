@@ -149,7 +149,7 @@ export const publishFoxRouter: ServerStreamingFunction<
         {
           action: "link",
           actionText: "View Store Page !",
-          text: "View Store Page !",
+          text: "View Store Page",
           type: "confirm",
           url: `${APP_BASE_URL}/store/edit/${shardPage.id}`,
         },

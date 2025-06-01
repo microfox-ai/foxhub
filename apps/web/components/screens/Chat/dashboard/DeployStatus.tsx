@@ -114,12 +114,14 @@ export const DeployStatus = () => {
         }
     );
     const clientDeployment = clientDeployments?.[0] || null;
-    const { deployStep } = useDeployStatus({
+    const { deployStep, finalData } = useDeployStatus({
         stage: taskInstanceMeta?.deployStep?.deployment?.stage as DEPLOY_STAGE || DEPLOY_STAGE.STAGING,
-        runId: taskInstanceMeta?.deployStep?.runId ?? 0,
+        runId: taskInstanceMeta?.deployStep?.runId ?? undefined,
         pingerInterval: 10000,
         initialDeployStep: taskInstanceMeta?.deployStep,
     });
+
+    //console.log("clientDeployment", clientDeployment);
     const { setActiveTab } = useTabUi();
 
     if (!deployStep)

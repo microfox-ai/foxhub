@@ -6,6 +6,7 @@ import {
   Settings,
   LogOut,
   LayoutDashboard,
+  Code,
 } from "lucide-react";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
@@ -51,14 +52,19 @@ const tabList = [
     icon: <MessageSquare />,
   },
   {
-    label: "History",
-    value: "history",
-    icon: <History />,
-  },
-  {
     label: "Dashboard ",
     value: "dashboard",
     icon: <LayoutDashboard />,
+  },
+  {
+    label: "Code",
+    value: "code",
+    icon: <Code />,
+  },
+  {
+    label: "History",
+    value: "history",
+    icon: <History />,
   },
 ];
 const ChatHeader = ({

@@ -5,7 +5,7 @@ export const getServiceName = (
   clientRequest: ClientRequest,
   taskInstanceMeta: TaskInstanceMetaType
 ) => {
-  return `${taskInstanceMeta?.taskStructure?.templateType.substring(0, 1)}-${getNumberedPart(clientRequest?.requestDir || "").substring(-8)}-${clientRequest?.id?.substring(0, 8)}`;
+  return `${clientRequest?.title.substring(0, 1) ?? "a"}-${getNumberedPart(clientRequest?.requestDir || "").substring(-8)}-${clientRequest?.id?.substring(0, 8)}`;
 };
 
 export const getFunctionName = (

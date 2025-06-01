@@ -1,13 +1,28 @@
 import { prisma } from "@/prisma/prisma";
-import { DeployStep } from "@/server/convertfox/types";
+import { getServiceName } from "@/server/buildfox/helper/getServiceName";
+import {
+  DeployStep,
+  TaskInstanceMetaType,
+  TaskStructure,
+} from "@/server/convertfox/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import {
+  deleteEmbedding,
+  embedApiEndpoints,
+} from "@/utils/services/embeddings/embedFunctions";
+import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
 import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
-import { DEPLOY_STAGE, FUNCTIONTYPE } from "@prisma/client";
+import {
+  DEPLOY_STAGE,
+  DEPLOY_STATUS,
+  FUNCTIONTYPE,
+  TaskInstanceMeta,
+} from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create ClientDeployment
@@ -34,6 +49,9 @@ export async function POST(req: NextRequest) {
     // Get userId and botProjectId from ClientRequest
     const clientRequest = await prisma.clientRequest.findUnique({
       where: { id: originClientRequestId },
+      include: {
+        taskInstanceMeta: true,
+      },
     });
 
     if (!clientRequest) {
@@ -43,9 +61,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { userId, botProjectId, serviceName } = clientRequest;
+    const { userId, botProjectId } = clientRequest;
 
     const serverlessLog = metadata.serverless.output;
+    const serviceName = getServiceName(
+      clientRequest,
+      clientRequest.taskInstanceMeta as unknown as TaskInstanceMetaType
+    );
     const functions = parseServerlessLogs(serverlessLog);
     let newMetadata = { ...metadata };
     newMetadata.serverless.functions = functions;
@@ -63,6 +85,7 @@ export async function POST(req: NextRequest) {
         name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
+        status: DEPLOY_STATUS.DEPLOYED,
         metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
@@ -76,6 +99,7 @@ export async function POST(req: NextRequest) {
         baseUrl,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
+        status: DEPLOY_STATUS.DEPLOYED,
         metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
@@ -96,14 +120,14 @@ export async function POST(req: NextRequest) {
     //   });
     // }
 
-    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+    let taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
       where: {
-        id: originClientRequestId,
+        originClientRequestId: originClientRequestId,
       },
     });
 
     if (taskInstanceMeta) {
-      await updateTaskInstanceMeta({
+      taskInstanceMeta = await updateTaskInstanceMeta({
         clientRequestId: originClientRequestId,
         otherData: {
           deployStep: {
@@ -131,7 +155,18 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
-
+    if (taskInstanceMeta && newMetadata?.docData?.paths?.length > 0) {
+      await embedApiEndpoints({
+        taskStructure: taskInstanceMeta?.taskStructure as TaskStructure,
+        docData: newMetadata?.docData as OpenAPIDoc,
+        botProjectId: botProjectId,
+        originClientRequestId: originClientRequestId,
+        userId: userId,
+        stage: stage,
+        base_url: `${baseUrl}/${stage.toLowerCase()}`,
+        schema_path: "/docs.json",
+      });
+    }
     const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();
 
     await slackBotSdk.sendMessage({
@@ -238,6 +273,9 @@ export async function DELETE(req: NextRequest) {
     await prisma.clientDeployment.delete({
       where: { id },
     });
+
+    // Delete the embedding
+    await deleteEmbedding(id);
 
     // Notify in chat about deletion
     // TODO: VISHWAJEET - no need to send a mesaage i think, but will have to take a look later

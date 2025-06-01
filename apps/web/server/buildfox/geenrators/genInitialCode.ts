@@ -5,12 +5,12 @@ import { promises as fs } from "fs";
 import path from "path";
 import { TaskInstanceMetaType } from "../../convertfox/types";
 import {
-  fetchTemplateRoot,
+  fetchTemplateDir,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
   writeToFileSystemAndUpdateSteps,
 } from "../tool/writeToFile";
 
-export const genInitialCode = async (
+export const genInitialServerlessCode = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
@@ -24,7 +24,7 @@ export const genInitialCode = async (
   const packageJson = await fs.readFile(
     path.join(
       process.cwd(),
-      fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+      fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
       "package.json"
     ),
     "utf8"
@@ -49,7 +49,7 @@ export const genInitialCode = async (
   const tsconfig = await fs.readFile(
     path.join(
       process.cwd(),
-      fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+      fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
       "tsconfig.json"
     ),
     "utf8"
@@ -77,7 +77,7 @@ export const genInitialCode = async (
   const serverlessYml = await fs.readFile(
     path.join(
       process.cwd(),
-      fetchTemplateRoot(taskInstanceMeta?.taskStructure?.templateType),
+      fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
       "serverless.yml"
     ),
     "utf8"

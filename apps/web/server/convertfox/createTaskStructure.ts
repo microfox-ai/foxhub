@@ -1,5 +1,8 @@
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import {
+  CodeTemplateAddon,
+  codeTemplateAddon,
+  codeTemplateType,
   TaskInfo,
   TaskInstanceMetaType,
   TaskIntegrations,
@@ -25,12 +28,13 @@ import { createReadStream } from "fs";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
 import { getServiceName } from "../buildfox/helper/getServiceName";
+import { getFunctionNameFromKebabCase } from "../buildfox/prompt.coding";
 const generatePlatformsPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
   if (!taskInstanceMeta.taskIntegrations) {
     throw new Error("Task integrations not found");
   }
   return `
-    ${taskInstanceMeta.taskIntegrations?.platforms?.map((p) => `name: ${p.name}; reason: ${p.reason}; package: ${p.package}`).join("\n")}
+    ${taskInstanceMeta.taskIntegrations?.platforms?.map((p) => `name: ${p.name};\nreason: ${p.reason};\npackage: ${p.package}`).join("\n")}
     `;
 };
 
@@ -53,10 +57,11 @@ export const createTaskStructure = async (
 
   try {
     const result = generateObject({
-      model: models.claude35Sonnet,
+      model: models.claude4Sonnet,
       system: taskPlanningPrompt(),
       prompt: `
-        You are a sr. developer, who is tasked with creating a plan of action for a task.
+        You are a sr. full stack developer with high experience in building backend APIs, 
+        You are tasked with creating a plan of action for a task.
         Task Goal: ${taskInstanceMeta.taskInfo.goal}
         Task Summary: ${taskInstanceMeta.taskInfo.summary}
         Platforms: ${generatePlatformsPrompt(taskInstanceMeta)}
@@ -75,14 +80,23 @@ export const createTaskStructure = async (
         - you then create the lambda functions, if any.
         - if the code file might require packages other than the ones mentioned here, also include them in the genrated functions & cronJobs
         - you also decide the template type to use for the task.
-          - plain: for simple tasks that do not require a db or a state in the serverless function.
-          - upstash: for tasks that require a state/minor database in the serverless function.
+          - plain_sls: for simple tasks that do not require a db or a state in the serverless function.
+          - upstash_sls: for tasks that require a state/minor database in the serverless function.
         - create dbSchemas only if is truly required to share data across the lifecyle or multiple different lambda functions (like cron jobs).
         ---
         some rules
         - Never use theese packages - axios
+        - Cron functions cannot call the created lambda functions.
+        - MAKE SURE THAT CRON JOBS BRIEF DOES NOT MENTION ANY LAMBDA FUNCTIONS.
+        - paths dont have dynamic slugs, they are static.
+        - Keep the entire structure lean & sinple, with each function/cronjob doing end-to-end jobs 
+        - do not divide a job into multiple functions unless it absolutely makes sense
+        ---
+        name should always be in camel case, without any extension.
+        brief: should be as detailed as possible of the code step by step
         `,
       schema: taskStructure,
+      maxRetries: 3,
     });
 
     // for await (const chunk of result.partialObjectStream) {
@@ -91,45 +105,57 @@ export const createTaskStructure = async (
     //   //dataStream.write(chunk as any);
     // }
     const response = await result;
-    const object = response.object;
 
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
-      model: models.claude35Sonnet.modelId,
+      model: models.claude4Sonnet.modelId,
       usage: response.usage,
     });
 
-    console.log("result", response.object);
+    const object = { ...response.object };
+    let templateAddons: CodeTemplateAddon[] = [];
+    if (
+      taskInstanceMeta.taskIntegrations?.platforms.some((p) =>
+        p.package?.includes("puppeteer")
+      )
+    ) {
+      templateAddons.push(codeTemplateAddon.enum.sls_puppeteer_chrome);
+    }
+    if (object?.templateType === codeTemplateType.enum.upstash_sls) {
+      templateAddons.push(codeTemplateAddon.enum.sls_upstash_redis);
+    }
+    object.templateAddons = templateAddons;
+
+    console.log("result", object);
 
     dataStream.writeMessageAnnotation({
       type: "thinking",
       content: "Task Structure Generated.",
     });
-    //   result.mergeIntoDataStream(dataStream, {
-    //     experimental_sendFinish: false,
-    //   });
-    //result.toTextStreamResponse();
-    //result.textStream.pipeTo(dataStream);
-
-    //dataStream.merge(result.fullStream)
-
     //const object = await result.object;
     // console.log("object", object);
     await updateTaskInstanceMeta({
       clientRequestId: requestBody.clientRequestId,
       taskInstanceMeta: {
         ...taskInstanceMeta,
-        taskStructure: object,
+        taskStructure: {
+          ...object,
+          lambdaFunctions: object.lambdaFunctions?.map((lambda) => ({
+            ...lambda,
+            name: getFunctionNameFromKebabCase(lambda.name),
+          })),
+          cronJobs: object.cronJobs?.map((cron) => ({
+            ...cron,
+            name: getFunctionNameFromKebabCase(cron.name),
+          })),
+          dbSchemas: object.dbSchemas?.map((db) => ({
+            ...db,
+            modelName: getFunctionNameFromKebabCase(db.modelName),
+          })),
+        },
       },
     });
 
-    // TODO: enable this, or refactor the serviceName setting functionality
-    // if (requestBody.clientRequestId) {
-    //   await updateClientRequest({
-    //     clientRequestId: requestBody.clientRequestId,
-    //     serviceName: getServiceName(clientRequest, taskInstanceMeta),
-    //   });
-    // }
     dataStream.writeMessageAnnotation({
       type: "ui",
       objectType: "taskStructure",

@@ -1,4 +1,8 @@
 import { prisma } from "@/prisma/prisma";
+import {
+  updateClientSecret,
+  updateDeploymentsOfClientSecret,
+} from "@/utils/services/db_functions/secrets_helper";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create ClientSecretTemplate
@@ -14,6 +18,9 @@ export async function POST(req: NextRequest) {
       packageName,
       packageConstructor,
       packageType,
+      templateType,
+      metadata,
+      priceMarkupPercent,
     } = body;
 
     if (!templateId || !name || !type) {
@@ -33,6 +40,9 @@ export async function POST(req: NextRequest) {
         packageName,
         packageConstructor,
         packageType,
+        templateType,
+        priceMarkupPercent,
+        metadata,
       },
     });
 
@@ -94,6 +104,35 @@ export async function PUT(req: NextRequest) {
       where: { id },
       data: templateData,
     });
+
+    const clientSecrets = await prisma.clientSecret.findMany({
+      where: {
+        templateId: id,
+      },
+    });
+
+    if (clientSecrets.length > 10) {
+      return NextResponse.json(
+        {
+          error:
+            "You have too many secrets for this template. Please Ask Admin to perform action.",
+        },
+        { status: 500 }
+      );
+    }
+
+    for (const clientSecret of clientSecrets) {
+      await updateClientSecret(clientSecret.id, {
+        variables: updatedTemplate.variables,
+        botConfig: updatedTemplate.botConfig,
+      });
+      if (clientSecret.clientRequestIds.length > 0) {
+        await updateDeploymentsOfClientSecret(
+          clientSecret,
+          clientSecret.clientRequestIds
+        );
+      }
+    }
 
     return NextResponse.json(updatedTemplate, { status: 200 });
   } catch (error) {

@@ -1,5 +1,8 @@
 import { Redis } from "@upstash/redis";
 
+// Important: as without this there might be key collisions with other serverless functions.
+const keyPrefix = process.env.MICROFOX_CLIENT_REQUEST_ID ?? "";
+
 // Initialize Redis client
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
@@ -25,18 +28,18 @@ export const getPaginationState = async (
       limit: 10,
       lastUpdated: new Date().toISOString(),
     };
-    await redis.set(key, initialState);
+    await redis.set(keyPrefix+key, initialState);
     return initialState;
   }
   return state;
 };
 
 export const incrementPaginationState = async (key: string): Promise<void> => {
-  const state = await getPaginationState(key);
+  const state = await getPaginationState(keyPrefix+key);
   const updatedState: PaginationState = {
     ...state,
     page: state.page + 1,
     lastUpdated: new Date().toISOString(),
   };
-  await redis.set(key, updatedState);
+  await redis.set(keyPrefix+key, updatedState);
 };

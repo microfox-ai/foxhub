@@ -1,10 +1,18 @@
 import { motion } from "framer-motion";
-import { CheckCircle, Clock, FileText, GitFork, PackageIcon, Target } from "lucide-react";
+import { CheckCircle, Clock, FileText, GitFork, Info, PackageIcon, Target, ChevronDown, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { codeTemplateType, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { ActionButtons } from "./ActionButtons";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { useState } from "react";
 
 interface UIAnnotation {
     objectType: string;
@@ -24,6 +32,21 @@ export const TaskStructure = ({
     idx,
 }: TaskStructureProps) => {
     const object = uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
+    const [selectedBrief, setSelectedBrief] = useState<{ title: string; content: string } | null>(null);
+    const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
+
+    const toggleSchema = (modelName: string) => {
+        setExpandedSchemas(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(modelName)) {
+                newSet.delete(modelName);
+            } else {
+                newSet.add(modelName);
+            }
+            return newSet;
+        });
+    };
+
     return (
         <motion.div
             key={uiAnnotation.objectType + idx}
@@ -95,25 +118,70 @@ export const TaskStructure = ({
                         )}
                     </TabsList>
 
-                    {object.dbSchemas && object.dbSchemas.length > 0 && object.templateType === "upstash" && (
+                    {object.dbSchemas && object.dbSchemas.length > 0 && (
                         <TabsContent value="schemas" className="mt-4">
                             <div className="grid gap-4">
                                 {object.dbSchemas.map((schema) => (
                                     <div
                                         key={schema.modelName}
-                                        className="bg-gray-50 rounded-lg p-4 space-y-2"
+                                        className="bg-gray-50 rounded-lg p-4 space-y-2 w-full"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-medium text-sm text-gray-900">
-                                                {schema.modelName}
-                                            </span>
-                                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                                                Schema
-                                            </span>
+                                        <div
+                                            className="flex items-center justify-between cursor-pointer"
+                                            onClick={() => toggleSchema(schema.modelName)}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {expandedSchemas.has(schema.modelName) ? (
+                                                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                                                ) : (
+                                                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                                                )}
+                                                <span className="font-medium text-sm text-gray-900">
+                                                    {schema.modelName}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <button
+                                                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedBrief({
+                                                                    title: schema.modelName,
+                                                                    content: `Database schema for ${schema.modelName}`
+                                                                });
+                                                            }}
+                                                        >
+                                                            <Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                                                        </button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="max-w-2xl">
+                                                        <DialogHeader>
+                                                            <DialogTitle>{selectedBrief?.title}</DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="mt-4">
+                                                            <p className="text-sm text-gray-600">{selectedBrief?.content}</p>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
+                                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                                    Schema
+                                                </span>
+                                            </div>
                                         </div>
-                                        <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto">
-                                            {JSON.stringify(schema.jsonSchema, null, 2)}
-                                        </pre>
+                                        {expandedSchemas.has(schema.modelName) && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <pre className="text-xs bg-white p-3 rounded-md border overflow-x-auto w-full max-w-[350px]">
+                                                    {JSON.stringify(schema.jsonSchema, null, 2)}
+                                                </pre>
+                                            </motion.div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -133,19 +201,42 @@ export const TaskStructure = ({
                                                 <span className="font-medium text-gray-900">
                                                     {fn.name}
                                                 </span>
-                                                <span
-                                                    className={cn(
-                                                        "text-xs px-2 py-1 rounded-full font-bold font-mono",
-                                                        fn.method === "GET" && "bg-blue-100 text-blue-700",
-                                                        fn.method === "POST" &&
-                                                        "bg-green-100 text-green-700",
-                                                        fn.method === "PUT" &&
-                                                        "bg-amber-100 text-amber-700",
-                                                        fn.method === "DELETE" && "bg-red-100 text-red-700"
-                                                    )}
-                                                >
-                                                    {fn.method}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                            <button
+                                                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                                                onClick={() => setSelectedBrief({
+                                                                    title: fn.name,
+                                                                    content: fn.brief || fn.description
+                                                                })}
+                                                            >
+                                                                <Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                                                            </button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="max-w-2xl">
+                                                            <DialogHeader>
+                                                                <DialogTitle>{selectedBrief?.title}</DialogTitle>
+                                                            </DialogHeader>
+                                                            <div className="mt-4">
+                                                                <p className="text-sm text-gray-600">{selectedBrief?.content}</p>
+                                                            </div>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                    <span
+                                                        className={cn(
+                                                            "text-xs px-2 py-1 rounded-full font-bold font-mono",
+                                                            fn.method === "GET" && "bg-blue-100 text-blue-700",
+                                                            fn.method === "POST" &&
+                                                            "bg-green-100 text-green-700",
+                                                            fn.method === "PUT" &&
+                                                            "bg-amber-100 text-amber-700",
+                                                            fn.method === "DELETE" && "bg-red-100 text-red-700"
+                                                        )}
+                                                    >
+                                                        {fn.method}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <pre className="text-xs flex items-center text-gray-600 bg-gray-100 px-1 rounded-md border w-fit">
                                                 {fn.path}
@@ -185,9 +276,32 @@ export const TaskStructure = ({
                                                 <span className="font-medium text-gray-900">
                                                     {job.name}
                                                 </span>
-                                                <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                                                    Scheduled
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                            <button
+                                                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                                                onClick={() => setSelectedBrief({
+                                                                    title: job.name,
+                                                                    content: job.brief || job.description
+                                                                })}
+                                                            >
+                                                                <Info className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                                                            </button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="max-w-2xl">
+                                                            <DialogHeader>
+                                                                <DialogTitle>{selectedBrief?.title}</DialogTitle>
+                                                            </DialogHeader>
+                                                            <div className="mt-4">
+                                                                <p className="text-sm text-gray-600">{selectedBrief?.content}</p>
+                                                            </div>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                    <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                                                        Scheduled
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div className="flex items-center text-sm text-gray-500">
                                                 <Clock className="w-4 h-4 mr-2 opacity-50" />

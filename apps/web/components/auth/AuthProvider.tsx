@@ -59,7 +59,7 @@ const useAuthInit = () => {
       }));
 
       const result = await signInWithGoogle({
-        redirectTo: searchParams.get("redirect_to") ?? "",
+        redirectTo: searchParams?.get("redirect_to") ?? "",
       });
       if (result.url) {
         router.push(result.url);

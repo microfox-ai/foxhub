@@ -1,6 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata } from "@/server/types";
-import { getLambdaLogs } from "@/utils/services/db_functions/aws_helper";
+import { getLambdaLogs } from "@/utils/services/aws/aws_helper";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -28,12 +28,12 @@ export async function POST(req: NextRequest) {
         endpointLink.includes(f.endpointLink) || f.endpointLink === endpointLink
     );
 
-    console.log(
-      thisFunction,
-      "thisFunction",
-      endpointLink,
-      serverlessConfig.functionBase
-    );
+    // console.log(
+    //   thisFunction,
+    //   "thisFunction",
+    //   endpointLink,
+    //   serverlessConfig.functionBase
+    // );
     if (!thisFunction) {
       return NextResponse.json(
         { error: "Function not found" },
@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
     const logs = await getLambdaLogs({
       functionName: functionName,
       region: "us-east-1",
+      streamLimit: 1,
+      limit: 20,
     });
 
     return NextResponse.json({ logs });

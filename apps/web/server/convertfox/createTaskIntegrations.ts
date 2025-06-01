@@ -1,14 +1,18 @@
-import { generateObject, streamObject, streamText, tool } from "ai";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { models } from "../models";
-import { TaskInfo, taskIntegrations, TaskInstanceMetaType } from "./types";
-import { object, z } from "zod";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import { getPackageList, getOnlyPackageNames } from "./getInternalPackages";
+import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { generateObject, streamText } from "ai";
+import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-import { fetchGithubJson, fetchPackageInfo } from "./gitFetchers";
+import { models } from "../models";
+import { getPackageList } from "./getInternalPackages";
+import { fetchPackageInfo } from "./gitFetchers";
+import { TaskInstanceMetaType, taskIntegrations } from "./types";
+import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
+import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
+import dedent from "dedent";
 
 // IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
+// THIS OPERATION IS USELESSY CALLING AI TOO MANY TIMES BECAUSE OF IMPORPER EMBEDDING USAGE.
 export const createTaskIntegrations = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
@@ -27,15 +31,18 @@ export const createTaskIntegrations = async (
     content: "Searching for platforms we need to integrate with",
   });
 
+  // serach internal packages for each platform & attach them to the platform
+  const packageList = await getPackageList();
+  const stablePackageNames = packageList.stablePackages;
+  const semiStablePackageNames = packageList.semiStablePackages;
+  const externalPackageNames = packageList.externalPackages;
   // first, get a text of all the platforms we need to integrate with for this task
   const textPlatformsStream = streamText({
     model: models.googleGeminiPro,
     system: `
-        You analyse the task information & find the platforms we need to integrate with.
+        You analyse the task information & find the platforms & internal packages we need to integrate with.
         You return all the third party platforms we need to integrate with (along with specific needs for each platform).
-        You also return if there are alternatives for third party platforms.
-        platforms can be of different types - social media, payment, email, or tools like excel, google sheets, etc.
-        In house
+        You als return all the internal packages we need to integrate with (along with specific needs for each package).
         ---
         You run in a loop of Thought, Action, PAUSE, Observation.
         At the end of the loop you output an Answer
@@ -45,15 +52,21 @@ export const createTaskIntegrations = async (
         At the end of the loop you output an Answer
         ___
         Answer format:
-        platforms:
-        - name: <a specificplatform name>
-          reason: <reason for integrating with this specific platform>
-          type: <type of platform>
-          alternatives: <alternative platforms for this platform>
+        packages:
+        - name: <a specific platform/internal package name>
+          reason: <reason for integrating with this specific platform/internal package>
+          type: <type of platform/internal package>
+          alternatives: <alternative platforms/internal packages for this platform/internal package>
+        ----
+        IN BUILT PACKAGES SUPPORT:
+        ${stablePackageNames.join(", ")}
+        ${semiStablePackageNames.join(", ")}
+        ${externalPackageNames.join(", ")}
         ---
         Exclude the following platforms from the list:
         - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
         - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
+        - Avoid meaningless platforms like "Webhooks", "HTTP Server" etc.
     `,
     prompt: `
 Name: ${taskInfo.name}
@@ -84,10 +97,6 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     type: "thinking",
     content: `searching for related packages...`,
   });
-  // serach internal packages for each platform & attach them to the platform
-  const packageList = await getPackageList();
-  const stablePackageNames = packageList.stablePackages;
-  const externalPackageNames = packageList.externalPackages;
 
   // Filter down all packages from both stablePackageNames and externalPackageNames
   // that have any remote relation to the platforms in textOfPlatforms
@@ -115,8 +124,8 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     }),
     prompt: `
     platforms: ${textOfPlatforms}
-    internal packages: ${stablePackageNames}
-    external packages: ${externalPackageNames}
+    internal packages: ${stablePackageNames.join(", ")}${IN_STAGING ? `${semiStablePackageNames.join(", ")}` : ""}
+    external packages: ${externalPackageNames.join(", ")}
     `,
   });
 
@@ -167,19 +176,23 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     usage: filteredPackagesResult.usage,
   });
 
+  console.log("validInternalPackagesWithInfo", filteredInternalPackages);
+  console.log("filteredExternalPackages", filteredExternalPackages);
+  console.log("textOfPlatforms", textOfPlatforms);
+
   // TODO: pick all packages as relatedPackages, not just one, & then select at a second step.
   const packageResult = await generateObject({
     model: models.googleGeminiPro,
     system: `
     You are an expert fullstack developer.
     You are given a list of platforms .
-    Search for existing internal packages that can be used to integrate with the platforms.
-    If internal package does not have the required functionalities for the task, search for external packages.
-    If no external package is found, use @microfox/null.
+    Search for existing internal packages & external packages that we support can be used to integrate with each platforms.
+    If no related package is found, 
+    use @microfox/null.
     Ignore all conditional platforms.
     ---
     Exclude the following platforms from the list:
-    - Website Webhooks (as we provide in-house documentation for this, & user can just copy paste the code)
+    - Webhooks (as it is not a package but a pattern of code)
     - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
     - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, Redis etc.`,
     schema: taskIntegrations,
@@ -188,102 +201,146 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     task summary: ${taskInfo.summary}
     platforms: ${textOfPlatforms}
     ----
-    internal packages: ${validInternalPackagesWithInfo.map((pkg) => `Name: ${pkg.name}\nFunctionalities: ${pkg.functionalities.join(", ")}`).join("\n")}
+    platform we support:
+    internal packages: ${validInternalPackagesWithInfo.map((pkg) => `Name: ${pkg.name}\nDescription: ${pkg.packageInfo?.description}\nFunctionalities: ${pkg.functionalities.join(", ")}`).join("\n")}
     external packages: ${filteredExternalPackages}
     `,
   });
   console.log("packageResult token Usage", packageResult.usage);
   let platforms = packageResult.object?.platforms;
   // let alternativePlatforms = packageResult.object?.alternativePlatforms;
-  let finalPlatforms = platforms.map((platform) => {
+  platforms.forEach((platform) => {
     if (platform?.package === "@microfox/null") {
-      // let findAlternative = alternativePlatforms?.find(
-      //   (alternative) =>
-      //     alternative?.alternativeFor === platform?.name &&
-      //     alternative?.package !== "@microfox/null"
-      // );
-      // if (findAlternative) {
-      //   alternativePlatforms = alternativePlatforms?.filter(
-      //     (alternative) => alternative?.name !== findAlternative?.name
-      //   );
-      //   alternativePlatforms?.push({
-      //     alternativeFor: findAlternative.name,
-      //     name: platform.name,
-      //     reason: platform.reason,
-      //     package: platform.package,
-      //   });
-      //   return findAlternative;
-      // }
+      slackBotSdk.sendMessage({
+        channel: MySlackChannels.reports,
+        text: dedent`
+        Someone is trying to create a task
+        & need ${platform?.name} integration in micro sdks 
+        Task name: ${taskInfo.name}
+        ----
+        Reason for Platform: ${platforms.find((p) => p.name === platform?.name)?.reason}
+        ---
+        `,
+      });
     }
-    return platform;
   });
 
-  finalPlatforms = await Promise.all(
-    platforms
-      .filter((platform) => platform.package != undefined)
-      .map(async (platform) => {
-        let packageInfo = validInternalPackagesWithInfo.find(
-          (pkg) => pkg.name === platform.package
-        )?.packageInfo;
-        if (!packageInfo) {
-          packageInfo = await fetchPackageInfo(platform.package as string);
-        }
-        return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
-      })
+  console.log(
+    "platforms",
+    platforms.map((p) => p.name + "-" + p.package)
   );
 
-  finalPlatforms = finalPlatforms.filter(
-    (platform) => (platform as any).packageInfo !== null
-  );
+  try {
+    let addedPlatforms: {
+      name: string;
+      package: string;
+      reason: string;
+      optional: boolean;
+      scopes: string[];
+      packageInfo: any;
+    }[] = [];
+    let finalPlatforms = await Promise.all(
+      platforms
+        .filter((platform) => platform.package != undefined)
+        .map(async (platform) => {
+          let packageInfo = validInternalPackagesWithInfo.find(
+            (pkg) => pkg.name === platform.package
+          )?.packageInfo;
+          if (!packageInfo) {
+            packageInfo = await fetchPackageInfo(platform.package as string);
+          }
+          if (
+            packageInfo &&
+            packageInfo.addedDependencies &&
+            packageInfo.addedDependencies.length > 0
+          ) {
+            packageInfo.addedDependencies.forEach(
+              async (dependency: string) => {
+                if (!addedPlatforms.some((p) => p.package === dependency)) {
+                  const packageInfo = await fetchPackageInfo(dependency);
+                  addedPlatforms.push({
+                    name: dependency,
+                    package: dependency,
+                    reason: packageInfo.description,
+                    packageInfo: packageInfo,
+                    optional: true,
+                    scopes: [],
+                  });
+                }
+              }
+            );
+          }
+          return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
+        })
+    );
 
-  TokenUsageAnalyticsTracker.trackUsage({
-    ...props.requestBody,
-    model: models.googleGeminiPro.modelId,
-    usage: packageResult.usage,
-  });
+    finalPlatforms = finalPlatforms.filter(
+      (platform) => (platform as any).packageInfo !== null
+    );
 
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: `Found ${finalPlatforms.length} platforms to integrate with`,
-  });
+    console.log("addedPlatforms", addedPlatforms?.length);
+    for (const _platform of addedPlatforms) {
+      finalPlatforms.push({
+        name: _platform.name,
+        reason: _platform.reason,
+        optional: _platform.optional,
+        scopes: [],
+        package: _platform.package,
+        packageInfo: _platform.packageInfo,
+      });
+    }
 
-  await updateTaskInstanceMeta({
-    clientRequestId: requestBody.clientRequestId,
-    taskInstanceMeta: {
-      ...taskInstanceMeta,
-      taskIntegrations: {
+    TokenUsageAnalyticsTracker.trackUsage({
+      ...props.requestBody,
+      model: models.googleGeminiPro.modelId,
+      usage: packageResult.usage,
+    });
+
+    dataStream.writeMessageAnnotation({
+      type: "loading",
+      content: `Found ${finalPlatforms.length} platforms to integrate with`,
+    });
+
+    console.log("finalPlatforms", finalPlatforms.length);
+    await updateTaskInstanceMeta({
+      clientRequestId: requestBody.clientRequestId,
+      taskInstanceMeta: {
+        ...taskInstanceMeta,
+        taskIntegrations: {
+          platforms: finalPlatforms,
+        },
+      },
+    });
+    dataStream.writeMessageAnnotation({
+      type: "ui",
+      objectType: "taskIntegrations",
+      object: {
         platforms: finalPlatforms,
       },
-    },
-  });
-
-  dataStream.writeMessageAnnotation({
-    type: "ui",
-    objectType: "taskIntegrations",
-    object: {
-      platforms: finalPlatforms,
-    },
-    persona: "taskManager",
-    text: modification
-      ? `Finalise the integrations.`
-      : `Finalised the integrations.`,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Not Yet",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
-      },
-      {
-        action: "appendMessage",
-        text: "Confirm",
-        type: "confirm",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "Yes, Everything looks good to me.",
-        minionType: "convertfox",
-      },
-    ],
-  });
+      persona: "taskManager",
+      text: modification
+        ? `Finalise the integrations.`
+        : `Finalised the integrations.`,
+      buttons: [
+        {
+          action: "highlightInput",
+          text: "Not Yet",
+          type: "deny",
+          className: "bg-neutral-200 text-black hover:bg-neutral-300",
+        },
+        {
+          action: "appendMessage",
+          text: "Confirm",
+          type: "confirm",
+          className: "bg-green-500 text-white hover:bg-green-600",
+          value: "Yes, Everything looks good to me.",
+          minionType: "convertfox",
+        },
+      ],
+    });
+  } catch (error) {
+    console.log("error updating task instance meta", error);
+  }
 
   return packageResult.object;
 };

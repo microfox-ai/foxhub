@@ -5,13 +5,26 @@ import {
   fetchPackageReadme,
   fetchText,
 } from "@/server/convertfox/gitFetchers";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import {
+  codeTemplateType,
+  CodeTemplateType,
+  TaskInstanceMetaType,
+} from "@/server/convertfox/types";
 import { models } from "@/server/models";
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, ClientSecret } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { generateObject, tool } from "ai";
+import { generateObject, generateText, tool } from "ai";
 import { z } from "zod";
 import { semanticFunctionSearch } from "./functionSearch";
+import dedent from "dedent";
+import { baseFilePrompt } from "../prompts/basePrompt";
+import { envsPrompt } from "../prompts/envsPrompt";
+import { type } from "os";
+import { fetchTemplateDir, readAllGenFilesList } from "./writeToFile";
+import fs from "fs/promises";
+import path from "path";
+import { helperFilesContext } from "../prompts/helperFilesContext";
+import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
 
 async function fetchGithubReadMe(
   owner: string,
@@ -23,44 +36,192 @@ async function fetchGithubReadMe(
   const data = await response.text();
   return data;
 }
+
+const generateCodingBrief = async (config: {
+  props: StreamingFucntionProps<any, any>;
+  readmes: {
+    docs: string;
+    package: string;
+    reason?: string;
+  }[];
+  template_type: CodeTemplateType;
+  clientRequest?: ClientRequest;
+  clientSecrets?: ClientSecret[];
+  type: "lambda" | "cron";
+  _function: any;
+  taskInstanceMeta?: TaskInstanceMetaType;
+}) => {
+  const rootDir = fetchTemplateDir(config.template_type);
+
+  const lambdaExample = await fs.readFile(
+    path.join(process.cwd(), rootDir, "function.txt"),
+    "utf8"
+  );
+  const cronExample = await fs.readFile(
+    path.join(process.cwd(), rootDir, "cron.txt"),
+    "utf8"
+  );
+
+  let files = await readAllGenFilesList(config.clientRequest!);
+
+  if (!config.clientRequest || !config.taskInstanceMeta) {
+    return config.readmes;
+  }
+
+  let helperFileContext = await helperFilesContext(
+    config.clientRequest,
+    config.taskInstanceMeta,
+    files
+  );
+  let envsPromptContext = await envsPrompt(
+    config.clientRequest,
+    config.clientSecrets ?? [],
+    config.taskInstanceMeta,
+    files,
+    config.type
+  );
+
+  const nameOfFunction = config?._function?.name
+    ?.split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((word: String, index: number) =>
+      index === 0
+        ? word.toLowerCase()
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    )
+    .join("");
+
+  const codingBrief = await generateText({
+    model: models.googleGeminiTwoFive,
+    system: dedent`
+    You are a highly experienced senior Fullstack Developer.
+    You experise in writing microservices in typescript & deploy them to aws lambda functions using serverless framework.
+    You understand the technical knowledge & know how to express it in layman terms, so any jr. developer can write the code.
+
+    Key rules:
+    1. Only use that part of the documentation that makes sense for the given task.
+    2. The brief should by HIGHLY DETAILED, with all the steps, and the code snippets needed.
+    3. With the brief, any developer should be able to write the required code.
+    4. The brief should be highly accurate to what is required as detailed in Task Details.
+    5. Try to use existing env variables, as much as possible
+    6. No need to detail on serverless settings, that is taken care of.
+    7. DO NOT ASSUME ANY HELPER FUNCTIONS OTHER THAN THE ONES THAT ARE PROVIDED.
+    8. Do not ever use redis directly, always use the helper functions exported from the helper file.
+
+    A few things about your workflow:
+    - You first carefully analyse the requirements, read the docs, and then plan what needs to be done.
+    - You then critisize your plan, and then refine it to this specific task.
+    - if a package has ratelimits (mentioned in the docs), carefully check the docs on how to handle multiple requests.
+    - if you cant find any info on how to handle ratelimits, assume a default ratelimit, so try to handle multiple requests sequentially with a for loop with inbetween delays.
+    - If a package doc is not available, then you can use your own knowledge to integrate said platform
+
+    Silly errors to avoid:
+    - DO not scope env variable to tyoe of function like CRON_VARIABLE, LAMBDA_VARIABLE, keep it generalistic, so it can be reused across files if needed.
+    - Do not create unnecessary env variables, carefully judge if the situation demands it, prefer to use event.body.
+    `,
+    prompt: `
+    Generate a highly detailed brief for the given function
+    based on the given docs for the packages
+
+    The brief should explain step by step on how to code the required function.
+    and how exactly to use the packages based on the given documentations.
+    Only focus on giving the complete brief, but not on the actual code, 
+    the code is written by another developer.
+
+    The brief should be in a very detailed format, so that any junior developer can write the code.
+    ---
+    Documentation Available to you.
+    ${config.readmes.map((r) => `Package: ${r.package}\n\n - Docs: \n${r.docs}`)}
+    ---
+    Task Details
+    ${baseFilePrompt(config.type, config._function, true)}
+
+    Helper Files Context
+    ${helperFileContext}
+    The .js extension is important for importing the helper files.
+
+    DO NOT ASSUME ANY HELPER FUNCTIONS OTHER THAN THE ABOVE ONES THAT ARE PROVIDED.
+
+    Environment Variables Context
+    ${envsPromptContext}
+
+    Example of a Function Code file
+    ${config.type === "lambda" ? lambdaExample : cronExample}
+
+
+    Complete example for a function stored at src/functions/${config.type === "lambda" ? "getExternalData" : "dailyMorningJob"}.ts:
+    ${dedent`${config.type === "lambda" ? lambdaExample : cronExample}`}
+
+    functionNaming should be like this:
+    ${nameOfFunction}.ts in camelCase
+     
+    - openapi docs export should be like this: 
+    export const ${config.type === "lambda" ? (nameOfFunction ?? "").charAt(0).toLowerCase() + (nameOfFunction ?? "").slice(1) : (nameOfFunction ?? "").charAt(0).toLowerCase() + (nameOfFunction ?? "").slice(1)}Docs in camelCase
+    `,
+    maxRetries: 1,
+  });
+
+  TokenUsageAnalyticsTracker.trackUsage({
+    ...config.props.requestBody,
+    model: models.googleGeminiTwoFive.modelId,
+    usage: codingBrief.usage,
+  });
+
+  console.log("codingBrief usage", codingBrief.usage);
+
+  return codingBrief.text;
+};
+
+const EXCLUDED_PACKAGES_LIST = [
+  "@upstash/redis",
+  "puppeteer",
+  "@sparticuz/chromium",
+  "puppeteer-core",
+  "dotenv",
+];
 /** this should be removed from tools */
 export const fetchPackageDocs = (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
-  taskInstanceMeta?: TaskInstanceMetaType
+  taskInstanceMeta?: TaskInstanceMetaType,
+  otherDetails?: {
+    clientSecrets: ClientSecret[];
+    type: "lambda" | "cron";
+    _function: any;
+  }
 ) => {
   return tool({
     description:
-      "Fetch required docs for a package to understand how to use it",
+      "Fetch All related docs for each package to understand how to use it",
     parameters: z.object({
-      microfoxPackages: z.array(
-        z.object({
-          package: z
-            .string()
-            .describe(
-              "The exact names of the microfox packages to fetch docs for (@microfox/core , @microfox/aws-ses etc..)"
-            ),
-          readmeSearch: z
-            .string()
-            .describe(
-              "What functions of this package would be needed, to implement the task"
-            )
-            .optional(),
-        })
-      ),
-      externalPackages: z
-        .array(z.string())
+      packages: z
+        .array(
+          z.object({
+            package: z
+              .string()
+              .describe(
+                "The exact names of the packages to fetch docs for (@microfox/core , @slack/web-api, etc..)"
+              ),
+            readmeSearch: z
+              .string()
+              .describe(
+                "What functions of this package would be needed, to implement the task"
+              )
+              .optional(),
+          })
+        )
         .describe(
-          "The exact names of the external packages to fetch docs for (@slack/web-api google-api-nodejs-client, stripe etc..)"
+          "A list of packages to fetch docs which would be needed for the task"
         ),
     }),
-    execute: async ({ microfoxPackages, externalPackages }, options) => {
-      console.log("microfoxPackages", microfoxPackages);
-      console.log("externalPackages", externalPackages);
-      const fetchReadMePackages = microfoxPackages.filter(
-        (pkg) =>
-          pkg.package.includes("@microfox/") && pkg.package != "@microfox/null"
+    execute: async ({ packages }, options) => {
+      const fetchReadMePackages = packages.filter((pkg) =>
+        pkg.package.includes("@microfox/")
+          ? pkg.package != "@microfox/null"
+          : !EXCLUDED_PACKAGES_LIST.includes(pkg.package) &&
+            !pkg.package.startsWith("@types/")
       );
+      console.log("packages", fetchReadMePackages);
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;
@@ -74,52 +235,66 @@ export const fetchPackageDocs = (
             //     (p) => p.package === pkg
             //   );
             let mainReadme = await fetchPackageReadme(pkg.package);
+            let packageInfo = await fetchPackageInfo(pkg.package);
+            let constructorPath;
             readme = mainReadme;
             if (!pkg.readmeSearch) {
               console.log("no reason for this platform", pkg);
-              return { readme, package: pkg };
+              return {
+                docs: readme,
+                package: pkg.package,
+                reason: pkg.readmeSearch,
+              };
             }
+            if (packageInfo.readme_map?.all_readmes?.length > 0) {
+              constructorPath = packageInfo.readme_map?.all_readmes.find(
+                (r: any) => r.type === "constructor"
+              )?.path;
+              if (constructorPath) {
+                const constructorReadme = await fetchText(constructorPath);
+                readme += `\n\n${constructorReadme}`;
+                //console.log("constructorReadme", constructorReadme);
+              }
+            }
+
+            const pakageExactName = pkg.package.startsWith("@microfox/")
+              ? pkg.package
+              : `@ext_${pkg.package.replaceAll("/", "#")}`;
+            const platform = taskInstanceMeta?.taskIntegrations?.platforms.find(
+              (p) => p.package === pkg.package
+            );
+            const readmeSearch = platform?.reason
+              ? pkg.readmeSearch // + `\n\n${platform?.reason}`
+              : pkg.readmeSearch;
             const microfoxFunction = await semanticFunctionSearch(
-              pkg.package,
-              pkg.readmeSearch
+              pakageExactName,
+              readmeSearch
             );
             //console.log("functions", microfoxFunction);
             for (const _function of microfoxFunction) {
-              if (_function.similarity > 0.8 && readme.length < 20000) {
+              if (
+                _function.similarity > 1.5 &&
+                readme.length < 10000 &&
+                !_function.file_path.includes(`${pakageExactName}/README.md`)
+              ) {
                 console.log("function pattern hit", _function.function_name);
-                // const functionReadme = await fetchGithubReadMe(
-                //   _function.owner,
-                //   _function.repo,
-                //   _function.file_path
-                // );
                 readme += `\n\n${_function.content}`;
               }
             }
             console.log("readme char size", readme.length);
-            // const packageInfo = await fetchPackageInfo(pkg);
-            // console.log("packageInfo", packageInfo);
-            // const isDynamicReadme =
-            //   packageInfo.readme_map?.type === "dynamic_path";
-            // if (isDynamicReadme) {
-            //   const dynamic_setters = packageInfo.readme_map?.dynamic_setters;
-            // TODO: recursively loop until you have all the readmes you need to fetch & attach
-            // for (const setter of dynamic_setters) {
-            //   const selectDynamicSetter = await generateObject({
-            //     model: models.claude35Sonnet,
-            //     schema: z.object({
-            //       scopes: z.array(z.string()),
-            //     }),
-            //     system: `Pick the most relevant scopes that suit the task`,
-            //     prompt: `Select the most relevant readmes for the package ${pkg}`,
-            //   });
-            // }
-            // }
             console.log("fetched readme for ", pkg);
-            return { readme, package: pkg.package, reason: pkg.readmeSearch };
+            return {
+              docs: readme,
+              package: pkg.package,
+              reason: pkg.readmeSearch,
+            };
           } catch (error) {
             console.error("Error fetching README:", error);
             return {
-              readme: "",
+              docs:
+                "No readme found for this package " +
+                pkg.package +
+                ", Use your own knowledge.",
               package: pkg.package,
               reason: pkg.readmeSearch,
             };
@@ -128,24 +303,54 @@ export const fetchPackageDocs = (
       );
 
       console.log("all readmes", readmes.map((r) => r.package).join(", "));
-      console.log(
-        "readmes not found",
-        readmes.filter((r) => r.readme === "").map((r) => r.package)
-      );
+      //console.log("readmes", readmes);
+      const notFoundPackages = readmes
+        .filter((r) => r.docs === "")
+        .map((r) => r.package);
+      if (notFoundPackages.length > 0) {
+        console.log("readmes not found", notFoundPackages);
+      }
 
-      return readmes.concat(
-        microfoxPackages
-          .filter((pkg) => !pkg.package.includes("@microfox/"))
-          .map((pkg) => ({
-            readme: " No readme found for this package " + pkg.package,
-            package: pkg.package,
-            reason: pkg.readmeSearch,
-          }))
-      );
-      // find my package, get some initial understanding of the package
-      // accordingly fetch the readme that is most relevant for the integration
+      const foundPackages = readmes
+        .filter((r) => r.docs !== "")
+        .map((r) => r.package);
+      if (foundPackages.length > 0) {
+        console.log(
+          "readmes found",
+          foundPackages,
+          "char length",
+          readmes.map((r) => r.docs).join(", ").length
+        );
+      }
 
-      // TODO: and then pass chunks of it to the LLM to understand the package
+      // if (otherDetails?._function.name) {
+      //   props.dataStream.writeMessageAnnotation({
+      //     type: "thinking",
+      //     content: `Summarizing the docs for ${otherDetails?._function.name}`,
+      //   });
+      // }
+
+      // const brief = await generateCodingBrief({
+      //   readmes,
+      //   template_type:
+      //     taskInstanceMeta?.taskStructure?.templateType ??
+      //     codeTemplateType.enum.upstash_sls,
+      //   clientRequest,
+      //   clientSecrets: otherDetails?.clientSecrets,
+      //   type: otherDetails?.type ?? "lambda",
+      //   _function: otherDetails?._function,
+      //   taskInstanceMeta,
+      //   props,
+      // });
+
+      if (otherDetails?._function.name) {
+        props.dataStream.writeMessageAnnotation({
+          type: "thinking",
+          content: `Coding ${otherDetails?._function.name}`,
+        });
+      }
+      //console.log("brief", brief);
+      return readmes;
     },
   });
 };

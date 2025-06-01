@@ -1,7 +1,7 @@
-import { ClientRequest } from "@prisma/client";
+import { ClientRequest, ClientSecret } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateText } from "ai";
-import { TaskInstanceMetaType } from "../../convertfox/types";
+import { codeTemplateType, TaskInstanceMetaType } from "../../convertfox/types";
 import { models } from "../../models";
 import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { writeToFile } from "../tool/writeToFile";
@@ -12,7 +12,8 @@ import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 export const genLambdaCode = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
-  clientRequest: ClientRequest
+  clientRequest: ClientRequest,
+  clientSecrets: ClientSecret[]
 ) => {
   props.dataStream.writeMessageAnnotation({
     type: "thinking",
@@ -27,8 +28,11 @@ export const genLambdaCode = async (
         type: "lambda",
         taskInstanceMeta,
         function: _function,
-        template_type: taskInstanceMeta.taskStructure?.templateType ?? "plain",
+        template_type:
+          taskInstanceMeta.taskStructure?.templateType ??
+          codeTemplateType.enum.upstash_sls,
         clientRequest,
+        clientSecrets,
       });
       console.log("generating lambda function", _function.name);
       const result = await generateText({
@@ -37,14 +41,24 @@ export const genLambdaCode = async (
         prompt,
         toolChoice: "auto",
         maxSteps: 2,
-        maxTokens: 5000,
+        maxRetries: 3,
+        //maxTokens: 5000,
         tools: {
-          write_to_file: writeToFile(
+          write_code: writeToFile(
             props,
             clientRequest,
             taskInstanceMeta?.taskStructure?.templateType
           ),
-          fetch_package_docs: fetchPackageDocs(props, clientRequest),
+          fetch_package_docs: fetchPackageDocs(
+            props,
+            clientRequest,
+            taskInstanceMeta,
+            {
+              clientSecrets,
+              type: "lambda",
+              _function,
+            }
+          ),
         },
         onStepFinish: (step) => {
           console.log("step", step.usage);

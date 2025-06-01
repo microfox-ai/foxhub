@@ -69,7 +69,7 @@ const clearRepoFolder = async (
   const { data: cleanupCommit } = await octo.rest.git.createCommit({
     owner: org,
     repo,
-    message: `nodeploy: chore: Cleanup folder ${folderPath} for new code commits.`,
+    message: `[skip ci] chore: Cleanup folder ${folderPath} for new code commits.`,
     tree: newTree.sha,
     parents: [currentHeadSha],
   });

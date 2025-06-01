@@ -30,21 +30,35 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 
+
+export interface SecretTemplateMetadata {
+    introMessage: string;
+    permissions: string[];
+}
+
+const addDefaultBotConfigs = ['_SECRET_TRACKING', '_SECRET_MARKUP_PERCENT'];
+const packagePrefix = (pkg: string) => {
+    return pkg?.replace("@microfox/", "")?.replace(/[- ]/g, '_')?.toUpperCase() ?? ""
+}
+
+
 export const SecretTemplates = () => {
-    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ClientSecretTemplate | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<{
         templateId: string;
         name: string;
         type: string;
         templateType: string;
+        priceMarkupPercent: number;
         variables: ClientSecretVariable[];
         botConfig: ClientSecretVariable[];
         packageName: string;
         packageConstructor: string;
         packageType: string;
+        metadata: SecretTemplateMetadata;
     }>({
         templateId: "",
         name: "",
@@ -53,8 +67,13 @@ export const SecretTemplates = () => {
         variables: [],
         botConfig: [],
         packageName: "",
+        priceMarkupPercent: 0,
         packageConstructor: "",
         packageType: "",
+        metadata: {
+            introMessage: "",
+            permissions: []
+        }
     });
 
     const { user } = useAuth();
@@ -108,27 +127,59 @@ export const SecretTemplates = () => {
         }
     );
 
-    const handleCreate = async () => {
+    const openEditDialog = (template: ClientSecretTemplate) => {
+        setSelectedTemplate(template);
+        setFormData({
+            templateId: template.templateId,
+            name: template.name,
+            type: template.type,
+            templateType: template.templateType || "free",
+            variables: template.variables as any[] as ClientSecretVariable[],
+            botConfig: template.botConfig as any[] as ClientSecretVariable[],
+            packageName: template.packageName || "",
+            packageConstructor: template.packageConstructor || "",
+            packageType: template.packageType || "",
+            priceMarkupPercent: template.priceMarkupPercent || 0,
+            metadata: template.metadata as { introMessage: string; permissions: string[] } || {
+                introMessage: "",
+                permissions: []
+            }
+        });
+        setIsEditing(true);
+        setIsDialogOpen(true);
+    };
+
+    const handleSubmit = async () => {
         try {
-            const response = await fetch("/api/client-secrets/templates", {
-                method: "POST",
+            const url = isEditing
+                ? `/api/client-secrets/templates`
+                : "/api/client-secrets/templates";
+
+            const method = isEditing ? "PUT" : "POST";
+
+            const response = await fetch(url, {
+                method,
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     ...formData,
+                    ...(selectedTemplate?.id ? { id: selectedTemplate.id } : {}),
                     type: formData.packageType === "custom" ? "custom" :
                         formData.packageType === "template" ? "template" :
                             `${formData.packageName}/${formData.packageConstructor}`,
                     variables: formData.variables,
                     botConfig: formData.botConfig,
+                    metadata: formData.metadata
                 }),
             });
 
-            if (!response.ok) throw new Error("Failed to create template");
+            if (!response.ok) throw new Error(`Failed to ${isEditing ? 'update' : 'create'} template`);
 
             await mutate();
-            setIsCreateDialogOpen(false);
+            setIsDialogOpen(false);
+            setSelectedTemplate(null);
+            setIsEditing(false);
             setFormData({
                 templateId: "",
                 name: "",
@@ -139,40 +190,15 @@ export const SecretTemplates = () => {
                 packageName: "",
                 packageConstructor: "",
                 packageType: "",
+                priceMarkupPercent: 0,
+                metadata: {
+                    introMessage: "",
+                    permissions: []
+                }
             });
-            toast.success("Template created successfully");
+            toast.success(`Template ${isEditing ? 'updated' : 'created'} successfully`);
         } catch (error) {
-            toast.error("Failed to create template");
-        }
-    };
-
-    const handleEdit = async () => {
-        if (!selectedTemplate) return;
-
-        try {
-            const response = await fetch(`/api/client-secrets/templates?id=${selectedTemplate.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    type: formData.packageType === "custom" ? "custom" :
-                        formData.packageType === "template" ? "template" :
-                            `${formData.packageName}/${formData.packageConstructor}`,
-                    variables: formData.variables,
-                    botConfig: formData.botConfig,
-                }),
-            });
-
-            if (!response.ok) throw new Error("Failed to update template");
-
-            await mutate();
-            setIsEditDialogOpen(false);
-            setSelectedTemplate(null);
-            toast.success("Template updated successfully");
-        } catch (error) {
-            toast.error("Failed to update template");
+            toast.error(`Failed to ${isEditing ? 'update' : 'create'} template`);
         }
     };
 
@@ -193,22 +219,6 @@ export const SecretTemplates = () => {
         } catch (error) {
             toast.error("Failed to delete template");
         }
-    };
-
-    const openEditDialog = (template: ClientSecretTemplate) => {
-        setSelectedTemplate(template);
-        setFormData({
-            templateId: template.templateId,
-            name: template.name,
-            type: template.type,
-            templateType: template.templateType || "free",
-            variables: template.variables as any[] as ClientSecretVariable[],
-            botConfig: template.botConfig as any[] as ClientSecretVariable[],
-            packageName: template.packageName || "",
-            packageConstructor: template.packageConstructor || "",
-            packageType: template.packageType || "",
-        });
-        setIsEditDialogOpen(true);
     };
 
     const addVariable = () => {
@@ -291,6 +301,7 @@ export const SecretTemplates = () => {
         generateTemplateId();
     }, []);
 
+    const [newPermission, setNewPermission] = useState("");
 
     if (!user?.email?.includes("@themoondevs.com") && !IN_DEV) {
         return (
@@ -304,10 +315,10 @@ export const SecretTemplates = () => {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-start gap-4 items-center mb-6">
                 <h1 className="text-2xl font-bold">Secret Templates</h1>
                 <Button onClick={() => {
-                    setIsCreateDialogOpen(true)
+                    setIsEditing(false);
                     setFormData({
                         templateId: "",
                         name: "",
@@ -318,33 +329,46 @@ export const SecretTemplates = () => {
                         packageName: "",
                         packageConstructor: "",
                         packageType: "",
-                    })
+                        priceMarkupPercent: 0,
+                        metadata: {
+                            introMessage: "",
+                            permissions: []
+                        }
+                    });
+                    setIsDialogOpen(true);
                 }}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Template
                 </Button>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid grid-cols-4 gap-4">
                 {templates?.clientSecretTemplates.map((template) => (
                     <div
                         key={template.id}
-                        className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                        className="col-span-1 px-4 pt-4 pb-2 border rounded-lg shadow-sm hover:shadow-md transition-shadow"
                     >
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="font-semibold">{template.name}</h3>
-                                <p className="text-sm text-gray-500">Type: {template.type}</p>
-                                <p className="text-sm text-gray-500">
-                                    Variables: {(template.variables as any[] as ClientSecretVariable[]).length}
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
+                        <div className="flex flex-col justify-between items-start">
+                            <h3 className="font-semibold">{template.name}
+
+                                <span className={`ml-2 text-sm text-white bg-blue-500 px-1 py-0 rounded-md ${template.templateType === "free" ? "bg-green-500" : template.templateType === "testing" ? "bg-yellow-500" : template.templateType === "markup" ? "bg-purple-500" : "bg-red-500"}`}> {template.templateType}</span>
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                                {template.packageName}
+                                <br />
+                                {template.packageConstructor}
+                                <br />
+                                Variables: {(template.variables as any[] as ClientSecretVariable[]).length}
+                                <br />
+                                Bot Configs: {(template.botConfig as any[] as ClientSecretVariable[]).length}
+                            </p>
+                            <div className="flex gap-2 mt-4">
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => openEditDialog(template)}
                                 >
+                                    Edit
                                     <Edit className="w-4 h-4" />
                                 </Button>
                                 <Button
@@ -355,6 +379,7 @@ export const SecretTemplates = () => {
                                         setIsDeleteDialogOpen(true);
                                     }}
                                 >
+                                    Delete
                                     <Trash2 className="w-4 h-4 text-red-500" />
                                 </Button>
                             </div>
@@ -363,45 +388,43 @@ export const SecretTemplates = () => {
                 ))}
             </div>
 
-            {/* Create Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            {/* Single Dialog for Create/Edit */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="min-w-[80vw] h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Create Secret Template</DialogTitle>
+                        <DialogTitle>{isEditing ? 'Edit' : 'Create'} Secret Template</DialogTitle>
                         <DialogDescription>
-                            Create a new secret template for managing API keys and other sensitive data.
+                            {isEditing ? 'Edit' : 'Create'} a new secret template for managing API keys and other sensitive data.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid grid-cols-3 gap-4 py-4">
                         <div className="col-span-1">
-                            <div className="flex gap-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">Name</Label>
-                                    <Input
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, name: e.target.value })
-                                        }
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="templateType">Template Type</Label>
-                                    <Select
-                                        value={formData.templateType}
-                                        onValueChange={(value) => setFormData({ ...formData, templateType: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select template type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="free">Free</SelectItem>
-                                            <SelectItem value="testing">Testing</SelectItem>
-                                            <SelectItem value="markup">Markup</SelectItem>
-                                            <SelectItem value="official">Official</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Name</Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, name: e.target.value })
+                                    }
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="templateType">Template Type</Label>
+                                <Select
+                                    value={formData.templateType}
+                                    onValueChange={(value) => setFormData({ ...formData, templateType: value })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select template type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="free">Free</SelectItem>
+                                        <SelectItem value="testing">Testing</SelectItem>
+                                        <SelectItem value="markup">Markup</SelectItem>
+                                        <SelectItem value="official">Official</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="templateId">Template ID</Label>
@@ -420,6 +443,20 @@ export const SecretTemplates = () => {
                                         <RefreshCw className="w-4 h-4" />
                                     </Button>
                                 </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="priceMarkupPercent">Price Markup Percentage</Label>
+                                <Input
+                                    id="priceMarkupPercent"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={formData.priceMarkupPercent}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, priceMarkupPercent: Number(e.target.value) })
+                                    }
+                                    placeholder="Enter markup percentage"
+                                />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="packageName">Package Name</Label>
@@ -480,17 +517,6 @@ export const SecretTemplates = () => {
                                     </Select>
                                 </div>
                             </div>
-                            {/* <div className="grid gap-2">
-                            <Label htmlFor="type">Type</Label>
-                            <Input
-                                id="type"
-                                value={formData.type}
-                                disabled={true}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, type: e.target.value })
-                                }
-                            />
-                        </div> */}
                         </div>
                         <div className="col-span-2">
                             <div className="grid gap-2">
@@ -499,24 +525,43 @@ export const SecretTemplates = () => {
                                     <Select
                                         value=""
                                         onValueChange={(value) => {
-                                            const variable = availableVariables.find(v => v.key === value);
-                                            if (variable) {
+                                            if (value === "custom") {
                                                 setFormData({
                                                     ...formData,
                                                     variables: [
                                                         ...formData.variables,
                                                         {
-                                                            key: variable.key,
+                                                            key: "",
                                                             value: "",
                                                             isOptional: false,
-                                                            ui: variable.ui || {
+                                                            ui: {
                                                                 type: "text",
-                                                                label: variable.displayName,
-                                                                placeholder: variable.description
+                                                                label: "",
+                                                                placeholder: "Enter value"
                                                             }
                                                         }
                                                     ],
                                                 });
+                                            } else {
+                                                const variable = availableVariables.find(v => v.key === value);
+                                                if (variable) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        variables: [
+                                                            ...formData.variables,
+                                                            {
+                                                                key: variable.key,
+                                                                value: "",
+                                                                isOptional: false,
+                                                                ui: variable.ui || {
+                                                                    type: "text",
+                                                                    label: variable.displayName,
+                                                                    placeholder: variable.description
+                                                                }
+                                                            }
+                                                        ],
+                                                    });
+                                                }
                                             }
                                         }}
                                     >
@@ -524,6 +569,7 @@ export const SecretTemplates = () => {
                                             <SelectValue placeholder="Add Variable" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="custom">Custom Variable</SelectItem>
                                             {availableVariables.map((variable) => (
                                                 <SelectItem key={variable.key} value={variable.key}>
                                                     {variable.displayName || variable.key}
@@ -572,24 +618,51 @@ export const SecretTemplates = () => {
                                     <Select
                                         value=""
                                         onValueChange={(value) => {
-                                            const config = availableBotConfigs.find(c => c.key === value);
-                                            if (config) {
+                                            const defaultBotConfigs = addDefaultBotConfigs.map(c => `${packagePrefix(formData.packageName)}${c}`);
+                                            if (value === "custom") {
                                                 setFormData({
                                                     ...formData,
                                                     botConfig: [
                                                         ...formData.botConfig,
                                                         {
-                                                            key: config.key,
+                                                            key: "",
                                                             value: "",
                                                             isOptional: false,
-                                                            ui: config.ui || {
+                                                            ui: {
                                                                 type: "text",
-                                                                label: config.displayName,
-                                                                placeholder: config.description
+                                                                label: "",
+                                                                placeholder: "Enter value"
                                                             }
                                                         }
                                                     ],
                                                 });
+                                            }
+                                            else if (defaultBotConfigs?.includes(value)) {
+                                                setFormData({
+                                                    ...formData,
+                                                    botConfig: [...formData.botConfig, { key: value, value: "", isOptional: false, ui: { type: "text", label: "", placeholder: "Enter value" } }]
+                                                });
+                                            }
+                                            else {
+                                                const config = availableBotConfigs.find(c => c.key === value);
+                                                if (config) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        botConfig: [
+                                                            ...formData.botConfig,
+                                                            {
+                                                                key: config.key,
+                                                                value: "",
+                                                                isOptional: false,
+                                                                ui: config.ui || {
+                                                                    type: "text",
+                                                                    label: config.displayName,
+                                                                    placeholder: config.description
+                                                                }
+                                                            }
+                                                        ],
+                                                    });
+                                                }
                                             }
                                         }}
                                     >
@@ -597,9 +670,15 @@ export const SecretTemplates = () => {
                                             <SelectValue placeholder="Add Config" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="custom">Custom Config</SelectItem>
                                             {availableBotConfigs.map((config) => (
                                                 <SelectItem key={config.key} value={config.key}>
                                                     {config.displayName || config.key}
+                                                </SelectItem>
+                                            ))}
+                                            {addDefaultBotConfigs.map((config) => (
+                                                <SelectItem key={`${packagePrefix(formData.packageName)}${config}`} value={`${packagePrefix(formData.packageName)}${config}`}>
+                                                    {config.toLowerCase().slice(1)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -639,260 +718,92 @@ export const SecretTemplates = () => {
                                     ))}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreate}>Create</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="min-w-[80vw] h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Edit Secret Template</DialogTitle>
-                        <DialogDescription>
-                            Edit the secret template details.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-3 gap-4 py-4">
-                        <div className="col-span-1">
                             <div className="grid gap-2">
-                                <Label htmlFor="edit-templateId">Template ID</Label>
-                                <Input
-                                    id="edit-templateId"
-                                    value={formData.templateId}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, templateId: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-name">Name</Label>
-                                <Input
-                                    id="edit-name"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name: e.target.value })
-                                    }
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-packageName">Package Name</Label>
-                                <Select
-                                    value={formData.packageName as string}
-                                    onValueChange={(value) => {
-                                        setFormData({ ...formData, packageName: value || "", packageConstructor: "" });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a package" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {packagesData?.packages.map((pkg) => (
-                                            <SelectItem key={pkg.name} value={pkg.name}>
-                                                {pkg.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-packageType">Package Type</Label>
-                                <Select
-                                    value={formData.packageType as string}
-                                    onValueChange={(value) => setFormData({ ...formData, packageType: value || "" })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a package type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {packageTypes.map((type) => (
-                                            <SelectItem key={type} value={type}>
-                                                {type}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-packageConstructor">Package Constructor</Label>
-                                <Select
-                                    value={formData.packageConstructor as string}
-                                    onValueChange={(value) => setFormData({ ...formData, packageConstructor: value || "" })}
-                                    disabled={!formData.packageName}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a constructor" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {packageConstructors.map((constructor) => (
-                                            <SelectItem key={constructor} value={constructor}>
-                                                {constructor}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="col-span-2">
-                            <div className="grid gap-2">
-                                <div className="flex justify-between items-center">
-                                    <Label>Variables</Label>
-                                    <Select
-                                        value=""
-                                        onValueChange={(value) => {
-                                            const variable = availableVariables.find(v => v.key === value);
-                                            if (variable) {
+                                <Label>Metadata</Label>
+                                <div className="space-y-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="introMessage">Intro Message</Label>
+                                        <Textarea
+                                            id="introMessage"
+                                            value={formData.metadata.introMessage}
+                                            onChange={(e) =>
                                                 setFormData({
                                                     ...formData,
-                                                    variables: [
-                                                        ...formData.variables,
-                                                        {
-                                                            key: variable.key,
-                                                            value: "",
-                                                            isOptional: false,
-                                                            ui: variable.ui || {
-                                                                type: "text",
-                                                                label: variable.displayName,
-                                                                placeholder: variable.description
-                                                            }
-                                                        }
-                                                    ],
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Add Variable" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {availableVariables.map((variable) => (
-                                                <SelectItem key={variable.key} value={variable.key}>
-                                                    {variable.displayName || variable.key}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    {formData.variables.map((variable, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <Input
-                                                placeholder="Key"
-                                                value={variable.key}
-                                                onChange={(e) => updateVariable(index, "key", e.target.value)}
-                                            />
-                                            <Input
-                                                placeholder="Value"
-                                                value={variable.value}
-                                                onChange={(e) => updateVariable(index, "value", e.target.value)}
-                                            />
-                                            <div className="flex items-center gap-2">
-                                                <Checkbox
-                                                    checked={variable.isOptional}
-                                                    onCheckedChange={(checked) =>
-                                                        updateVariable(index, "isOptional", checked as boolean)
+                                                    metadata: {
+                                                        ...formData.metadata,
+                                                        introMessage: e.target.value
                                                     }
-                                                />
-                                                <Label>Optional</Label>
-                                            </div>
+                                                })
+                                            }
+                                            placeholder="Enter introduction message"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Permissions</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={newPermission}
+                                                onChange={(e) => setNewPermission(e.target.value)}
+                                                placeholder="Enter permission"
+                                            />
                                             <Button
                                                 type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => removeVariable(index)}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
-                                <div className="flex justify-between items-center">
-                                    <Label>Bot Config</Label>
-                                    <Select
-                                        value=""
-                                        onValueChange={(value) => {
-                                            const config = availableBotConfigs.find(c => c.key === value);
-                                            if (config) {
-                                                setFormData({
-                                                    ...formData,
-                                                    botConfig: [
-                                                        ...formData.botConfig,
-                                                        {
-                                                            key: config.key,
-                                                            value: "",
-                                                            isOptional: false,
-                                                            ui: config.ui || {
-                                                                type: "text",
-                                                                label: config.displayName,
-                                                                placeholder: config.description
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (newPermission.trim()) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            metadata: {
+                                                                ...formData.metadata,
+                                                                permissions: [...formData.metadata.permissions, newPermission.trim()]
                                                             }
-                                                        }
-                                                    ],
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Add Config" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {availableBotConfigs.map((config) => (
-                                                <SelectItem key={config.key} value={config.key}>
-                                                    {config.displayName || config.key}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    {formData.botConfig.map((config, index) => (
-                                        <div key={index} className="flex gap-2">
-                                            <Input
-                                                placeholder="Key"
-                                                value={config.key}
-                                                onChange={(e) => updateBotConfig(index, "key", e.target.value)}
-                                            />
-                                            <Input
-                                                placeholder="Value"
-                                                value={config.value}
-                                                onChange={(e) => updateBotConfig(index, "value", e.target.value)}
-                                            />
-                                            <div className="flex items-center gap-2">
-                                                <Checkbox
-                                                    checked={config.isOptional}
-                                                    onCheckedChange={(checked) =>
-                                                        updateBotConfig(index, "isOptional", checked as boolean)
+                                                        });
+                                                        setNewPermission("");
                                                     }
-                                                />
-                                                <Label>Optional</Label>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => removeBotConfig(index)}
+                                                }}
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                Add
                                             </Button>
                                         </div>
-                                    ))}
+                                        <div className="space-y-2">
+                                            {formData.metadata.permissions.map((permission, index) => (
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <span className="text-sm">{permission}</span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setFormData({
+                                                                ...formData,
+                                                                metadata: {
+                                                                    ...formData.metadata,
+                                                                    permissions: formData.metadata.permissions.filter((_, i) => i !== index)
+                                                                }
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" onClick={() => {
+                            setIsDialogOpen(false);
+                            setSelectedTemplate(null);
+                            setIsEditing(false);
+                        }}>
                             Cancel
                         </Button>
-                        <Button onClick={handleEdit}>Save Changes</Button>
+                        <Button onClick={handleSubmit}>
+                            {isEditing ? 'Save Changes' : 'Create'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

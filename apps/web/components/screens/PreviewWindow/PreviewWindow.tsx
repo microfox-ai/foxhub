@@ -1,14 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Copy, Play, X, Monitor, Clock, Square, ArrowLeftIcon, CheckIcon, ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -18,40 +10,44 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
-import { useLayout } from "../providers/LayoutProvider";
 import useCopyToClipboard from "@/utils/hooks/useCopyToClipboard";
-import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
-import { PortalSdk } from "@/utils/services/PortalSdk";
 import {
-  getMethodColor,
-  getStatusColor,
-  buildExampleUrl,
-  getPlaceholder,
-  getStatusText,
-} from "./utils";
-import {
+  FormValues,
   HTTP_METHODS,
   HttpMethod,
-  FormValues,
-  OpenAPISchema,
-  OpenAPIOperation,
-  OpenAPIPath,
-  OpenAPIDoc,
   OpenAPIResponse,
-} from "./types";
-import { useApiDoc } from "../providers/ApiDocProvider";
-import { useDeployStatus } from "../providers/useDeployStatus";
+  OpenAPISchema
+} from "@/utils/services/OpenAPIToolsClient";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ClientDeployment } from "@prisma/client";
-import { makeApiCallWithResponseData, fetchServerlessLogs, prepareApiRequest } from "./helpers";
-import { useMicrofoxChat } from "../Chat/MicrofoxChatProvider";
+import { ArrowLeftIcon, ChevronDown, Clock, Copy, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useApiDoc } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { useLayout } from "../providers/LayoutProvider";
 import { useTabUi } from "../providers/TabUiProvider";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import { fetchServerlessLogs, makeApiCallWithResponseData, prepareApiRequest } from "./helpers";
+import {
+  buildExampleUrl,
+  getMethodColor,
+  getPlaceholder,
+  getStatusColor,
+  getStatusText,
+} from "./utils";
+import { Badge } from "@/components/ui/badge";
+import { Command, CommandInput } from "@/components/ui/command";
 
 const PreviewWindow = () => {
   const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
@@ -63,6 +59,8 @@ const PreviewWindow = () => {
     setSelectedMethod,
     setSelectedEndpoint,
     currentEndpointData,
+    error,
+    setError
   } = useApiDoc();
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,8 +75,9 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const [showLogs, setShowLogs] = useState(false);
-  const { setSubmitAnnotations } = useClientProject();
+  const { setSubmitAnnotations, setAutoSubmit } = useClientProject();
   const { setActiveTab } = useTabUi()
+  const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
   //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
   const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
@@ -102,22 +101,28 @@ const PreviewWindow = () => {
               fieldSchema = z.string().transform((val) => val === "true");
               break;
             case "array":
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return [];
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return [];
+                  }
+                }),
+                z.array(z.any())
+              ]);
               break;
             case "object":
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return {};
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return {};
+                  }
+                }),
+                z.record(z.any())
+              ]);
               break;
           }
         }
@@ -143,13 +148,16 @@ const PreviewWindow = () => {
             let fieldSchema: any = z.string();
 
             if (schema.type === "array" || schema.type === "object") {
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return schema.type === "array" ? [] : {};
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return schema.type === "array" ? [] : {};
+                  }
+                }),
+                schema.type === "array" ? z.array(z.any()) : z.record(z.any())
+              ]);
             } else if (
               schema.type === "number" ||
               schema.type === "integer"
@@ -169,13 +177,16 @@ const PreviewWindow = () => {
             requestBodySchema.type === "array" &&
             requestBodySchema.items
           ) {
-            bodySchema = z.string().transform((val) => {
-              try {
-                return JSON.parse(val);
-              } catch {
-                return [];
-              }
-            });
+            bodySchema = z.union([
+              z.string().transform((val) => {
+                try {
+                  return JSON.parse(val);
+                } catch {
+                  return [];
+                }
+              }),
+              z.array(z.any())
+            ]);
           } else if (
             requestBodySchema.type === "number" ||
             requestBodySchema.type === "integer"
@@ -252,7 +263,9 @@ const PreviewWindow = () => {
   };
 
   const makeApiCall = async () => {
-    if (!currentEndpointData) return;
+    if (!currentEndpointData) {
+      return;
+    }
 
     // Create new abort controller
     const controller = new AbortController();
@@ -265,11 +278,12 @@ const PreviewWindow = () => {
       setServerlessLogs(null);
       setResponse(null);
       setRequest(null);
+      const formValues = form.getValues();
       const { url, headers, body } = prepareApiRequest({
         baseUrl: BASE_URL,
         path: currentEndpointData.path || "",
         method: currentEndpointData.method,
-        data: form.getValues(),
+        data: formValues,
         parameters: currentEndpointData.parameters,
         requestBody: currentEndpointData.requestBody
       });
@@ -292,10 +306,9 @@ const PreviewWindow = () => {
         setResponse: setResponse
       });
     } catch (error) {
-      console.error("Request preparation error:", error);
+      // Handle error silently
     } finally {
-      console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
-      // Then fetch logs, regardless of API call outcome
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await fetchServerlessLogs({
         clientDeploymentId: (deploymentInfo as ClientDeployment).id,
         endpointLink: endpointLink,
@@ -315,7 +328,14 @@ const PreviewWindow = () => {
     } else {
       // Start new request
       setShowValidation(true);
-      form.handleSubmit(makeApiCall)();
+      form.handleSubmit(
+        (data) => {
+          makeApiCall();
+        },
+        (errors) => {
+          // Handle validation errors silently
+        }
+      )();
     }
   };
 
@@ -366,6 +386,43 @@ const PreviewWindow = () => {
 
     switch (schema.type) {
       case "string":
+        if (schema.enum) {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder={getPlaceholder(
+                          key,
+                          "string",
+                          currentEndpointData?.method === "GET",
+                          schema.example
+                        )} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {schema.enum?.map((value) => (
+                        <SelectItem key={value} value={value} className="text-sm">
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
         if (schema.format === "date-time") {
           return (
             <FormField
@@ -553,6 +610,82 @@ const PreviewWindow = () => {
           />
         );
       case "array":
+        const description = schema.description;
+        if (schema.items?.type === "object") {
+          return (
+            <div className="grid gap-2">
+              <h4 className="text-sm font-medium text-neutral-700">
+                {description}
+              </h4>
+              {Object.entries(schema.items).map(([_key, value], _index) => {
+                return renderFormField(key + "[" + _index + "]" + "." + _key, value, schema.required?.includes(_key) || false, value.description);
+              })}
+            </div>
+          )
+        }
+        if (schema.items?.type === "string") {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {field.value ? field.value.split(",").map((item: string, index: number) => (
+                        <Badge
+                          key={`${item}-${index}`}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          {item}
+                          <button
+                            onClick={() => {
+                              const newItems = field.value.split(",").filter((_, i) => i !== index);
+                              field.onChange(newItems.join(","));
+                            }}
+                            className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          >
+                            <X className="h-3 w-3" />
+                            <span className="sr-only">Remove item</span>
+                          </button>
+                        </Badge>
+                      )) : null}
+                    </div>
+                    <div className="flex gap-2">
+                      <Command className="rounded-lg border shadow-md">
+                        <CommandInput
+                          placeholder={getPlaceholder(
+                            key,
+                            "array",
+                            currentEndpointData?.method === "GET",
+                            schema.example
+                          )}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value) {
+                              e.preventDefault();
+                              const newValue = e.currentTarget.value.trim();
+                              if (newValue) {
+                                const currentItems = field.value ? field.value.split(",") : [];
+                                if (!currentItems.includes(newValue)) {
+                                  field.onChange([...currentItems, newValue].join(","));
+                                }
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </Command>
+                    </div>
+                  </div>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
         return (
           <FormField
             key={key}
@@ -579,6 +712,15 @@ const PreviewWindow = () => {
           />
         );
       case "object":
+        if (schema.properties) {
+          return (
+            <div className="grid gap-2">
+              {Object.entries(schema.properties).map(([_key, value]) => {
+                return renderFormField(key + "." + _key, value, schema.required?.includes(_key) || false, value.description);
+              })}
+            </div>
+          )
+        }
         return (
           <FormField
             key={key}
@@ -708,6 +850,51 @@ const PreviewWindow = () => {
     );
   };
 
+
+  const [errorServerlessLogs, setErrorServerlessLogs] = useState<any | null>(null);
+  const [showErrorLogs, setShowErrorLogs] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!error) return;
+    const fetchErrorLogs = async () => {
+      try {
+        if (deploymentInfo) {
+          const endpointLink = `${deploymentInfo.baseUrl}/${deploymentInfo.stage.toLowerCase()}/docs.json`;
+          await fetchServerlessLogs({
+            clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+            endpointLink: endpointLink,
+            setServerlessLogs: setErrorServerlessLogs
+          });
+          setFetchError(null); // Clear any previous errors
+        }
+      } catch (err) {
+        setFetchError(err instanceof Error ? err.message : "Failed to fetch server logs");
+        setErrorServerlessLogs(null);
+      }
+    };
+    fetchErrorLogs();
+  }, [error, deploymentInfo]);
+
+
+  const refreshServerlessLogs = async () => {
+    if (!currentEndpointData || !deploymentInfo) return;
+
+    setIsRefreshingLogs(true);
+    try {
+      const endpointLink = `${BASE_URL}${currentEndpointData.path}`;
+      await fetchServerlessLogs({
+        clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+        endpointLink: endpointLink,
+        setServerlessLogs: setServerlessLogs
+      });
+    } catch (error) {
+      // Handle error silently
+    } finally {
+      setIsRefreshingLogs(false);
+    }
+  };
+
   if (!deploymentInfo && apiDoc) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -725,6 +912,92 @@ const PreviewWindow = () => {
           </div>
         </div>
         <p className="text-sm p-4">There is an error loading the deployment info, can you refresh the page?</p>
+      </div>
+    );
+  }
+
+
+  if (error) {
+
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-background">
+        <div className="sticky top-0 z-10 flex flex-col border-b bg-white shadow-sm">
+          <div className="flex mb-2 gap-4 items-center bg-zinc-100 px-3 py-2">
+            <X
+              className="cursor-pointer h-4 w-4 text-gray-500 hover:text-gray-700"
+              onClick={() => handleRightCollapse(!isRightCollapsed)}
+            />
+            <div className="flex gap-2 items-center">
+              <p className="text-base font-medium">Preview</p>
+              <Monitor className="h-4 w-4 " />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          <p className="text-sm">There is an error loading the deployment info, checking the log...</p>
+
+          {fetchError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+              <p className="text-sm text-red-700">{fetchError}</p>
+            </div>
+          )}
+
+          {errorServerlessLogs && (
+            <>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowErrorLogs(!showErrorLogs)}
+                  className="flex w-full items-center justify-between rounded-lg border bg-white p-3 hover:bg-neutral-50"
+                >
+                  <span className="text-xs font-medium">View Server Logs</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showErrorLogs ? 'rotate-180' : ''}`} />
+                </button>
+                {showErrorLogs && (
+                  <div className="overflow-hidden rounded-lg border bg-white">
+                    <div className="p-3">
+                      <pre className="max-h-[20vh] overflow-y-auto whitespace-pre-wrap break-words text-xs text-neutral-800">
+                        {JSON.stringify(errorServerlessLogs, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-row justify-between w-full gap-2">
+                <Button
+                  type="submit"
+                  variant={"default"}
+                  onClick={() => {
+                    const errorAttachment = {
+                      functionLink: `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
+                      serverlessLogs: errorServerlessLogs,
+                      error: error,
+                      deploymentInfo: deploymentInfo,
+                      fetchError: fetchError
+                    }
+                    setSubmitAnnotations((sa) => {
+                      const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
+                      const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
+                      return [
+                        ...newAnnotations,
+                        {
+                          type: "body",
+                          key: "api_errors",
+                          value: [...(existingErrorAttachment?.value || []), errorAttachment]
+                        }
+                      ]
+                    });
+                    setActiveTab("chat")
+                    handleRightCollapse(true);
+                  }}
+                  className="w-full"
+                >
+                  <ArrowLeftIcon className="h-3 w-3" />
+                  <span className="ml-2">Auto Fix this Error</span>
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     );
   }
@@ -1177,13 +1450,27 @@ const PreviewWindow = () => {
                         </div>)}
                       {serverlessLogs && (
                         <div className="space-y-2">
-                          <button
-                            onClick={() => setShowLogs(!showLogs)}
-                            className="flex w-full items-center justify-between rounded-lg border bg-white p-3 hover:bg-neutral-50"
-                          >
-                            <span className="text-xs font-medium">View Server Logs</span>
-                            <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-180' : ''}`} />
-                          </button>
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => setShowLogs(!showLogs)}
+                              className="flex w-full items-center justify-between rounded-lg border bg-white p-3 hover:bg-neutral-50"
+                            >
+                              <span className="text-xs font-medium">View Server Logs</span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    refreshServerlessLogs();
+                                  }}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                                  disabled={isRefreshingLogs}
+                                >
+                                  <RefreshCw className={`h-3 w-3 text-neutral-500 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
+                                </button>
+                                <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-180' : ''}`} />
+                              </div>
+                            </button>
+                          </div>
                           {showLogs && (
                             <div className="overflow-hidden rounded-lg border bg-white">
                               <div className="p-3">
@@ -1197,15 +1484,13 @@ const PreviewWindow = () => {
                       )}
                       {serverlessLogs && (
                         <div className="flex flex-col items-center justify-between mb-3">
-                          {(response.status >= 200 && response.status < 300) && (
-                            <Textarea
-                              className="w-full mb-3"
-                              value={modificationInstructions}
-                              placeholder="Enter any  modification instructions you want"
-                              onChange={(e) => setModificationInstructions(e.target.value)}
-                              rows={3}
-                            />
-                          )}
+                          <Textarea
+                            className="w-full mb-3"
+                            value={modificationInstructions}
+                            placeholder="Enter any  modification instructions you want"
+                            onChange={(e) => setModificationInstructions(e.target.value)}
+                            rows={3}
+                          />
                           <div className="flex flex-row justify-between w-full gap-2">
                             <Button
                               type="submit"
@@ -1218,7 +1503,6 @@ const PreviewWindow = () => {
                                   request: request,
                                   modificationInstructions: modificationInstructions
                                 }
-                                console.log("errorAttachment", errorAttachment);
                                 setModificationInstructions("");
                                 setSubmitAnnotations((sa) => {
                                   const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");

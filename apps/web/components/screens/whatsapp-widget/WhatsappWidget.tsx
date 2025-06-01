@@ -53,9 +53,9 @@ const WhatsappWidget = ({ slug }: { slug: string }) => {
   const [timerActive, setTimerActive] = useState<boolean>(false);
 
   const searchParams = useSearchParams();
-  const clientSecretId = searchParams.get("clientSecretId");
-  const userId = searchParams.get("businessUserId");
-  const callbackUri = searchParams.get("callbackUri");
+  const clientSecretId = searchParams?.get("clientSecretId");
+  const userId = searchParams?.get("businessUserId");
+  const callbackUri = searchParams?.get("callbackUri");
   const [botImage, setBotImage] = useState<string | null>(null);
   const getClientSecret = async ({
     clientSecretId,

@@ -27,6 +27,7 @@ export const MySlackChannels = {
   test_slackbot: "#test-slackbot",
   microfox_updates: IN_DEV ? "C08KC9E8J22" : "C08KN63Q04U",
   microfox_feedback: IN_DEV ? "C08LXS0035J" : "C08LXS0035J",
+  reports: "C08RG5EVB9U",
 };
 
 export const SlackUsers = {

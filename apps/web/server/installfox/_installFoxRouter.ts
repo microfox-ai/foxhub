@@ -17,7 +17,10 @@ import {
   PUBLISHED_SHARD_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import {
+  CodeTemplateType,
+  TaskInstanceMetaType,
+} from "@/server/convertfox/types";
 import { createPullRequest } from "../buildfox/createPullRequest";
 import { getServiceName } from "../buildfox/helper/getServiceName";
 import { MinionType } from "@/components/screens/hooks/convertors";
@@ -153,7 +156,8 @@ export const installFoxRouter: ServerStreamingFunction<
   // at this step, create template secrets as needed
   // create secrets
   const templateSecrets = await getClientSecretsFromTemplateEnvs(
-    templateType as "upstash"
+    templateType as CodeTemplateType,
+    clientRequest
   );
 
   if (templateSecrets.length > 0) {
@@ -193,8 +197,8 @@ export const installFoxRouter: ServerStreamingFunction<
     targetPath: clientRequest.requestDir || "",
     sourceBranch: "main",
     targetBranch: clientRequest.prBranch || "main",
-    commitMessage: `nodeploy: Installing shard ${shardPage.title} for ${clientRequest.title}`,
-    excludeFiles: ["clientRequest.json"],
+    commitMessage: `[skip ci] Installing shard ${shardPage.title} for ${clientRequest.title}`,
+    excludeFiles: ["clientRequest.json", "CHANGELOG.md"],
     clientRequest,
     taskInstanceMeta: taskInstanceMeta as any as TaskInstanceMetaType,
   });

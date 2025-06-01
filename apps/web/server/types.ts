@@ -52,7 +52,7 @@ export enum PackageStatus {
 
 export enum ClientSecretPackageType {
   TEMPLATE = "template",
-  CUSTOM = "custom",
+  CUSTOM = "custom", // custom env variable s for that request
   OAUTH2 = "oauth2",
   APIKEY = "apikey",
 }

@@ -7,13 +7,13 @@ import { DeployStep } from "@/server/convertfox/types";
 
 export const useDeployStatus = ({
     stage,
-    runId,
+    runId: initialRunId,
     pingerInterval,
     initialDeployStep,
     initialClientDeployment
 }: {
     stage: DEPLOY_STAGE,
-    runId: number,
+    runId?: number,
     pingerInterval: number,
     initialDeployStep?: DeployStep,
     initialClientDeployment?: ClientDeployment
@@ -28,9 +28,11 @@ export const useDeployStatus = ({
         shouldBreak: false,
         deployStep: initialDeployStep,
         clientDeployment: initialClientDeployment,
+        runId: initialRunId,
     });
     const { setDeploymentInfo } = useTaskInstanceMetaContext();
 
+    const [runId, setRunId] = useState<number | undefined>(initialRunId);
     const { data: clientRequest } = useSWR<ClientRequest>(
         requestParamId ? `/api/client-requests/${requestParamId}` : null,
         (url: string) => fetch(url).then((res) => res.json())
@@ -47,6 +49,7 @@ export const useDeployStatus = ({
         (url: string) => fetch(url).then((res) => res.json()),
         {
             refreshInterval: pingerInterval,
+            revalidateOnMount: true
         }
     );
 
@@ -55,8 +58,17 @@ export const useDeployStatus = ({
         if (DeploymentData) {
             setFinalData(DeploymentData);
             setDeploymentInfo(DeploymentData.clientDeployment);
+            if (DeploymentData.runId) {
+                setRunId(DeploymentData.runId);
+            }
         }
     }, [DeploymentData]);
+
+    useEffect(() => {
+        if (initialRunId) {
+            setRunId(initialRunId);
+        }
+    }, [initialRunId]);
 
     return {
         deployStep,

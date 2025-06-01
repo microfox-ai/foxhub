@@ -91,7 +91,7 @@ function useClientProjectContext() {
         request?.requestStatus !== REQUESTSTATUS.CLOSED
     );
 
-    if (openRequests?.length >= 5 && !IN_DEV) {
+    if (openRequests?.length >= 5 && !IN_DEV && !user?.isBillingVerified) {
       toast.warning(
         "At the moment we only support 5 concurrent requests. You can create new requests once we launch to production."
       );

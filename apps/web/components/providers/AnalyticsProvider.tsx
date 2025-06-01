@@ -18,7 +18,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
   // Track page views
   useEffect(() => {
-    analytics.page(pathname);
+    analytics.page(pathname ?? "");
   }, [pathname, searchParams]);
 
   return children;

@@ -36,7 +36,7 @@ export const editFile = (
 
         // Extract filename for commit message
         const fileName = path.basename(filePath);
-        const commitMessage = `nodeploy: microcode: hotfix: ${fileName}`;
+        const commitMessage = `microcode: hotfix: updatefox: ${fileName}`;
 
         // Get current file SHA to update it
         let currentSha: string | undefined;
@@ -83,6 +83,8 @@ export const editFile = (
           branch: clientRequest.prBranch,
           sha: currentSha, // Provide SHA if updating an existing file
         });
+
+        // TODO: check for any new added envs that are not in the type:custom, add them there, now.
 
         props.dataStream.writeMessageAnnotation({
           type: "update",

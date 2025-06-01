@@ -16,6 +16,7 @@ import {
   Plus,
   LayoutDashboard,
   Store,
+  KeyRound,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
@@ -108,6 +109,15 @@ const navigationConfig: NavigationConfig[] = [
     requiresProject: true,
   },
   {
+    icon: <KeyRound strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <KeyRound strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "My Data",
+    href: "/my-data",
+    requiresProject: true,
+  },
+  {
     icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
       <Flag strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
@@ -189,11 +199,11 @@ export default function Sidebar({
                     onClick={
                       item.onClick
                         ? () =>
-                            item.onClick?.({
-                              isCollapsed,
-                              onCollapse,
-                              setIsFeedbackModalOpen,
-                            })
+                          item.onClick?.({
+                            isCollapsed,
+                            onCollapse,
+                            setIsFeedbackModalOpen,
+                          })
                         : undefined
                     }
                     isCollapsed={isCollapsed}
@@ -334,11 +344,10 @@ const RequestsList = ({
             <Link
               key={request?.id}
               href={`/project/${selectedProject?.id}/request/${request?.id}`}
-              className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${
-                request?.id === requestParamId
+              className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
                   ? "bg-gray-200 text-black"
                   : "hover:bg-gray-100"
-              }`}
+                }`}
             >
               {request.id === requestParamId ? (
                 <ChevronRight

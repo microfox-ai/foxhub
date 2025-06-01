@@ -5,7 +5,7 @@ import {
   OpenAPIOperation,
   OpenAPIDoc,
   OpenAPIPath,
-} from "../PreviewWindow/types";
+} from "@/utils/services/OpenAPIToolsClient";
 
 export interface Endpoint {
   path: string;
@@ -20,6 +20,7 @@ interface ApiDocContextType {
   endpoints: Endpoint[];
   isLoading: boolean;
   error: Error | null;
+  setError: (error: Error | null) => void;
   selectedEndpoint: string | null;
   selectedMethod: HttpMethod | null;
   setSelectedEndpoint: (path: string) => void;
@@ -40,7 +41,6 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
   const [selectedMethod, setSelectedMethod] = useState<HttpMethod | null>(null);
 
   useEffect(() => {
-    console.log("deploymentInfo", deploymentInfo);
     const fetchApiDocs = async () => {
       if (!deploymentInfo?.baseUrl || !deploymentInfo?.stage) {
         setApiDoc(null);
@@ -116,6 +116,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         endpoints,
         isLoading,
         error,
+        setError,
         selectedEndpoint,
         selectedMethod,
         setSelectedEndpoint,

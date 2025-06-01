@@ -1,16 +1,18 @@
 // scripts/src/queryDocs.ts
 
+import { embed } from "@/utils/services/embeddings/geminiEmbed";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 dotenv.config();
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const TABLE = "docs_embeddings";
 
 async function listByPackage(pkg: string, limit = 10) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
   const { data, error } = await supabase
     .from(TABLE)
     .select("file_path,package_name,updated_at")
@@ -22,40 +24,13 @@ async function listByPackage(pkg: string, limit = 10) {
   console.table(data);
 }
 
-// const EMBEDDING_MODEL = 'gemini-embedding-exp-03-07';  // 3072-dim
-const EMBEDDING_MODEL = "text-embedding-004"; // 768 dims
-const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
-
-export async function embed(text: string): Promise<number[]> {
-  const url = `${GEMINI_BASE_URL}/models/${EMBEDDING_MODEL}:embedContent?key=${GEMINI_API_KEY}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: `models/${EMBEDDING_MODEL}`,
-      content: {
-        parts: [{ text }],
-      },
-    }),
-  });
-  const payload = await res.json();
-  if (!res.ok) {
-    throw new Error(
-      `Gemini error: ${payload.error?.message || res.statusText}`
-    );
-  }
-
-  return payload.embedding.values as number[];
-}
-
 export async function semanticFunctionSearch(
   pkg: string,
   query: string,
   limit = 10
 ) {
   console.log(`\n🔍 Embedding query: "${query}"…`);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const qEmb = await embed(query);
   console.log("🧠 Query embedding obtained");
 

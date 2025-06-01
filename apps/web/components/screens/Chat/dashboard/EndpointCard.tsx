@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMethodColor } from "../../PreviewWindow/utils";
-import { HttpMethod } from "../../PreviewWindow/types";
+import { HttpMethod } from "@/utils/services/OpenAPIToolsClient";
 
 interface EndpointCardProps {
     endpoint: {
@@ -22,7 +22,7 @@ export const EndpointCard = ({
     return (
         <div
             onClick={onClick}
-            className="group w-full flex items-center p-2 gap-2 rounded-sm bg-white cursor-pointer"
+            className="group w-full flex items-start p-2 gap-2 rounded-sm bg-white cursor-pointer"
         >
             <div
                 className={cn(
@@ -39,12 +39,12 @@ export const EndpointCard = ({
                     {method}
                 </span>
             </div>
-            <div className="col-span-2">
+            <div className="col-span-2 flex items-center justify-between w-full">
                 <h3 className="text-sm font-medium text-gray-500 group-hover:text-gray-900">
                     {endpoint.title || endpoint.operationId || endpoint?.operation?.title || "Untitled Endpoint"}
                 </h3>
+                <ArrowRight className="w-4 h-4 justify-self-end text-gray-400 group-hover:text-gray-600 transition-all group-hover:translate-x-1" />
             </div>
-            <ArrowRight className="w-4 h-4 justify-self-end text-gray-400 group-hover:text-gray-600 transition-all group-hover:translate-x-1" />
         </div>
     );
 }; 

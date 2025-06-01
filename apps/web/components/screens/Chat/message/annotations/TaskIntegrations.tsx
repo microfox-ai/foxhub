@@ -216,7 +216,7 @@ export const TaskIntegrations = ({
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 rounded-lg border border-gray-200">
-                                                {isOAuthRequired && (
+                                                {isOAuthRequired && !isApiKeyRequired && (
                                                     <OAuthButton
                                                         packageInfo={packageInfo}
                                                         secretsData={secretsData}

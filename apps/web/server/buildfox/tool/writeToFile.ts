@@ -1,3 +1,8 @@
+import {
+  codeTemplateAddon,
+  codeTemplateType,
+  CodeTemplateType,
+} from "@/server/convertfox/types";
 import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
@@ -11,17 +16,21 @@ export const INTERNAL_TEMPLATE_PLAIN_ROOT = `server/buildfox/templates/serverles
 export const INTERNAL_TEMPLATE_UPSTASH_ROOT = `server/buildfox/templates/serverless/upstash`;
 export const INTERNAL_TEMPLATE_MONGODB_ROOT = `server/buildfox/templates/serverless/mongodb`;
 
-export const fetchTemplateRoot = (
-  templateType: "plain" | "upstash" | "mongodb" | undefined
-) => {
-  if (templateType === "plain") {
-    return INTERNAL_TEMPLATE_PLAIN_ROOT;
-  }
-  if (templateType === "upstash") {
+export const INTERNAL_TEMPLATE_ADDON_PUPPETEER_ROOT = `server/buildfox/templates/serverless/addons/puppeteer`;
+
+export const fetchTemplateDir = (templateType?: CodeTemplateType) => {
+  // if (templateType === codeTemplateType.enum.plain_sls) {
+  //   return INTERNAL_TEMPLATE_PLAIN_ROOT;
+  // }
+  if (templateType === codeTemplateType.enum.upstash_sls) {
     return INTERNAL_TEMPLATE_UPSTASH_ROOT;
   }
-  if (templateType === "mongodb") {
-    return INTERNAL_TEMPLATE_MONGODB_ROOT;
+  return INTERNAL_TEMPLATE_PLAIN_ROOT;
+};
+
+export const fetchAddonDir = (addon: string) => {
+  if (addon === codeTemplateAddon.enum.sls_puppeteer_chrome) {
+    return INTERNAL_TEMPLATE_ADDON_PUPPETEER_ROOT;
   }
   return INTERNAL_TEMPLATE_PLAIN_ROOT;
 };
@@ -66,6 +75,7 @@ export const getFilePath = async (
   // Write file content
   return { fileWritePath, dirPath, rootDir };
 };
+
 export const writeToFileSystem = async (
   props: {
     fileName: string;
@@ -144,12 +154,20 @@ export const readAllGenFilesList = async (
      */
       const packagesUsed = fileContent
         .match(
-          /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"](@[^'"]+)['"]/g
+          /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"]([^'"]+)['"]/g
         )
         ?.map((match) => {
-          const matches = match.match(/from\s+['"](@[^'"]+)['"]/);
-          return matches?.[1];
-        });
+          const matches = match.match(/from\s+['"]([^'"]+)['"]/);
+          const pkg = matches?.[1];
+          // Only include if it's a package (starts with @ or a letter, and doesn't contain . or /)
+          return pkg &&
+            !pkg.startsWith(".") &&
+            !pkg.startsWith("/") &&
+            !pkg.includes(".")
+            ? pkg
+            : undefined;
+        })
+        .filter(Boolean);
       const envVariablesUsed = fileContent
         .match(/process\.env\.([\w]+)/g)
         ?.map((match) => {
@@ -160,7 +178,10 @@ export const readAllGenFilesList = async (
         return {
           ...file,
           meta: {
-            packagesUsed: packagesUsed ?? [],
+            packagesUsed:
+              packagesUsed?.filter(
+                (pkg) => pkg != undefined && pkg != "undefined"
+              ) ?? [],
             envVariablesUsed: envVariablesUsed ?? [],
           },
         };
@@ -220,10 +241,11 @@ export const updateSteps = async (
 export const writeToFile = (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
-  templateType?: "plain" | "upstash" | "mongodb"
+  templateType?: CodeTemplateType
 ) => {
   return tool({
-    description: "Write code to a specific file in the project",
+    description:
+      "Write code to a specific file in the project. CRITICAL: fileContent parameter must contain complete, working code - never empty or placeholder text.",
     parameters: z.object({
       fileName: z.string().describe("The name of the file to write to"),
       filePath: z
@@ -234,19 +256,47 @@ export const writeToFile = (
       fileType: z
         .string()
         .describe("The type of file to write to - ts, tsx, json, etc"),
-      content: z.string().describe("The content to write to the file"),
-      packagesUsed: z
-        .array(z.string())
+      fileContent: z
+        .string()
+        .min(1, "fileContent cannot be empty - it must contain the actual code")
         .describe(
-          "The packages used in the file - @microfox/core, @microfox/aws-ses etc.."
-        )
-        .optional(),
+          "The code content to write to the file - MUST required, as it holds the actual code. This parameter is MANDATORY and must contain complete, working code."
+        ),
+      // packagesUsed: z
+      //   .array(z.string())
+      //   .describe(
+      //     "The packages used in the file - @microfox/core, @microfox/aws-ses etc.."
+      //   )
+      //   .optional(),
     }),
-    execute: async (
-      { fileName, filePath, fileType, content, packagesUsed },
-      options
-    ) => {
+    execute: async ({ fileName, filePath, fileType, fileContent }, options) => {
       try {
+        // Validate fileContent is not empty or placeholder
+        if (!fileContent || fileContent.trim().length === 0) {
+          throw new Error(
+            "fileContent parameter is required and cannot be empty. You must provide the complete, actual code content."
+          );
+        }
+
+        // Check for common placeholder patterns
+        const placeholderPatterns = [
+          /\/\/\s*code\s*goes\s*here/i,
+          /\/\/\s*todo/i,
+          /\/\/\s*implement/i,
+          /\/\/\s*placeholder/i,
+          /\/\*\s*code\s*goes\s*here\s*\*\//i,
+          /\/\*\s*todo\s*\*\//i,
+        ];
+
+        const hasPlaceholders = placeholderPatterns.some((pattern) =>
+          pattern.test(fileContent)
+        );
+        if (hasPlaceholders) {
+          throw new Error(
+            "fileContent contains placeholder text. You must provide complete, working code, not placeholders or TODO comments."
+          );
+        }
+
         console.log(
           "updatedFileContent",
           //updatedFileContent,
@@ -263,41 +313,14 @@ export const writeToFile = (
             fileName,
             filePath,
             fileType,
-            content,
+            content: fileContent, //.replace(/\\`/g, "`").replace(/\\'/g, "'"),
             meta: {
-              packagesUsed,
+              //packagesUsed,
               timestamp: new Date().toISOString(),
             },
           },
           clientRequest
         );
-
-        if (packagesUsed && packagesUsed?.length > 0) {
-          const packageJson = await fs.readFile(
-            path.join(
-              process.cwd(),
-              fetchTemplateRoot(templateType),
-              "package.json"
-            ),
-            "utf8"
-          );
-          const packageJsonContent = JSON.parse(packageJson);
-          packagesUsed?.forEach((pkg) => {
-            if (!packageJsonContent.dependencies[pkg]) {
-              packageJsonContent.dependencies[pkg] = "*";
-            }
-          });
-          writeToFileSystemAndUpdateSteps(
-            {
-              fileName: "package.json",
-              filePath: "",
-              fileType: "json",
-              content: dedent`${JSON.stringify(packageJsonContent)}`,
-            },
-            clientRequest
-          );
-        }
-        // Construct full path from repo root
       } catch (error) {
         console.log("error", error);
         throw new Error("Failed to add file");
@@ -305,7 +328,6 @@ export const writeToFile = (
       return {
         success: true,
         message: `File ${fileName} updated successfully`,
-        //content: content,
         filePath: filePath,
         fileType: fileType,
       };

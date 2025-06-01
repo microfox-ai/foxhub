@@ -1,5 +1,10 @@
-import Landing from "@/components/screens/landing/Landing";
+import { LandingLayout } from "@/components/screens/landing/LandingLayout";
+import { LandingPage } from "@/components/screens/landing/LandingPage";
 
-export default async function LandingPage() {
-  return <Landing />;
+
+export default async function Landing() {
+
+  return <LandingLayout>
+    <LandingPage />
+  </LandingLayout>;
 }

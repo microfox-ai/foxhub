@@ -6,19 +6,27 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { CLIENTSECRETSTATUS, ClientSecretTemplate } from "@prisma/client";
+import { CLIENTSECRETSTATUS, ClientSecret, ClientSecretTemplate } from "@prisma/client";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { KeyedMutator } from "swr";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Constructor } from "../types";
+import { OAuthButton } from "./OAuthButton";
+import { SecretTemplateMetadata } from "@/components/screens/secretTemplates/SecretTemplates";
 
 interface TemplateDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onCancel: () => void;
     selectedTemplate: ClientSecretTemplate | null;
-    botTemplates?: ClientSecretTemplate[];
+    secretsData?: {
+        clientSecrets: ClientSecret[];
+        clientSecretTemplates: ClientSecretTemplate[];
+    };
     packageInfo: any;
     mutateSecrets: KeyedMutator<{
         clientSecrets: any[];
@@ -34,14 +42,65 @@ export const TemplateDialog = ({
     onClose,
     onCancel,
     selectedTemplate,
-    botTemplates,
     packageInfo,
+    secretsData,
     mutateSecrets,
     mutateBotSecrets,
 }: TemplateDialogProps) => {
 
     const { selectedProject, selectedRequest } = useClientProject();
     const { user } = useAuth();
+    const [isSaving, setIsSaving] = useState(false);
+    const templateConstructor = selectedTemplate?.packageConstructor;
+    const templateConstructorInfo = packageInfo?.constructors.find((constructor: Constructor) => constructor.name === templateConstructor);
+    const authType = templateConstructorInfo?.auth;
+
+
+    const handleConfirm = async () => {
+        try {
+            setIsSaving(true);
+
+            if (!selectedProject || !selectedRequest) {
+                toast.error("Please select a project and request");
+                return;
+            }
+
+            if (secretsData?.clientSecretTemplates?.find((secret) => secret.templateId === selectedTemplate?.id)) {
+                toast.error("You already have a related connection.");
+                return;
+            }
+
+            const clientSecretData = {
+                botProjectId: selectedProject.id,
+                name: selectedTemplate?.name,
+                type: selectedTemplate?.type,
+                variables: selectedTemplate?.variables,
+                userId: user?.id,
+                status: CLIENTSECRETSTATUS.FILLED,
+                packageName: selectedTemplate?.packageName,
+                packageConstructor: selectedTemplate?.packageConstructor,
+                packageType: selectedTemplate?.packageType,
+                botConfig: selectedTemplate?.botConfig,
+                clientRequestId: selectedRequest?.id,
+                addToClientRequest: true,
+                updateDeployments: true,
+                isHidden: true,
+                templateId: selectedTemplate?.id,
+            };
+            // Create a new client secret from the template
+            await PortalSdk.postData("/api/client-secrets", clientSecretData);
+            toast.success("Connection successfull!");
+
+            await mutateSecrets();
+            await mutateBotSecrets();
+            onClose();
+        } catch (error) {
+            console.error("Error creating secret from template:", error);
+            toast.error("Failed to create secret");
+        } finally {
+            setIsSaving(false);
+        }
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,10 +125,11 @@ export const TemplateDialog = ({
                             <h4 className="text-3xl font-medium">Hello, {user?.name}</h4>
                             <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                                 <p className="text-sm">
-                                    You are trying to connect to {packageInfo?.name} using:
+                                    You are trying to connect to {packageInfo?.title} using {" "}
                                     {selectedTemplate?.name}
                                     <br />
-                                    This integratind comes inpacked with details
+                                    <br />
+                                    {(selectedTemplate?.metadata as any as SecretTemplateMetadata)?.introMessage || "This integratind comes in packed with Microfox's servers and maybe applicable for additional charges.."}
                                 </p>
                             </div>
                         </div>
@@ -80,49 +140,31 @@ export const TemplateDialog = ({
                     <Button
                         variant="outline"
                         onClick={onCancel}
+                        disabled={isSaving}
                     >
                         Cancel
                     </Button>
-                    <Button
-                        onClick={async () => {
-                            try {
-
-                                if (!selectedProject || !selectedRequest) {
-                                    toast.error("Please select a project and request");
-                                    return;
-                                }
-
-                                const clientSecretData = {
-                                    botProjectId: selectedProject.id,
-                                    name: selectedTemplate?.name,
-                                    type: selectedTemplate?.type,
-                                    variables: selectedTemplate?.variables,
-                                    userId: user?.id,
-                                    status: CLIENTSECRETSTATUS.FILLED,
-                                    packageName: selectedTemplate?.packageName,
-                                    packageConstructor: selectedTemplate?.packageConstructor,
-                                    packageType: selectedTemplate?.packageType,
-                                    botConfig: selectedTemplate?.botConfig,
-                                    clientRequestId: selectedRequest?.id,
-                                    addToClientRequest: true,
-                                    updateDeployments: true,
-                                    isHidden: true,
-                                    templateId: selectedTemplate?.id,
-                                };
-                                // Create a new client secret from the template
-                                await PortalSdk.postData("/api/client-secrets", clientSecretData);
-                                toast.success("Connection successfull!");
-
-                                await mutateSecrets();
-                                await mutateBotSecrets();
-                                onClose();
-                            } catch (error) {
-                                console.error("Error creating secret from template:", error);
-                            }
-                        }}
-                    >
-                        Confirm
-                    </Button>
+                    {authType === "oauth" ? (
+                        <OAuthButton
+                            packageInfo={packageInfo}
+                            mutateSecrets={mutateSecrets}
+                            secretsData={secretsData}
+                        />
+                    ) : (
+                        <Button
+                            onClick={handleConfirm}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                "Confirm"
+                            )}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

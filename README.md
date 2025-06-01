@@ -186,3 +186,6 @@ Requirements/Tasks:-
 - long running processes -> feedback loops.
 - internal envs/template envs version for certain stuff (aws-ses).
 - support for complex db
+
+npx dotenv-vault@latest push ci
+npx dotenv-vault@latest push production

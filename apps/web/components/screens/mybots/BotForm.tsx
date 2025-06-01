@@ -31,8 +31,8 @@ interface BotFormProps {
 
 const BotForm = ({ mode }: BotFormProps) => {
   const searchParams = useSearchParams();
-  const botId = searchParams.get("botId");
-  const packageName = searchParams.get("package");
+  const botId = searchParams?.get("botId");
+  const packageName = searchParams?.get("package");
   const { bots, stableBotPackages, refreshBots, botToEdit, isLoadingBotToEdit } = useBots();
   const { form, onSubmit, isDeleting, isUpdating, handleDelete, setPackageInfo, setSelectedConstructor } = useSecretForm();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -58,8 +58,9 @@ const BotForm = ({ mode }: BotFormProps) => {
 
   const selectedConstructor =
     mode === "create"
+      //TODO: make this selectable in UI instead of auto setting to 0 index
       ? packageInfo?.constructors[0]
-      : botToEdit?.packageInfo?.constructors[0];
+      : botToEdit?.packageInfo?.constructors?.find((constructor: Constructor) => constructor.name === botToEdit?.packageConstructor);
 
   useEffect(() => {
     if (packageInfo) {
@@ -108,7 +109,7 @@ const BotForm = ({ mode }: BotFormProps) => {
   const requiredKeys =
     mode === "create"
       ? selectedConstructor?.requiredKeys
-      : botToEdit?.packageInfo?.constructors[0]?.requiredKeys;
+      : botToEdit?.packageInfo?.constructors?.find((constructor: Constructor) => constructor.name === botToEdit?.packageConstructor)?.requiredKeys;
 
 
   return (

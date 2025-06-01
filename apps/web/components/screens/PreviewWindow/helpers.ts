@@ -10,7 +10,7 @@ export interface FetchApiOptions {
 export interface FetchLogsOptions {
   clientDeploymentId: string;
   endpointLink: string;
-  setServerlessLogs: (value: any) => void;
+  setServerlessLogs?: (value: any) => void;
 }
 
 export interface PrepareApiRequestOptions {
@@ -43,6 +43,79 @@ export interface PreparedApiRequest {
   body?: string;
 }
 
+// Helper function to get nested value from data object
+function getNestedValue(
+  data: Record<string, any>,
+  key: string,
+  schema?: any
+): any {
+  const parts = key.split(/[.[\]]/).filter(Boolean);
+  let value: any = data;
+
+  for (const part of parts) {
+    if (value === undefined || value === null || typeof value !== "object")
+      return undefined;
+    if (part in value) {
+      value = value[part];
+    } else {
+      return undefined;
+    }
+  }
+
+  // Handle string arrays by splitting comma-separated values
+  if (
+    schema?.type === "array" &&
+    schema?.items?.type === "string" &&
+    typeof value === "string"
+  ) {
+    return value.split(",").map((item) => item.trim());
+  }
+
+  // Handle nested objects
+  if (
+    schema?.type === "object" &&
+    schema?.properties &&
+    typeof value === "object"
+  ) {
+    const result: Record<string, any> = {};
+    for (const [propKey, propSchema] of Object.entries(schema.properties)) {
+      if (value[propKey] !== undefined) {
+        result[propKey] = getNestedValue(value, propKey, propSchema);
+      }
+    }
+    return result;
+  }
+
+  return value;
+}
+
+// Helper function to set nested value in data object
+function setNestedValue(
+  obj: Record<string, any>,
+  key: string,
+  value: any
+): void {
+  const parts = key.split(/[.[\]]/).filter(Boolean);
+  if (parts.length === 0) return;
+
+  let current: Record<string, any> = obj;
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (!part) continue;
+
+    if (!(part in current)) {
+      current[part] = {};
+    }
+    current = current[part];
+  }
+
+  const lastPart = parts[parts.length - 1];
+  if (lastPart) {
+    current[lastPart] = value;
+  }
+}
+
 export function prepareApiRequest(
   options: PrepareApiRequestOptions
 ): PreparedApiRequest {
@@ -56,7 +129,7 @@ export function prepareApiRequest(
   if (parameters) {
     const pathParams = parameters.filter((param) => param.in === "path");
     pathParams.forEach((param) => {
-      const paramValue = data[`path_${param.name}`];
+      const paramValue = getNestedValue(data, `path_${param.name}`);
       if (paramValue !== undefined) {
         url = url.replace(
           `{${param.name}}`,
@@ -70,7 +143,7 @@ export function prepareApiRequest(
     if (queryParams.length > 0) {
       const queryString = queryParams
         .map((param) => {
-          const paramValue = data[`query_${param.name}`];
+          const paramValue = getNestedValue(data, `query_${param.name}`);
           if (paramValue !== undefined) {
             return `${encodeURIComponent(param.name)}=${encodeURIComponent(String(paramValue))}`;
           }
@@ -87,7 +160,7 @@ export function prepareApiRequest(
     // Process header parameters
     const headerParams = parameters.filter((param) => param.in === "header");
     headerParams.forEach((param) => {
-      const paramValue = data[`header_${param.name}`];
+      const paramValue = getNestedValue(data, `header_${param.name}`);
       if (paramValue !== undefined) {
         headers[param.name] = String(paramValue);
       }
@@ -104,12 +177,19 @@ export function prepareApiRequest(
 
     if (requestBodySchema.type === "object" && requestBodySchema.properties) {
       const bodyData: Record<string, any> = {};
+
+      // Process each property in the request body
       Object.entries(requestBodySchema.properties).forEach(([key, schema]) => {
-        const value = data[`body_${key}`];
+        const value = getNestedValue(data, `body_${key}`);
         if (value !== undefined) {
           try {
             if (schema.type === "array" || schema.type === "object") {
-              bodyData[key] = JSON.parse(value);
+              // Handle arrays and objects
+              if (typeof value === "string") {
+                bodyData[key] = JSON.parse(value);
+              } else {
+                bodyData[key] = value;
+              }
             } else if (schema.type === "number" || schema.type === "integer") {
               bodyData[key] = Number(value);
             } else if (schema.type === "boolean") {
@@ -118,22 +198,31 @@ export function prepareApiRequest(
               bodyData[key] = value;
             }
           } catch (e) {
+            // If parsing fails, use the value as is
             bodyData[key] = value;
           }
         }
       });
       body = JSON.stringify(bodyData);
     } else if (requestBodySchema.type === "array" && requestBodySchema.items) {
-      const value = data["body"];
+      const value = getNestedValue(data, "body");
       if (value !== undefined) {
         try {
-          body = JSON.stringify(JSON.parse(value));
+          if (Array.isArray(value)) {
+            body = JSON.stringify(value);
+          } else if (typeof value === "string" && value.includes(",")) {
+            body = JSON.stringify(value?.split(",").map((item) => item.trim()));
+          } else if (typeof value === "string") {
+            body = JSON.stringify([value]);
+          } else {
+            body = JSON.stringify([value]);
+          }
         } catch (e) {
           body = JSON.stringify([]);
         }
       }
     } else {
-      const value = data["body"];
+      const value = getNestedValue(data, "body");
       if (value !== undefined) {
         try {
           if (
@@ -150,6 +239,22 @@ export function prepareApiRequest(
           body = JSON.stringify(value);
         }
       }
+    }
+  } else {
+    const bodyParams = parameters?.filter((param) => param.in === "body");
+    if (bodyParams?.length) {
+      const bodyData: Record<string, any> = {};
+      bodyParams.forEach((param) => {
+        const paramValue = getNestedValue(
+          data,
+          `body_${param.name}`,
+          param.schema
+        );
+        if (paramValue !== undefined) {
+          bodyData[param.name] = paramValue;
+        }
+      });
+      body = JSON.stringify(bodyData.body);
     }
   }
 
@@ -218,7 +323,7 @@ export async function makeApiCallWithResponseData(
 
 export async function fetchServerlessLogs(
   options: FetchLogsOptions
-): Promise<void> {
+): Promise<any> {
   const { clientDeploymentId, endpointLink, setServerlessLogs } = options;
 
   try {
@@ -229,11 +334,16 @@ export async function fetchServerlessLogs(
         endpointLink,
       }),
     });
-    console.log("logs", logs);
     const logsData = await logs.json();
-    setServerlessLogs(logsData);
+    if (setServerlessLogs) {
+      setServerlessLogs(logsData);
+    }
+    return logsData;
   } catch (error) {
     console.error("Error fetching logs:", error);
-    setServerlessLogs(null);
+    if (setServerlessLogs) {
+      setServerlessLogs(null);
+    }
+    return null;
   }
 }

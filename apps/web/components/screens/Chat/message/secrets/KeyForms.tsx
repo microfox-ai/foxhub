@@ -4,15 +4,13 @@ import { useSecretForm } from "@/components/screens/mybots/providers/SecretFormP
 import { useSecret } from "@/components/screens/mybots/providers/SecretProvider";
 import ConfigDetailsForm from "@/components/screens/mybots/tabs/ConfigDetails";
 import RequiredKeysForm from "@/components/screens/mybots/tabs/RequiredKeysForm";
-import { RequiredKeyInfo } from "@/components/screens/mybots/types";
-import { KeyIcon, SettingsIcon, CheckCircle2, Loader2, CheckIcon, ArrowUpRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { ArrowUpRight, CheckCircle2, CheckIcon, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Constructor, Package } from "../types";
-import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { FormField } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
 interface GeneralTabProps {
     packageInfo?: Package;
@@ -191,26 +189,24 @@ export const KeyForms = ({
                         >
                             Cancel
                         </Button>
-                        {(form.formState.isDirty) && (
-                            <Button
-                                type="submit"
-                                disabled={isUpdating}
-                                variant="ghost"
-                                className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 hover:border-green-300"
-                            >
-                                {isUpdating ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        Updating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckIcon className="h-4 w-4 mr-2" />
-                                        Save Changes
-                                    </>
-                                )}
-                            </Button>
-                        )}
+                        <Button
+                            type="submit"
+                            disabled={isUpdating}
+                            variant="ghost"
+                            className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border border-green-200 hover:border-green-300"
+                        >
+                            {isUpdating ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Updating...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckIcon className="h-4 w-4 mr-2" />
+                                    Save Changes
+                                </>
+                            )}
+                        </Button>
                     </div>
                 </div>
             )}

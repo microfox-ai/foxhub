@@ -29,3 +29,11 @@ export const mapClientSecretToBot = (d: ClientSecretWithPackageInfo): Bot => ({
         c.auth.toLowerCase() === ClientSecretPackageType.APIKEY
     )?.botConfig as any[]) ?? [],
 });
+
+export const getBotImage = (bot: ClientSecretWithPackageInfo) => {
+  return (
+    ((bot.botConfig as any[]).find(
+      (c: ClientSecretVariable) => c?.ui?.type === "image"
+    )?.value as string) ?? "/images/default-bot-avatar.png"
+  );
+};

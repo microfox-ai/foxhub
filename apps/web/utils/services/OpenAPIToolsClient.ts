@@ -13,7 +13,7 @@ type JsonSchema = {
   format?: string;
   description?: string;
   properties?: Record<string, JsonSchema>;
-  items?: JsonSchema;
+  items?: JsonSchema | JsonSchema[]; // Allow items to be either a single schema or array of schemas
   required?: string[];
   enum?: any[];
   default?: any;
@@ -31,7 +31,7 @@ type OpenAPISchema = {
   format?: string;
   description?: string;
   properties?: Record<string, OpenAPISchema>;
-  items?: OpenAPISchema;
+  items?: OpenAPISchema; // Allow items to be either a single schema or array of schemas
   required?: string[];
   example?: any;
   enum?: any[];
@@ -183,6 +183,12 @@ interface OpenAPIToolsClientOptions {
    * Custom headers to include with every request
    */
   headers?: Record<string, string>;
+
+  /**
+   * Preset fields to include in request bodies
+   * These will be merged with the actual request data, with user-provided fields taking precedence
+   */
+  presetBodyFields?: Record<string, any>;
 
   /**
    * Function called on API request errors
@@ -376,6 +382,7 @@ class SingleOpenAPIToolsClient {
   private schema: OpenAPIDoc;
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
+  private presetBodyFields: Record<string, any>;
   private onError?: (error: Error) => void;
   private operationMap: Map<
     string,
@@ -389,12 +396,14 @@ class SingleOpenAPIToolsClient {
     schema: OpenAPIDoc;
     baseUrl?: string;
     headers?: Record<string, string>;
+    presetBodyFields?: Record<string, any>;
     onError?: (error: Error) => void;
     name?: string;
   }) {
     this.schema = options.schema;
     this.baseUrl = options.baseUrl || "";
     this.defaultHeaders = options.headers || {};
+    this.presetBodyFields = options.presetBodyFields || {};
     this.onError = options.onError;
     this.operationMap = new Map();
     this.name = options.name || "openapi-tools-client";
@@ -551,25 +560,61 @@ class SingleOpenAPIToolsClient {
       const requestBodySchema =
         operation.requestBody.content["application/json"].schema;
 
-      if (requestBodySchema.type === "object" && requestBodySchema.properties) {
-        // For object request bodies, we assume the args already have the right shape
-        // or that the properties are top-level in args
-        const bodyData: Record<string, any> = {};
+      console.log(`🔍 Preparing request body for ${operation.operationId}:`, {
+        schema: requestBodySchema,
+        args: args,
+        presetFields: this.presetBodyFields,
+      });
 
-        // Check if there's a single body argument containing the entire body
-        if (args.body && typeof args.body === "object") {
-          body = JSON.stringify(args.body);
-        } else {
-          // Otherwise, build body from individual properties
-          Object.keys(requestBodySchema.properties).forEach((key) => {
-            if (args[key] !== undefined) {
-              bodyData[key] = args[key];
+      if (requestBodySchema.type === "object" && requestBodySchema.properties) {
+        // Start with preset body fields
+        let bodyData: Record<string, any> = { ...this.presetBodyFields };
+
+        // Handle the case where we have a nested 'body' property in the schema
+        // This is common in serverless function wrappers like the temp.json example
+        if (requestBodySchema.properties.body) {
+          // The schema expects a 'body' property, so we need to construct the full structure
+          const providedBodyData: Record<string, any> = {};
+
+          // Check if user provided a complete body object
+          if (args.body && typeof args.body === "object") {
+            Object.assign(providedBodyData, args.body);
+          } else {
+            // Build body from individual properties in args
+            // Look for properties that aren't path/query parameters
+            for (const [key, value] of Object.entries(args)) {
+              // Skip parameter properties (they should be handled separately)
+              const isParameter = operation.parameters?.some(
+                (param) => param.name === key
+              );
+              if (!isParameter && value !== undefined) {
+                providedBodyData[key] = value;
+              }
             }
-          });
-          body = JSON.stringify(bodyData);
+          }
+
+          // Merge preset fields with provided data for the body
+          bodyData.body = { ...bodyData, ...providedBodyData };
+
+          console.log(`🔍 Constructed nested body structure:`, bodyData);
+        } else {
+          // No nested 'body' property - handle as flat structure
+          if (args.body && typeof args.body === "object") {
+            // Merge preset fields with the provided body, user fields take precedence
+            bodyData = { ...bodyData, ...args.body };
+          } else {
+            // Build body from individual properties and merge with presets
+            Object.keys(requestBodySchema.properties).forEach((key) => {
+              if (args[key] !== undefined) {
+                bodyData[key] = args[key]; // User-provided fields override presets
+              }
+            });
+          }
         }
+
+        body = JSON.stringify(bodyData);
       } else if (requestBodySchema.type === "array" && args.body) {
-        // For array request bodies
+        // For array request bodies, preset fields don't apply
         try {
           if (Array.isArray(args.body)) {
             body = JSON.stringify(args.body);
@@ -580,8 +625,11 @@ class SingleOpenAPIToolsClient {
           body = JSON.stringify([]);
         }
       } else if (args.body !== undefined) {
-        // For primitive request bodies
+        // For primitive request bodies, preset fields don't apply
         body = JSON.stringify(args.body);
+      } else if (Object.keys(this.presetBodyFields).length > 0) {
+        // If no body is provided but we have preset fields, use them
+        body = JSON.stringify(this.presetBodyFields);
       }
     }
 
@@ -710,6 +758,7 @@ class SingleOpenAPIToolsClient {
       $defs: this.convertComponentsToJsonSchema(),
     };
 
+    // Handle parameters (query, path, header params)
     if (operation.parameters) {
       for (const param of operation.parameters) {
         if (param.schema) {
@@ -728,22 +777,43 @@ class SingleOpenAPIToolsClient {
       }
     }
 
+    // Handle request body - preserve the nested structure
     if (operation.requestBody?.content) {
       if (operation.requestBody.content["application/json"]?.schema) {
         const bodySchema = this.convertOpenApiSchemaToJsonSchema(
           operation.requestBody.content["application/json"].schema,
           new Set()
         );
-        if (bodySchema.type === "object" && bodySchema.properties) {
-          for (const [name, propSchema] of Object.entries(
-            bodySchema.properties
-          )) {
-            schema.properties![name] = propSchema;
+
+        // console.log(`🔍 Original body schema for ${operation.operationId}:`, JSON.stringify(bodySchema, null, 2));
+
+        // Don't flatten - preserve the request body structure
+        // Add the entire body schema as a single property
+        if (bodySchema.type === "object") {
+          // If the body schema has properties, add them as individual top-level properties
+          // This allows the tool to accept the request body structure directly
+          if (bodySchema.properties) {
+            for (const [name, propSchema] of Object.entries(
+              bodySchema.properties
+            )) {
+              schema.properties![name] = propSchema;
+            }
+            if (bodySchema.required) {
+              schema.required!.push(...bodySchema.required);
+            }
           }
-          if (bodySchema.required) {
-            schema.required!.push(...bodySchema.required);
+        } else {
+          // For non-object body schemas (arrays, primitives), add as 'body' parameter
+          schema.properties!["body"] = bodySchema;
+          if (operation.requestBody.required) {
+            schema.required!.push("body");
           }
         }
+
+        console.log(
+          `🔍 Final tool schema for ${operation.operationId}:`,
+          JSON.stringify(schema, null, 2)
+        );
       }
     }
 
@@ -894,13 +964,35 @@ class SingleOpenAPIToolsClient {
       }
     }
 
-    if (schema.type === "array" && schema.items) {
+    if (schema.type === "array") {
       result.type = "array";
-      result.items = this.convertOpenApiSchemaToJsonSchema(
-        schema.items,
-        resolvedRefs,
-        resolveRefs
-      );
+      if (schema.items) {
+        // Handle both single schema and array of schemas (tuple validation)
+        if (Array.isArray(schema.items)) {
+          // For tuple validation, items is an array of schemas
+          result.items = schema.items.map((itemSchema: OpenAPISchema) =>
+            this.convertOpenApiSchemaToJsonSchema(
+              itemSchema,
+              resolvedRefs,
+              resolveRefs
+            )
+          );
+        } else {
+          // For regular arrays, items is a single schema
+          result.items = this.convertOpenApiSchemaToJsonSchema(
+            schema.items,
+            resolvedRefs,
+            resolveRefs
+          );
+        }
+      } else {
+        // If no items specified, default to object type for Google AI compatibility
+        console.log(`🔍 Array without items, defaulting to object type`);
+        result.items = {
+          type: "object",
+          additionalProperties: true,
+        };
+      }
     }
 
     if (schema.oneOf) {
@@ -924,21 +1016,24 @@ class SingleOpenAPIToolsClient {
 
   /**
    * Convert OpenAPI schema to Zod schema
+   * Ensures that any property not in the required array is made optional
+   * Ensures arrays have proper item schemas for AI SDK compatibility
    */
-  private convertOpenApiSchemaToZod(schema: OpenAPISchema): z.ZodType {
+  private convertOpenApiSchemaToZod(schema: JsonSchema): z.ZodType {
+    // console.log(`🔍 Converting schema to Zod:`, { type: schema.type, hasProperties: !!schema.properties, hasItems: !!schema.items });
+
     if (!schema.type) {
+      console.log(`🔍 No type specified, returning z.any()`);
       return z.any();
     }
 
     switch (schema.type) {
       case "string":
+        // console.log(`🔍 Creating string schema`);
         let stringSchema = z.string();
+        // Only use formats supported by Google AI API
         if (schema.format === "date-time") {
           stringSchema = z.string().datetime();
-        } else if (schema.format === "email") {
-          stringSchema = z.string().email();
-        } else if (schema.format === "uri") {
-          stringSchema = z.string().url();
         }
         if (schema.description) {
           stringSchema = stringSchema.describe(schema.description);
@@ -947,6 +1042,7 @@ class SingleOpenAPIToolsClient {
 
       case "number":
       case "integer":
+        // console.log(`🔍 Creating number schema`);
         let numberSchema =
           schema.type === "integer" ? z.number().int() : z.number();
         if (schema.description) {
@@ -955,6 +1051,7 @@ class SingleOpenAPIToolsClient {
         return numberSchema;
 
       case "boolean":
+        // console.log(`🔍 Creating boolean schema`);
         let booleanSchema = z.boolean();
         if (schema.description) {
           booleanSchema = booleanSchema.describe(schema.description);
@@ -962,41 +1059,84 @@ class SingleOpenAPIToolsClient {
         return booleanSchema;
 
       case "array":
+        // console.log(`🔍 Converting array schema:`, { hasItems: !!schema.items, isItemsArray: Array.isArray(schema.items) });
+
+        // For arrays, always ensure we have a proper item schema
+        let itemSchema: z.ZodType;
+
         if (!schema.items) {
-          return z.array(z.any());
+          // console.log(`🔍 No items specified, using z.object({}).passthrough()`);
+          // Use passthrough object instead of z.record for better JSON schema generation
+          itemSchema = z.object({}).passthrough();
+        } else if (Array.isArray(schema.items)) {
+          // console.log(`🔍 Converting tuple to regular array for AI SDK compatibility`);
+          if (schema.items.length === 0) {
+            itemSchema = z.object({}).passthrough();
+          } else {
+            // console.log(`🔍 Using first tuple item as array element type:`, schema.items[0]?.type);
+            const firstItemSchema = schema.items[0];
+            if (!firstItemSchema) {
+              // console.log(`🔍 No first item found, using z.object({}).passthrough()`);
+              itemSchema = z.object({}).passthrough();
+            } else {
+              itemSchema = this.convertOpenApiSchemaToZod(firstItemSchema);
+            }
+          }
+        } else {
+          // console.log(`🔍 Creating array with single item type`);
+          itemSchema = this.convertOpenApiSchemaToZod(schema.items);
         }
-        const itemSchema = this.convertOpenApiSchemaToZod(schema.items);
+
         let arraySchema = z.array(itemSchema);
         if (schema.description) {
           arraySchema = arraySchema.describe(schema.description);
         }
+        // console.log(`🔍 Created array schema with proper item type`);
         return arraySchema;
 
       case "object":
-        if (!schema.properties) {
-          return z.record(z.any());
+        // console.log(`🔍 Converting object schema:`, {
+        //   propertyCount: schema.properties ? Object.keys(schema.properties).length : 0,
+        //   requiredCount: schema.required ? schema.required.length : 0,
+        //   properties: schema.properties ? Object.keys(schema.properties) : [],
+        //   required: schema.required || []
+        // });
+
+        if (!schema.properties || Object.keys(schema.properties).length === 0) {
+          // console.log(`🔍 No properties, returning z.object({}).passthrough()`);
+          // Use passthrough for better JSON schema generation
+          return z.object({}).passthrough();
         }
+
         const shape: Record<string, z.ZodType> = {};
+
+        // Convert all properties first
         for (const [key, propSchema] of Object.entries(schema.properties)) {
-          shape[key] = this.convertOpenApiSchemaToZod(propSchema);
+          // console.log(`🔍 Converting property "${key}":`, propSchema.type);
+          const propZodSchema = this.convertOpenApiSchemaToZod(propSchema);
+
+          // Check if this property is required
+          const isRequired = schema.required && schema.required.includes(key);
+          // console.log(`🔍 Property "${key}" is ${isRequired ? 'required' : 'optional'}`);
+
+          if (isRequired) {
+            shape[key] = propZodSchema;
+          } else {
+            shape[key] = propZodSchema.optional();
+          }
         }
+
+        // console.log(`🔍 Creating object with ${Object.keys(shape).length} properties`);
         let objectSchema = z.object(shape);
-        if (schema.required) {
-          objectSchema = objectSchema.extend(
-            Object.fromEntries(
-              schema.required.map((key) => [
-                key,
-                shape[key]?.optional() ?? z.any(),
-              ])
-            )
-          );
-        }
         if (schema.description) {
           objectSchema = objectSchema.describe(schema.description);
         }
+
+        // console.log(`🔍 Created object schema successfully`);
         return objectSchema;
 
       default:
+        // console.log(`🔍 Unknown type "${schema.type}", returning z.any()`);
         return z.any();
     }
   }
@@ -1032,10 +1172,85 @@ class SingleOpenAPIToolsClient {
       const fullOperation = this.operationMap.get(id);
       if (!fullOperation) continue;
 
-      // Convert operation schema to Zod schema
-      const zodSchema = this.convertOpenApiSchemaToZod(
-        this.convertOperationToJsonSchema(fullOperation)
-      );
+      // Convert operation schema to JSON schema and then to Zod schema
+      const jsonSchema = this.convertOperationToJsonSchema(fullOperation);
+      const zodSchema = this.convertOpenApiSchemaToZod(jsonSchema);
+
+      // Better Zod schema debugging
+      // try {
+      // Recursive function to inspect Zod schema shapes
+      // const inspectZodShape = (schema: any, path: string = '', depth: number = 0): void => {
+      //   if (depth > 6) return; // Increase depth limit to see more nesting
+
+      //   const indent = '  '.repeat(depth);
+      //   console.log(`${indent}🔍 Inspecting ${path || 'root'} (${schema._def?.typeName || 'unknown'})`);
+
+      //   if (schema._def?.typeName === 'ZodObject') {
+      //     const shape = schema._def.shape();
+      //     const keys = Object.keys(shape || {});
+      //     console.log(`${indent}  Object keys: [${keys.join(', ')}]`);
+
+      //     // Inspect each property
+      //     for (const [key, propSchema] of Object.entries(shape || {})) {
+      //       const newPath = path ? `${path}.${key}` : key;
+      //       inspectZodShape(propSchema, newPath, depth + 1);
+      //     }
+      //   } else if (schema._def?.typeName === 'ZodArray') {
+      //     console.log(`${indent}  Array element type: ${schema._def.type._def?.typeName || 'unknown'}`);
+      //     inspectZodShape(schema._def.type, `${path}[]`, depth + 1);
+      //   } else if (schema._def?.typeName === 'ZodTuple') {
+      //     const items = schema._def.items || [];
+      //     console.log(`${indent}  Tuple with ${items.length} items:`);
+      //     items.forEach((item: any, index: number) => {
+      //       console.log(`${indent}  --- Tuple Item ${index} ---`);
+      //       inspectZodShape(item, `${path}[${index}]`, depth + 1);
+      //     });
+      //   } else if (schema._def?.typeName === 'ZodOptional') {
+      //     console.log(`${indent}  Optional wrapper around: ${schema._def.innerType._def?.typeName || 'unknown'}`);
+      //     inspectZodShape(schema._def.innerType, `${path} (optional)`, depth + 1);
+      //   } else {
+      //     const schemaType = schema._def?.typeName || 'unknown';
+      //     console.log(`${indent}  Primitive type: ${schemaType}`);
+      //     // For strings, show format if available
+      //     if (schemaType === 'ZodString' && schema._def?.checks) {
+      //       const checks = schema._def.checks.map((check: any) => check.kind).join(', ');
+      //       if (checks) console.log(`${indent}    Format checks: ${checks}`);
+      //     }
+      //   }
+      // };
+
+      // console.log(`🔍 === COMPLETE ZOD SCHEMA STRUCTURE ===`);
+      // inspectZodShape(zodSchema);
+      // console.log(`🔍 === END SCHEMA STRUCTURE ===`);
+
+      // Test specific arguments structure
+      //   console.log(`🔍 === TESTING ARGUMENTS ARRAY STRUCTURE ===`);
+      //   const testBodyWithArguments = {
+      //     body: {
+      //       arguments: [{}] // Empty argument object to see what's required
+      //     }
+      //   };
+      //   const argsValidation = zodSchema.safeParse(testBodyWithArguments);
+      //   console.log(`🔍 Arguments validation result:`, {
+      //     success: argsValidation.success,
+      //     errorCount: argsValidation.success ? 0 : argsValidation.error.issues.length
+      //   });
+
+      //   if (!argsValidation.success) {
+      //     console.log(`🔍 Arguments validation errors:`,
+      //       argsValidation.error.issues.map(issue => ({
+      //         path: issue.path.join('.'),
+      //         message: issue.message,
+      //         expected: issue.code
+      //       }))
+      //     );
+      //   }
+      //   console.log(`🔍 === END ARGUMENTS TEST ===`);
+
+      // } catch (e) {
+      //   console.log(`🔍 Zod schema validation error:`, e);
+      // }
+      // Zod schema created successfully
 
       // Create the tool
       const description =
@@ -1049,29 +1264,31 @@ class SingleOpenAPIToolsClient {
         description,
         parameters: zodSchema,
         execute: async (args, options) => {
+          console.log(`🔍 Calling tool ${id} with args:`, args);
+
           // Throw if aborted
           options?.abortSignal?.throwIfAborted();
 
-          // If validation is enabled, validate the arguments
-          if (validateParameters) {
-            try {
-              // Parse and validate arguments against the schema
-              const validatedArgs = zodSchema.parse(args);
-              return self.callOperation(id, validatedArgs, options);
-            } catch (error) {
-              // Format validation errors in a user-friendly way
-              if (error instanceof z.ZodError) {
-                const formattedError = new Error(
-                  `Parameter validation failed: ${error.errors
-                    .map((e) => `${e.path.join(".")}: ${e.message}`)
-                    .join(", ")}`
-                );
-                formattedError.name = "ValidationError";
-                throw formattedError;
-              }
-              throw error;
-            }
-          }
+          // If validation is enabled, validate the arguments against Zod schema
+          // if (validateParameters) {
+          //   try {
+          //     // Parse and validate arguments against the schema
+          //     const validatedArgs = zodSchema.parse(args);
+          //     return self.callOperation(id, validatedArgs, options);
+          //   } catch (error) {
+          //     // Format validation errors in a user-friendly way
+          //     if (error instanceof z.ZodError) {
+          //       const formattedError = new Error(
+          //         `Parameter validation failed: ${error.errors.map(e =>
+          //           `${e.path.join('.')}: ${e.message}`
+          //         ).join(', ')}`
+          //       );
+          //       formattedError.name = 'ValidationError';
+          //       throw formattedError;
+          //     }
+          //     throw error;
+          //   }
+          // }
 
           // Call the operation without validation
           return self.callOperation(id, args, options);
@@ -1162,6 +1379,12 @@ async function parseSchema(
  * The client can be used to call API operations directly or generate AI SDK-compatible tools
  *
  * @param options Client configuration options (single or array for multiple schemas)
+ *   - schema: The OpenAPI schema configuration
+ *   - baseUrl: Optional base URL to override schema servers
+ *   - headers: Custom headers to include with every request
+ *   - presetBodyFields: Fields to automatically include in request bodies (can be overridden by tool callers)
+ *   - onError: Error handler function
+ *   - name: Custom name for the client instance
  * @returns OpenAPIToolsClient instance
  */
 export async function createOpenAPIToolsClient(

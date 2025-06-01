@@ -242,10 +242,15 @@ const PreviewWindow = () => {
       case "boolean":
         return z.boolean();
       case "array":
-        if (schema.items) {
-          return z.array(createZodSchemaFromOpenAPI(schema.items));
+        if (Array.isArray(schema.items) && schema.items.length > 0) {
+          return z.array(z.any());
         }
-        return z.array(z.any());
+        else if (schema.items) {
+          return z.array(createZodSchemaFromOpenAPI(schema.items as OpenAPISchema));
+        }
+        else {
+          return z.array(z.any());
+        }
       case "object":
         if (schema.properties) {
           const objectSchema: Record<string, z.ZodType<any>> = {};

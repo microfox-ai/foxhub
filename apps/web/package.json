@@ -29,6 +29,7 @@
     "@google/generative-ai": "^0.24.0",
     "@hookform/resolvers": "^4.1.3",
     "@microfox/aws-ses": "^1.0.4",
+    "@microfox/crypto-sdk": "^1.0.3",
     "@microfox/google-oauth": "^1.0.3",
     "@microfox/google-sdk": "^1.0.2",
     "@microfox/linkedin-oauth": "^1.0.4",

@@ -31,7 +31,7 @@ type OpenAPISchema = {
   format?: string;
   description?: string;
   properties?: Record<string, OpenAPISchema>;
-  items?: OpenAPISchema | OpenAPISchema[]; // Allow items to be either a single schema or array of schemas
+  items?: OpenAPISchema; // Allow items to be either a single schema or array of schemas
   required?: string[];
   example?: any;
   enum?: any[];

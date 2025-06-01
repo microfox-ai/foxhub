@@ -35,7 +35,7 @@ export const cloneTemplate = async ({
   targetPath = "",
   sourceBranch = "main",
   targetBranch = "main",
-  commitMessage = "nodeploy: Clone template files",
+  commitMessage = "[skip ci] Clone template files",
   excludeFiles = [],
   clientRequest,
   taskInstanceMeta,

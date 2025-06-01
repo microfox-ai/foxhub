@@ -197,8 +197,8 @@ export const installFoxRouter: ServerStreamingFunction<
     targetPath: clientRequest.requestDir || "",
     sourceBranch: "main",
     targetBranch: clientRequest.prBranch || "main",
-    commitMessage: `nodeploy: Installing shard ${shardPage.title} for ${clientRequest.title}`,
-    excludeFiles: ["clientRequest.json"],
+    commitMessage: `[skip ci] Installing shard ${shardPage.title} for ${clientRequest.title}`,
+    excludeFiles: ["clientRequest.json", "CHANGELOG.md"],
     clientRequest,
     taskInstanceMeta: taskInstanceMeta as any as TaskInstanceMetaType,
   });

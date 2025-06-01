@@ -13,7 +13,7 @@ export const useTaskInstanceMeta = ({
 }: UseTaskInstanceMetaProps) => {
   const [deploymentInfo, setDeploymentInfo] = useState<any | ClientDeployment | null>(null);
   const { data, error, mutate, isLoading, isValidating } =
-    useSWR<TaskInstanceMetaType>(
+    useSWR<TaskInstanceMetaType & { id: string }>(
       clientRequestId
         ? `/api/task-instance-meta?clientRequestId=${clientRequestId}`
         : null,
@@ -27,6 +27,14 @@ export const useTaskInstanceMeta = ({
       }
     );
 
+  const updateTaskInstanceMeta = async (_taskInstanceMeta: TaskInstanceMetaType) => {
+    const response = await PortalSdk.putData(
+      `/api/task-instance-meta`,
+      _taskInstanceMeta
+    );
+    mutate(response as TaskInstanceMetaType & { id: string });
+    return response as TaskInstanceMetaType & { id: string };
+  };
   return {
     taskInstanceMeta: data,
     isLoading: isLoading || isValidating,
@@ -34,6 +42,7 @@ export const useTaskInstanceMeta = ({
     mutate,
     deploymentInfo,
     setDeploymentInfo,
+    updateTaskInstanceMeta,
   };
 };
 

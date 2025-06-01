@@ -91,7 +91,7 @@ export const genEnvCollector = async (
       const envExtraInfo = await generateObject({
         model: models.googleGeminiPro,
         schema: z.object({
-          envVariables: z.array(extraEnvVariables),
+          envVariables: z.array(extraEnvVariables.omit({ ui: true })),
         }),
         system: `You are an expert backend developer`,
         prompt: `

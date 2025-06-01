@@ -50,11 +50,11 @@ type OpenAPIParameter = {
   schema: OpenAPISchema;
   description?: string;
   example?: any;
-}
+};
 
 type OpenAPIContent = {
   schema: OpenAPISchema;
-}
+};
 
 type OpenAPIResponse = {
   description: string;
@@ -111,7 +111,7 @@ type OpenAPIDoc = {
 type ToolMethod = {
   name: string;
   description: string;
-  inputSchema: JsonSchema & { type: 'object' };
+  inputSchema: JsonSchema & { type: "object" };
   returnSchema?: JsonSchema;
 };
 
@@ -133,13 +133,16 @@ type ToolSchema = {
   };
 };
 
-type ToolSchemas = Record<string, ToolSchema> | 'automatic';
+type ToolSchemas = Record<string, ToolSchema> | "automatic";
 
 type ToolExecuteOptions = {
   abortSignal?: AbortSignal;
 };
 
-type ToolExecuteFn = (args: Record<string, any>, options?: ToolExecuteOptions) => Promise<any>;
+type ToolExecuteFn = (
+  args: Record<string, any>,
+  options?: ToolExecuteOptions
+) => Promise<any>;
 
 type ToolSet = Record<string, Tool>;
 
@@ -151,7 +154,7 @@ type SchemaConfig = {
    * - text: JSON string of the schema
    * - url: URL to fetch the schema from
    */
-  type: 'object' | 'text' | 'url';
+  type: "object" | "text" | "url";
 
   /**
    * The OpenAPI schema when type is 'object' or 'text'
@@ -220,17 +223,26 @@ export class OpenAPIToolsClient {
   private clients: SingleOpenAPIToolsClient[] = [];
   private initialized: boolean = false;
 
-  constructor(options: OpenAPIToolsClientOptions | OpenAPIToolsClientOptions[]) {
+  constructor(
+    options: OpenAPIToolsClientOptions | OpenAPIToolsClientOptions[]
+  ) {
     // Convert single option to array for unified handling
     const optionsArray = Array.isArray(options) ? options : [options];
 
     // Create a client for each option
     optionsArray.forEach((opt, index) => {
-      this.clients.push(new SingleOpenAPIToolsClient({
-        ...opt,
-        schema: typeof opt.schema === 'string' ? JSON.parse(opt.schema) : opt.schema,
-        name: opt.name || `${(opt.schema as OpenAPIDoc).info.title.toLowerCase().replace(/ /g, '_')}`
-      }));
+      this.clients.push(
+        new SingleOpenAPIToolsClient({
+          ...opt,
+          schema:
+            typeof opt.schema === "string"
+              ? JSON.parse(opt.schema)
+              : opt.schema,
+          name:
+            opt.name ||
+            `${(opt.schema as OpenAPIDoc).info.title.toLowerCase().replace(/ /g, "_")}`,
+        })
+      );
     });
   }
 
@@ -244,13 +256,14 @@ export class OpenAPIToolsClient {
 
     try {
       // Initialize all clients in parallel, each will parse its schema
-      await Promise.all(this.clients.map(client => client.init()));
+      await Promise.all(this.clients.map((client) => client.init()));
       this.initialized = true;
       return this;
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Unknown error during initialization';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Unknown error during initialization";
 
       throw new Error(`Failed to initialize OpenAPI clients: ${errorMessage}`);
     }
@@ -261,27 +274,25 @@ export class OpenAPIToolsClient {
    */
   async listOperations() {
     if (!this.initialized) {
-      throw new Error('Clients not initialized. Call init() first.');
+      throw new Error("Clients not initialized. Call init() first.");
     }
 
     // Get operations from all clients
     const allOperationsResults = await Promise.all(
-      this.clients.map(client => client.listOperations())
+      this.clients.map((client) => client.listOperations())
     );
 
     // Combine operations from all clients with properly namespaced IDs
-    const operations = allOperationsResults.flatMap(
-      (result, index) => {
-        const client = this.clients[index];
-        if (!client) return []; // Skip if client is undefined
+    const operations = allOperationsResults.flatMap((result, index) => {
+      const client = this.clients[index];
+      if (!client) return []; // Skip if client is undefined
 
-        return result.operations.map((op) => ({
-          ...op,
-          // Add client name to ID to avoid conflicts
-          id: `${client.getName()}-${op.id}`
-        }));
-      }
-    );
+      return result.operations.map((op) => ({
+        ...op,
+        // Add client name to ID to avoid conflicts
+        id: `${client.getName()}-${op.id}`,
+      }));
+    });
 
     return { operations };
   }
@@ -289,19 +300,25 @@ export class OpenAPIToolsClient {
   /**
    * Call a specific API operation from any client
    */
-  async callOperation(id: string, args: Record<string, any> = {}, options?: ToolExecuteOptions) {
+  async callOperation(
+    id: string,
+    args: Record<string, any> = {},
+    options?: ToolExecuteOptions
+  ) {
     if (!this.initialized) {
-      throw new Error('Clients not initialized. Call init() first.');
+      throw new Error("Clients not initialized. Call init() first.");
     }
 
     // Extract client name and operation ID
-    const [clientName, operationId] = id.split(':');
+    const [clientName, operationId] = id.split(":");
     if (!clientName || !operationId) {
-      throw new Error(`Invalid operation ID format: ${id}. Expected format: "clientName:operationId"`);
+      throw new Error(
+        `Invalid operation ID format: ${id}. Expected format: "clientName:operationId"`
+      );
     }
 
     // Find the client
-    const client = this.clients.find(c => c.getName() === clientName);
+    const client = this.clients.find((c) => c.getName() === clientName);
     if (!client) {
       throw new Error(`Client "${clientName}" not found.`);
     }
@@ -314,22 +331,24 @@ export class OpenAPIToolsClient {
    * Returns a set of tools generated from all OpenAPI schemas
    */
   async tools({
-    schemas = 'automatic',
-    validateParameters = false
+    schemas = "automatic",
+    validateParameters = false,
   }: {
     schemas?: ToolSchemas;
     validateParameters?: boolean; // When true, validates parameters against the schema
   } = {}): Promise<ToolSet> {
     if (!this.initialized) {
-      throw new Error('Clients not initialized. Call init() first.');
+      throw new Error("Clients not initialized. Call init() first.");
     }
 
     // Get tools from all clients
     const allToolsResults = await Promise.all(
-      this.clients.map(client => client.tools({
-        schemas,
-        validateParameters  // Pass validation option to each client
-      }))
+      this.clients.map((client) =>
+        client.tools({
+          schemas,
+          validateParameters, // Pass validation option to each client
+        })
+      )
     );
 
     // Combine tools from all clients
@@ -365,7 +384,10 @@ class SingleOpenAPIToolsClient {
   private defaultHeaders: Record<string, string>;
   private presetBodyFields: Record<string, any>;
   private onError?: (error: Error) => void;
-  private operationMap: Map<string, OpenAPIOperation & { path: string; method: string }>;
+  private operationMap: Map<
+    string,
+    OpenAPIOperation & { path: string; method: string }
+  >;
   private name: string;
   private initialized: boolean = false;
   private schemaCache: Record<string, JsonSchema> = {};
@@ -379,12 +401,12 @@ class SingleOpenAPIToolsClient {
     name?: string;
   }) {
     this.schema = options.schema;
-    this.baseUrl = options.baseUrl || '';
+    this.baseUrl = options.baseUrl || "";
     this.defaultHeaders = options.headers || {};
     this.presetBodyFields = options.presetBodyFields || {};
     this.onError = options.onError;
     this.operationMap = new Map();
-    this.name = options.name || 'openapi-tools-client';
+    this.name = options.name || "openapi-tools-client";
   }
 
   /**
@@ -404,7 +426,11 @@ class SingleOpenAPIToolsClient {
 
     try {
       // Set base URL from schema if not provided
-      if (!this.baseUrl && this.schema.servers && this.schema.servers.length > 0) {
+      if (
+        !this.baseUrl &&
+        this.schema.servers &&
+        this.schema.servers.length > 0
+      ) {
         const serverUrl = this.schema.servers[0]?.url;
         if (serverUrl) {
           this.baseUrl = serverUrl;
@@ -417,9 +443,10 @@ class SingleOpenAPIToolsClient {
       this.initialized = true;
       return this;
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Unknown error during initialization';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Unknown error during initialization";
 
       if (this.onError && error instanceof Error) {
         this.onError(error);
@@ -431,20 +458,26 @@ class SingleOpenAPIToolsClient {
 
   private setupOperationMap() {
     for (const [path, methods] of Object.entries(this.schema.paths)) {
-      for (const [method, pathOperation] of Object.entries(methods as OpenAPIPath)) {
+      for (const [method, pathOperation] of Object.entries(
+        methods as OpenAPIPath
+      )) {
         const operation = pathOperation as OpenAPIOperation;
         const operationId = this.generateOperationId(path, method, operation);
 
         this.operationMap.set(operationId, {
           ...operation,
           path,
-          method: method.toUpperCase()
+          method: method.toUpperCase(),
         });
       }
     }
   }
 
-  private generateOperationId(path: string, method: string, operation: OpenAPIOperation): string {
+  private generateOperationId(
+    path: string,
+    method: string,
+    operation: OpenAPIOperation
+  ): string {
     // First priority: use the operationId from the schema if available
     if (operation.operationId) {
       return operation.operationId;
@@ -452,10 +485,10 @@ class SingleOpenAPIToolsClient {
 
     // Second priority: generate an ID from the path and method
     const pathPart = path
-      .replace(/^\/|\/$/g, '')
-      .replace(/-/g, '_')
-      .replace(/\/\{([^}]+)\}/g, '_by_$1')
-      .replace(/\//g, '_');
+      .replace(/^\/|\/$/g, "")
+      .replace(/-/g, "_")
+      .replace(/\/\{([^}]+)\}/g, "_by_$1")
+      .replace(/\//g, "_");
 
     return `${method.toLowerCase()}_${pathPart}`;
   }
@@ -472,7 +505,9 @@ class SingleOpenAPIToolsClient {
 
     // Process path parameters
     if (operation.parameters) {
-      const pathParams = operation.parameters.filter((param) => param.in === "path");
+      const pathParams = operation.parameters.filter(
+        (param) => param.in === "path"
+      );
       pathParams.forEach((param) => {
         const paramValue = args[param.name];
         if (paramValue !== undefined) {
@@ -484,7 +519,9 @@ class SingleOpenAPIToolsClient {
       });
 
       // Process query parameters
-      const queryParams = operation.parameters.filter((param) => param.in === "query");
+      const queryParams = operation.parameters.filter(
+        (param) => param.in === "query"
+      );
       if (queryParams.length > 0) {
         const queryString = queryParams
           .map((param) => {
@@ -503,7 +540,9 @@ class SingleOpenAPIToolsClient {
       }
 
       // Process header parameters
-      const headerParams = operation.parameters.filter((param) => param.in === "header");
+      const headerParams = operation.parameters.filter(
+        (param) => param.in === "header"
+      );
       headerParams.forEach((param) => {
         const paramValue = args[param.name];
         if (paramValue !== undefined) {
@@ -518,12 +557,13 @@ class SingleOpenAPIToolsClient {
       ["POST", "PUT", "PATCH"].includes(operation.method) &&
       operation.requestBody?.content?.["application/json"]?.schema
     ) {
-      const requestBodySchema = operation.requestBody.content["application/json"].schema;
+      const requestBodySchema =
+        operation.requestBody.content["application/json"].schema;
 
       console.log(`🔍 Preparing request body for ${operation.operationId}:`, {
         schema: requestBodySchema,
         args: args,
-        presetFields: this.presetBodyFields
+        presetFields: this.presetBodyFields,
       });
 
       if (requestBodySchema.type === "object" && requestBodySchema.properties) {
@@ -537,14 +577,16 @@ class SingleOpenAPIToolsClient {
           const providedBodyData: Record<string, any> = {};
 
           // Check if user provided a complete body object
-          if (args.body && typeof args.body === 'object') {
+          if (args.body && typeof args.body === "object") {
             Object.assign(providedBodyData, args.body);
           } else {
             // Build body from individual properties in args
             // Look for properties that aren't path/query parameters
             for (const [key, value] of Object.entries(args)) {
               // Skip parameter properties (they should be handled separately)
-              const isParameter = operation.parameters?.some(param => param.name === key);
+              const isParameter = operation.parameters?.some(
+                (param) => param.name === key
+              );
               if (!isParameter && value !== undefined) {
                 providedBodyData[key] = value;
               }
@@ -557,7 +599,7 @@ class SingleOpenAPIToolsClient {
           console.log(`🔍 Constructed nested body structure:`, bodyData);
         } else {
           // No nested 'body' property - handle as flat structure
-          if (args.body && typeof args.body === 'object') {
+          if (args.body && typeof args.body === "object") {
             // Merge preset fields with the provided body, user fields take precedence
             bodyData = { ...bodyData, ...args.body };
           } else {
@@ -571,7 +613,6 @@ class SingleOpenAPIToolsClient {
         }
 
         body = JSON.stringify(bodyData);
-
       } else if (requestBodySchema.type === "array" && args.body) {
         // For array request bodies, preset fields don't apply
         try {
@@ -599,7 +640,7 @@ class SingleOpenAPIToolsClient {
     const { url, method, headers, body, signal } = options;
 
     try {
-      console.log("Making request", { url })
+      console.log("Making request", { url });
       const response = await fetch(url, {
         method,
         headers,
@@ -617,7 +658,7 @@ class SingleOpenAPIToolsClient {
       } else {
         data = await response.text();
       }
-      console.log("Response", { data, contentType, status: response.status })
+      console.log("Response", { data, contentType, status: response.status });
 
       return {
         data,
@@ -634,7 +675,9 @@ class SingleOpenAPIToolsClient {
         this.onError(error);
       }
 
-      throw new Error(error instanceof Error ? error.message : "An unexpected error occurred");
+      throw new Error(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
     }
   }
 
@@ -644,7 +687,7 @@ class SingleOpenAPIToolsClient {
    */
   async listOperations() {
     if (!this.initialized) {
-      throw new Error('Client not initialized. Call init() first.');
+      throw new Error("Client not initialized. Call init() first.");
     }
 
     const operations: {
@@ -665,7 +708,7 @@ class SingleOpenAPIToolsClient {
         parameters: operation.parameters,
         requestBody: operation.requestBody,
         path: operation.path,
-        method: operation.method
+        method: operation.method,
       });
     }
 
@@ -675,14 +718,20 @@ class SingleOpenAPIToolsClient {
   /**
    * Call a specific API operation from the OpenAPI schema
    */
-  async callOperation(id: string, args: Record<string, any> = {}, options?: ToolExecuteOptions) {
+  async callOperation(
+    id: string,
+    args: Record<string, any> = {},
+    options?: ToolExecuteOptions
+  ) {
     if (!this.initialized) {
-      throw new Error('Client not initialized. Call init() first.');
+      throw new Error("Client not initialized. Call init() first.");
     }
 
     const operation = this.operationMap.get(id);
     if (!operation) {
-      throw new Error(`Operation "${id}" not found. Available operations: ${Array.from(this.operationMap.keys()).join(', ')}`);
+      throw new Error(
+        `Operation "${id}" not found. Available operations: ${Array.from(this.operationMap.keys()).join(", ")}`
+      );
     }
 
     const { url, headers, body } = this.prepareRequest(operation, args);
@@ -692,16 +741,18 @@ class SingleOpenAPIToolsClient {
       method: operation.method,
       headers,
       body,
-      signal: options?.abortSignal
+      signal: options?.abortSignal,
     });
   }
 
   /**
    * Convert operation to JSON Schema
    */
-  private convertOperationToJsonSchema(operation: OpenAPIOperation & { path: string; method: string }): JsonSchema & { type: 'object' } {
-    const schema: JsonSchema & { type: 'object' } = {
-      type: 'object',
+  private convertOperationToJsonSchema(
+    operation: OpenAPIOperation & { path: string; method: string }
+  ): JsonSchema & { type: "object" } {
+    const schema: JsonSchema & { type: "object" } = {
+      type: "object",
       properties: {},
       required: [],
       $defs: this.convertComponentsToJsonSchema(),
@@ -711,7 +762,10 @@ class SingleOpenAPIToolsClient {
     if (operation.parameters) {
       for (const param of operation.parameters) {
         if (param.schema) {
-          const paramSchema = this.convertOpenApiSchemaToJsonSchema(param.schema, new Set());
+          const paramSchema = this.convertOpenApiSchemaToJsonSchema(
+            param.schema,
+            new Set()
+          );
           if (param.description) {
             paramSchema.description = param.description;
           }
@@ -725,9 +779,9 @@ class SingleOpenAPIToolsClient {
 
     // Handle request body - preserve the nested structure
     if (operation.requestBody?.content) {
-      if (operation.requestBody.content['application/json']?.schema) {
+      if (operation.requestBody.content["application/json"]?.schema) {
         const bodySchema = this.convertOpenApiSchemaToJsonSchema(
-          operation.requestBody.content['application/json'].schema,
+          operation.requestBody.content["application/json"].schema,
           new Set()
         );
 
@@ -735,11 +789,13 @@ class SingleOpenAPIToolsClient {
 
         // Don't flatten - preserve the request body structure
         // Add the entire body schema as a single property
-        if (bodySchema.type === 'object') {
+        if (bodySchema.type === "object") {
           // If the body schema has properties, add them as individual top-level properties
           // This allows the tool to accept the request body structure directly
           if (bodySchema.properties) {
-            for (const [name, propSchema] of Object.entries(bodySchema.properties)) {
+            for (const [name, propSchema] of Object.entries(
+              bodySchema.properties
+            )) {
               schema.properties![name] = propSchema;
             }
             if (bodySchema.required) {
@@ -748,13 +804,16 @@ class SingleOpenAPIToolsClient {
           }
         } else {
           // For non-object body schemas (arrays, primitives), add as 'body' parameter
-          schema.properties!['body'] = bodySchema;
+          schema.properties!["body"] = bodySchema;
           if (operation.requestBody.required) {
-            schema.required!.push('body');
+            schema.required!.push("body");
           }
         }
 
-        console.log(`🔍 Final tool schema for ${operation.operationId}:`, JSON.stringify(schema, null, 2));
+        console.log(
+          `🔍 Final tool schema for ${operation.operationId}:`,
+          JSON.stringify(schema, null, 2)
+        );
       }
     }
 
@@ -776,15 +835,18 @@ class SingleOpenAPIToolsClient {
   /**
    * Resolve a $ref reference to its schema in the openApiSpec
    */
-  private internalResolveRef(ref: string, resolvedRefs: Set<string>): OpenAPISchema | null {
-    if (!ref.startsWith('#/')) {
+  private internalResolveRef(
+    ref: string,
+    resolvedRefs: Set<string>
+  ): OpenAPISchema | null {
+    if (!ref.startsWith("#/")) {
       return null;
     }
     if (resolvedRefs.has(ref)) {
       return null;
     }
 
-    const parts = ref.replace(/^#\//, '').split('/');
+    const parts = ref.replace(/^#\//, "").split("/");
     let current: any = this.schema;
     for (const part of parts) {
       current = current[part];
@@ -800,14 +862,14 @@ class SingleOpenAPIToolsClient {
   private convertOpenApiSchemaToJsonSchema(
     schema: OpenAPISchema,
     resolvedRefs: Set<string>,
-    resolveRefs: boolean = false,
+    resolveRefs: boolean = false
   ): JsonSchema {
     if (schema.$ref) {
       const ref = schema.$ref;
       if (!resolveRefs) {
-        if (ref.startsWith('#/components/schemas/')) {
+        if (ref.startsWith("#/components/schemas/")) {
           return {
-            $ref: ref.replace(/^#\/components\/schemas\//, '#/$defs/'),
+            $ref: ref.replace(/^#\/components\/schemas\//, "#/$defs/"),
             ...(schema.description ? { description: schema.description } : {}),
           };
         }
@@ -825,11 +887,15 @@ class SingleOpenAPIToolsClient {
       const resolved = this.internalResolveRef(ref, resolvedRefs);
       if (!resolved) {
         return {
-          $ref: ref.replace(/^#\/components\/schemas\//, '#/$defs/'),
-          description: schema.description || '',
+          $ref: ref.replace(/^#\/components\/schemas\//, "#/$defs/"),
+          description: schema.description || "",
         };
       } else {
-        const converted = this.convertOpenApiSchemaToJsonSchema(resolved, resolvedRefs, resolveRefs);
+        const converted = this.convertOpenApiSchemaToJsonSchema(
+          resolved,
+          resolvedRefs,
+          resolveRefs
+        );
         this.schemaCache[ref] = converted;
         return converted;
       }
@@ -841,10 +907,12 @@ class SingleOpenAPIToolsClient {
       result.type = schema.type;
     }
 
-    if (schema.format === 'binary') {
-      result.format = 'uri-reference';
-      const binaryDesc = 'absolute paths to local files';
-      result.description = schema.description ? `${schema.description} (${binaryDesc})` : binaryDesc;
+    if (schema.format === "binary") {
+      result.format = "uri-reference";
+      const binaryDesc = "absolute paths to local files";
+      result.description = schema.description
+        ? `${schema.description} (${binaryDesc})`
+        : binaryDesc;
     } else {
       if (schema.format) {
         result.format = schema.format;
@@ -862,57 +930,85 @@ class SingleOpenAPIToolsClient {
       result.default = schema.default;
     }
 
-    if (schema.type === 'object') {
-      result.type = 'object';
+    if (schema.type === "object") {
+      result.type = "object";
       if (schema.properties) {
         result.properties = {};
         for (const [name, propSchema] of Object.entries(schema.properties)) {
-          result.properties[name] = this.convertOpenApiSchemaToJsonSchema(propSchema, resolvedRefs, resolveRefs);
+          result.properties[name] = this.convertOpenApiSchemaToJsonSchema(
+            propSchema,
+            resolvedRefs,
+            resolveRefs
+          );
         }
       }
       if (schema.required) {
         result.required = schema.required;
       }
-      if (schema.additionalProperties === true || schema.additionalProperties === undefined) {
+      if (
+        schema.additionalProperties === true ||
+        schema.additionalProperties === undefined
+      ) {
         result.additionalProperties = true;
-      } else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
-        result.additionalProperties = this.convertOpenApiSchemaToJsonSchema(schema.additionalProperties, resolvedRefs, resolveRefs);
+      } else if (
+        schema.additionalProperties &&
+        typeof schema.additionalProperties === "object"
+      ) {
+        result.additionalProperties = this.convertOpenApiSchemaToJsonSchema(
+          schema.additionalProperties,
+          resolvedRefs,
+          resolveRefs
+        );
       } else {
         result.additionalProperties = false;
       }
     }
 
-    if (schema.type === 'array') {
-      result.type = 'array';
+    if (schema.type === "array") {
+      result.type = "array";
       if (schema.items) {
         // Handle both single schema and array of schemas (tuple validation)
         if (Array.isArray(schema.items)) {
           // For tuple validation, items is an array of schemas
           result.items = schema.items.map((itemSchema: OpenAPISchema) =>
-            this.convertOpenApiSchemaToJsonSchema(itemSchema, resolvedRefs, resolveRefs)
+            this.convertOpenApiSchemaToJsonSchema(
+              itemSchema,
+              resolvedRefs,
+              resolveRefs
+            )
           );
         } else {
           // For regular arrays, items is a single schema
-          result.items = this.convertOpenApiSchemaToJsonSchema(schema.items, resolvedRefs, resolveRefs);
+          result.items = this.convertOpenApiSchemaToJsonSchema(
+            schema.items,
+            resolvedRefs,
+            resolveRefs
+          );
         }
       } else {
         // If no items specified, default to object type for Google AI compatibility
         console.log(`🔍 Array without items, defaulting to object type`);
         result.items = {
-          type: 'object',
-          additionalProperties: true
+          type: "object",
+          additionalProperties: true,
         };
       }
     }
 
     if (schema.oneOf) {
-      result.oneOf = schema.oneOf.map((s: OpenAPISchema) => this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs));
+      result.oneOf = schema.oneOf.map((s: OpenAPISchema) =>
+        this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs)
+      );
     }
     if (schema.anyOf) {
-      result.anyOf = schema.anyOf.map((s: OpenAPISchema) => this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs));
+      result.anyOf = schema.anyOf.map((s: OpenAPISchema) =>
+        this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs)
+      );
     }
     if (schema.allOf) {
-      result.allOf = schema.allOf.map((s: OpenAPISchema) => this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs));
+      result.allOf = schema.allOf.map((s: OpenAPISchema) =>
+        this.convertOpenApiSchemaToJsonSchema(s, resolvedRefs, resolveRefs)
+      );
     }
 
     return result;
@@ -932,11 +1028,11 @@ class SingleOpenAPIToolsClient {
     }
 
     switch (schema.type) {
-      case 'string':
+      case "string":
         // console.log(`🔍 Creating string schema`);
         let stringSchema = z.string();
         // Only use formats supported by Google AI API
-        if (schema.format === 'date-time') {
+        if (schema.format === "date-time") {
           stringSchema = z.string().datetime();
         }
         if (schema.description) {
@@ -944,16 +1040,17 @@ class SingleOpenAPIToolsClient {
         }
         return stringSchema;
 
-      case 'number':
-      case 'integer':
+      case "number":
+      case "integer":
         // console.log(`🔍 Creating number schema`);
-        let numberSchema = schema.type === 'integer' ? z.number().int() : z.number();
+        let numberSchema =
+          schema.type === "integer" ? z.number().int() : z.number();
         if (schema.description) {
           numberSchema = numberSchema.describe(schema.description);
         }
         return numberSchema;
 
-      case 'boolean':
+      case "boolean":
         // console.log(`🔍 Creating boolean schema`);
         let booleanSchema = z.boolean();
         if (schema.description) {
@@ -961,7 +1058,7 @@ class SingleOpenAPIToolsClient {
         }
         return booleanSchema;
 
-      case 'array':
+      case "array":
         // console.log(`🔍 Converting array schema:`, { hasItems: !!schema.items, isItemsArray: Array.isArray(schema.items) });
 
         // For arrays, always ensure we have a proper item schema
@@ -997,7 +1094,7 @@ class SingleOpenAPIToolsClient {
         // console.log(`🔍 Created array schema with proper item type`);
         return arraySchema;
 
-      case 'object':
+      case "object":
         // console.log(`🔍 Converting object schema:`, {
         //   propertyCount: schema.properties ? Object.keys(schema.properties).length : 0,
         //   requiredCount: schema.required ? schema.required.length : 0,
@@ -1031,7 +1128,6 @@ class SingleOpenAPIToolsClient {
 
         // console.log(`🔍 Creating object with ${Object.keys(shape).length} properties`);
         let objectSchema = z.object(shape);
-
         if (schema.description) {
           objectSchema = objectSchema.describe(schema.description);
         }
@@ -1049,14 +1145,14 @@ class SingleOpenAPIToolsClient {
    * Returns a set of tools generated from the OpenAPI schema
    */
   async tools({
-    schemas = 'automatic',
-    validateParameters = false
+    schemas = "automatic",
+    validateParameters = false,
   }: {
     schemas?: ToolSchemas;
     validateParameters?: boolean; // When true, validates parameters against the schema
   } = {}): Promise<ToolSet> {
     if (!this.initialized) {
-      throw new Error('Client not initialized. Call init() first.');
+      throw new Error("Client not initialized. Call init() first.");
     }
 
     const tools: ToolSet = {};
@@ -1068,7 +1164,7 @@ class SingleOpenAPIToolsClient {
       const id = operation.id;
 
       // Skip operations not in schemas if schemas is provided
-      if (schemas !== 'automatic' && !(id in schemas)) {
+      if (schemas !== "automatic" && !(id in schemas)) {
         continue;
       }
 
@@ -1141,7 +1237,7 @@ class SingleOpenAPIToolsClient {
       //   });
 
       //   if (!argsValidation.success) {
-      //     console.log(`🔍 Arguments validation errors:`, 
+      //     console.log(`🔍 Arguments validation errors:`,
       //       argsValidation.error.issues.map(issue => ({
       //         path: issue.path.join('.'),
       //         message: issue.message,
@@ -1157,7 +1253,10 @@ class SingleOpenAPIToolsClient {
       // Zod schema created successfully
 
       // Create the tool
-      const description = operation.description || operation.summary || `${operation.method} ${operation.path}`;
+      const description =
+        operation.description ||
+        operation.summary ||
+        `${operation.method} ${operation.path}`;
       const self = this;
 
       tools[id] = {
@@ -1193,7 +1292,7 @@ class SingleOpenAPIToolsClient {
 
           // Call the operation without validation
           return self.callOperation(id, args, options);
-        }
+        },
       };
     }
 
@@ -1204,10 +1303,12 @@ class SingleOpenAPIToolsClient {
 /**
  * Parse and validate the schema configuration
  */
-async function parseSchema(config: SchemaConfig | OpenAPIDoc | string): Promise<OpenAPIDoc> {
+async function parseSchema(
+  config: SchemaConfig | OpenAPIDoc | string
+): Promise<OpenAPIDoc> {
   let parsedSchema: OpenAPIDoc;
 
-  if (typeof config === 'string') {
+  if (typeof config === "string") {
     // Handle string as either JSON text or URL
     try {
       parsedSchema = JSON.parse(config);
@@ -1220,21 +1321,31 @@ async function parseSchema(config: SchemaConfig | OpenAPIDoc | string): Promise<
         }
         parsedSchema = await response.json();
       } catch (fetchError: any) {
-        throw new Error(`Invalid schema JSON string and failed to fetch as URL: ${fetchError.message || String(fetchError)}`);
+        throw new Error(
+          `Invalid schema JSON string and failed to fetch as URL: ${fetchError.message || String(fetchError)}`
+        );
       }
     }
-  } else if (config && typeof config === 'object') {
-    if ('type' in config) {
+  } else if (config && typeof config === "object") {
+    if ("type" in config) {
       // Handle SchemaConfig object
-      if (config.type === 'object' && config.schema && typeof config.schema !== 'string') {
+      if (
+        config.type === "object" &&
+        config.schema &&
+        typeof config.schema !== "string"
+      ) {
         parsedSchema = config.schema;
-      } else if (config.type === 'text' && config.schema && typeof config.schema === 'string') {
+      } else if (
+        config.type === "text" &&
+        config.schema &&
+        typeof config.schema === "string"
+      ) {
         try {
           parsedSchema = JSON.parse(config.schema);
         } catch (error) {
-          throw new Error('Invalid schema JSON string');
+          throw new Error("Invalid schema JSON string");
         }
-      } else if (config.type === 'url' && config.url) {
+      } else if (config.type === "url" && config.url) {
         // Fetch from URL
         try {
           const response = await fetch(config.url);
@@ -1243,17 +1354,21 @@ async function parseSchema(config: SchemaConfig | OpenAPIDoc | string): Promise<
           }
           parsedSchema = await response.json();
         } catch (error: any) {
-          throw new Error(`Failed to fetch schema from URL: ${error.message || String(error)}`);
+          throw new Error(
+            `Failed to fetch schema from URL: ${error.message || String(error)}`
+          );
         }
       } else {
-        throw new Error('Invalid schema configuration: missing required properties for the specified type');
+        throw new Error(
+          "Invalid schema configuration: missing required properties for the specified type"
+        );
       }
     } else {
       // Assume it's a raw OpenAPIDoc object
       parsedSchema = config as OpenAPIDoc;
     }
   } else {
-    throw new Error('Invalid schema configuration');
+    throw new Error("Invalid schema configuration");
   }
 
   return parsedSchema;
@@ -1262,7 +1377,7 @@ async function parseSchema(config: SchemaConfig | OpenAPIDoc | string): Promise<
 /**
  * Create an OpenAPI client for interacting with an API described by an OpenAPI schema
  * The client can be used to call API operations directly or generate AI SDK-compatible tools
- * 
+ *
  * @param options Client configuration options (single or array for multiple schemas)
  *   - schema: The OpenAPI schema configuration
  *   - baseUrl: Optional base URL to override schema servers
@@ -1272,7 +1387,9 @@ async function parseSchema(config: SchemaConfig | OpenAPIDoc | string): Promise<
  *   - name: Custom name for the client instance
  * @returns OpenAPIToolsClient instance
  */
-export async function createOpenAPIToolsClient(options: OpenAPIToolsClientOptions | OpenAPIToolsClientOptions[]): Promise<OpenAPIToolsClient> {
+export async function createOpenAPIToolsClient(
+  options: OpenAPIToolsClientOptions | OpenAPIToolsClientOptions[]
+): Promise<OpenAPIToolsClient> {
   try {
     // Handle single option or array of options
     const isArray = Array.isArray(options);
@@ -1284,7 +1401,7 @@ export async function createOpenAPIToolsClient(options: OpenAPIToolsClientOption
           const parsedSchema = await parseSchema(opt.schema);
           return {
             ...opt,
-            schema: parsedSchema
+            schema: parsedSchema,
           };
         })
       );
@@ -1297,12 +1414,13 @@ export async function createOpenAPIToolsClient(options: OpenAPIToolsClientOption
       const parsedSchema = await parseSchema(options.schema);
       const client = new OpenAPIToolsClient({
         ...options,
-        schema: parsedSchema
+        schema: parsedSchema,
       });
       return await client.init();
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     console.error(`Failed to create OpenAPI client: ${errorMessage}`);
     throw new Error(`Failed to create OpenAPI client: ${errorMessage}`);
   }
@@ -1327,5 +1445,5 @@ export type {
   ToolSet,
   SchemaConfig,
   APIResponse,
-  OpenAPIToolsClientOptions
-}; 
+  OpenAPIToolsClientOptions,
+};

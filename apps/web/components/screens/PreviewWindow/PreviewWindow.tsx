@@ -46,6 +46,8 @@ import {
   getStatusColor,
   getStatusText,
 } from "./utils";
+import { Badge } from "@/components/ui/badge";
+import { Command, CommandInput } from "@/components/ui/command";
 
 const PreviewWindow = () => {
   const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
@@ -99,22 +101,28 @@ const PreviewWindow = () => {
               fieldSchema = z.string().transform((val) => val === "true");
               break;
             case "array":
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return [];
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return [];
+                  }
+                }),
+                z.array(z.any())
+              ]);
               break;
             case "object":
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return {};
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return {};
+                  }
+                }),
+                z.record(z.any())
+              ]);
               break;
           }
         }
@@ -140,13 +148,16 @@ const PreviewWindow = () => {
             let fieldSchema: any = z.string();
 
             if (schema.type === "array" || schema.type === "object") {
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return schema.type === "array" ? [] : {};
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return schema.type === "array" ? [] : {};
+                  }
+                }),
+                schema.type === "array" ? z.array(z.any()) : z.record(z.any())
+              ]);
             } else if (
               schema.type === "number" ||
               schema.type === "integer"
@@ -166,13 +177,16 @@ const PreviewWindow = () => {
             requestBodySchema.type === "array" &&
             requestBodySchema.items
           ) {
-            bodySchema = z.string().transform((val) => {
-              try {
-                return JSON.parse(val);
-              } catch {
-                return [];
-              }
-            });
+            bodySchema = z.union([
+              z.string().transform((val) => {
+                try {
+                  return JSON.parse(val);
+                } catch {
+                  return [];
+                }
+              }),
+              z.array(z.any())
+            ]);
           } else if (
             requestBodySchema.type === "number" ||
             requestBodySchema.type === "integer"
@@ -249,7 +263,9 @@ const PreviewWindow = () => {
   };
 
   const makeApiCall = async () => {
-    if (!currentEndpointData) return;
+    if (!currentEndpointData) {
+      return;
+    }
 
     // Create new abort controller
     const controller = new AbortController();
@@ -262,11 +278,12 @@ const PreviewWindow = () => {
       setServerlessLogs(null);
       setResponse(null);
       setRequest(null);
+      const formValues = form.getValues();
       const { url, headers, body } = prepareApiRequest({
         baseUrl: BASE_URL,
         path: currentEndpointData.path || "",
         method: currentEndpointData.method,
-        data: form.getValues(),
+        data: formValues,
         parameters: currentEndpointData.parameters,
         requestBody: currentEndpointData.requestBody
       });
@@ -289,11 +306,9 @@ const PreviewWindow = () => {
         setResponse: setResponse
       });
     } catch (error) {
-      console.error("Request preparation error:", error);
+      // Handle error silently
     } finally {
-      //console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // Then fetch logs, regardless of API call outcome
       await fetchServerlessLogs({
         clientDeploymentId: (deploymentInfo as ClientDeployment).id,
         endpointLink: endpointLink,
@@ -313,7 +328,14 @@ const PreviewWindow = () => {
     } else {
       // Start new request
       setShowValidation(true);
-      form.handleSubmit(makeApiCall)();
+      form.handleSubmit(
+        (data) => {
+          makeApiCall();
+        },
+        (errors) => {
+          // Handle validation errors silently
+        }
+      )();
     }
   };
 
@@ -588,6 +610,82 @@ const PreviewWindow = () => {
           />
         );
       case "array":
+        const description = schema.description;
+        if (schema.items?.type === "object") {
+          return (
+            <div className="grid gap-2">
+              <h4 className="text-sm font-medium text-neutral-700">
+                {description}
+              </h4>
+              {Object.entries(schema.items).map(([_key, value], _index) => {
+                return renderFormField(key + "[" + _index + "]" + "." + _key, value, schema.required?.includes(_key) || false, value.description);
+              })}
+            </div>
+          )
+        }
+        if (schema.items?.type === "string") {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {field.value ? field.value.split(",").map((item: string, index: number) => (
+                        <Badge
+                          key={`${item}-${index}`}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          {item}
+                          <button
+                            onClick={() => {
+                              const newItems = field.value.split(",").filter((_, i) => i !== index);
+                              field.onChange(newItems.join(","));
+                            }}
+                            className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          >
+                            <X className="h-3 w-3" />
+                            <span className="sr-only">Remove item</span>
+                          </button>
+                        </Badge>
+                      )) : null}
+                    </div>
+                    <div className="flex gap-2">
+                      <Command className="rounded-lg border shadow-md">
+                        <CommandInput
+                          placeholder={getPlaceholder(
+                            key,
+                            "array",
+                            currentEndpointData?.method === "GET",
+                            schema.example
+                          )}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value) {
+                              e.preventDefault();
+                              const newValue = e.currentTarget.value.trim();
+                              if (newValue) {
+                                const currentItems = field.value ? field.value.split(",") : [];
+                                if (!currentItems.includes(newValue)) {
+                                  field.onChange([...currentItems, newValue].join(","));
+                                }
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </Command>
+                    </div>
+                  </div>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
         return (
           <FormField
             key={key}
@@ -614,6 +712,15 @@ const PreviewWindow = () => {
           />
         );
       case "object":
+        if (schema.properties) {
+          return (
+            <div className="grid gap-2">
+              {Object.entries(schema.properties).map(([_key, value]) => {
+                return renderFormField(key + "." + _key, value, schema.required?.includes(_key) || false, value.description);
+              })}
+            </div>
+          )
+        }
         return (
           <FormField
             key={key}
@@ -762,19 +869,12 @@ const PreviewWindow = () => {
           setFetchError(null); // Clear any previous errors
         }
       } catch (err) {
-        console.error("Error fetching serverless logs:", err);
         setFetchError(err instanceof Error ? err.message : "Failed to fetch server logs");
         setErrorServerlessLogs(null);
       }
     };
     fetchErrorLogs();
   }, [error, deploymentInfo]);
-
-
-  // setError(null);
-  // setErrorServerlessLogs(null);
-  // setShowErrorLogs(false);
-  // setFetchError(null);
 
 
   const refreshServerlessLogs = async () => {
@@ -789,7 +889,7 @@ const PreviewWindow = () => {
         setServerlessLogs: setServerlessLogs
       });
     } catch (error) {
-      console.error("Error refreshing logs:", error);
+      // Handle error silently
     } finally {
       setIsRefreshingLogs(false);
     }
@@ -874,7 +974,6 @@ const PreviewWindow = () => {
                       deploymentInfo: deploymentInfo,
                       fetchError: fetchError
                     }
-                    console.log("errorAttachment", errorAttachment);
                     setSubmitAnnotations((sa) => {
                       const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
                       const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
@@ -1404,7 +1503,6 @@ const PreviewWindow = () => {
                                   request: request,
                                   modificationInstructions: modificationInstructions
                                 }
-                                console.log("errorAttachment", errorAttachment);
                                 setModificationInstructions("");
                                 setSubmitAnnotations((sa) => {
                                   const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");

@@ -28,6 +28,7 @@ import { createReadStream } from "fs";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
 import { getServiceName } from "../buildfox/helper/getServiceName";
+import { getFunctionNameFromKebabCase } from "../buildfox/prompt.coding";
 const generatePlatformsPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
   if (!taskInstanceMeta.taskIntegrations) {
     throw new Error("Task integrations not found");
@@ -91,7 +92,8 @@ export const createTaskStructure = async (
         - Keep the entire structure lean & sinple, with each function/cronjob doing end-to-end jobs 
         - do not divide a job into multiple functions unless it absolutely makes sense
         ---
-        
+        name should always be in camel case, without any extension.
+        brief: should be as detailed as possible of the code step by step
         `,
       schema: taskStructure,
       maxRetries: 3,
@@ -106,7 +108,7 @@ export const createTaskStructure = async (
 
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,
-      model: models.googleGeminiTwoFive.modelId,
+      model: models.claude4Sonnet.modelId,
       usage: response.usage,
     });
 
@@ -136,7 +138,21 @@ export const createTaskStructure = async (
       clientRequestId: requestBody.clientRequestId,
       taskInstanceMeta: {
         ...taskInstanceMeta,
-        taskStructure: object,
+        taskStructure: {
+          ...object,
+          lambdaFunctions: object.lambdaFunctions?.map((lambda) => ({
+            ...lambda,
+            name: getFunctionNameFromKebabCase(lambda.name),
+          })),
+          cronJobs: object.cronJobs?.map((cron) => ({
+            ...cron,
+            name: getFunctionNameFromKebabCase(cron.name),
+          })),
+          dbSchemas: object.dbSchemas?.map((db) => ({
+            ...db,
+            modelName: getFunctionNameFromKebabCase(db.modelName),
+          })),
+        },
       },
     });
 

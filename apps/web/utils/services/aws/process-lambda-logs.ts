@@ -1,5 +1,5 @@
 import { CloudWatchLogEvent } from "@/types/aws";
-import { calculateLambdaCost } from "./lambda-pricing";
+import { calculateLambdaCost } from "../billing/lambda-pricing";
 
 export interface LambdaInvocation {
   requestId: string;
@@ -58,6 +58,11 @@ export function processLambdaLogs(
           }
           if (endpointPath) break;
         }
+      }
+
+      if (functionDetails.functionName === "getDocs") {
+        endpointPath = "/docs";
+        httpMethod = "GET";
       }
 
       currentInvocation = {

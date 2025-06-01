@@ -22,9 +22,10 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { RequestSettings } from "./RequestSettings";
+import { TaskRequiredInfo } from "./TaskRequiredInfo";
 
 const ConfigureTab = () => {
-    const { clientRequestId } = useClientProject();
+    const { selectedRequest } = useClientProject();
     const { handleRightCollapse } = useLayout();
     const {
         taskInstanceMeta,
@@ -53,15 +54,28 @@ const ConfigureTab = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 grid grid-cols-12 gap-4 thin-scrollbar">
+        <div className="max-w-[1000px] w-full mx-auto p-6 grid grid-cols-12 gap-4 thin-scrollbar">
             <div className="col-span-12 flex items-center gap-2 mb-8">
                 <LayoutDashboard className="w-5 h-5" />
                 <h2 className="text-2xl font-semibold text-gray-900">Dashboard</h2>
             </div>
 
             <div className="col-span-12">
-                <DeployStatus
-                />
+                <div className="grid grid-cols-12 gap-4 rounded-md mb-10">
+                    <div className="col-span-8 flex flex-col items-start gap-2">
+                        <h3 className="text-sm font-semibold text-gray-900">
+                            {selectedRequest?.title}
+                        </h3>
+                        <p className="text-3xl text-gray-800">
+                            {taskInstanceMeta?.taskInfo?.goal ?? ""}
+                        </p>
+                    </div>
+                </div>
+                <div className="col-span-4">
+                    <div className="flex flex-col items-start gap-2">
+
+                    </div>
+                </div>
             </div>
 
             <div className="col-span-6">
@@ -75,6 +89,15 @@ const ConfigureTab = () => {
 
             <div className="col-span-6">
                 <SecretVault />
+            </div>
+
+            <div className="col-span-12">
+                <TaskRequiredInfo />
+            </div>
+
+            <div className="col-span-12">
+                <DeployStatus
+                />
             </div>
 
             <div className="col-span-12">

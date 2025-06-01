@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import { getLambdaLogs } from "./aws_helper";
+import { getLambdaLogs } from "../aws/aws_helper";
 import { ClientDeployment } from "@prisma/client";
 import { ClientDeploymentMetadata } from "@/server/types";
-import { LambdaInvocation, processLambdaLogs } from "./process-lambda-logs";
+import {
+  LambdaInvocation,
+  processLambdaLogs,
+} from "../aws/process-lambda-logs";
 
 export interface LambdaUsageResult {
   invocations: LambdaInvocation[];
@@ -85,7 +88,7 @@ export async function fetchLambdaUsage(
     0
   );
   const totalMemoryUsed = invocations.reduce(
-    (sum, inv) => sum + inv.maxMemoryUsed,
+    (sum, inv) => sum + inv.billedDuration,
     0
   );
 

@@ -121,7 +121,7 @@ export async function createPullRequest({
       owner: PROJECT_REPO_OWNER,
       repo: botProject.githubRepoName,
       path: readmeFilePath,
-      message: `Add README for ${requestTitle}`,
+      message: `[skip ci] Add README for ${requestTitle}`,
       content: Buffer.from(`DESCRIPTION: ${description}`).toString("base64"),
       branch: newBranch,
     });
@@ -157,7 +157,17 @@ export async function createPullRequest({
       prTargetBranch: pr.data.base.ref,
       templateVersion: botProject.templateVersion,
       metadata: {
-        pr: pr.data,
+        pr: {
+          html_url: pr.data.html_url,
+          url: pr.url,
+          title: pr.data.title,
+          body: pr.data.body,
+          created_at: pr.data.created_at,
+          updated_at: pr.data.updated_at,
+          closed_at: pr.data.closed_at,
+          merged_at: pr.data.merged_at,
+          merge_commit_sha: pr.data.merge_commit_sha,
+        },
         uniqueRequestTitle: uniqueRequestTitle,
         requestSubdir: _requestSubdir,
         requestFullDir: requestDir,
@@ -175,7 +185,7 @@ export async function createPullRequest({
       owner: PROJECT_REPO_OWNER,
       repo: botProject.githubRepoName,
       path: clientRequestFilePath,
-      message: `Add clientRequest.json for ${requestTitle}`,
+      message: `[skip ci] Add clientRequest.json for ${requestTitle}`,
       content: Buffer.from(
         JSON.stringify(updatedClientRequest, null, 2)
       ).toString("base64"),

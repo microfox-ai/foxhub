@@ -28,3 +28,28 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    if (!body.id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    const { id, ...updateData } = body;
+
+    const taskInstanceMeta = await prisma.taskInstanceMeta.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json(taskInstanceMeta);
+  } catch (error) {
+    console.error("Error updating task instance meta:", error);
+    return NextResponse.json(
+      { error: "Failed to update task instance meta" },
+      { status: 500 }
+    );
+  }
+}

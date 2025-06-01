@@ -155,10 +155,16 @@ model UsageAnalytics {
   promptTokens     Int     @default(0)
   totalTokens      Int     @default(0)
   completionTokens Int     @default(0)
+  invocations      Int     @default(0)
   model            String?
   hour             String?
   day              String?
   month            String?
+  requestId        String?
+  projectId        String?
+  userId           String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt        
 }
 
 model ClientSecret {
@@ -343,4 +349,16 @@ model UsageReport {
   updatedAt       DateTime      @updatedAt
 }
 
-// dateKey+clientRequest+cycle = unique
+// -------- Process Webhook Events ------
+
+model WebhookEvent {
+  id              String        @id @default(uuid())
+  status          String?
+  originClientRequestId   String?
+  originBotProjectId    String?
+  provider        String
+  event_id        String?
+  event_name      String?
+  payload         Json?
+  triggerRoute    Json?
+}

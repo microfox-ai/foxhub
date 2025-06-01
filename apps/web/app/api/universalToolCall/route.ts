@@ -5,7 +5,10 @@ import { prisma } from "@/prisma/prisma";
 async function middleware(request: NextRequest) {
   const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
   if (!ENCRYPTION_KEY) {
-    throw new Error("ENCRYPTION_KEY is not defined in environment variables");
+    return NextResponse.json(
+      { error: "ENCRYPTION_KEY is not defined in environment variables" },
+      { status: 400 }
+    );
   }
   const KEY = Buffer.from(ENCRYPTION_KEY, "base64"); // 32 bytes
 
@@ -47,17 +50,17 @@ async function middleware(request: NextRequest) {
   ]);
   const authTag = cipher.getAuthTag();
 
-  const bundle = Buffer.concat([iv, authTag, encrypted]).toString('base64');
-  
+  const bundle = Buffer.concat([iv, authTag, encrypted]).toString("base64");
+
   // Make the Base64 URL-safe by replacing + with - and / with _
-  const urlSafeBundle = bundle.replace(/\+/g, '-').replace(/\//g, '_');
+  const urlSafeBundle = bundle.replace(/\+/g, "-").replace(/\//g, "_");
   // Remove padding = characters
-  const trimmedBundle = urlSafeBundle.replace(/=+$/, '');
+  const trimmedBundle = urlSafeBundle.replace(/=+$/, "");
 
   // Create URL with the bundle as a search parameter
   const targetUrl = new URL(publicApiUrl);
-  targetUrl.searchParams.set('client-env-variables', trimmedBundle);
-  
+  targetUrl.searchParams.set("client-env-variables", trimmedBundle);
+
   return NextResponse.redirect(targetUrl.toString(), 307);
 }
 

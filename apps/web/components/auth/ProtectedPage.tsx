@@ -13,7 +13,7 @@ export default async function ProtectedPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return redirect("/login");
+    redirect("/login");
   }
 
   // Check if user exists in database
@@ -22,9 +22,8 @@ export default async function ProtectedPage({
   });
 
   if (!dbUser) {
-    return redirect("/login");
+    redirect("/login");
   }
-
 
   const isProduction = APP_BASE_URL === "https://microfox.app";
 
@@ -33,13 +32,11 @@ export default async function ProtectedPage({
       <div className="flex flex-col items-center justify-center h-screen">
         <h4>
           This feature is only available in{" "}
-          <a href="https://staging.microfox.app">
-            staging.microfox.app
-          </a>{" "}
-          for now.
+          <a href="https://staging.microfox.app">staging.microfox.app</a> for
+          now.
         </h4>
       </div>
-    )
+    );
   }
 
   if (!dbUser.isBetaAccess && !IN_DEV) {

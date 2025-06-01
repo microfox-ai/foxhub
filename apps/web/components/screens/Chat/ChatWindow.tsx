@@ -184,7 +184,7 @@ function ChatWindow({
                     }}
                     className=" w-full h-full overflow-y-auto thin-scrollbar"
                   >
-                    <div className="max-w-[800px] mx-auto">
+                    <div className="p-4 h-full mx-auto">
                       <ConfigureTab />
                     </div>
                   </motion.div>

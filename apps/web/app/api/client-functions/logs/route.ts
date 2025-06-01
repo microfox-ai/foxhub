@@ -28,12 +28,12 @@ export async function POST(req: NextRequest) {
         endpointLink.includes(f.endpointLink) || f.endpointLink === endpointLink
     );
 
-    console.log(
-      thisFunction,
-      "thisFunction",
-      endpointLink,
-      serverlessConfig.functionBase
-    );
+    // console.log(
+    //   thisFunction,
+    //   "thisFunction",
+    //   endpointLink,
+    //   serverlessConfig.functionBase
+    // );
     if (!thisFunction) {
       return NextResponse.json(
         { error: "Function not found" },

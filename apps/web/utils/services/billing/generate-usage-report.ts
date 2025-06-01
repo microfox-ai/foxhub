@@ -51,6 +51,12 @@ export async function generateUsageReport(
     }
 
     try {
+      console.log(
+        "Generating usage report for requestId: ",
+        requestId,
+        "dateKeyFull: ",
+        dateKeyFull
+      );
       // 1. Fetch lambda usage for the full day
       const lambdaUsage = await fetchLambdaUsage(requestId, clientDeployment, {
         pageSize: 100,
@@ -67,11 +73,7 @@ export async function generateUsageReport(
       const thirdPartyUsage = await fetchThirdPartyUsage(requestId);
 
       // 3. Fetch ai usage for the full day
-      const aiUsage = await fetchAiUsage(
-        clientRequest.userId,
-        requestId,
-        dateKeyFull
-      );
+      const aiUsage = await fetchAiUsage(requestId, dateKeyFull);
 
       // 3. Merge and create usage report
       const usageReport = {

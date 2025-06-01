@@ -203,6 +203,10 @@ export const TokenUsageAnalyticsTracker = {
         },
         ...query,
       },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
     });
     return usage;
   },

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   octokitWebhook.onAny(async (event) => {
     console.log("octokit event", event.name);
     if (event.name === "push") {
-      console.log("push event", event.payload);
+      //console.log("push event", event.payload);
       const { repository, ref, head_commit } = event.payload;
       const branch = ref.replace("refs/heads/", "");
       const repoName = repository.name;
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         //   });
       }
       if (commitMessage.includes("updatefox")) {
-        console.log("buildfox commit", commitMessage);
+        console.log("updatefox commit", commitMessage);
         await prisma.webhookEvent.create({
           data: {
             status: "pending",

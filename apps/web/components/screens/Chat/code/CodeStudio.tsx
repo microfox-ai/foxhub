@@ -25,7 +25,7 @@ import { Loader2 } from 'lucide-react';
 import { useClientProject } from '../../providers/ClientProjectProvider';
 import { PROJECT_REPO_OWNER } from '@/utils/constants/githubInfo';
 import useSWR from 'swr';
-import { ClientSecretVariable } from '@/server/types';
+import { ClientSecretPackageType, ClientSecretVariable } from '@/server/types';
 import { ClientSecret } from '@prisma/client';
 import { useParams } from 'next/navigation';
 import { IN_DEV } from '@/utils/constants/appInfo';
@@ -186,7 +186,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isModified, setIsModified] = useState(false);
-    const { taskInstanceMeta } = useTaskInstanceMetaContext();
+    const { taskInstanceMeta, updateTaskInstanceMeta } = useTaskInstanceMetaContext();
     const { selectedRequest } = useClientProject();
     const [codePopoverOpen, setCodePopoverOpen] = useState(false);
 
@@ -232,9 +232,82 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             setIsLoading(false);
         }
     };
+    const { data: secretsData, mutate: mutateSecrets } = useSWR<{
+        clientSecrets: ClientSecret[];
+    }>(
+        selectedRequest?.id
+            ? `/api/client-secrets?clientRequestId=${selectedRequest?.id}&status=FILLED`
+            : null,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch secrets");
+            return res.json();
+        },
+        {
+            revalidateOnFocus: true,
+        }
+    );
+    const existingCustomSecrets = secretsData?.clientSecrets?.filter((secret) => secret.packageType == ClientSecretPackageType.CUSTOM) || [];
+    const updateSecretsAndConfiguration = async () => {
+        if (activeFile?.id != ".env") return;
+        if (!taskInstanceMeta || !taskInstanceMeta.taskRequiredInfo) return;
+        try {
+            setIsSaving(true);
+            const variables = editorContent.split("\n").map((line) => {
+                const [key, value] = line.split("=");
+                return { key, value: value?.trim(), isOptional: false };
+            });
+            const existingSecret = existingCustomSecrets[0];
+            const body = { id: existingSecret?.id, variables }
+            await fetch("/api/client-secrets", {
+                method: "PUT",
+                body: JSON.stringify(body),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            const existingEnvVariables = taskInstanceMeta?.taskRequiredInfo?.customEnvVariables?.map((variable) => variable.env);
+            await updateTaskInstanceMeta({
+                ...taskInstanceMeta,
+                taskRequiredInfo: {
+                    ...taskInstanceMeta?.taskRequiredInfo,
+                    customEnvVariables: [
+                        ...(taskInstanceMeta?.taskRequiredInfo?.customEnvVariables || []),
+                        ...variables.filter((variable: any) => variable.key && variable.value && !existingEnvVariables.includes(variable.key)).map((variable: any) => ({
+                            name: variable.key.replaceAll(/_/g, " ").replace(/\b\w/g, (match: string) => match.toUpperCase()),
+                            env: variable.key,
+                            what: "",
+                            how: "",
+                            why: "",
+                        }))
+                    ]
+                }
+            });
+            mutateSecrets();
+            toast.success("Environment variables updated successfully");
+            setIsSaving(false);
+            setIsModified(false);
+        } catch (error) {
+            console.error('Error updating secrets and configuration:', error);
+            toast.error('Failed to update secrets and configuration');
+            setIsSaving(false);
+            setIsModified(false);
+        }
+    }
 
     const saveFileContent = async () => {
         if (!activeFile || !selectedRequest || !selectedRequest.repoName || !selectedRequest.prBranch) return;
+
+        if (activeFile.id === ".env") {
+            await updateSecretsAndConfiguration();
+            return;
+        }
+
+        if (activeFile.id === "README.md") {
+            //await updateSecretsAndConfiguration();
+            return;
+        }
+
 
         const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath?.replaceAll("\\", "/").replace(selectedRequest.repoName + "/", '');
         try {
@@ -349,24 +422,8 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         request_id?: string;
     }>();
     const requestParamId = params?.request_id;
-    const { data: secretsData, mutate: mutateSecrets } = useSWR<{
-        clientSecrets: ClientSecret[];
-    }>(
-        requestParamId
-            ? `/api/client-secrets?clientRequestId=${requestParamId}&status=FILLED`
-            : null,
-        async (url: string) => {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Failed to fetch secrets");
-            return res.json();
-        },
-        {
-            revalidateOnFocus: true,
-        }
-    );
-    const secrets = secretsData?.clientSecrets?.filter((secret) => !secret.isHidden) || [];
     const envFile = useMemo(() => {
-        let variables = secrets.flatMap((secret: any) => (secret.variables ?? [])?.concat(secret.botConfig ?? []))?.filter((variable: ClientSecretVariable) => !variable.key.includes("CLIENT_"));
+        let variables = existingCustomSecrets.flatMap((secret: any) => (secret.variables ?? [])?.concat(secret.botConfig ?? []))?.filter((variable: ClientSecretVariable) => !variable.key.includes("CLIENT_"));
         return {
             id: ".env",
             name: ".env",
@@ -376,7 +433,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             content: generateDefaultEnvFile(variables),
             fileType: "env"
         }
-    }, [secrets]);
+    }, [existingCustomSecrets]);
 
     const readmeFile = useMemo(() => {
         return {

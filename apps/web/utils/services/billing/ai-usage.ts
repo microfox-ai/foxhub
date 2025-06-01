@@ -21,11 +21,7 @@ export const getLogoUrl = (provider: string) => {
   return `https://raw.githubusercontent.com/microfox-ai/microfox/refs/heads/main/logos/${map[provider as keyof typeof map]}`;
 };
 
-export const fetchAiUsage = async (
-  userId: string,
-  requestId: string,
-  dateKeyFull: string
-) => {
+export const fetchAiUsage = async (requestId: string, dateKeyFull: string) => {
   const aiUsage =
     await TokenUsageAnalyticsTracker.getFilteredTokenUsagePerRequest(
       requestId,
@@ -35,20 +31,23 @@ export const fetchAiUsage = async (
             onDate: dateKeyFull,
           }
     );
-  const aiUsageWithPrice: usageAnalyticsWithPrice[] = aiUsage.map((usage) => {
-    const pricing = attachPricingLLM({
-      model: usage.model || undefined,
-      promptTokens: usage.promptTokens,
-      completionTokens: usage.completionTokens,
-    });
-    return {
-      ...usage,
-      priceUSD: pricing.priceUSD,
-      originalPriceUSD: pricing.originalPriceUSD,
-      provider: pricing.package,
-      logoUrl: getLogoUrl(pricing.package),
-    };
-  });
+  //console.log("aiUsage: ", aiUsage);
+  const aiUsageWithPrice: usageAnalyticsWithPrice[] = aiUsage
+    .map((usage) => {
+      const pricing = attachPricingLLM({
+        model: usage.model || undefined,
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+      });
+      return {
+        ...usage,
+        priceUSD: pricing.priceUSD,
+        originalPriceUSD: pricing.originalPriceUSD,
+        provider: pricing.package,
+        logoUrl: getLogoUrl(pricing.package),
+      };
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return {
     data: aiUsageWithPrice,

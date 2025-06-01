@@ -107,7 +107,12 @@ export const AiUsageTab = () => {
                             analytics.results.map((usage, index) => (
                                 <TableRow key={index}>
                                     <TableCell className="font-mono text-xs">
-                                        {dayjs(usage.updatedAt).fromNow()}
+                                        {(() => {
+                                            const now = dayjs();
+                                            const diff = now.diff(usage.updatedAt, 'day');
+                                            const hours = now.diff(usage.updatedAt, 'hour') % 24;
+                                            return `${diff} days, ${hours} hrs ago`;
+                                        })()}
                                     </TableCell>
                                     <TableCell className="font-mono text-xs">
                                         <div className="flex items-center gap-2">

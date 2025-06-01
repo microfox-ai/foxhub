@@ -17,14 +17,14 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const pageSize = parseInt(searchParams.get("pageSize") || "30");
 
-    if (!clientRequestId || !userId) {
+    if (!clientRequestId) {
       return NextResponse.json(
         { error: "clientRequestId & userId are required" },
         { status: 400 }
       );
     }
 
-    const aiUsage = await fetchAiUsage(userId, clientRequestId, "all");
+    const aiUsage = await fetchAiUsage(clientRequestId, "all");
 
     // const clientSecrets = await prisma.clientSecret.findMany({
     //   where: {

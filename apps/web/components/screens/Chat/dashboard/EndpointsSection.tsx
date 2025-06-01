@@ -26,7 +26,7 @@ export const EndpointsSection = ({
                 <div className="flex items-center gap-2">
                     <Split className="w-4 h-4 text-gray-500" />
                     <h3 className="text-lg font-semibold text-gray-900">
-                        Jobs
+                        Tools & Jobs
                     </h3>
                 </div>
                 <div className="h-6 w-px bg-gray-200" />

@@ -13,6 +13,48 @@ export const extraEnvVariables = z.object({
     .describe(
       "How/Where to get this env from the platform (if unkonwn on how, describe what this env variable is needed for)"
     ),
+  ui: z
+    .object({
+      type: z
+        .enum([
+          "input",
+          "select",
+          "multi-select",
+          "text-array",
+          "textarea",
+          "checkbox",
+        ])
+        .describe("The type of the ui element"),
+      options: z
+        .array(z.string())
+        .describe("The options of the ui element")
+        .optional(),
+      placeholder: z
+        .string()
+        .describe("The placeholder of the ui element")
+        .optional(),
+      required: z
+        .boolean()
+        .describe("Whether this env variable is required")
+        .optional(),
+      defaultValue: z
+        .string()
+        .describe("The default value of the ui element")
+        .optional(),
+      isSecret: z
+        .boolean()
+        .describe("Whether this env variable is a secret")
+        .optional(),
+      isOptional: z
+        .boolean()
+        .describe("Whether this env variable is optional")
+        .optional(),
+      isHidden: z
+        .boolean()
+        .describe("Whether this env variable is hidden")
+        .optional(),
+    })
+    .optional(),
   // isSameAs: z
   //   .array(z.string())
   //   .describe("similar exisiting env variables that were duped in the code")

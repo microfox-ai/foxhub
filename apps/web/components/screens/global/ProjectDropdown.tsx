@@ -30,6 +30,7 @@ import {
   CirclePlusIcon,
   DotIcon,
   Settings,
+  Check,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -168,26 +169,32 @@ export const ProjectDropdown = ({
                       }}
                       className={`${value === project.id ? "font-bold" : ""}`}
                     >
-                      <ChevronRight
+                      <img src={project.imageUrl ?? "/images/default-bot-avatar.png"} className="w-4 h-4 rounded-md object-cover" />
+                      {/* <ChevronRight
                         className={cn(
                           "h-4 w-4",
                           value === project.id ? "opacity-100" : "opacity-0"
                         )}
-                      />
+                      /> */}
+                      {value === project.id && <Check className="h-4 w-4" />}
                       {/* <img src={project.imageUrl ?? "/images/default-bot-avatar.png"} className="w-4 h-4 rounded-md object-cover" /> */}
                       {project.name}
                     </CommandItem>
                   ))}
+                  <CommandItem
+                    onClick={() => {
+                      router.push("/new-project");
+                    }}
+                    onSelect={() => {
+                      router.push("/new-project");
+                    }}
+                    className=" cursor-pointer flex items-center py-2 flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
+                  >
+                    <CirclePlusIcon className="h-4 w-4" />
+                    New Project
+                  </CommandItem>
                 </CommandGroup>
-                <div
-                  onClick={() => {
-                    router.push("/new-project");
-                  }}
-                  className=" cursor-pointer flex opacity-[0.5] items-center py-2 flex-1 justify-start gap-2 px-2 text-sm mx-1 mb-1"
-                >
-                  <CirclePlusIcon className="h-4 w-4" />
-                  New Project
-                </div>
+
               </CommandList>
             </Command>
           </PopoverContent>

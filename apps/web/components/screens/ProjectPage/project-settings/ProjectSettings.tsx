@@ -29,7 +29,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Trash2, UserPlus, Check, X } from "lucide-react";
+import { Loader2, Trash2, UserPlus, Check, X, Settings, Users, Key, CreditCard, ChartBar, Bell, Shield, Crown, UserCog, UserCheck, Mail, Calendar, UserX } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -49,6 +49,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import LogoutElement from "@/components/auth/LogoutElement";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const formSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -75,6 +84,69 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+const settingsTabs = [
+  {
+    label: "General Settings",
+    value: "general",
+    icon: <Settings className="h-4 w-4 mr-2" />,
+  },
+  {
+    label: "Members & Roles",
+    value: "team",
+    icon: <Users className="h-4 w-4 mr-2" />,
+  },
+  {
+    label: "Billing",
+    value: "billing",
+    icon: <CreditCard className="h-4 w-4 mr-2" />,
+  },
+  {
+    label: "Analytics",
+    value: "analytics",
+    icon: <ChartBar className="h-4 w-4 mr-2" />,
+  },
+  {
+    label: "Notifications",
+    value: "notifications",
+    icon: <Bell className="h-4 w-4 mr-2" />,
+  },
+  {
+    label: "Security",
+    value: "security",
+    icon: <Shield className="h-4 w-4 mr-2" />,
+  },
+];
+
+const getRoleIcon = (role: string) => {
+  switch (role) {
+    case "OWNER":
+      return <Crown className="h-4 w-4 text-yellow-500" />;
+    case "ADMIN":
+      return <Shield className="h-4 w-4 text-blue-500" />;
+    case "EDITOR":
+      return <UserCog className="h-4 w-4 text-purple-500" />;
+    case "VIEWER":
+      return <UserCheck className="h-4 w-4 text-green-500" />;
+    default:
+      return <UserCheck className="h-4 w-4 text-gray-500" />;
+  }
+};
+
+const getRoleColor = (role: string) => {
+  switch (role) {
+    case "OWNER":
+      return "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20";
+    case "ADMIN":
+      return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20";
+    case "EDITOR":
+      return "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20";
+    case "VIEWER":
+      return "bg-green-500/10 text-green-500 hover:bg-green-500/20";
+    default:
+      return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20";
+  }
+};
 
 const ProjectSettings = () => {
   const { user } = useAuth();
@@ -112,7 +184,6 @@ const ProjectSettings = () => {
   });
 
   const { selectedProject, projectId } = useClientProject();
-  console.log("Selected Project:", selectedProject);
 
   useEffect(() => {
     if (selectedProject) {
@@ -368,43 +439,72 @@ const ProjectSettings = () => {
   //     );
   //   }
 
+  const [activeTab, setActiveTab] = useState("general");
   return (
-    <div className="container px-8 pt-4">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  onClick={() => router.push(`/project/${projectId}`)}
-                  className="cursor-pointer hover:text-primary"
-                >
-                  {selectedProject?.name || "Project"}
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Settings</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          <LogoutElement />
-        </div>
-      </div>
+    <div className="container px-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-between h-12"
+      >
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink
+                onClick={() => router.push(`/project/${projectId}`)}
+                className="cursor-pointer hover:text-primary"
+              >
+                {selectedProject?.name || "Project"}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Settings</BreadcrumbPage>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{settingsTabs.find(tab => tab.value === activeTab)?.label}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </motion.div>
       <div className="h-screen w-full overflow-y-auto thin-scrollbar">
-        <div className=" max-w-4xl pt-10 pb-20 mx-auto">
-          <Tabs defaultValue="general" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="general">General Settings</TabsTrigger>
-              <TabsTrigger value="team">Team Members</TabsTrigger>
+        <Tabs onValueChange={(value) => {
+          setActiveTab(value);
+        }} orientation="vertical" defaultValue="general" className="grid grid-cols-12 max-w-6xl mx-auto h-full">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="col-span-2 h-full"
+          >
+            <TabsList className="flex flex-col items-start w-full gap-2 h-fit p-2 sticky top-4">
+              {settingsTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="transition-all duration-200 hover:scale-105 w-full justify-start "
+                >
+                  {tab.icon}
+                  {tab.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
-
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="col-span-10 mb-20"
+          >
             <TabsContent value="general">
-              <Card>
+              <Card className="transition-all duration-300 hover:shadow-lg">
                 <CardHeader>
-                  <CardTitle>Project Information</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    Project Information
+                  </CardTitle>
+                  <CardDescription className="text-base">
                     Update your project details and settings
                   </CardDescription>
                 </CardHeader>
@@ -412,22 +512,30 @@ const ProjectSettings = () => {
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(onSubmit)}
-                      className="space-y-6"
+                      className="space-y-8 mb-20"
                     >
-                      <div className="space-y-4">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.4 }}
+                        className="space-y-6"
+                      >
                         <FormField
                           control={form.control}
                           name="name"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Project Name</FormLabel>
+                            <FormItem className="group">
+                              <FormLabel className="text-base font-medium transition-colors group-hover:text-primary">
+                                Project Name
+                              </FormLabel>
                               <FormControl>
                                 <Input
                                   placeholder="Enter project name"
                                   {...field}
+                                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
                                 />
                               </FormControl>
-                              <FormMessage />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -436,15 +544,18 @@ const ProjectSettings = () => {
                           control={form.control}
                           name="description"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Description</FormLabel>
+                            <FormItem className="group">
+                              <FormLabel className="text-base font-medium transition-colors group-hover:text-primary">
+                                Description
+                              </FormLabel>
                               <FormControl>
                                 <Textarea
                                   placeholder="Describe your project"
                                   {...field}
+                                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 hover:border-primary/50 min-h-[100px]"
                                 />
                               </FormControl>
-                              <FormMessage />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -455,8 +566,10 @@ const ProjectSettings = () => {
                           render={({
                             field: { value, onChange, ...field },
                           }) => (
-                            <FormItem>
-                              <FormLabel>Slug</FormLabel>
+                            <FormItem className="group">
+                              <FormLabel className="text-base font-medium transition-colors group-hover:text-primary">
+                                Slug
+                              </FormLabel>
                               <FormControl>
                                 <div className="relative">
                                   <Input
@@ -464,40 +577,53 @@ const ProjectSettings = () => {
                                     {...field}
                                     value={value || ""}
                                     onChange={(e) => {
-                                      const newValue =
-                                        e.target.value.toLowerCase();
+                                      const newValue = e.target.value.toLowerCase();
                                       onChange(newValue || null);
                                     }}
-                                    className={`${value && isSlugAvailable !== null
+                                    className={cn(
+                                      "transition-all duration-200 focus:ring-2 focus:ring-primary/20 hover:border-primary/50",
+                                      value && isSlugAvailable !== null
                                         ? isSlugAvailable
                                           ? "border-green-500 focus-visible:ring-green-500 focus-visible:border-green-500"
                                           : "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500"
                                         : ""
-                                      }`}
+                                    )}
                                   />
-                                  {value && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                      {isCheckingSlug ? (
-                                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                                      ) : isSlugAvailable !== null ? (
-                                        isSlugAvailable ? (
-                                          <Check className="h-4 w-4 text-green-500" />
-                                        ) : (
-                                          <X className="h-4 w-4 text-red-500" />
-                                        )
-                                      ) : null}
-                                    </div>
-                                  )}
+                                  <AnimatePresence>
+                                    {value && (
+                                      <motion.div
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                                      >
+                                        {isCheckingSlug ? (
+                                          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                        ) : isSlugAvailable !== null ? (
+                                          isSlugAvailable ? (
+                                            <Check className="h-4 w-4 text-green-500" />
+                                          ) : (
+                                            <X className="h-4 w-4 text-red-500" />
+                                          )
+                                        ) : null}
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
                               </FormControl>
-                              <FormMessage />
-                              {value &&
-                                !isCheckingSlug &&
-                                isSlugAvailable === false && (
-                                  <p className="text-xs text-red-500 mt-1">
+                              <FormMessage className="text-sm" />
+                              <AnimatePresence>
+                                {value && !isCheckingSlug && isSlugAvailable === false && (
+                                  <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="text-xs text-red-500 mt-1"
+                                  >
                                     This slug is already taken
-                                  </p>
+                                  </motion.p>
                                 )}
+                              </AnimatePresence>
                             </FormItem>
                           )}
                         />
@@ -506,59 +632,84 @@ const ProjectSettings = () => {
                           control={form.control}
                           name="homepageUrl"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Homepage URL</FormLabel>
+                            <FormItem className="group">
+                              <FormLabel className="text-base font-medium transition-colors group-hover:text-primary">
+                                Homepage URL
+                              </FormLabel>
                               <FormControl>
                                 <Input
                                   placeholder="https://your-company.com or https://your-ai-agent.com"
                                   {...field}
                                   value={field.value ?? ""}
-                                  onChange={(e) =>
-                                    field.onChange(e.target.value || null)
-                                  }
+                                  onChange={(e) => field.onChange(e.target.value || null)}
+                                  className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
                                 />
                               </FormControl>
-                              <FormMessage />
-                              <p className="text-sm text-muted-foreground">
-                                Optional: Link to your company website, AI
-                                agent, or web application
+                              <FormMessage className="text-sm" />
+                              <p className="text-sm text-muted-foreground mt-2">
+                                Optional: Link to your company website, AI agent, or web application
                               </p>
                             </FormItem>
                           )}
                         />
 
-                        <div className="space-y-2">
-                          <FormLabel>Project Icon</FormLabel>
+                        <div className="space-y-4 group">
+                          <FormLabel className="text-base font-medium transition-colors group-hover:text-primary">
+                            Project Icon
+                          </FormLabel>
                           <div className="flex items-center gap-4">
-                            {previewUrl && (
-                              <div className="relative w-20 h-20">
-                                <img
-                                  src={previewUrl}
-                                  alt="Project preview"
-                                  className="rounded-lg object-cover"
-                                />
-                              </div>
-                            )}
+                            <AnimatePresence>
+                              {previewUrl && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  className="relative w-20 h-20 group/image"
+                                >
+                                  <img
+                                    src={previewUrl}
+                                    alt="Project preview"
+                                    className="rounded-lg object-cover w-20 h-20 transition-transform duration-200 group-hover/image:scale-105"
+                                  />
+                                  <button
+                                    onClick={removeImage}
+                                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover/image:opacity-100 transition-opacity duration-200"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                             <Input
                               type="file"
                               accept="image/*"
                               onChange={handleImageChange}
-                              className="max-w-xs"
+                              className="max-w-xs transition-all duration-200 hover:border-primary/50"
                             />
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
 
-                      <Button type="submit" disabled={isSaving}>
-                        {isSaving ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          "Save Changes"
-                        )}
-                      </Button>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.6 }}
+                      >
+                        <Button
+                          type="submit"
+                          disabled={isSaving}
+                          className="transition-all duration-200 hover:scale-105"
+                        >
+                          {isSaving ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
+                        </Button>
+                      </motion.div>
                     </form>
                   </Form>
                 </CardContent>
@@ -566,16 +717,23 @@ const ProjectSettings = () => {
             </TabsContent>
 
             <TabsContent value="team">
-              <Card>
+              <Card className="transition-all duration-300 hover:shadow-lg">
                 <CardHeader>
-                  <CardTitle>Team Members</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    Team Members
+                  </CardTitle>
+                  <CardDescription className="text-base">
                     Manage who has access to this project
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-6">
-                    <div className="flex gap-2">
+                  <div className="space-y-8">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      className="flex gap-2"
+                    >
                       <div className="relative flex-1">
                         <Input
                           placeholder="Enter email address"
@@ -589,54 +747,60 @@ const ProjectSettings = () => {
                             setTimeout(() => setShowUserSuggestions(false), 200)
                           }
                           type="email"
+                          className="transition-all duration-200 focus:ring-2 focus:ring-primary/20 hover:border-primary/50"
                         />
-                        {showUserSuggestions && (
-                          <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground shadow-md rounded-md border">
-                            <div className="max-h-[300px] overflow-y-auto">
-                              {isSearchingUsers ? (
-                                <div className="flex items-center justify-center p-4">
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                </div>
-                              ) : userSuggestions.length > 0 ? (
-                                <div className="divide-y">
-                                  {userSuggestions.map((user) => (
-                                    <button
-                                      key={user.id}
-                                      className="flex w-full items-center gap-3 p-3 hover:bg-accent"
-                                      onClick={() => handleUserSelect(user)}
-                                      onMouseDown={(e) => e.preventDefault()} // Prevent blur
-                                    >
-                                      <Avatar>
-                                        <AvatarImage
-                                          src={user.avatar || undefined}
-                                        />
-                                        <AvatarFallback>
-                                          {user.name?.[0]?.toUpperCase() || "?"}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div className="flex flex-col items-start">
-                                        <span className="font-medium">
-                                          {user.name}
-                                        </span>
-                                        <span className="text-sm text-muted-foreground">
-                                          {user.email}
-                                        </span>
-                                      </div>
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="p-4 text-center text-sm text-muted-foreground">
-                                  No users found
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        <AnimatePresence>
+                          {showUserSuggestions && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground shadow-md rounded-md border"
+                            >
+                              <div className="max-h-[300px] overflow-y-auto">
+                                {isSearchingUsers ? (
+                                  <div className="flex items-center justify-center p-4">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  </div>
+                                ) : userSuggestions.length > 0 ? (
+                                  <div className="divide-y">
+                                    {userSuggestions.map((user) => (
+                                      <button
+                                        key={user.id}
+                                        className="flex w-full items-center gap-3 p-3 hover:bg-accent transition-colors duration-200"
+                                        onClick={() => handleUserSelect(user)}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                      >
+                                        <Avatar>
+                                          <AvatarImage
+                                            src={user.avatar || undefined}
+                                          />
+                                          <AvatarFallback>
+                                            {user.name?.[0]?.toUpperCase() || "?"}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex flex-col items-start">
+                                          <span className="font-medium">
+                                            {user.name}
+                                          </span>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="p-4 text-center text-sm text-muted-foreground">
+                                    No users found
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                       <Button
                         onClick={handleInviteMember}
                         disabled={isInviting || !inviteEmail}
+                        className="transition-all duration-200 hover:scale-105"
                       >
                         {isInviting ? (
                           <>
@@ -650,16 +814,23 @@ const ProjectSettings = () => {
                           </>
                         )}
                       </Button>
-                    </div>
+                    </motion.div>
 
-                    <div className="space-y-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                      className="space-y-4"
+                    >
                       {(selectedProject as any)?.permissions.map((member: any) => (
-                        <div
+                        <motion.div
                           key={member.userId}
-                          className="flex items-center justify-between p-4 border rounded-lg"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="group flex items-center justify-between p-4 border rounded-lg transition-all duration-200 hover:shadow-md hover:border-primary/50"
                         >
-                          <div className="flex items-center gap-3">
-                            <Avatar>
+                          <div className="flex items-center gap-4">
+                            <Avatar className="transition-transform duration-200 group-hover:scale-105">
                               <AvatarImage
                                 src={member.user.avatar || undefined}
                               />
@@ -667,86 +838,115 @@ const ProjectSettings = () => {
                                 {member.user.name?.[0]?.toUpperCase() || "?"}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <p className="font-medium">{member.user.name}</p>
-                              <p className="text-sm text-gray-500">
-                                {member.user.email}
-                              </p>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{member.user.name}</p>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "flex items-center gap-1 px-2 py-0.5",
+                                          getRoleColor(member.role)
+                                        )}
+                                      >
+                                        {getRoleIcon(member.role)}
+                                        {member.role}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Role: {member.role}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                <span>Joined {new Date(member.createdAt).toLocaleDateString()}</span>
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-500">
-                              {member.role}
-                            </span>
                             {member.userId !== user?.id && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  handleRemoveMember(
-                                    member.userId,
-                                    member.user.name
-                                  )
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        handleRemoveMember(
+                                          member.userId,
+                                          member.user.name
+                                        )
+                                      }
+                                      className="transition-all duration-200 hover:bg-red-500/10 hover:text-red-500"
+                                    >
+                                      <UserX className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Remove member</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
-                    </div>
+                    </motion.div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
+          </motion.div>
+        </Tabs>
 
-          <Dialog
-            open={!!memberToDelete}
-            onOpenChange={(open) => {
-              if (!open) {
-                setMemberToDelete(null);
-              }
-            }}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Remove Team Member</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to remove {memberToDelete?.name} from
-                  this project? This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setMemberToDelete(null);
-                  }}
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={confirmDeleteMember}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Removing...
-                    </>
-                  ) : (
-                    "Remove"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Dialog
+          open={!!memberToDelete}
+          onOpenChange={(open) => {
+            if (!open) {
+              setMemberToDelete(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Remove Team Member</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to remove {memberToDelete?.name} from
+                this project? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMemberToDelete(null);
+                }}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteMember}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Removing...
+                  </>
+                ) : (
+                  "Remove"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

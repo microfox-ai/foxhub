@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   Store,
   KeyRound,
+  Settings,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
@@ -30,6 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLayout } from "../providers/LayoutProvider";
+import { useClientProject } from "../providers/ClientProjectProvider";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -49,6 +51,7 @@ interface NavigationItemProps {
   collapsedIcon?: React.ReactNode;
   label: string;
   href?: string;
+  hrefCallback?: (selectedProject: any) => string;
   onClick?: () => void;
   isCollapsed: boolean;
 }
@@ -58,6 +61,7 @@ interface NavigationConfig {
   collapsedIcon?: React.ReactNode;
   label: string;
   href?: string;
+  hrefCallback?: (selectedProject: any) => string;
   requiresProject?: boolean;
   onClick?: (props: {
     isCollapsed: boolean;
@@ -116,6 +120,14 @@ const navigationConfig: NavigationConfig[] = [
     label: "My Data",
     href: "/my-data",
     requiresProject: true,
+  },
+  {
+    icon: <Settings strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <Settings strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "Settings",
+    hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/settings`,
   },
   {
     icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
@@ -196,6 +208,7 @@ export default function Sidebar({
                     collapsedIcon={item.collapsedIcon}
                     label={item.label}
                     href={item.href}
+                    hrefCallback={item.hrefCallback}
                     onClick={
                       item.onClick
                         ? () =>
@@ -234,11 +247,13 @@ const NavigationItem = ({
   collapsedIcon,
   label,
   href,
+  hrefCallback,
   onClick,
   isCollapsed,
 }: NavigationItemProps) => {
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
+  const { selectedProject } = useClientProject();
 
   const content = (
     <div className="flex items-center justify-between">
@@ -271,6 +286,10 @@ const NavigationItem = ({
     >
       {href ? (
         <Link href={href} className="flex items-center justify-between">
+          {content}
+        </Link>
+      ) : hrefCallback ? (
+        <Link href={hrefCallback(selectedProject)} className="flex items-center justify-between">
           {content}
         </Link>
       ) : (
@@ -345,8 +364,8 @@ const RequestsList = ({
               key={request?.id}
               href={`/project/${selectedProject?.id}/request/${request?.id}`}
               className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
-                  ? "bg-gray-200 text-black"
-                  : "hover:bg-gray-100"
+                ? "bg-gray-200 text-black"
+                : "hover:bg-gray-100"
                 }`}
             >
               {request.id === requestParamId ? (

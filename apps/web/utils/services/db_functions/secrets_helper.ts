@@ -31,7 +31,7 @@ export const clientSecretExists = async (
   requestId: string,
   type: string
 ) => {
-  if (type === "custom") {
+  if (type === "custom" || type === "template") {
     const clientSecret = await prisma.clientSecret.findFirst({
       where: { botProjectId, type, clientRequestIds: { has: requestId } },
     });

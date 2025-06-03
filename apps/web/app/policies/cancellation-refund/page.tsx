@@ -1,15 +1,12 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import Layout from '../../components/Layout';
-import PageHero from '../../components/PageHero';
-import PromoImageSection from '../../components/PromoImageSection';
+import { LandingLayout } from '@/components/screens/landing/LandingLayout';
+import PromoImageSection from '../../../components/screens/policies/PromoImageSection';
 
 const CancellationRefund = () => {
   return (
-    <Layout>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <LandingLayout>
+      <div className="max-w-3xl mt-20 mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-4xl font-bold mb-8">Cancellation and Refund Policy</h1>
         <div className="prose prose-lg">
           <p className="text-sm text-gray-500 mb-8">Last updated: March 14, 2024</p>
@@ -17,7 +14,7 @@ const CancellationRefund = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">1. Cancellation Policy</h2>
             <p className="text-gray-600 mb-4">
-              You can cancel your subscription at any time through your account settings. 
+              You can cancel your subscription at any time through your account settings.
               Upon cancellation:
             </p>
             <ul className="list-disc pl-6 text-gray-600">
@@ -42,7 +39,7 @@ const CancellationRefund = () => {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">3. Pro-rated Refunds</h2>
             <p className="text-gray-600">
-              We do not provide pro-rated refunds for partial months or unused service time 
+              We do not provide pro-rated refunds for partial months or unused service time
               beyond the 14-day guarantee period.
             </p>
           </section>
@@ -59,7 +56,7 @@ const CancellationRefund = () => {
         </div>
       </div>
       <PromoImageSection />
-    </Layout>
+    </LandingLayout>
   );
 }
 

@@ -10,9 +10,10 @@ export enum APP_ROUTES {
 
 export const SOCIAL_ROUTES = {
   telegram: "/",
-  twitter: "https://twitter.com/TheMoonDevs",
+  twitter: "https://x.com/_Microfox_",
+  youtube: "https://www.youtube.com/@MicroFox-v4f",
   instagram: "https://www.instagram.com/themoondevs/",
-  linkedin: "https://www.linkedin.com/company/themoondevs",
+  linkedin: "https://www.linkedin.com/company/microfoxautomates",
   discord: "https://discord.gg/kUuJFvEtJ6",
 };
 

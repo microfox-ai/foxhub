@@ -1,16 +1,15 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import Layout from '../../components/Layout';
-import PageHero from '../../components/PageHero';
-import PromoImageSection from '../../components/PromoImageSection';
+import PromoImageSection from '../../../components/screens/policies/PromoImageSection';
 import { Zap } from 'lucide-react';
+import { LandingLayout } from '@/components/screens/landing/LandingLayout';
+import FooterCtaSection from '@/components/screens/landing/FooterCTASection/FooterCtaSection';
 
 const ShippingDelivery = () => {
   return (
-    <Layout>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <LandingLayout>
+      <div className="max-w-3xl mt-20 mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <Zap className="h-12 w-12 mx-auto mb-4 text-yellow-400" />
           <h1 className="text-4xl font-bold mb-4">Instant Digital Delivery</h1>
@@ -57,8 +56,8 @@ const ShippingDelivery = () => {
           </section>
         </div>
       </div>
-      <PromoImageSection />
-    </Layout>
+      <FooterCtaSection />
+    </LandingLayout>
   );
 }
 

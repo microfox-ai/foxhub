@@ -2,32 +2,33 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Layout from '../../components/Layout';
-import PageHero from '../../components/PageHero';
-import PromoImageSection from '../../components/PromoImageSection';
+import PageHero from '../../../components/screens/policies/PageHero';
+import PromoImageSection from '../../../components/screens/policies/PromoImageSection';
+import { LandingLayout } from '@/components/screens/landing/LandingLayout';
+import FooterCtaSection from '@/components/screens/landing/FooterCTASection/FooterCtaSection';
 
 const TermsAndConditions = () => {
   return (
-    <Layout>
-      <div className="min-h-screen bg-[#FAFAFA]">
-        <PageHero 
-          title="Terms and Conditions" 
+    <LandingLayout>
+      <div className="min-h-screen mt-20 bg-[#FAFAFA]">
+        <PageHero
+          title="Terms and Conditions"
           date="March 19, 2025"
         />
-        
+
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-sm p-8 mb-12">
             <div className="prose prose-lg max-w-none">
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">1. Agreement to Terms</h2>
                 <p className="text-gray-600 mb-4">
-                  Welcome to Microfox. By accessing or using our AI-powered automation platform, you agree to be 
-                  bound by these Terms and Conditions ("Terms"). These Terms constitute a legally binding agreement 
+                  Welcome to Microfox. By accessing or using our AI-powered automation platform, you agree to be
+                  bound by these Terms and Conditions ("Terms"). These Terms constitute a legally binding agreement
                   between you and Microfox regarding your use of our services.
                 </p>
                 <p className="text-gray-600">
-                  Please read these Terms carefully before using our platform. If you do not agree to these Terms, 
-                  you may not access or use our services. We reserve the right to modify these Terms at any time, 
+                  Please read these Terms carefully before using our platform. If you do not agree to these Terms,
+                  you may not access or use our services. We reserve the right to modify these Terms at any time,
                   and such modifications shall be effective immediately upon posting on our website.
                 </p>
               </section>
@@ -36,18 +37,18 @@ const TermsAndConditions = () => {
                 <h2 className="text-3xl font-semibold mb-4">2. Definitions</h2>
                 <ul className="list-disc pl-6 text-gray-600 mb-6">
                   <li>
-                    <strong>"Platform"</strong> refers to the Microfox automation service, including all features, 
+                    <strong>"Platform"</strong> refers to the Microfox automation service, including all features,
                     functionality, and content.
                   </li>
                   <li>
                     <strong>"User"</strong> means any individual or entity that accesses or uses the Platform.
                   </li>
                   <li>
-                    <strong>"Content"</strong> includes all data, information, and materials uploaded, stored, or 
+                    <strong>"Content"</strong> includes all data, information, and materials uploaded, stored, or
                     processed through the Platform.
                   </li>
                   <li>
-                    <strong>"Automation"</strong> refers to the AI-powered workflows and processes created using 
+                    <strong>"Automation"</strong> refers to the AI-powered workflows and processes created using
                     our Platform.
                   </li>
                   <li>
@@ -107,21 +108,21 @@ const TermsAndConditions = () => {
                 <h2 className="text-3xl font-semibold mb-4">5. Intellectual Property Rights</h2>
                 <h3 className="text-xl font-semibold mb-3">5.1 Platform Ownership</h3>
                 <p className="text-gray-600 mb-4">
-                  The Platform and its original content, features, and functionality are owned by Microfox and are 
-                  protected by international copyright, trademark, patent, trade secret, and other intellectual 
+                  The Platform and its original content, features, and functionality are owned by Microfox and are
+                  protected by international copyright, trademark, patent, trade secret, and other intellectual
                   property laws.
                 </p>
 
                 <h3 className="text-xl font-semibold mb-3">5.2 User Content</h3>
                 <p className="text-gray-600 mb-4">
-                  You retain ownership of any content you create or upload to the Platform. By using our services, 
-                  you grant us a worldwide, non-exclusive, royalty-free license to use, store, and process your 
+                  You retain ownership of any content you create or upload to the Platform. By using our services,
+                  you grant us a worldwide, non-exclusive, royalty-free license to use, store, and process your
                   content solely for the purpose of providing and improving our services.
                 </p>
 
                 <h3 className="text-xl font-semibold mb-3">5.3 Feedback</h3>
                 <p className="text-gray-600">
-                  Any feedback, suggestions, or ideas you provide regarding our Platform may be used by us without 
+                  Any feedback, suggestions, or ideas you provide regarding our Platform may be used by us without
                   any obligation to compensate you.
                 </p>
               </section>
@@ -141,8 +142,8 @@ const TermsAndConditions = () => {
 
                 <h3 className="text-xl font-semibold mb-3">6.2 Billing and Cancellation</h3>
                 <p className="text-gray-600 mb-4">
-                  Subscription fees are billed in advance and are non-refundable. You may cancel your subscription 
-                  at any time, but you will not receive a refund for the current billing period. We reserve the 
+                  Subscription fees are billed in advance and are non-refundable. You may cancel your subscription
+                  at any time, but you will not receive a refund for the current billing period. We reserve the
                   right to modify our pricing with notice.
                 </p>
               </section>
@@ -159,7 +160,7 @@ const TermsAndConditions = () => {
                   <li>Data backup and recovery procedures</li>
                 </ul>
                 <p className="text-gray-600">
-                  However, we do not guarantee uninterrupted or error-free service. We reserve the right to 
+                  However, we do not guarantee uninterrupted or error-free service. We reserve the right to
                   temporarily suspend services for maintenance or updates.
                 </p>
               </section>
@@ -167,7 +168,7 @@ const TermsAndConditions = () => {
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">8. Limitation of Liability</h2>
                 <p className="text-gray-600 mb-4">
-                  To the maximum extent permitted by law, Microfox shall not be liable for any indirect, 
+                  To the maximum extent permitted by law, Microfox shall not be liable for any indirect,
                   incidental, special, consequential, or punitive damages, including but not limited to:
                 </p>
                 <ul className="list-disc pl-6 text-gray-600 mb-6">
@@ -177,7 +178,7 @@ const TermsAndConditions = () => {
                   <li>Any damages arising from your use or inability to use the Platform</li>
                 </ul>
                 <p className="text-gray-600">
-                  Our total liability for any claims related to the Platform shall not exceed the amount paid 
+                  Our total liability for any claims related to the Platform shall not exceed the amount paid
                   by you for the service in the twelve months preceding the claim.
                 </p>
               </section>
@@ -185,9 +186,9 @@ const TermsAndConditions = () => {
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">9. Indemnification</h2>
                 <p className="text-gray-600">
-                  You agree to indemnify and hold harmless Microfox and its affiliates, officers, directors, 
-                  employees, and agents from any claims, damages, losses, liabilities, costs, and expenses 
-                  (including legal fees) arising from your use of the Platform, violation of these Terms, or 
+                  You agree to indemnify and hold harmless Microfox and its affiliates, officers, directors,
+                  employees, and agents from any claims, damages, losses, liabilities, costs, and expenses
+                  (including legal fees) arising from your use of the Platform, violation of these Terms, or
                   infringement of any third-party rights.
                 </p>
               </section>
@@ -195,7 +196,7 @@ const TermsAndConditions = () => {
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">10. Termination</h2>
                 <p className="text-gray-600 mb-4">
-                  We may terminate or suspend your access to the Platform immediately, without prior notice, for 
+                  We may terminate or suspend your access to the Platform immediately, without prior notice, for
                   any reason, including but not limited to:
                 </p>
                 <ul className="list-disc pl-6 text-gray-600 mb-6">
@@ -205,7 +206,7 @@ const TermsAndConditions = () => {
                   <li>Extended period of account inactivity</li>
                 </ul>
                 <p className="text-gray-600">
-                  Upon termination, your right to use the Platform will immediately cease, and you must cease all 
+                  Upon termination, your right to use the Platform will immediately cease, and you must cease all
                   use of the Platform and delete any copies of Platform materials in your possession.
                 </p>
               </section>
@@ -213,8 +214,8 @@ const TermsAndConditions = () => {
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">11. Governing Law</h2>
                 <p className="text-gray-600">
-                  These Terms shall be governed by and construed in accordance with the laws of [Your Jurisdiction], 
-                  without regard to its conflict of law provisions. Any disputes arising from these Terms shall be 
+                  These Terms shall be governed by and construed in accordance with the laws of [Your Jurisdiction],
+                  without regard to its conflict of law provisions. Any disputes arising from these Terms shall be
                   resolved in the courts of [Your Jurisdiction].
                 </p>
               </section>
@@ -222,7 +223,7 @@ const TermsAndConditions = () => {
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">12. Changes to Terms</h2>
                 <p className="text-gray-600 mb-4">
-                  We reserve the right to modify these Terms at any time. We will notify you of any material 
+                  We reserve the right to modify these Terms at any time. We will notify you of any material
                   changes by:
                 </p>
                 <ul className="list-disc pl-6 text-gray-600 mb-6">
@@ -231,7 +232,7 @@ const TermsAndConditions = () => {
                   <li>Sending an email notification for significant changes</li>
                 </ul>
                 <p className="text-gray-600">
-                  Your continued use of the Platform after such modifications constitutes your acceptance of the 
+                  Your continued use of the Platform after such modifications constitutes your acceptance of the
                   updated Terms.
                 </p>
               </section>
@@ -245,7 +246,7 @@ const TermsAndConditions = () => {
                   <li className="mb-2">
                     <strong>Email:</strong>{' '}
                     <a href="mailto:legal@microfox.ai" className="text-blue-600 hover:text-blue-800">
-                    microfox@themoondevs.com
+                      microfox@themoondevs.com
                     </a>
                   </li>
                 </ul>
@@ -254,9 +255,9 @@ const TermsAndConditions = () => {
           </div>
         </div>
 
-        <PromoImageSection />
+        <FooterCtaSection />
       </div>
-    </Layout>
+    </LandingLayout>
   );
 };
 

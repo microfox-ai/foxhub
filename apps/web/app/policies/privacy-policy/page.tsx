@@ -1,33 +1,31 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import Layout from '../../components/Layout';
-import PageHero from '../../components/PageHero';
-import PromoImageSection from '../../components/PromoImageSection';
+import { LandingLayout } from '@/components/screens/landing/LandingLayout';
+import PageHero from '../../../components/screens/policies/PageHero';
 
+import FooterCtaSection from '@/components/screens/landing/FooterCTASection/FooterCtaSection';
 const PrivacyPolicy = () => {
   return (
-    <Layout>
-      <div className="min-h-screen bg-[#FAFAFA]">
-        <PageHero 
-          title="Privacy Policy" 
+    <LandingLayout>
+      <div className="min-h-screen mt-20 bg-[#FAFAFA]">
+        <PageHero
+          title="Privacy Policy"
           date="March 19, 2025"
         />
-        
+
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-sm p-8 mb-12">
             <div className="prose prose-lg max-w-none">
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">1. Introduction</h2>
                 <p className="text-gray-600 mb-4">
-                  At Microfox, we take your privacy seriously. This Privacy Policy explains how we collect, 
+                  At Microfox, we take your privacy seriously. This Privacy Policy explains how we collect,
                   use, and protect your personal information when you use our AI-powered automation platform.
                   We are committed to transparency and ensuring you understand how your data is handled.
                 </p>
                 <p className="text-gray-600">
-                  This policy complies with the General Data Protection Regulation (GDPR), California Consumer 
-                  Privacy Act (CCPA), and other applicable privacy laws. By using our services, you agree to 
+                  This policy complies with the General Data Protection Regulation (GDPR), California Consumer
+                  Privacy Act (CCPA), and other applicable privacy laws. By using our services, you agree to
                   the collection and use of information in accordance with this policy.
                 </p>
               </section>
@@ -102,8 +100,8 @@ const PrivacyPolicy = () => {
                 </ul>
 
                 <p className="text-gray-600">
-                  Our serverless architecture ensures minimal data exposure and enhanced security. 
-                  We regularly review and update our security practices to maintain the highest 
+                  Our serverless architecture ensures minimal data exposure and enhanced security.
+                  We regularly review and update our security practices to maintain the highest
                   standards of data protection.
                 </p>
               </section>
@@ -165,8 +163,8 @@ const PrivacyPolicy = () => {
               <section className="mb-12">
                 <h2 className="text-3xl font-semibold mb-4">8. Children's Privacy</h2>
                 <p className="text-gray-600">
-                  Our services are not intended for individuals under 16 years of age. We do not knowingly 
-                  collect personal information from children. If you believe we have collected information 
+                  Our services are not intended for individuals under 16 years of age. We do not knowingly
+                  collect personal information from children. If you believe we have collected information
                   from a child, please contact us immediately.
                 </p>
               </section>
@@ -195,7 +193,7 @@ const PrivacyPolicy = () => {
                   <li className="mb-2">
                     <strong>Email:</strong>{' '}
                     <a href="mailto:privacy@microfox.ai" className="text-blue-600 hover:text-blue-800">
-                    microfox@themoondevs.com
+                      microfox@themoondevs.com
                     </a>
                   </li>
                 </ul>
@@ -204,9 +202,9 @@ const PrivacyPolicy = () => {
           </div>
         </div>
 
-        <PromoImageSection />
+        <FooterCtaSection />
       </div>
-    </Layout>
+    </LandingLayout>
   );
 };
 

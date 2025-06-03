@@ -34,20 +34,41 @@ export async function POST(req: NextRequest) {
       }
       console.log("client request found", clientRequest.id);
       if (commitMessage.includes("deployfox")) {
-        console.log("deployfox commit", commitMessage);
-        // await prisma.webhookEvent.create({
-        //     data: {
-        //       status: "pending",
-        //       provider: "octokit",
-        //       event_id: event.id,
-        //       event_name: event.name,
-        //       payload: event.payload,
-        //       originClientRequestId: clientRequest.id,
-        //       triggerRoute: {
+        const stageMatch = commitMessage.match(/^(.*?): deployfox:/);
+        let stage = stageMatch ? stageMatch[1] : null;
+        console.log(`Detected stage from commit message: ${stage}`);
+        if (!stage) {
+          stage = "STAGING";
+        }
 
+        const deleteSls = commitMessage.includes("DELETE");
+
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&stage=${stage}&delete=${deleteSls}`
+        );
+        if (response.ok) {
+          console.log(deleteSls ? "removing deployment" : "deployment triggered");
+        } else {
+          console.log("deployment failed");
+        }
+        // await prisma.webhookEvent.create({
+        //   data: {
+        //     status: "pending",
+        //     provider: "octokit",
+        //     event_id: event.id,
+        //     event_name: event.name,
+        //     payload: event.payload,
+        //     originClientRequestId: clientRequest.id,
+        //     triggerRoute: {
+        //       path: `${process.env.CICD_BASE_URL}/api/deployments/new`,
+        //       method: "GET",
+        //       params: {
+        //         clientRequestId: clientRequest.id,
+        //         stage,
         //       },
         //     },
-        //   });
+        //   },
+        // });
       }
       if (commitMessage.includes("updatefox")) {
         console.log("updatefox commit", commitMessage);

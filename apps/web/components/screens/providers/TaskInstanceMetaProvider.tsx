@@ -1,7 +1,7 @@
 import { TaskInstanceMetaType } from "@/server/convertfox/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { ClientDeployment } from "@prisma/client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import useSWR from "swr";
 
 interface UseTaskInstanceMetaProps {
@@ -11,23 +11,41 @@ interface UseTaskInstanceMetaProps {
 export const useTaskInstanceMeta = ({
   clientRequestId,
 }: UseTaskInstanceMetaProps) => {
-  const [deploymentInfo, setDeploymentInfo] = useState<any | ClientDeployment | null>(null);
-  const { data, error, mutate, isLoading, isValidating } =
-    useSWR<TaskInstanceMetaType & { id: string }>(
-      clientRequestId
-        ? `/api/task-instance-meta?clientRequestId=${clientRequestId}`
-        : null,
-      async (url: string) => {
-        const response = await PortalSdk.getData(url, {});
-        return response[0];
-      },
-      {
-        revalidateOnFocus: true,
-        revalidateOnReconnect: true,
-      }
-    );
+  const [deploymentInfo, setDeploymentInfo] = useState<
+    any | ClientDeployment | null
+  >(null);
+  const { data, error, mutate, isLoading, isValidating } = useSWR<
+    TaskInstanceMetaType & { id: string }
+  >(
+    clientRequestId
+      ? `/api/task-instance-meta?clientRequestId=${clientRequestId}`
+      : null,
+    async (url: string) => {
+      const response = await PortalSdk.getData(url, {});
+      return response[0];
+    },
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    }
+  );
 
-  const updateTaskInstanceMeta = async (_taskInstanceMeta: TaskInstanceMetaType) => {
+  useEffect(() => {
+    const updateClientDeployment = async (clientDeploymentId: string) => {
+      const response = await PortalSdk.getData(
+        `/api/client-functions?id=${clientDeploymentId}`,
+        {}
+      );
+      setDeploymentInfo(response[0]);
+    };
+    if (clientRequestId) {
+      updateClientDeployment(clientRequestId);
+    }
+  }, [clientRequestId]);
+
+  const updateTaskInstanceMeta = async (
+    _taskInstanceMeta: TaskInstanceMetaType
+  ) => {
     const response = await PortalSdk.putData(
       `/api/task-instance-meta`,
       _taskInstanceMeta

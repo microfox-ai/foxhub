@@ -38,13 +38,13 @@ export async function POST(req: NextRequest) {
         let stage = stageMatch ? stageMatch[1] : null;
         console.log(`Detected stage from commit message: ${stage}`);
         if (!stage) {
-          stage = "staging";
+          stage = "STAGING";
         }
 
         const deleteSls = commitMessage.includes("DELETE");
 
         const response = await fetch(
-          `${process.env.CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&stage=${stage}&delete=${deleteSls}`
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&stage=${stage}&delete=${deleteSls}`
         );
         if (response.ok) {
           console.log(deleteSls ? "removing deployment" : "deployment triggered");

@@ -5,7 +5,7 @@ export enum APP_ROUTES {
   dataDeletionPolicy = "/policies/data-deletion",
   privacyPolicy = "/policies/privacy-policy",
   serviceDeliveryPolicy = "/policies/service-delivery",
-  termsOfService = "/policies/terms-of-service",
+  termsOfService = "/policies/terms",
 }
 
 export const SOCIAL_ROUTES = {

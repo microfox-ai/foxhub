@@ -78,7 +78,7 @@ export const useDeployStatus = ({
       ? null
       : ["deployment-status-sse", requestParamId, stage],
     ([_, clientRequestId, stage], { next }) => {
-      const sseUrl = `http://localhost:8000/api/deployment-status/events/${clientRequestId}/${stage.toLowerCase()}`;
+      const sseUrl = `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/events/${clientRequestId}/${stage.toLowerCase()}`;
       console.log(`🔌 Establishing SSE connection to: ${sseUrl}`);
 
       const eventSource = new EventSource(sseUrl);

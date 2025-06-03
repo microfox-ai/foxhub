@@ -145,7 +145,12 @@ export function prepareApiRequest(
         .map((param) => {
           const paramValue = getNestedValue(data, `query_${param.name}`);
           if (paramValue !== undefined) {
-            return `${encodeURIComponent(param.name)}=${encodeURIComponent(String(paramValue))}`;
+            // Convert boolean values to "true" string
+            const stringValue =
+              typeof paramValue === "boolean"
+                ? String(paramValue)
+                : String(paramValue);
+            return `${encodeURIComponent(param.name)}=${encodeURIComponent(stringValue)}`;
           }
           return null;
         })

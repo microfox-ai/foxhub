@@ -81,6 +81,7 @@ model BotProject {
   metadata         Json?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
+  archiveStatus    String?
   slug             String?
   imageUrl         String?
   homepageUrl      String?
@@ -120,6 +121,7 @@ model ClientRequest {
   prTargetBranch           String?
   requestDir               String?
   requestStatus            REQUESTSTATUS      @default(UN_ASSIGNED)
+  archiveStatus            String?
   templateVersion          String?
   metadata                 Json?
   lastUpdatedAt            DateTime?          @default(now())

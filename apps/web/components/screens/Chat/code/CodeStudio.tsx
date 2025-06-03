@@ -28,10 +28,11 @@ import useSWR from 'swr';
 import { ClientSecretPackageType, ClientSecretVariable } from '@/server/types';
 import { ClientSecret } from '@prisma/client';
 import { useParams } from 'next/navigation';
-import { IN_DEV } from '@/utils/constants/appInfo';
+import { IN_DEV, IN_STAGING } from '@/utils/constants/appInfo';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { generateDefaultEnvFile, generateDefaultReadmeFile } from './defaultFiles';
+import { generateDefaultEnvFile, generateDefaultReadmeFile, generateDefaultEnvJsonFile } from './defaultFiles';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 // Define a simple type for file entries from taskInstanceMeta
 interface BuildFile {
@@ -189,6 +190,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
     const { taskInstanceMeta, updateTaskInstanceMeta } = useTaskInstanceMetaContext();
     const { selectedRequest } = useClientProject();
     const [codePopoverOpen, setCodePopoverOpen] = useState(false);
+    const { user } = useAuth();
 
     const files = taskInstanceMeta?.buildingStep?.files || [];
     const fileTree = useMemo(() => buildFileTree(files as any as BuildFile[]), [files]);
@@ -308,6 +310,11 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             return;
         }
 
+        if (activeFile.id === "env.json") {
+            //await updateSecretsAndConfiguration();
+            return;
+        }
+
 
         const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath?.replaceAll("\\", "/").replace(selectedRequest.repoName + "/", '');
         try {
@@ -348,6 +355,9 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                     setIsModified(false);
                 } else if (activeFile.id === "README.md") {
                     setEditorContent(readmeFile.content);
+                    setIsModified(false);
+                } else if (activeFile.id === "env.json") {
+                    setEditorContent(envJsonFile.content);
                     setIsModified(false);
                 } else {
                     const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath;
@@ -447,6 +457,19 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         }
     }, [selectedRequest]);
 
+    const envJsonFile = useMemo(() => {
+        let variables = secretsData?.clientSecrets?.flatMap((secret) => (secret.variables ?? [])?.concat(secret.botConfig ?? [])) as any[] as ClientSecretVariable[] || [];
+        return {
+            id: "env.json",
+            name: "env.json",
+            path: "env.json",
+            isFolder: false,
+            children: [],
+            content: generateDefaultEnvJsonFile(variables),
+            fileType: "json"
+        }
+    }, [existingCustomSecrets]);
+
     const handleEnvSelect = () => {
         setActiveFile(envFile);
         setIsModified(false);
@@ -454,6 +477,11 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
 
     const handleReadmeSelect = () => {
         setActiveFile(readmeFile);
+        setIsModified(false);
+    }
+
+    const handleEnvJsonSelect = () => {
+        setActiveFile(envJsonFile);
         setIsModified(false);
     }
 
@@ -475,6 +503,9 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                     {IN_DEV && (
                         <FileTreeItem key={"README.md"} node={readmeFile} onFileSelect={handleReadmeSelect} />
                     )}
+                    {(IN_DEV || (IN_STAGING && user && user.email?.includes("themoondevs.com"))) && (
+                        <FileTreeItem key={"env.json"} node={envJsonFile} onFileSelect={handleEnvJsonSelect} />
+                    )}
                 </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -483,7 +514,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                     <div className="p-2 border-b border-gray-800 text-sm bg-gray-900 text-gray-300 flex items-center justify-between">
                         <span>{activeFile ? activeFile.path : ""}</span>
                         <div className="flex items-center gap-2">
-                            {isModified && activeFile && (
+                            {isModified && activeFile && activeFile.id !== "env.json" && (
                                 <Button
                                     onClick={saveFileContent}
                                     disabled={isSaving}
@@ -623,6 +654,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                                 theme="vs-dark"
                                 onMount={handleEditorDidMount}
                                 onChange={(value) => {
+                                    if (activeFile?.id === "env.json") return;
                                     setEditorContent(value || '');
                                     setIsModified(true);
                                 }}
@@ -631,6 +663,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                                     automaticLayout: true,
                                     minimap: { enabled: true },
                                     wordWrap: 'on',
+                                    readOnly: activeFile?.id === "env.json"
                                 }}
                             />
                         )}

@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma/prisma";
+import { ClientRequest } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -11,9 +12,10 @@ export async function GET(request: NextRequest) {
     const botProjectId = searchParams.get("botProjectId");
     const status = searchParams.get("status");
     const page = searchParams.get("page") || "1";
-    const limit = searchParams.get("limit") || "10";
+    const limit = searchParams.get("limit") || "30";
     const includeTaskInstanceMeta =
       searchParams.get("includeTaskInstanceMeta") || "false";
+    const archiveStatus = searchParams.get("archiveStatus") || "active";
 
     // Build query conditions based on provided parameters
     const conditions: Record<string, any> = {};
@@ -42,15 +44,22 @@ export async function GET(request: NextRequest) {
     // TODO: Add your database query logic here using the conditions
     // Example:
     const results = await prisma.clientRequest.findMany({
-      where: conditions,
+      where: { ...conditions },
       skip: (parseInt(page) - 1) * parseInt(limit),
       take: parseInt(limit),
       include,
     });
 
+    let finalResults = results.filter(
+      (request: ClientRequest) => request.archiveStatus !== "archived"
+    );
+    if (archiveStatus !== "active") {
+      finalResults = [...results];
+    }
+
     return NextResponse.json({
       success: true,
-      data: results,
+      data: finalResults,
       page: parseInt(page),
       limit: parseInt(limit),
     });

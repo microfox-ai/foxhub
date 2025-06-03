@@ -7,14 +7,18 @@ import { Prisma } from "@prisma/client";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
+  const archiveStatus = searchParams.get("archiveStatus") || "active";
 
   if (!userId) {
     return NextResponse.json({ error: "User ID is required" }, { status: 400 });
   }
 
+  let conditions: Record<string, any> = {};
+  conditions.userId = userId;
+
   try {
     let botProjects = await prisma.botProject?.findMany({
-      where: { userId },
+      where: conditions,
       include: {
         clientRequests: true,
         permissions: {
@@ -41,7 +45,14 @@ export async function GET(request: Request) {
       });
     }
 
-    return NextResponse.json(botProjects);
+    let finalBotProjects = botProjects.filter(
+      (project) => project.archiveStatus != "archived"
+    );
+    if (archiveStatus != "active") {
+      finalBotProjects = [...botProjects];
+    }
+
+    return NextResponse.json(finalBotProjects);
   } catch (error) {
     console.error("Error fetching organizations:", error);
     return NextResponse.error();

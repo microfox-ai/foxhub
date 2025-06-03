@@ -92,7 +92,7 @@ export const TaskRequiredInfo = () => {
                 </Button>
             </div>
             <div className="rounded-sm border border-gray-200 flex flex-col gap-2">
-                {customSecret && (
+                {customSecret && envVariablesConfig && envVariablesConfig?.length > 0 && (
                     <ul className="flex flex-wrap gap-4 p-4 min-h-[300px]">
                         {envVariablesConfig?.map((env: any) => {
                             const hasValue = (customSecret?.variables as any[])?.some(

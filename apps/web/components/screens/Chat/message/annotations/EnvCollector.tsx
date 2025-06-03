@@ -218,6 +218,25 @@ const FileTreeSkeleton = () => (
   </div>
 );
 
+const EnvVarsSkeleton = () => (
+  <div className="flex flex-col gap-2">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0 last:pb-0">
+        <div className="flex items-center gap-2">
+          <div className="h-3 bg-gray-700 rounded w-32"></div>
+          <div className="w-4 h-4 bg-gray-700 rounded-full"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const ButtonSkeleton = () => (
+  <div className="relative px-2 pb-3">
+    <div className="h-9 bg-gray-700 rounded w-32"></div>
+  </div>
+);
+
 export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCollectorProps) => {
   const annotation = uiAnnotation as any;
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
@@ -263,8 +282,12 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     }, {
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
+    revalidateOnMount: true,
+    refreshInterval: 10000
   }
   );
+
+  const isLoading = isTaskInstanceMetaLoading || !taskInstanceMeta;
 
   const envVariables = taskInstanceMeta?.taskRequiredInfo?.customEnvVariables as ExtraEnvVariable[] ?? [];
   const codeFiles = taskInstanceMeta?.buildingStep?.files as CodeFile[] ?? [];
@@ -338,7 +361,15 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     );
   });
 
-  const fileTree = buildFileTree(codeFiles);
+  const fileTree = codeFiles.length > 0 ? buildFileTree(codeFiles) : null;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-2 bg-neutral-900 rounded-lg p-2">
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -379,7 +410,7 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
           </button>
           {showCodeFiles && (
             <div className="flex flex-col gap-1 rounded-lg p-2">
-              {isTaskInstanceMetaLoading ? (
+              {isTaskInstanceMetaLoading || !fileTree ? (
                 <FileTreeSkeleton />
               ) : (
                 Object.entries(fileTree)
@@ -423,12 +454,8 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
             </button>
             {showEnvVars && (
               <div className="flex flex-col gap-0 rounded-lg p-2">
-                {isTaskInstanceMetaLoading ? (
-                  <div className="space-y-2">
-                    <SkeletonLoader />
-                    <SkeletonLoader />
-                    <SkeletonLoader />
-                  </div>
+                {isLoading ? (
+                  <EnvVarsSkeleton />
                 ) : (
                   envVariables?.map((env: any) => (
                     <div
@@ -456,7 +483,7 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
                 )}
               </div>
             )}
-            {showEnvVars && !isTaskInstanceMetaLoading && (
+            {showEnvVars && !isLoading && (
               <div className="relative px-2 pb-3">
                 <Button
                   variant="outline"
@@ -476,9 +503,12 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
                 </Button>
               </div>
             )}
+            {showEnvVars && isLoading && (
+              <ButtonSkeleton />
+            )}
           </div>
         )}
-        {hasAllRequiredKeys && !isTaskInstanceMetaLoading && (
+        {hasAllRequiredKeys && !isLoading && (
           <ActionButtons
             buttons={uiAnnotation.buttons}
             areKeysRequired={envVariables.length > 0}

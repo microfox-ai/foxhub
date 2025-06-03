@@ -60,7 +60,9 @@ const PreviewWindow = () => {
     setSelectedEndpoint,
     currentEndpointData,
     error,
-    setError
+    setError,
+    setForceBaseUrl,
+    forceBaseUrl
   } = useApiDoc();
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,7 +100,10 @@ const PreviewWindow = () => {
               fieldSchema = z.string().transform((val) => Number(val));
               break;
             case "boolean":
-              fieldSchema = z.string().transform((val) => val === "true");
+              fieldSchema = z.union([
+                z.boolean(),
+                z.string().transform((val) => val === "true")
+              ]);
               break;
             case "array":
               fieldSchema = z.union([
@@ -164,7 +169,10 @@ const PreviewWindow = () => {
             ) {
               fieldSchema = z.string().transform((val) => Number(val));
             } else if (schema.type === "boolean") {
-              fieldSchema = z.string().transform((val) => val === "true");
+              fieldSchema = z.union([
+                z.boolean(),
+                z.string().transform((val) => val === "true")
+              ]);
             }
 
             schemaFields[`body_${key}`] = fieldSchema.optional();
@@ -193,7 +201,10 @@ const PreviewWindow = () => {
           ) {
             bodySchema = z.string().transform((val) => Number(val));
           } else if (requestBodySchema.type === "boolean") {
-            bodySchema = z.string().transform((val) => val === "true");
+            bodySchema = z.union([
+              z.boolean(),
+              z.string().transform((val) => val === "true")
+            ]);
           }
 
           schemaFields["body"] = bodySchema.optional();
@@ -1021,18 +1032,60 @@ const PreviewWindow = () => {
             <Monitor className="h-4 w-4 " />
           </div>
           {endpoints.length > 0 && (
-            <Button
-              variant={showDocs ? "default" : "outline"}
-              size="sm"
-              className="ml-auto h-8 gap-2 rounded-md px-3 text-xs"
-              onClick={() => setShowDocs(!showDocs)}
-              disabled={isLoading}
-            >
-              {showDocs ? "Hide Docs" : "Show Docs"}
-            </Button>
+            <div className="flex items-center gap-2 ml-auto">
+              <Button
+                variant={showDocs ? "default" : "outline"}
+                size="sm"
+                className="h-8 gap-2 rounded-md px-3 text-xs"
+                onClick={() => setShowDocs(!showDocs)}
+                disabled={isLoading}
+              >
+                {showDocs ? "Hide Docs" : "Show Docs"}
+              </Button>
+            </div>
           )}
         </div>
         <div className="px-3 py-2">
+          <div className="flex flex-col gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="baseUrl" className="text-xs font-medium text-neutral-700">
+                  Base URL
+                </label>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
+                onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000")}
+              >
+                {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
+              </Button>
+            </div>
+            <div className="flex flex-col items-start gap-2">
+              {forceBaseUrl ?
+                (<Input
+                  id="baseUrl"
+                  type="text"
+                  placeholder="Enter base URL (e.g., https://api.example.com)"
+                  className="h-8 w-full text-xs"
+                  value={forceBaseUrl || ""}
+                  onChange={(e) => {
+                    const value = e.target.value.trim();
+                    setForceBaseUrl(value || null);
+                  }}
+                />) : (
+                  <Input
+                    id="baseUrl"
+                    type="text"
+                    placeholder="Enter base URL (e.g., https://api.example.com)"
+                    className="h-8 w-full text-xs"
+                    value={deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase()}
+                    disabled
+                  />
+                )}
+            </div>
+          </div>
           {endpoints.length > 0 ? (
             <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
               <Select

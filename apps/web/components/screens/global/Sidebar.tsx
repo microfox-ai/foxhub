@@ -18,6 +18,7 @@ import {
   Store,
   KeyRound,
   Settings,
+  ListIcon,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
@@ -38,10 +39,6 @@ interface BotProjectWithRequests extends BotProject {
 }
 
 interface SidebarProps {
-  selectedProject: BotProject | null;
-  onSelectRequest: (request: ClientRequest) => void;
-  onNewRequest: (project: BotProject) => void;
-  onOpenConfig: (project: BotProject) => void;
   isCollapsed: boolean;
   onCollapse?: (collapsed: boolean) => void;
 }
@@ -80,29 +77,30 @@ const navigationConfig: NavigationConfig[] = [
     href: "/dashboard",
   },
   {
-    icon: <Store strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    requiresProject: true,
+    icon: <ListIcon strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
-      <Store strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+      <ListIcon strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
     ),
-    label: "Store",
-    href: "/store",
+    label: "All Running Tasks",
+    hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/tasks`,
   },
-  {
-    icon: <FileCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
-    collapsedIcon: (
-      <FileCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
-    ),
-    label: "Whitepaper",
-    href: "/whitepaper",
-  },
-  {
-    icon: <CircleCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
-    collapsedIcon: (
-      <CircleCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
-    ),
-    label: "Supported",
-    href: "/status",
-  },
+  // {
+  //   icon: <Store strokeWidth={2.5} className={cn("h-4 w-4")} />,
+  //   collapsedIcon: (
+  //     <Store strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+  //   ),
+  //   label: "Store",
+  //   href: "/store",
+  // },
+  // {
+  //   icon: <FileCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
+  //   collapsedIcon: (
+  //     <FileCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+  //   ),
+  //   label: "Whitepaper",
+  //   href: "/whitepaper",
+  // },
   {
     icon: <Bot strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
@@ -122,12 +120,21 @@ const navigationConfig: NavigationConfig[] = [
     requiresProject: true,
   },
   {
+    requiresProject: true,
     icon: <Settings strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
       <Settings strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
     ),
     label: "Settings",
     hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/settings`,
+  },
+  {
+    icon: <CircleCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <CircleCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "Supported",
+    href: "/status",
   },
   {
     icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
@@ -157,10 +164,6 @@ const navigationConfig: NavigationConfig[] = [
 ];
 
 export default function Sidebar({
-  selectedProject,
-  onSelectRequest,
-  onNewRequest,
-  onOpenConfig,
   isCollapsed = false,
   onCollapse,
 }: SidebarProps) {
@@ -170,6 +173,8 @@ export default function Sidebar({
   }>();
   const requestParamId = params?.request_id;
   const { setIsFeedbackModalOpen } = useLayout();
+  const { selectedProject, selectedProjectClientRequests,
+    createNewEmptyRequest } = useClientProject();
 
   return (
     <div
@@ -185,7 +190,7 @@ export default function Sidebar({
             {selectedProject && (
               <NewRequestButton
                 isCollapsed={isCollapsed}
-                onNewRequest={onNewRequest}
+                onNewRequest={() => createNewEmptyRequest()}
                 selectedProject={selectedProject}
               />
             )}
@@ -227,6 +232,7 @@ export default function Sidebar({
             {selectedProject && (
               <RequestsList
                 selectedProject={selectedProject}
+                clientRequests={selectedProjectClientRequests}
                 requestParamId={requestParamId}
                 isCollapsed={isCollapsed}
               />
@@ -345,10 +351,12 @@ const SidebarHeader = ({
 
 const RequestsList = ({
   selectedProject,
+  clientRequests,
   requestParamId,
   isCollapsed,
 }: {
   selectedProject: BotProject;
+  clientRequests: ClientRequest[];
   requestParamId?: string;
   isCollapsed: boolean;
 }) => {
@@ -357,8 +365,8 @@ const RequestsList = ({
   return (
     <div className="my-4 mx-1 space-y-1">
       <div className="text-xs font-medium mb-2 px-2 text-gray-500">Tasks</div>
-      {(selectedProject as any)?.clientRequests?.length > 0 ? (
-        (selectedProject as any)?.clientRequests?.map(
+      {clientRequests?.length > 0 ? (
+        clientRequests?.map(
           (request: ClientRequest) => (
             <Link
               key={request?.id}

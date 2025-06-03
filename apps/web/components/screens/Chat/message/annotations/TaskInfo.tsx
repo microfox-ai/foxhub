@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { FileText, Target, TextQuote } from "lucide-react";
 import { useState } from "react";
 import { ActionButtons } from "./ActionButtons";
+import { Markdown } from "../markdown";
 
 interface UIAnnotation {
     objectType: string;
@@ -66,15 +67,19 @@ export const TaskInfo = ({
                                 </span>
                             </div>
                             {key === "summary" ? (
-                                <div className="flex flex-col gap-1">
-                                    <span
-                                        className={cn(
-                                            "tracking-base pl-7 text-sm text-gray-600",
-                                            !isExpanded && "line-clamp-2"
+                                <div className="flex flex-col gap-1" style={{
+                                    fontFamily: "inherit",
+                                    fontSize: "14px"
+                                }}>
+                                    {isExpanded ?
+                                        (< div className="pl-7 text-sm text-gray-600 ">
+                                            <Markdown>
+                                                {object[key]}
+                                            </Markdown></div>) : (
+                                            <span className="tracking-base pl-7 text-sm text-gray-600 line-clamp-2">
+                                                {object[key]}
+                                            </span>
                                         )}
-                                    >
-                                        {object[key]}
-                                    </span>
                                     <button
                                         onClick={() => setIsExpanded(!isExpanded)}
                                         className="pl-7 text-left text-sm text-blue-500 hover:text-blue-700 font-medium"
@@ -92,6 +97,6 @@ export const TaskInfo = ({
                 })}
             </div>
             <ActionButtons buttons={uiAnnotation.buttons} />
-        </motion.div>
+        </motion.div >
     );
 }; 

@@ -59,7 +59,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       rehypePlugins={[rehypeRaw]}
       components={components}
     >
-      {children.replace(/\n/g, "\n\n")}
+      {children.replace(/\n/g, "\n")}
     </ReactMarkdown>
   );
 };

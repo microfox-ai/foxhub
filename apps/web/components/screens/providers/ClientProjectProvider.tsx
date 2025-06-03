@@ -57,9 +57,10 @@ function useClientProjectContext() {
     error: selectedProjectClientRequestsError,
     isLoading: selectedProjectClientRequestsLoading,
   } = useSWR(
-    selectedProject?.id ? `/api/client-requests?botProjectId=${selectedProject?.id}` : null,
-    async (url: string) => await fetch(url).then((res) => res.json())
+    selectedProject?.id ? `/api/client-requests?botProjectId=${selectedProject?.id}&includeTaskInstanceMeta=true` : null,
+    async (url: string) => await fetch(url).then((res) => res.json()),
   );
+
 
   useEffect(() => {
     if (projectParamId && projects) {

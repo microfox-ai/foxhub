@@ -11,14 +11,16 @@ import { PortalSdk } from "@/utils/services/PortalSdk"
 import { useClientProject } from "../../providers/ClientProjectProvider"
 import { toast } from "sonner"
 import useSWR from "swr"
+import { useRouter } from "next/navigation"
 
 
-export const RequestSettings = () => {
+export const TaskSettings = () => {
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isPermanentlyDeleting, setIsPermanentlyDeleting] = useState(false);
     const { selectedRequest } = useClientProject();
+    const router = useRouter();
 
     const handleDeleteClick = () => {
         setShowDeleteDialog(true);
@@ -42,14 +44,14 @@ export const RequestSettings = () => {
             const res = await PortalSdk.deleteData(`/api/client-requests/delete-deployment?id=${selectedRequest?.id}`, {})
 
             if (res.success) {
-                toast.success("Request archived! This might take a while to reflect changes.");
+                toast.success("Task archived! This might take a while to reflect changes.");
             } else {
-                toast.error("Failed to archive request");
+                toast.error("Failed to archive Task");
             }
             mutate();
             setShowDeleteDialog(false);
         } catch (error) {
-            console.error("Error archiving request:", error);
+            console.error("Error archiving Task:", error);
         } finally {
             setIsDeleting(false);
         }
@@ -58,18 +60,19 @@ export const RequestSettings = () => {
     const handleConfirmPermanentDelete = async () => {
         setIsPermanentlyDeleting(true);
         try {
-            const res = await PortalSdk.deleteData(`/api/client-requests/delete?id=${selectedRequest?.id}`, {})
-
+            const res = await PortalSdk.deleteData(`/api/client-requests/delete-all?id=${selectedRequest?.id}`, {})
+            console.log(res);
             if (res.success) {
-                toast.success("Request permanently deleted!");
+                toast.success("Task permanently deleted!");
                 // You might want to redirect or handle the UI update here
             } else {
-                toast.error("Failed to delete request");
+                toast.error("Failed to delete Task");
             }
             mutate();
             setShowPermanentDeleteDialog(false);
+            router.push("/dashboard");
         } catch (error) {
-            console.error("Error deleting request:", error);
+            console.error("Error deleting Task:", error);
         } finally {
             setIsPermanentlyDeleting(false);
         }
@@ -81,7 +84,7 @@ export const RequestSettings = () => {
                 <div className="flex items-center gap-2 mb-6">
                     <SettingsIcon className="w-4 h-4 text-gray-500" />
                     <h3 className="text-lg font-semibold text-gray-900">
-                        Request Settings
+                        Task Settings
                     </h3>
                     <span className="text-sm text-gray-500">
                     </span>
@@ -93,9 +96,9 @@ export const RequestSettings = () => {
                             <AlertTriangle className="h-5 w-5 text-black mt-0.5" />
                             <div className="flex w-full justify-between gap-2">
                                 <div>
-                                    <h3 className="text-sm font-medium text-black">Archive Request</h3>
+                                    <h3 className="text-sm font-medium text-black">Pause Task</h3>
                                     <p className="text-sm text-neutral-600 mt-1">
-                                        Archiving a request will stop all running deployments, but you can re-activate it at any time by redeploying it.
+                                        Pausing a Task will stop all running deployments, but you can re-activate it at any time by redeploying it.
                                     </p>
                                 </div>
                                 <Button
@@ -108,24 +111,24 @@ export const RequestSettings = () => {
                                     {isDeleting ? (
                                         <>
                                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                            Archiving...
+                                            Pausing...
                                         </>
                                     ) : (
-                                        isDeploymentExists ? "Archive Request" : "Request Archived"
+                                        isDeploymentExists ? "Pause Task" : "Task Paused"
                                     )}
                                 </Button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="border border-red-200 rounded-md p-4 bg-red-50">
+                    <div className="border border-neutral-200 rounded-md p-4 bg-neutral-50">
                         <div className="flex items-start gap-3">
-                            <Trash2 className="h-5 w-5 text-red-600 mt-0.5" />
+                            <Trash2 className="h-5 w-5 text-black mt-0.5" />
                             <div className="flex w-full justify-between gap-2">
                                 <div>
-                                    <h3 className="text-sm font-medium text-red-900">Delete Request</h3>
-                                    <p className="text-sm text-red-700 mt-1">
-                                        This action will permanently delete the request, all associated data, code, and deployments. This action cannot be undone.
+                                    <h3 className="text-sm font-medium text-black">Delete Task</h3>
+                                    <p className="text-sm text-neutral-600 mt-1">
+                                        This action will permanently delete the Task, all associated data, code, and deployments. This action cannot be undone.
                                     </p>
                                 </div>
                                 <Button
@@ -141,7 +144,7 @@ export const RequestSettings = () => {
                                             Deleting...
                                         </>
                                     ) : (
-                                        "Delete Request"
+                                        "Delete Task"
                                     )}
                                 </Button>
                             </div>
@@ -153,9 +156,9 @@ export const RequestSettings = () => {
             <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Archive Request</DialogTitle>
+                        <DialogTitle>Pause Task</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to archive this request? This will stop & delete all running deployments, but you can still restart if you want to later on.
+                            Are you sure you want to pause this Task? This will stop & delete all running deployments, but you can still restart if you want to later on.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
@@ -166,10 +169,10 @@ export const RequestSettings = () => {
                             {isDeleting ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    Archiving...
+                                    Pausing...
                                 </>
                             ) : (
-                                "Archive"
+                                "Pause"
                             )}
                         </Button>
                     </DialogFooter>
@@ -179,9 +182,9 @@ export const RequestSettings = () => {
             <Dialog open={showPermanentDeleteDialog} onOpenChange={setShowPermanentDeleteDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete Request Permanently</DialogTitle>
+                        <DialogTitle>Delete Task Permanently</DialogTitle>
                         <DialogDescription>
-                            Are you absolutely sure you want to delete this request? This will permanently delete all data, code, and deployments associated with this request. This action cannot be undone.
+                            Are you absolutely sure you want to delete this Task? This will permanently delete all data, code, and deployments associated with this Task. This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">

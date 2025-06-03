@@ -209,6 +209,13 @@ export const genServerlessYML = async (
         )
       ) {
         newConfig.provider.timeout = 600;
+        newConfig.package = {
+          ...newConfig.package,
+          exclude: [
+            ...(newConfig.package?.exclude ?? []),
+            "node_modules/@sparticuz/chromium/**",
+          ],
+        };
         //newConfig.provider.memorySize = 1024;
         newConfig.functions = Object.entries(newConfig.functions).reduce(
           (acc, [functionName, functionConfig]) => {

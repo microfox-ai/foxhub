@@ -21,7 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { RequestSettings } from "./RequestSettings";
+import { TaskSettings } from "./TaskSettings";
 import { TaskRequiredInfo } from "./TaskRequiredInfo";
 
 const ConfigureTab = () => {
@@ -101,7 +101,7 @@ const ConfigureTab = () => {
             </div>
 
             <div className="col-span-12">
-                <RequestSettings />
+                <TaskSettings />
             </div>
         </div>
     );

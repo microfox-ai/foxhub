@@ -189,13 +189,7 @@ export const buildFoxRouter: ServerStreamingFunction<
   }
 
   // record the changes in the build fox steps taken so far using taskInstanceMeta.
-  const {
-    taskInstanceMetaUpdated,
-    newFilesList,
-    envVariablesUsedUnique,
-    packagesUsedUnique,
-    envVariables,
-  } = await genBuildStep({
+  const { taskInstanceMetaUpdated, envVariables } = await genBuildStep({
     props,
     clientRequest,
     taskInstanceMeta,

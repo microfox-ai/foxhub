@@ -17,6 +17,7 @@ import ConfigureTab from "./dashboard/ConfigureTab";
 import CodeStudio from "./code/CodeStudio";
 import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
 import { HistoryTab } from "./history/HistoryTab";
+import { useRouter } from "next/navigation";
 
 export type AttachedMedia = {
   file: File;
@@ -56,6 +57,8 @@ function ChatWindow({
     getSlideDirection
   } = useTabUi();
 
+  const router = useRouter();
+
   const { hasScrolled, setHasScrolled, messagesEndRef, scrollToBottom } = useChatUI();
   const { mutate: mutateTaskInstanceMeta } = useTaskInstanceMetaContext();
 
@@ -82,6 +85,25 @@ function ChatWindow({
       scrollToBottom();
     }
   }, [messages, activeTab]);
+
+  if (clientRequest?.archiveStatus === "archived") {
+    return (
+      <div className="flex relative -mt-10 flex-col gap-4 justify-center items-center h-full">
+        <h1 className="text-4xl font-bold">This Task is Deleted</h1>
+        <p className="text-gray-500">
+          Deleted Tasks cannot be recovered.
+        </p>
+        <ButtonSCN
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => router.push(`/project/${clientRequest?.botProjectId}`)}
+        >
+          Back To Home
+        </ButtonSCN>
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex h-full w-full flex-col">

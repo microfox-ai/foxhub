@@ -41,3 +41,17 @@ git push
 MIT
 `;
 };
+
+export const generateDefaultEnvJsonFile = (
+  variables: ClientSecretVariable[]
+) => {
+  const envObject = variables.reduce(
+    (acc, variable) => {
+      acc[variable.key] = variable.value;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
+
+  return JSON.stringify(envObject, null, 2);
+};

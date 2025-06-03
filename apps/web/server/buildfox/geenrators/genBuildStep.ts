@@ -2,12 +2,18 @@ import { readAllGenFilesList } from "../tool/writeToFile";
 import { genEnvCollector } from "./genEnvCollector";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import dayjs from "dayjs";
-import { ExtraEnvVariable, taskRequiredInfo } from "../../convertfox/types";
+import {
+  ExtraEnvVariable,
+  TaskInstanceMetaType,
+  taskRequiredInfo,
+} from "../../convertfox/types";
+import { ClientRequest } from "@prisma/client";
+import { StreamingFucntionProps } from "@repo/ai-utils/router";
 
 interface BuildStepProps {
-  props: any;
-  clientRequest: any;
-  taskInstanceMeta: any;
+  props: StreamingFucntionProps<any, any>;
+  clientRequest: ClientRequest;
+  taskInstanceMeta: TaskInstanceMetaType;
   timeStart: dayjs.Dayjs;
 }
 
@@ -49,7 +55,7 @@ export async function genBuildStep({
 
     const timeEnd = dayjs();
     const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
-      clientRequestId: clientRequest.clientRequestId,
+      clientRequestId: clientRequest.id,
       taskInstanceMeta: {
         ...taskInstanceMeta,
         taskRequiredInfo: {

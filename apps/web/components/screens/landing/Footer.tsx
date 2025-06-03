@@ -38,6 +38,14 @@ const Legal = [
         name: "Terms & Conditions",
         link: APP_ROUTES.termsOfService,
     },
+    {
+        name: "Cancellation & Refund",
+        link: APP_ROUTES.cancellationPolicy,
+    },
+    {
+        name: "Service Delivery",
+        link: APP_ROUTES.serviceDeliveryPolicy,
+    }
 ];
 
 // const JoinUs = [
@@ -70,6 +78,24 @@ const SocialLinks = [
         icon: "/filled-icons/discord.svg",
         helperText: "Join Discord",
     },
+    {
+        name: "LinkedIn",
+        link: SOCIAL_ROUTES.linkedin,
+        icon: "/filled-icons/linkedin.svg",
+        helperText: "Connect with us on LinkedIn",
+    },
+    {
+        name: "X",
+        link: SOCIAL_ROUTES.twitter,
+        icon: "/filled-icons/x.svg",
+        helperText: "Connect with us on X",
+    },
+    {
+        name: "YouTube",
+        link: SOCIAL_ROUTES.youtube,
+        icon: "/filled-icons/youtube.svg",
+        helperText: "Watch our videos on YouTube",
+    }
     // {
     //     name: "Telegram",
     //     link: SOCIAL_ROUTES.telegram,

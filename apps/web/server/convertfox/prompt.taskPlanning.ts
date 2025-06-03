@@ -13,6 +13,7 @@ export const taskPlanningPrompt = () => {
     - Do not overcreate too many lambda functions unless it is absolutely necessary.
     - Do not overcreate too many cron jobs unless it is absolutely necessary.
     - Keep the naming of functions simple & minimalistically readable (also unique so as not to conflict with others)
+    - name should always be in camel case, without any extension.
     ____
     Do not write any code.
     only generate a step-by-step process of actions that will help you later.

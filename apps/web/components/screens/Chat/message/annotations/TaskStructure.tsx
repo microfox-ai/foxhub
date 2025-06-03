@@ -13,6 +13,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 import { useState } from "react";
+import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
 
 interface UIAnnotation {
     objectType: string;
@@ -31,7 +32,8 @@ export const TaskStructure = ({
     uiAnnotation,
     idx,
 }: TaskStructureProps) => {
-    const object = uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
+    const { taskInstanceMeta } = useTaskInstanceMetaContext();
+    const object = taskInstanceMeta?.taskStructure ? taskInstanceMeta.taskStructure : uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
     const [selectedBrief, setSelectedBrief] = useState<{ title: string; content: string } | null>(null);
     const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
 

@@ -14,9 +14,6 @@ const ResizableSidebar = () => {
     handleLeftCollapse,
   } = useLayout();
 
-  const { selectedProject, setSelectedRequest, createNewEmptyRequest } =
-    useClientProject();
-
   return (
     <ResizablePanel
       ref={leftPanelRef}
@@ -34,12 +31,6 @@ const ResizableSidebar = () => {
     >
       <div className="flex h-full flex-col">
         <Sidebar
-          selectedProject={selectedProject}
-          onSelectRequest={setSelectedRequest}
-          onNewRequest={() => {
-            createNewEmptyRequest();
-          }}
-          onOpenConfig={(project: any) => { }}
           isCollapsed={isLeftCollapsed}
           onCollapse={handleLeftCollapse}
         />

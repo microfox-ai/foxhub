@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "./AuthProvider";
+import { APP_ROUTES } from "@/utils/constants/appInfo";
+
 export function LoginForm({
   className,
   ...props
@@ -56,8 +58,8 @@ export function LoginForm({
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
         We are currently in beta, so please expect some minor-bugs and issues.
-        {/* By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>. */}
+        {/* By clicking continue, you agree to our <Link href={APP_ROUTES.termsOfService}>Terms of Service</Link>{" "}
+        and <Link href={APP_ROUTES.privacyPolicy}>Privacy Policy</Link>. */}
       </div>
     </div>
   );

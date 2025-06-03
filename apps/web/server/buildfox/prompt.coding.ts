@@ -128,6 +128,12 @@ export const codingFileTypePrompt = (fileType: string) => {
 //
 
 export const getFunctionNameFromKebabCase = (name_kebab_case: string) => {
+  // Check if kebab case is detected (contains non-alphanumeric characters like hyphens)
+  if (!/[^a-zA-Z0-9]/.test(name_kebab_case)) {
+    // No kebab case detected, return as-is
+    return name_kebab_case;
+  }
+
   return name_kebab_case
     ?.split(/[^a-zA-Z0-9]+/)
     .filter(Boolean)
@@ -137,6 +143,12 @@ export const getFunctionNameFromKebabCase = (name_kebab_case: string) => {
         : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     )
     .join("");
+};
+
+export const getKebabCaseFunctionNameFromCamelCase = (
+  nameCamelCase: string
+) => {
+  return nameCamelCase.replace(/([A-Z])/g, "-$1").toLowerCase();
 };
 
 export const codingFunctionPrompt = async ({

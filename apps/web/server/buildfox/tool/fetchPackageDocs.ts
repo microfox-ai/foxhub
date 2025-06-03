@@ -252,7 +252,7 @@ export const fetchPackageDocs = (
               )?.path;
               if (constructorPath) {
                 const constructorReadme = await fetchText(constructorPath);
-                readme += `\n\n${constructorReadme}`;
+                readme += `For constructor of this sdk - You Must use this documentation as reference, do not assume your own knowledge\n\n${constructorReadme}`;
                 //console.log("constructorReadme", constructorReadme);
               }
             }

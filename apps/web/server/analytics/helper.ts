@@ -1,8 +1,9 @@
 import { prisma } from "@/prisma/prisma";
+import dayjs from "dayjs";
 
 export interface TokenUsageAnalytics {
   requestId?: string;
-  userId: string;
+  userId?: string;
   botProjectId?: string;
   promptTokens: number;
   totalTokens: number;
@@ -26,15 +27,17 @@ export const TokenUsageAnalyticsTracker = {
       console.error("usageData is missing required fields", usageData);
       return;
     }
-    let matchId = `${usageData.userId}${
+    const dateKey = dayjs().format("YYYY-MM-DD");
+    const hourKey = dayjs().format("YYYY-MM-DD-HH");
+    let matchId = `${usageData.userId ? "u-" + usageData.userId?.substring(0, 5) : ""}${
       usageData.requestId != undefined
-        ? "--r--" + usageData.requestId?.substring(0, 5)
+        ? "-r-" + usageData.requestId?.substring(0, 5)
         : ""
     }${
       usageData.botProjectId != undefined
-        ? "--b--" + usageData.botProjectId?.substring(0, 5)
+        ? "-b-" + usageData.botProjectId?.substring(0, 5)
         : ""
-    }${usageData.model ? "--m--" + usageData.model : ""}`;
+    }${usageData.model ? "-m-" + usageData.model : ""}${"-d-" + hourKey}`;
     const usage = await prisma.usageAnalytics.upsert({
       where: {
         matchId,
@@ -49,6 +52,9 @@ export const TokenUsageAnalyticsTracker = {
         completionTokens: {
           increment: usageData.completionTokens,
         },
+        invocations: {
+          increment: 1,
+        },
       },
       create: {
         matchId,
@@ -56,6 +62,12 @@ export const TokenUsageAnalyticsTracker = {
         totalTokens: usageData.totalTokens,
         completionTokens: usageData.completionTokens,
         model: usageData.model,
+        day: dateKey,
+        month: dayjs().format("YYYY-MM"),
+        hour: hourKey,
+        ...(usageData.requestId && { requestId: usageData.requestId }),
+        ...(usageData.botProjectId && { projectId: usageData.botProjectId }),
+        ...(usageData.userId && { userId: usageData.userId }),
       },
     });
     return usage;
@@ -75,27 +87,24 @@ export const TokenUsageAnalyticsTracker = {
     });
     return usage;
   },
-  updateRequestTokenUsage: async (
-    userId: string,
-    {
-      requestId,
-      ...props
-    }: {
-      requestId: string;
-      model: string;
-      promptTokens: number;
-      totalTokens: number;
-      completionTokens: number;
-    }
-  ) => {
-    // also update count on the user end
-    const usage = TokenUsageAnalyticsTracker.updateUserTokenUsage(userId, {
-      ...props,
-    });
+  updateRequestTokenUsage: async ({
+    requestId,
+    ...props
+  }: {
+    requestId: string;
+    model: string;
+    promptTokens: number;
+    totalTokens: number;
+    completionTokens: number;
+  }) => {
+    // // also update count on the user end
+    // const usage = TokenUsageAnalyticsTracker.updateUserTokenUsage(userId, {
+    //   ...props,
+    // });
     // also update count on the request end
     const requestUsage = TokenUsageAnalyticsTracker.updateUsage({
       ...props,
-      userId,
+      userId: undefined,
       requestId,
     });
     return requestUsage;
@@ -112,24 +121,22 @@ export const TokenUsageAnalyticsTracker = {
     };
   }) => {
     if (props.clientRequestId || props.originClientRequestId) {
-      const requestUsage = TokenUsageAnalyticsTracker.updateRequestTokenUsage(
-        props.userId,
-        {
-          ...props.usage,
-          requestId: props.clientRequestId ?? props.originClientRequestId ?? "",
-          model: props.model,
-        }
-      );
+      const requestUsage = TokenUsageAnalyticsTracker.updateRequestTokenUsage({
+        ...props.usage,
+        requestId: props.clientRequestId ?? props.originClientRequestId ?? "",
+        model: props.model,
+      });
       return requestUsage;
     } else {
-      const userUsage = TokenUsageAnalyticsTracker.updateUserTokenUsage(
-        props.userId,
-        {
-          ...props.usage,
-          model: props.model,
-        }
-      );
-      return userUsage;
+      // TODO: update based on botProjectId
+      // const userUsage = TokenUsageAnalyticsTracker.updateUserTokenUsage(
+      //   props.userId,
+      //   {
+      //     ...props.usage,
+      //     model: props.model,
+      //   }
+      // );
+      // return userUsage;
     }
   },
   getTokenUsagePerUser: async (userId: string, model: TokenUsageModel) => {
@@ -140,11 +147,66 @@ export const TokenUsageAnalyticsTracker = {
     });
     return usage;
   },
-  getTokenUsagePerRequest: async (userId: string, requestId: string) => {
+  getTokenUsagePerProject: async (projectId: string, model?: string) => {
     const usage = await prisma.usageAnalytics.findMany({
       where: {
-        matchId: userId + "--r--" + requestId?.substring(0, 5),
+        matchId: {
+          contains:
+            "-b-" + projectId?.substring(0, 5) + (model ? "-m-" + model : ""),
+        },
       },
+    });
+    return usage;
+  },
+  getTokenUsagePerRequest: async (requestId: string, model?: string) => {
+    const usage = await prisma.usageAnalytics.findMany({
+      where: {
+        matchId: {
+          contains:
+            "-r-" + requestId?.substring(0, 5) + (model ? "-m-" + model : ""),
+        },
+      },
+    });
+    return usage;
+  },
+  getFilteredTokenUsagePerRequest: async (
+    requestId: string,
+    filters: {
+      model?: string;
+      startDate?: string;
+      endDate?: string;
+      onDate?: string;
+    }
+  ) => {
+    let query = {};
+
+    if (filters.onDate) {
+      query = {
+        day: filters.onDate,
+      };
+    } else if (filters.startDate && filters.endDate) {
+      query = {
+        day: {
+          gte: filters.startDate,
+          lte: filters.endDate,
+        },
+      };
+    }
+
+    const usage = await prisma.usageAnalytics.findMany({
+      where: {
+        matchId: {
+          contains:
+            "-r-" +
+            requestId?.substring(0, 5) +
+            (filters.model ? "-m-" + filters.model : ""),
+        },
+        ...query,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
     });
     return usage;
   },

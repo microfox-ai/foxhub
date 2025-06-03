@@ -154,3 +154,105 @@ export const prettyPrintDuration = (startTime: string, endTime: string) => {
   if (minutes > 0) return `${minutes}m`;
   return `${seconds}s`;
 };
+
+export const convertMinutesToSeconds = (minutes: number): number => {
+  return minutes * 60;
+};
+
+export const convertSecondsToMinutes = (seconds: number): number => {
+  return seconds / 60;
+};
+
+export const convertBytes = (
+  bytes: number,
+  fromUnit: "B" | "KB" | "MB" | "GB" | "TB",
+  toUnit: "B" | "KB" | "MB" | "GB" | "TB"
+): number => {
+  const units = {
+    B: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024,
+    TB: 1024 * 1024 * 1024 * 1024,
+  };
+
+  const bytesValue = bytes * units[fromUnit];
+  return bytesValue / units[toUnit];
+};
+
+export const formatNumberToShort = (num: number): string => {
+  if (num >= 1000000000) {
+    return (num / 1000000000).toFixed(1).replace(/\.0$/, "") + "B";
+  }
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  }
+  return num + "";
+};
+
+export const formatBytesToReadable = (bytes: number): string => {
+  if (bytes === 0) return "0 B";
+
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+export const formatNumberToPercentage = (
+  num: number,
+  decimals: number = 1
+): string => {
+  return `${(num * 100).toFixed(decimals)}%`;
+};
+
+export const formatNumberToCurrency = (
+  num: number,
+  currency: string = "USD"
+): string => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency,
+    minimumFractionDigits: 4,
+  }).format(num);
+};
+
+export const formatNumberToLocale = (
+  num: number,
+  locale: string = "en-US"
+): string => {
+  return new Intl.NumberFormat(locale).format(num);
+};
+
+export const formatNumberToFixed = (
+  num: number,
+  decimals: number = 2
+): string => {
+  return num.toFixed(decimals);
+};
+
+export const formatNumberToScientific = (
+  num: number,
+  decimals: number = 2
+): string => {
+  return num.toExponential(decimals);
+};
+
+export const formatNumberToOrdinal = (num: number): string => {
+  const j = num % 10;
+  const k = num % 100;
+  if (j === 1 && k !== 11) {
+    return num + "st";
+  }
+  if (j === 2 && k !== 12) {
+    return num + "nd";
+  }
+  if (j === 3 && k !== 13) {
+    return num + "rd";
+  }
+  return num + "th";
+};

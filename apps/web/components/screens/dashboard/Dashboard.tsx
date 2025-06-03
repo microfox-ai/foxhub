@@ -2,26 +2,21 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
-import { ArrowLeftIcon, AxeIcon, BotIcon, CornerDownRightIcon, ListIcon, PlusIcon, PyramidIcon } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import useSWR from "swr";
-import { ShardPage } from "@prisma/client";
-import { MinionFlow, MinionType } from "../hooks/convertors";
+import { HomeTab } from "./HomeTab";
+import { TasksTab } from "./TasksTab";
+import { ShardPagesTab } from "./ShardPagesTab";
 
-const Dashboard = () => {
+const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
   const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, setSubmitAnnotations, createNewEmptyRequest } = useClientProject();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("home");
-
-  const { data: shardpages, isLoading: shardpagesLoading } = useSWR("/api/shard-page",
-    (url: string) => fetch(url).then(res => res.json())
-  );
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   useEffect(() => {
     if (selectedProject) {
-      setActiveTab("home");
+      setActiveTab(defaultTab);
     }
   }, [selectedProject]);
 
@@ -102,102 +97,30 @@ const Dashboard = () => {
         <div className="col-span-6 gap-4">
           <Tabs value={activeTab} className="w-full">
             <TabsContent value="home" className="mt-0">
-              <ul className="flex flex-col gap-4 justify-start items-start">
-                <li
-                  onClick={() => setActiveTab("tasks")}
-                  className={`flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2 ${activeTab === "tasks" ? "bg-gray-100" : ""}`}>
-                  <ListIcon className="w-4 h-4" />
-                  <span> Show all running tasks </span>
-                </li>
-                <Link
-                  href="/my-data"
-                  onClick={() => setActiveTab("access")}
-                  className={`flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2 ${activeTab === "access" ? "bg-gray-100" : ""}`}>
-                  <PyramidIcon className="w-4 h-4" />
-                  <span> Show all connected platforms </span>
-                </Link>
-                <Link
-                  href="/my-bots"
-                  onClick={() => setActiveTab("bots")}
-                  className={`flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2 ${activeTab === "bots" ? "bg-gray-100" : ""}`}>
-                  <BotIcon className="w-4 h-4" />
-                  <span> Show all cutom bots </span>
-                </Link>
-                <li
-                  onClick={() => {
-                    createNewEmptyRequest();
-                  }}
-                  className="bg-black text-white flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
-                  <CornerDownRightIcon className="w-4 h-4" />
-                  <span> Start a New Task </span>
-                </li>
-              </ul>
+              <HomeTab
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                createNewEmptyRequest={createNewEmptyRequest}
+              />
             </TabsContent>
             <TabsContent value="tasks" className="mt-0">
-              <div className="bg-white rounded-lg">
-                {selectedProjectClientRequestsLoading ? (
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ) : (
-                  <div>
-                    {selectedProjectClientRequests?.length === 0 ? (
-                      <p className="text-gray-500">No running tasks</p>
-                    ) : (
-                      <ul className="space-y-2 flex flex-col gap-2 items-start max-h-[500px] overflow-y-auto thin-scrollbar">
-                        {selectedProjectClientRequests?.map((request) => (
-                          <Link
-                            href={`/project/${selectedProject?.id}/request/${request.id}`}
-                            key={request.id} className="cursor-pointer px-4 flex items-center gap-2 border border-gray-200 p-2 rounded-lg">
-                            <span>{request.title} - {request.description && request.description.length > 0 ? request.description.substring(0, 100) + "..." : "Yet to start."}</span>
-                          </Link>
-                        ))}
-                        <li
-                          onClick={() => setActiveTab("home")}
-                          className="flex flex-row gap-2 items-center justify-start p-2 hover:text-gray-500 cursor-pointer">
-                          <ArrowLeftIcon className="w-4 h-4" />
-                          <span> Back Home </span>
-                        </li>
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </div>
+              <TasksTab
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                selectedProjectClientRequests={selectedProjectClientRequests}
+                selectedProjectClientRequestsLoading={selectedProjectClientRequestsLoading}
+                selectedProjectId={selectedProject.id}
+                createNewEmptyRequest={createNewEmptyRequest}
+              />
             </TabsContent>
           </Tabs>
         </div>
         <div className="col-span-6 gap-4">
-          {shardpagesLoading ? (
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg">
-              {shardpages?.map((shardpage: ShardPage) => (
-                <li
-                  onClick={() => {
-                    createNewEmptyRequest(MinionFlow.BuildFlow, [
-                      {
-                        type: "body",
-                        key: "shard_id",
-                        value: shardpage.id
-                      },
-                      {
-                        type: "body",
-                        key: "minionType",
-                        value: MinionType.InstallFox
-                      }
-                    ], "Set this up for me - " + shardpage.title);
-                  }}
-                  className={`flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2 ${activeTab === "tasks" ? "bg-gray-100" : ""}`}>
-                  <PlusIcon className="w-4 h-4" />
-                  <span> {shardpage.title} </span>
-                </li>
-              ))}
-            </div>
-          )}
+          <ShardPagesTab
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            createNewEmptyRequest={createNewEmptyRequest}
+          />
         </div>
       </div>
     </div>

@@ -52,11 +52,6 @@ const tabList = [
     icon: <MessageSquare />,
   },
   {
-    label: "History",
-    value: "history",
-    icon: <History />,
-  },
-  {
     label: "Dashboard ",
     value: "dashboard",
     icon: <LayoutDashboard />,
@@ -65,6 +60,11 @@ const tabList = [
     label: "Code",
     value: "code",
     icon: <Code />,
+  },
+  {
+    label: "History",
+    value: "history",
+    icon: <History />,
   },
 ];
 const ChatHeader = ({
@@ -104,7 +104,7 @@ const ChatHeader = ({
               Request ID: {clientRequest?.id}
             </p>
             <p className="text-xs text-gray-500">
-              Minion: {lastKnownMinionType};  Flow: {lastKnownMinionFlow}
+              Minion: {lastKnownMinionType};  Flow: {lastKnownMinionFlow} Status: {clientRequest?.archiveStatus}
             </p>
           </>
         )}

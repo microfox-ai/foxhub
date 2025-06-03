@@ -36,7 +36,7 @@ export const editFile = (
 
         // Extract filename for commit message
         const fileName = path.basename(filePath);
-        const commitMessage = `nodeploy: microcode: hotfix: ${fileName}`;
+        const commitMessage = `microcode: hotfix: updatefox: ${fileName}`;
 
         // Get current file SHA to update it
         let currentSha: string | undefined;

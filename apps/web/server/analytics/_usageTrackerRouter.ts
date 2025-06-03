@@ -53,7 +53,7 @@ export const usageTrackerRouter: ServerStreamingFunction<
         userUsage: userUsagesClaude35Sonnet,
         requestUsage: requestUsagesClaude35Sonnet,
       },
-    },
+    } as any,
   });
 
   let isBlock = false;

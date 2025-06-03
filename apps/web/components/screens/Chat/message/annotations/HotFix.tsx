@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ActionButtons } from "./ActionButtons";
-import { EnvVariablesDialog } from "../EnvVariablesDialog";
+import { EnvVariablesDialog } from "../../configuration/EnvVariablesDialog";
 import { Markdown } from "../markdown";
 import {
     Tooltip,

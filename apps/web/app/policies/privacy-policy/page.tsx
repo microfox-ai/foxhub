@@ -1,124 +1,211 @@
 'use client';
 
-import React from 'react';
+import { LandingLayout } from '@/components/screens/landing/LandingLayout';
+import PageHero from '../../../components/screens/policies/PageHero';
 
+import FooterCtaSection from '@/components/screens/landing/FooterCTASection/FooterCtaSection';
 const PrivacyPolicy = () => {
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
+    <LandingLayout>
+      <div className="min-h-screen mt-20 bg-[#FAFAFA]">
+        <PageHero
+          title="Privacy Policy"
+          date="March 19, 2025"
+        />
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Data Collection Disclosure</h2>
-        <p className="mb-4">We collect and process the following categories of personal data:</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>User identifiers (name, email, messaging platform IDs, profile information)</li>
-          <li>Conversation content and message history across integrated messaging platforms</li>
-          <li>Integration credentials and API keys (stored in encrypted format)</li>
-          <li>Usage patterns, command history, and interaction analytics</li>
-          <li>Bot configuration preferences and customization settings</li>
-          <li>Device information and IP addresses for security purposes</li>
-          <li>Location data when explicitly permitted by users</li>
-          <li>Third-party service connection data and usage statistics</li>
-        </ul>
-        <p className="mb-4">This information is necessary to provide our integration and automation services, connect with third-party platforms, and ensure secure bot operations across multiple messaging channels.</p>
-      </section>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-12">
+            <div className="prose prose-lg max-w-none">
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">1. Introduction</h2>
+                <p className="text-gray-600 mb-4">
+                  At Microfox, we take your privacy seriously. This Privacy Policy explains how we collect,
+                  use, and protect your personal information when you use our AI-powered automation platform.
+                  We are committed to transparency and ensuring you understand how your data is handled.
+                </p>
+                <p className="text-gray-600">
+                  This policy complies with the General Data Protection Regulation (GDPR), California Consumer
+                  Privacy Act (CCPA), and other applicable privacy laws. By using our services, you agree to
+                  the collection and use of information in accordance with this policy.
+                </p>
+              </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Purpose Specification</h2>
-        <p className="mb-4">Your data is collected and processed for the following purposes:</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Enabling bot functionality across messaging platforms (WhatsApp, Telegram, Slack, etc.)</li>
-          <li>Processing and executing automation workflows based on your configuration</li>
-          <li>Authenticating with third-party services through secure API connections</li>
-          <li>Personalizing bot responses and recommendations</li>
-          <li>Improving AI model accuracy and response quality</li>
-          <li>Ensuring platform security and preventing unauthorized access</li>
-          <li>Analyzing usage patterns to enhance feature offerings</li>
-          <li>Diagnosing technical issues and optimizing performance</li>
-        </ul>
-        <p className="mb-4">We employ both deterministic processing (rule-based automation) and machine learning models to deliver personalized experiences through our platform.</p>
-      </section>
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">2. Information We Collect</h2>
+                <h3 className="text-xl font-semibold mb-3">2.1 Information You Provide</h3>
+                <p className="text-gray-600 mb-4">We collect information that you provide directly to us, including:</p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Account information (name, email, password)</li>
+                  <li>Profile information (company name, role, preferences)</li>
+                  <li>Usage data and automation configurations</li>
+                  <li>Communication preferences and support interactions</li>
+                  <li>Payment and billing information</li>
+                </ul>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Data Processing Information</h2>
-        <p className="mb-4">Your data is protected using industry-standard security measures and processing protocols:</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>AES-256 encryption for all stored data, especially API keys and credentials</li>
-          <li>SSL/TLS encryption for all data in transit between services</li>
-          <li>Regular security audits and vulnerability assessments</li>
-          <li>Data minimization practices to limit collection to essential information</li>
-          <li>Isolated storage systems for sensitive authentication credentials</li>
-          <li>Automated monitoring for unauthorized access attempts</li>
-          <li>Regular data backup procedures with encrypted storage</li>
-        </ul>
-        <p className="mb-4">Message content processed by our bots may be temporarily stored to facilitate conversation context and maintain service quality, but is purged according to our retention policies unless explicitly saved by user configuration.</p>
-      </section>
+                <h3 className="text-xl font-semibold mb-3">2.2 Automatically Collected Information</h3>
+                <p className="text-gray-600 mb-4">When you use our platform, we automatically collect:</p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Usage patterns and interaction data</li>
+                  <li>Device and browser information</li>
+                  <li>IP address and location data</li>
+                  <li>Performance metrics and error logs</li>
+                </ul>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Legal Compliance Framework</h2>
-        <p className="mb-4">We comply with major privacy regulations including GDPR, CCPA, and platform-specific requirements. Our compliance measures include:</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Transparent consent mechanisms for data collection and processing</li>
-          <li>Comprehensive data subject rights implementation (access, correction, deletion)</li>
-          <li>Data processing records maintained as required by Article 30 of GDPR</li>
-          <li>Strict data retention periods with automated purging systems</li>
-          <li>Data Protection Impact Assessments for high-risk processing activities</li>
-          <li>Clear opt-out mechanisms for AI model training and analytics</li>
-          <li>Privacy by design principles implemented throughout development</li>
-        </ul>
-        <p className="mb-4">We serve as both a data controller for account information and a data processor for content flowing through our integration platform.</p>
-      </section>
+                <h3 className="text-xl font-semibold mb-3">2.3 AI and Automation Data</h3>
+                <p className="text-gray-600 mb-4">
+                  Important: We do not use your data to train our AI models. Your automation data is used solely to:
+                </p>
+                <ul className="list-disc pl-6 text-gray-600">
+                  <li>Improve your user experience</li>
+                  <li>Optimize automation performance</li>
+                  <li>Provide personalized service recommendations</li>
+                  <li>Maintain and enhance platform functionality</li>
+                </ul>
+              </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Third-Party Data Sharing</h2>
-        <p className="mb-4">To provide our integration services, we necessarily share data with:</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Messaging platforms (WhatsApp, Telegram, Slack, etc.) according to their requirements</li>
-          <li>Third-party service providers that you explicitly connect through our platform</li>
-          <li>Cloud infrastructure providers who host our services (with appropriate safeguards)</li>
-          <li>Analytics services to improve platform performance (in anonymized format)</li>
-          <li>Customer support tools when you request assistance</li>
-        </ul>
-        <p className="mb-4">All third-party sharing is conducted with appropriate data processing agreements in place. We never sell your data or share it for advertising purposes without explicit consent. You maintain control over which third-party integrations can access your data through granular permission settings in your account dashboard.</p>
-      </section>
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">3. How We Use Your Information</h2>
+                <p className="text-gray-600 mb-4">We use your information for the following purposes:</p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Providing and improving our automation services</li>
+                  <li>Processing transactions and managing your account</li>
+                  <li>Personalizing your experience and recommendations</li>
+                  <li>Sending important updates and notifications</li>
+                  <li>Analyzing and optimizing platform performance</li>
+                  <li>Ensuring platform security and preventing fraud</li>
+                  <li>Complying with legal obligations</li>
+                </ul>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">AI-Specific Data Practices</h2>
-        <p className="mb-4">As an AI-powered platform, we employ several AI-specific data handling practices:</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Conversation content may be processed by AI models to generate appropriate responses</li>
-          <li>Anonymized interaction patterns may contribute to model improvement</li>
-          <li>Human review of certain interactions may occur for quality assurance (with safeguards)</li>
-          <li>Opt-out options are available for AI model training in your privacy settings</li>
-          <li>Custom AI model training is isolated to each customer's data when configured</li>
-          <li>Explainability tools are available to understand how automated decisions are made</li>
-        </ul>
-        <p className="mb-4">We implement technical measures to prevent AI model data leakage between customers and maintain strict access controls to training data.</p>
-      </section>
+                <h3 className="text-xl font-semibold mb-3">3.1 Legal Basis for Processing (GDPR)</h3>
+                <p className="text-gray-600 mb-4">Under GDPR, we process your data based on:</p>
+                <ul className="list-disc pl-6 text-gray-600">
+                  <li>Contractual necessity for service provision</li>
+                  <li>Legitimate interests in improving our services</li>
+                  <li>Legal compliance requirements</li>
+                  <li>Your consent for specific processing activities</li>
+                </ul>
+              </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">International Data Transfers</h2>
-        <p className="mb-4">As a global service, data may be processed in different regions:</p>
-        <ul className="list-disc pl-6 mb-4">
-          <li>Primary data processing occurs in AWS regions compliant with your locality</li>
-          <li>Standard Contractual Clauses are in place for international transfers</li>
-          <li>Data residency options available for enterprise customers with specific requirements</li>
-          <li>Privacy Shield principles are followed for applicable transfers</li>
-        </ul>
-        <p className="mb-4">You can specify preferred data processing regions in your account settings for enterprise plans.</p>
-      </section>
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">4. Data Security</h2>
+                <p className="text-gray-600 mb-4">
+                  We implement industry-standard security measures to protect your data, including:
+                </p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>End-to-end encryption for data transmission</li>
+                  <li>Secure server infrastructure with regular security audits</li>
+                  <li>Access controls and authentication mechanisms</li>
+                  <li>Regular security assessments and updates</li>
+                  <li>Data backup and disaster recovery procedures</li>
+                </ul>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Children's Privacy</h2>
-        <p className="mb-4">Our service is not directed to children under 16. We do not knowingly collect personal information from children. If you believe we have inadvertently collected data from a child, please contact our privacy team immediately for deletion.</p>
-      </section>
+                <p className="text-gray-600">
+                  Our serverless architecture ensures minimal data exposure and enhanced security.
+                  We regularly review and update our security practices to maintain the highest
+                  standards of data protection.
+                </p>
+              </section>
 
-      <section>
-        <p className="text-sm text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
-        <p className="text-sm text-gray-600 mt-2">For privacy inquiries, contact: contact@themoondevs.com</p>
-      </section>
-    </div>
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">5. Your Rights and Choices</h2>
+                <h3 className="text-xl font-semibold mb-3">5.1 GDPR Rights</h3>
+                <p className="text-gray-600 mb-4">Under GDPR, you have the right to:</p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Access your personal data</li>
+                  <li>Correct inaccurate data</li>
+                  <li>Request data deletion</li>
+                  <li>Object to data processing</li>
+                  <li>Data portability</li>
+                  <li>Withdraw consent</li>
+                </ul>
+
+                <h3 className="text-xl font-semibold mb-3">5.2 CCPA Rights</h3>
+                <p className="text-gray-600 mb-4">Under CCPA, you have the right to:</p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Know what personal information is collected</li>
+                  <li>Know if personal information is sold or disclosed</li>
+                  <li>Say no to the sale of personal information</li>
+                  <li>Access your personal information</li>
+                  <li>Request deletion of your personal information</li>
+                  <li>Equal service and price (non-discrimination)</li>
+                </ul>
+              </section>
+
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">6. Data Retention</h2>
+                <p className="text-gray-600 mb-4">
+                  We retain your data only for as long as necessary to:
+                </p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Provide our services</li>
+                  <li>Comply with legal obligations</li>
+                  <li>Resolve disputes</li>
+                  <li>Enforce agreements</li>
+                </ul>
+                <p className="text-gray-600">
+                  When data is no longer needed, it is securely deleted or anonymized.
+                </p>
+              </section>
+
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">7. International Data Transfers</h2>
+                <p className="text-gray-600 mb-4">
+                  We operate globally and may transfer data internationally. When we do, we ensure:
+                </p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Compliance with applicable data protection laws</li>
+                  <li>Appropriate safeguards for data transfers</li>
+                  <li>Standard contractual clauses where required</li>
+                  <li>Transparency about data transfer locations</li>
+                </ul>
+              </section>
+
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">8. Children's Privacy</h2>
+                <p className="text-gray-600">
+                  Our services are not intended for individuals under 16 years of age. We do not knowingly
+                  collect personal information from children. If you believe we have collected information
+                  from a child, please contact us immediately.
+                </p>
+              </section>
+
+              <section className="mb-12">
+                <h2 className="text-3xl font-semibold mb-4">9. Changes to This Policy</h2>
+                <p className="text-gray-600 mb-4">
+                  We may update this Privacy Policy periodically. We will notify you of any material changes by:
+                </p>
+                <ul className="list-disc pl-6 text-gray-600 mb-6">
+                  <li>Posting the new policy on our website</li>
+                  <li>Updating the "Last Updated" date</li>
+                  <li>Sending an email notification for significant changes</li>
+                </ul>
+                <p className="text-gray-600">
+                  We encourage you to review this policy regularly to stay informed about how we protect your information.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-3xl font-semibold mb-4">10. Contact Us</h2>
+                <p className="text-gray-600 mb-4">
+                  If you have any questions about this Privacy Policy or our data practices, please contact us at:
+                </p>
+                <ul className="list-none pl-6 text-gray-600">
+                  <li className="mb-2">
+                    <strong>Email:</strong>{' '}
+                    <a href="mailto:privacy@microfox.ai" className="text-blue-600 hover:text-blue-800">
+                      microfox@themoondevs.com
+                    </a>
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </div>
+
+        <FooterCtaSection />
+      </div>
+    </LandingLayout>
   );
 };
 
-export default PrivacyPolicy; 
+export default PrivacyPolicy;

@@ -63,17 +63,12 @@ export const pushToGit = async (
     PROJECT_REPO_OWNER,
     clientRequest.repoName,
     clientRequest.prBranch,
-    "nodeploy: microcode: " +
+    "microcode: " +
       taskInstanceMeta.taskInfo?.name +
       " -  by Microfox on " +
       dayjs().format(`YYYY-MM-DD HH:mm`) +
       ` ${lastMessage ? lastMessage.id : "nolast user message found"} `
   );
-
-  // Add a comment with message history link
-  if (clientRequest.prNumber) {
-    await addMessageHistoryComment(octo, clientRequest, lastMessage);
-  }
 };
 
 /**

@@ -1,3 +1,4 @@
+import { prisma } from "@/prisma/prisma";
 import { createPullRequest } from "@/server/buildfox/createPullRequest";
 import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { findLastElementWith } from "@/utils/helpers/array";
@@ -6,10 +7,7 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import {
-  updateClientRequest,
-  updateTaskInstanceMeta,
-} from "@/utils/services/db_functions/updateClientRequest";
+import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
@@ -25,19 +23,17 @@ import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCharacter } from "../hellofox/default";
 import { models } from "../models";
-import { genCronJobs } from "./geenrators/genCronJobs";
-import { genDbRedisHelper } from "./geenrators/helperFiles/genDbRedisHelper";
-import { genEnvCollector } from "./geenrators/genEnvCollector";
 import { genServerlessFinalCode } from "./geenrators/finalFiles/genFinalCode";
+import { genBuildStep } from "./geenrators/genBuildStep";
+import { genCronJobs } from "./geenrators/genCronJobs";
 import { genInitialServerlessCode } from "./geenrators/genInitialCode";
 import { genLambdaCode } from "./geenrators/genLambdaCode";
+import { genHelperFiles } from "./geenrators/helperFiles/genHelperFiles";
 import { generateStatsReport } from "./helper/generateStatsReport";
 import { getServiceName } from "./helper/getServiceName";
 import { octokitSdk } from "./helper/gitHelpers";
 import { pushToGit } from "./helper/pushToGit";
-import { deleteAllGenFiles, readAllGenFilesList } from "./tool/writeToFile";
-import { genHelperFiles } from "./geenrators/helperFiles/genHelperFiles";
-import { prisma } from "@/prisma/prisma";
+import { deleteAllGenFiles } from "./tool/writeToFile";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
@@ -193,47 +189,11 @@ export const buildFoxRouter: ServerStreamingFunction<
   }
 
   // record the changes in the build fox steps taken so far using taskInstanceMeta.
-  const filesList = await readAllGenFilesList(clientRequest, true);
-  const newFilesList = filesList.map((file: any) => ({
-    fileName: file.fileName,
-    filePath: file.filePath,
-    fileType: file.fileType,
-    meta: file.meta,
-  }));
-
-  const allEnvVariablesUsed = newFilesList?.flatMap(
-    (file: any) => (file.meta?.envVariablesUsed as string[]) ?? []
-  );
-  const envVariablesUsedUnique = [...new Set(allEnvVariablesUsed)] as string[];
-  const allPackagesUsed = newFilesList?.flatMap(
-    (file: any) => (file.meta?.packagesUsed as string[]) ?? []
-  );
-  const packagesUsedUnique = [...new Set(allPackagesUsed)];
-
-  console.log("envVariablesUsedUnique", envVariablesUsedUnique);
-  const envVariables = await genEnvCollector(
+  const { taskInstanceMetaUpdated, envVariables } = await genBuildStep({
     props,
-    envVariablesUsedUnique,
+    clientRequest,
     taskInstanceMeta,
-    clientRequest
-  );
-  console.log("envVariablesShouldAsk", envVariables);
-
-  const timeEnd = dayjs();
-  const taskInstanceMetaUpdated = await updateTaskInstanceMeta({
-    clientRequestId,
-    taskInstanceMeta: {
-      ...taskInstanceMeta,
-      buildingStep: {
-        startTime: timeStart,
-        endTime: timeEnd,
-        ...taskInstanceMeta.buildingStep,
-        files: newFilesList,
-        envsToCollect: envVariables,
-        envVariablesUsed: envVariablesUsedUnique,
-        packagesUsed: allPackagesUsed,
-      },
-    },
+    timeStart,
   });
 
   dataStream.writeMessageAnnotation({
@@ -245,10 +205,6 @@ export const buildFoxRouter: ServerStreamingFunction<
       envVariables.length > 0
         ? `I need some more details to complete the build. Please add the secrets below.`
         : `All done! You can now test your automation by clicking the button below.`,
-    codeFiles: newFilesList as any[],
-    envVariablesAll: envVariablesUsedUnique as any[],
-    packagesUsed: packagesUsedUnique as any[],
-    envVariablesCollect: envVariables as any[],
     buttons: [
       {
         action: "highlightInput",

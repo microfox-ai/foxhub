@@ -84,25 +84,6 @@ export async function createNewBotProject({
   // Wait for 2 seconds to ensure the repo is created
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  try {
-    const actionPoliciesSdk = new Octokit({
-      auth: GITHUB_ACTION_POLICIES,
-    });
-    const enableWorkflow = await actionPoliciesSdk.request(
-      "PUT /orgs/{org}/actions/permissions/repositories/{repository_id}",
-      {
-        org: PROJECT_REPO_OWNER,
-        repository_id: repoResult.data.id,
-        headers: {
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-      }
-    );
-    console.log("enableWorkflow", enableWorkflow);
-  } catch (error) {
-    console.error("Error enabling workflow", error);
-  }
-
   // Create new branch from main
   const newBranch = PROJECT_BRANCH_NAME;
   const defaultBranchSha = await githubSdk.rest.git.getRef({

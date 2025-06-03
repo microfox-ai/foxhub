@@ -36,9 +36,7 @@ export const createTaskRequiredInfo = async (
         Observation will be the result of running those actions.
         At the end of the loop you output an Answer
     `,
-    schema: taskRequiredInfo.omit({
-      packages: true,
-    }),
+    schema: taskRequiredInfo,
     prompt: `
 Task Goal: ${taskInfo.goal}
 Task Summary: ${taskInfo.summary}

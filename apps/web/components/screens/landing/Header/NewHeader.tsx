@@ -100,13 +100,6 @@ const NewHeader = () => {
           <>
             <div className="flex items-center">
               <MenuItem label="Pricing" to="/pricing" />
-              {/* <Link
-                href={'https://portal.themoondevs.com'}
-                className="cursor-pointer rounded-md border-2 border-transparent px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out hover:bg-[#414a4c] max-lg:hidden"
-              // onClick={() => handleGoogleSignIn('/')}
-              >
-                Sign In
-              </Link> */}
             </div>
             <CustomButton label="Enter App" onClick={handleButtonClick} />
           </>
@@ -133,6 +126,7 @@ export default NewHeader;
 const HamBurger = () => {
   const path = usePathname();
   const { openForm } = useFilloutPopup();
+  const { handleButtonClick } = useAppButton();
 
   return (
     <div className="h-dvh overflow-y-scroll rounded-bl-lg rounded-br-lg pb-16">
@@ -199,17 +193,7 @@ const HamBurger = () => {
             >
               View Demo
             </button>
-            <Link
-              href={'https://portal.themoondevs.com'}
-              className="w-1/2 rounded-md bg-black py-2 text-sm font-semibold text-white max-sm:w-full"
-              style={{ border: '2px solid white' }}
-            // onClick={() =>
-            //   handleGoogleSignIn &&
-            //   handleGoogleSignIn('/products/custom-bots')
-            // }
-            >
-              Sign In
-            </Link>
+            <CustomButton label="Enter App" onClick={handleButtonClick} />
           </div>
         </>
       </div>

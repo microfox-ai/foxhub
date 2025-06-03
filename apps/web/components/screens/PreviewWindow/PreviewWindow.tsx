@@ -46,6 +46,9 @@ import {
   getStatusColor,
   getStatusText,
 } from "./utils";
+import { Badge } from "@/components/ui/badge";
+import { Command, CommandInput } from "@/components/ui/command";
+import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
 
 const PreviewWindow = () => {
   const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
@@ -58,7 +61,9 @@ const PreviewWindow = () => {
     setSelectedEndpoint,
     currentEndpointData,
     error,
-    setError
+    setError,
+    setForceBaseUrl,
+    forceBaseUrl
   } = useApiDoc();
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,7 +83,7 @@ const PreviewWindow = () => {
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
   //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
-  const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
+  const BASE_URL = forceBaseUrl || `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
@@ -96,25 +101,34 @@ const PreviewWindow = () => {
               fieldSchema = z.string().transform((val) => Number(val));
               break;
             case "boolean":
-              fieldSchema = z.string().transform((val) => val === "true");
+              fieldSchema = z.union([
+                z.boolean(),
+                z.string().transform((val) => val === "true")
+              ]);
               break;
             case "array":
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return [];
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return [];
+                  }
+                }),
+                z.array(z.any())
+              ]);
               break;
             case "object":
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return {};
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return {};
+                  }
+                }),
+                z.record(z.any())
+              ]);
               break;
           }
         }
@@ -140,20 +154,26 @@ const PreviewWindow = () => {
             let fieldSchema: any = z.string();
 
             if (schema.type === "array" || schema.type === "object") {
-              fieldSchema = z.string().transform((val) => {
-                try {
-                  return JSON.parse(val);
-                } catch {
-                  return schema.type === "array" ? [] : {};
-                }
-              });
+              fieldSchema = z.union([
+                z.string().transform((val) => {
+                  try {
+                    return JSON.parse(val);
+                  } catch {
+                    return schema.type === "array" ? [] : {};
+                  }
+                }),
+                schema.type === "array" ? z.array(z.any()) : z.record(z.any())
+              ]);
             } else if (
               schema.type === "number" ||
               schema.type === "integer"
             ) {
               fieldSchema = z.string().transform((val) => Number(val));
             } else if (schema.type === "boolean") {
-              fieldSchema = z.string().transform((val) => val === "true");
+              fieldSchema = z.union([
+                z.boolean(),
+                z.string().transform((val) => val === "true")
+              ]);
             }
 
             schemaFields[`body_${key}`] = fieldSchema.optional();
@@ -166,20 +186,26 @@ const PreviewWindow = () => {
             requestBodySchema.type === "array" &&
             requestBodySchema.items
           ) {
-            bodySchema = z.string().transform((val) => {
-              try {
-                return JSON.parse(val);
-              } catch {
-                return [];
-              }
-            });
+            bodySchema = z.union([
+              z.string().transform((val) => {
+                try {
+                  return JSON.parse(val);
+                } catch {
+                  return [];
+                }
+              }),
+              z.array(z.any())
+            ]);
           } else if (
             requestBodySchema.type === "number" ||
             requestBodySchema.type === "integer"
           ) {
             bodySchema = z.string().transform((val) => Number(val));
           } else if (requestBodySchema.type === "boolean") {
-            bodySchema = z.string().transform((val) => val === "true");
+            bodySchema = z.union([
+              z.boolean(),
+              z.string().transform((val) => val === "true")
+            ]);
           }
 
           schemaFields["body"] = bodySchema.optional();
@@ -228,10 +254,15 @@ const PreviewWindow = () => {
       case "boolean":
         return z.boolean();
       case "array":
-        if (schema.items) {
-          return z.array(createZodSchemaFromOpenAPI(schema.items));
+        if (Array.isArray(schema.items) && schema.items.length > 0) {
+          return z.array(z.any());
         }
-        return z.array(z.any());
+        else if (schema.items) {
+          return z.array(createZodSchemaFromOpenAPI(schema.items as OpenAPISchema));
+        }
+        else {
+          return z.array(z.any());
+        }
       case "object":
         if (schema.properties) {
           const objectSchema: Record<string, z.ZodType<any>> = {};
@@ -249,7 +280,9 @@ const PreviewWindow = () => {
   };
 
   const makeApiCall = async () => {
-    if (!currentEndpointData) return;
+    if (!currentEndpointData) {
+      return;
+    }
 
     // Create new abort controller
     const controller = new AbortController();
@@ -262,11 +295,12 @@ const PreviewWindow = () => {
       setServerlessLogs(null);
       setResponse(null);
       setRequest(null);
+      const formValues = form.getValues();
       const { url, headers, body } = prepareApiRequest({
         baseUrl: BASE_URL,
         path: currentEndpointData.path || "",
         method: currentEndpointData.method,
-        data: form.getValues(),
+        data: formValues,
         parameters: currentEndpointData.parameters,
         requestBody: currentEndpointData.requestBody
       });
@@ -289,16 +323,17 @@ const PreviewWindow = () => {
         setResponse: setResponse
       });
     } catch (error) {
-      console.error("Request preparation error:", error);
+      // Handle error silently
     } finally {
-      //console.log("endpointLink", endpointLink, "deploymentInfo", deploymentInfo.id);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // Then fetch logs, regardless of API call outcome
-      await fetchServerlessLogs({
-        clientDeploymentId: (deploymentInfo as ClientDeployment).id,
-        endpointLink: endpointLink,
-        setServerlessLogs: setServerlessLogs
-      });
+      // Only fetch logs if we're using the deployment URL (forceBaseUrl is null)
+      if (!forceBaseUrl && deploymentInfo) {
+        await fetchServerlessLogs({
+          clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+          endpointLink: endpointLink,
+          setServerlessLogs: setServerlessLogs
+        });
+      }
       setIsLoading(false);
       setAbortController(null);
     }
@@ -313,7 +348,14 @@ const PreviewWindow = () => {
     } else {
       // Start new request
       setShowValidation(true);
-      form.handleSubmit(makeApiCall)();
+      form.handleSubmit(
+        (data) => {
+          makeApiCall();
+        },
+        (errors) => {
+          // Handle validation errors silently
+        }
+      )();
     }
   };
 
@@ -588,6 +630,82 @@ const PreviewWindow = () => {
           />
         );
       case "array":
+        const description = schema.description;
+        if (schema.items?.type === "object") {
+          return (
+            <div className="grid gap-2">
+              <h4 className="text-sm font-medium text-neutral-700">
+                {description}
+              </h4>
+              {Object.entries(schema.items).map(([_key, value], _index) => {
+                return renderFormField(key + "[" + _index + "]" + "." + _key, value, schema.required?.includes(_key) || false, value.description);
+              })}
+            </div>
+          )
+        }
+        if (schema.items?.type === "string") {
+          return (
+            <FormField
+              key={key}
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  {renderLabelAndDescription()}
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {field.value ? field.value.split(",").map((item: string, index: number) => (
+                        <Badge
+                          key={`${item}-${index}`}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          {item}
+                          <button
+                            onClick={() => {
+                              const newItems = field.value.split(",").filter((_, i) => i !== index);
+                              field.onChange(newItems.join(","));
+                            }}
+                            className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                          >
+                            <X className="h-3 w-3" />
+                            <span className="sr-only">Remove item</span>
+                          </button>
+                        </Badge>
+                      )) : null}
+                    </div>
+                    <div className="flex gap-2">
+                      <Command className="rounded-lg border shadow-md">
+                        <CommandInput
+                          placeholder={getPlaceholder(
+                            key,
+                            "array",
+                            currentEndpointData?.method === "GET",
+                            schema.example
+                          )}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value) {
+                              e.preventDefault();
+                              const newValue = e.currentTarget.value.trim();
+                              if (newValue) {
+                                const currentItems = field.value ? field.value.split(",") : [];
+                                if (!currentItems.includes(newValue)) {
+                                  field.onChange([...currentItems, newValue].join(","));
+                                }
+                                e.currentTarget.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </Command>
+                    </div>
+                  </div>
+                  {showValidation && <FormMessage className="text-xs" />}
+                </FormItem>
+              )}
+            />
+          );
+        }
         return (
           <FormField
             key={key}
@@ -614,6 +732,15 @@ const PreviewWindow = () => {
           />
         );
       case "object":
+        if (schema.properties) {
+          return (
+            <div className="grid gap-2">
+              {Object.entries(schema.properties).map(([_key, value]) => {
+                return renderFormField(key + "." + _key, value, schema.required?.includes(_key) || false, value.description);
+              })}
+            </div>
+          )
+        }
         return (
           <FormField
             key={key}
@@ -762,19 +889,12 @@ const PreviewWindow = () => {
           setFetchError(null); // Clear any previous errors
         }
       } catch (err) {
-        console.error("Error fetching serverless logs:", err);
         setFetchError(err instanceof Error ? err.message : "Failed to fetch server logs");
         setErrorServerlessLogs(null);
       }
     };
     fetchErrorLogs();
   }, [error, deploymentInfo]);
-
-
-  // setError(null);
-  // setErrorServerlessLogs(null);
-  // setShowErrorLogs(false);
-  // setFetchError(null);
 
 
   const refreshServerlessLogs = async () => {
@@ -789,7 +909,7 @@ const PreviewWindow = () => {
         setServerlessLogs: setServerlessLogs
       });
     } catch (error) {
-      console.error("Error refreshing logs:", error);
+      // Handle error silently
     } finally {
       setIsRefreshingLogs(false);
     }
@@ -874,7 +994,6 @@ const PreviewWindow = () => {
                       deploymentInfo: deploymentInfo,
                       fetchError: fetchError
                     }
-                    console.log("errorAttachment", errorAttachment);
                     setSubmitAnnotations((sa) => {
                       const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
                       const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
@@ -917,18 +1036,61 @@ const PreviewWindow = () => {
             <Monitor className="h-4 w-4 " />
           </div>
           {endpoints.length > 0 && (
-            <Button
-              variant={showDocs ? "default" : "outline"}
-              size="sm"
-              className="ml-auto h-8 gap-2 rounded-md px-3 text-xs"
-              onClick={() => setShowDocs(!showDocs)}
-              disabled={isLoading}
-            >
-              {showDocs ? "Hide Docs" : "Show Docs"}
-            </Button>
+            <div className="flex items-center gap-2 ml-auto">
+              <Button
+                variant={showDocs ? "default" : "outline"}
+                size="sm"
+                className="h-8 gap-2 rounded-md px-3 text-xs"
+                onClick={() => setShowDocs(!showDocs)}
+                disabled={isLoading}
+              >
+                {showDocs ? "Hide Docs" : "Show Docs"}
+              </Button>
+            </div>
           )}
         </div>
         <div className="px-3 py-2">
+          {(IN_STAGING || IN_DEV) &&
+            (<div className="flex flex-col gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="baseUrl" className="text-xs font-medium text-neutral-700">
+                    Base URL
+                  </label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
+                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000")}
+                >
+                  {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
+                </Button>
+              </div>
+              <div className="flex flex-col items-start gap-2">
+                {forceBaseUrl ?
+                  (<Input
+                    id="baseUrl"
+                    type="text"
+                    placeholder="Enter base URL (e.g., https://api.example.com)"
+                    className="h-8 w-full text-xs"
+                    value={forceBaseUrl || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      setForceBaseUrl(value || null);
+                    }}
+                  />) : (
+                    <Input
+                      id="baseUrl"
+                      type="text"
+                      placeholder="Enter base URL (e.g., https://api.example.com)"
+                      className="h-8 w-full text-xs"
+                      value={deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase()}
+                      disabled
+                    />
+                  )}
+              </div>
+            </div>)}
           {endpoints.length > 0 ? (
             <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
               <Select
@@ -1349,7 +1511,7 @@ const PreviewWindow = () => {
                             </button>
                           </div>
                         </div>)}
-                      {serverlessLogs && (
+                      {serverlessLogs && !forceBaseUrl && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <button
@@ -1383,7 +1545,7 @@ const PreviewWindow = () => {
                           )}
                         </div>
                       )}
-                      {serverlessLogs && (
+                      {serverlessLogs && !forceBaseUrl && (
                         <div className="flex flex-col items-center justify-between mb-3">
                           <Textarea
                             className="w-full mb-3"
@@ -1404,7 +1566,6 @@ const PreviewWindow = () => {
                                   request: request,
                                   modificationInstructions: modificationInstructions
                                 }
-                                console.log("errorAttachment", errorAttachment);
                                 setModificationInstructions("");
                                 setSubmitAnnotations((sa) => {
                                   const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");

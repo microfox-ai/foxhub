@@ -28,6 +28,8 @@ interface ApiDocContextType {
   currentEndpointData:
   | (OpenAPIOperation & { method: HttpMethod; path: string })
   | null;
+  forceBaseUrl: string | null;
+  setForceBaseUrl: (url: string | null) => void;
 }
 
 const ApiDocContext = createContext<ApiDocContextType | undefined>(undefined);
@@ -39,10 +41,11 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<HttpMethod | null>(null);
+  const [forceBaseUrl, setForceBaseUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchApiDocs = async () => {
-      if (!deploymentInfo?.baseUrl || !deploymentInfo?.stage) {
+      if (!forceBaseUrl && (!deploymentInfo?.baseUrl || !deploymentInfo?.stage)) {
         setApiDoc(null);
         setSelectedEndpoint(null);
         setSelectedMethod(null);
@@ -52,9 +55,10 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
+      const baseUrl = forceBaseUrl || deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase();
       try {
         const response = await fetch(
-          `${deploymentInfo.baseUrl}/${deploymentInfo.stage.toLowerCase()}/docs.json`
+          `${baseUrl}/docs.json`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch API documentation");
@@ -63,6 +67,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         setApiDoc(data);
       } catch (error) {
         console.error("Failed to fetch API docs:", error);
+        setForceBaseUrl(null);
         setError(
           error instanceof Error ? error : new Error("Unknown error occurred")
         );
@@ -72,7 +77,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchApiDocs();
-  }, [deploymentInfo?.stage, deploymentInfo?.baseUrl]);
+  }, [deploymentInfo?.stage, deploymentInfo?.baseUrl, forceBaseUrl]);
 
   const endpoints = apiDoc?.paths
     ? Object.entries(apiDoc.paths).flatMap(
@@ -122,6 +127,8 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         setSelectedEndpoint,
         setSelectedMethod,
         currentEndpointData,
+        setForceBaseUrl,
+        forceBaseUrl
       }}
     >
       {children}

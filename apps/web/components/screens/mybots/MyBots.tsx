@@ -36,6 +36,17 @@ const MyBots = () => {
     );
   }
 
+  if (pathname?.includes("my-data") && bots.length === 0) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-gray-600">No Connections found</h2>
+          <p className="text-gray-500">You can make connections as you use the app.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid mt-8 px-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
       {/* Add Bot Card */}
@@ -50,6 +61,18 @@ const MyBots = () => {
           <span className="mt-3 text-sm font-medium text-gray-600">New Bot</span>
         </div>
       )}
+
+      {/* {pathname?.includes("my-data") && (
+        <div className="flex flex-col items-center">
+          <button
+            onClick={handleAddBot}
+            className="w-full aspect-square flex items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50 transition-colors"
+          >
+            <Plus className="h-8 w-8 text-gray-400" />
+          </button>
+          <span className="mt-3 text-sm font-medium text-gray-600">New Connection</span>
+        </div>
+      )} */}
 
       {isLoading
         ? [1, 2, 3, 4].map((i) => (

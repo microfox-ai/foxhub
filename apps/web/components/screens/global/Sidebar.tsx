@@ -15,7 +15,10 @@ import {
   PanelLeftIcon,
   Plus,
   LayoutDashboard,
+  Store,
   KeyRound,
+  Settings,
+  ListIcon,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
@@ -29,16 +32,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLayout } from "../providers/LayoutProvider";
+import { useClientProject } from "../providers/ClientProjectProvider";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
 }
 
 interface SidebarProps {
-  selectedProject: BotProject | null;
-  onSelectRequest: (request: ClientRequest) => void;
-  onNewRequest: (project: BotProject) => void;
-  onOpenConfig: (project: BotProject) => void;
   isCollapsed: boolean;
   onCollapse?: (collapsed: boolean) => void;
 }
@@ -48,6 +48,7 @@ interface NavigationItemProps {
   collapsedIcon?: React.ReactNode;
   label: string;
   href?: string;
+  hrefCallback?: (selectedProject: any) => string;
   onClick?: () => void;
   isCollapsed: boolean;
 }
@@ -57,6 +58,7 @@ interface NavigationConfig {
   collapsedIcon?: React.ReactNode;
   label: string;
   href?: string;
+  hrefCallback?: (selectedProject: any) => string;
   requiresProject?: boolean;
   onClick?: (props: {
     isCollapsed: boolean;
@@ -75,21 +77,30 @@ const navigationConfig: NavigationConfig[] = [
     href: "/dashboard",
   },
   {
-    icon: <FileCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    requiresProject: true,
+    icon: <ListIcon strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
-      <FileCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+      <ListIcon strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
     ),
-    label: "Whitepaper",
-    href: "/whitepaper",
+    label: "All Running Tasks",
+    hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/tasks`,
   },
-  {
-    icon: <CircleCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
-    collapsedIcon: (
-      <CircleCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
-    ),
-    label: "Supported",
-    href: "/status",
-  },
+  // {
+  //   icon: <Store strokeWidth={2.5} className={cn("h-4 w-4")} />,
+  //   collapsedIcon: (
+  //     <Store strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+  //   ),
+  //   label: "Store",
+  //   href: "/store",
+  // },
+  // {
+  //   icon: <FileCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
+  //   collapsedIcon: (
+  //     <FileCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+  //   ),
+  //   label: "Whitepaper",
+  //   href: "/whitepaper",
+  // },
   {
     icon: <Bot strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
@@ -107,6 +118,23 @@ const navigationConfig: NavigationConfig[] = [
     label: "My Data",
     href: "/my-data",
     requiresProject: true,
+  },
+  {
+    requiresProject: true,
+    icon: <Settings strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <Settings strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "Settings",
+    hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/settings`,
+  },
+  {
+    icon: <CircleCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <CircleCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "Supported",
+    href: "/status",
   },
   {
     icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
@@ -136,10 +164,6 @@ const navigationConfig: NavigationConfig[] = [
 ];
 
 export default function Sidebar({
-  selectedProject,
-  onSelectRequest,
-  onNewRequest,
-  onOpenConfig,
   isCollapsed = false,
   onCollapse,
 }: SidebarProps) {
@@ -149,6 +173,8 @@ export default function Sidebar({
   }>();
   const requestParamId = params?.request_id;
   const { setIsFeedbackModalOpen } = useLayout();
+  const { selectedProject, selectedProjectClientRequests,
+    createNewEmptyRequest } = useClientProject();
 
   return (
     <div
@@ -164,7 +190,7 @@ export default function Sidebar({
             {selectedProject && (
               <NewRequestButton
                 isCollapsed={isCollapsed}
-                onNewRequest={onNewRequest}
+                onNewRequest={() => createNewEmptyRequest()}
                 selectedProject={selectedProject}
               />
             )}
@@ -172,33 +198,41 @@ export default function Sidebar({
             <ul
               className={`${isCollapsed ? "flex flex-col items-center gap-2" : "flex flex-col"}`}
             >
-              {navigationConfig.filter((item) =>
-                item.requiresProject ? selectedProject != null :
-                  !isCollapsed ? item.label !== "Chat" : true).map((item, index) => (
-                    <NavigationItem
-                      key={item.label}
-                      icon={item.icon}
-                      collapsedIcon={item.collapsedIcon}
-                      label={item.label}
-                      href={item.href}
-                      onClick={
-                        item.onClick
-                          ? () =>
-                            item.onClick?.({
-                              isCollapsed,
-                              onCollapse,
-                              setIsFeedbackModalOpen,
-                            })
-                          : undefined
-                      }
-                      isCollapsed={isCollapsed}
-                    />
-                  ))}
+              {navigationConfig
+                .filter((item) =>
+                  item.requiresProject
+                    ? selectedProject != null
+                    : !isCollapsed
+                      ? item.label !== "Chat"
+                      : true
+                )
+                .map((item, index) => (
+                  <NavigationItem
+                    key={item.label}
+                    icon={item.icon}
+                    collapsedIcon={item.collapsedIcon}
+                    label={item.label}
+                    href={item.href}
+                    hrefCallback={item.hrefCallback}
+                    onClick={
+                      item.onClick
+                        ? () =>
+                          item.onClick?.({
+                            isCollapsed,
+                            onCollapse,
+                            setIsFeedbackModalOpen,
+                          })
+                        : undefined
+                    }
+                    isCollapsed={isCollapsed}
+                  />
+                ))}
             </ul>
 
             {selectedProject && (
               <RequestsList
                 selectedProject={selectedProject}
+                clientRequests={selectedProjectClientRequests}
                 requestParamId={requestParamId}
                 isCollapsed={isCollapsed}
               />
@@ -219,11 +253,13 @@ const NavigationItem = ({
   collapsedIcon,
   label,
   href,
+  hrefCallback,
   onClick,
   isCollapsed,
 }: NavigationItemProps) => {
   const pathname = usePathname();
   const isActive = href ? pathname === href : false;
+  const { selectedProject } = useClientProject();
 
   const content = (
     <div className="flex items-center justify-between">
@@ -256,6 +292,10 @@ const NavigationItem = ({
     >
       {href ? (
         <Link href={href} className="flex items-center justify-between">
+          {content}
+        </Link>
+      ) : hrefCallback ? (
+        <Link href={hrefCallback(selectedProject)} className="flex items-center justify-between">
           {content}
         </Link>
       ) : (
@@ -311,10 +351,12 @@ const SidebarHeader = ({
 
 const RequestsList = ({
   selectedProject,
+  clientRequests,
   requestParamId,
   isCollapsed,
 }: {
   selectedProject: BotProject;
+  clientRequests: ClientRequest[];
   requestParamId?: string;
   isCollapsed: boolean;
 }) => {
@@ -322,40 +364,44 @@ const RequestsList = ({
 
   return (
     <div className="my-4 mx-1 space-y-1">
-      <div className="text-xs font-medium mb-2 px-2 text-gray-500">
-        Tasks
-      </div>
-      {(selectedProject as any)?.clientRequests?.length > 0 ? (
-        (selectedProject as any)?.clientRequests?.map((request: ClientRequest) => (
-          <Link
-            key={request?.id}
-            href={`/project/${selectedProject?.id}/request/${request?.id}`}
-            className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
-              ? "bg-gray-200 text-black"
-              : "hover:bg-gray-100"
-              }`}
-          >
-            {request.id === requestParamId ? (
-              <ChevronRight
-                style={{ marginRight: "0.5rem", height: "1rem", width: "1rem" }}
-              />
-            ) : (
-              <MessageSquare
-                style={{
-                  marginRight: "0.5rem",
-                  height: "1rem",
-                  width: "1rem",
-                  color: "#4c4c4c",
-                }}
-              />
-            )}
-            <span
-              className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
+      <div className="text-xs font-medium mb-2 px-2 text-gray-500">Tasks</div>
+      {clientRequests?.length > 0 ? (
+        clientRequests?.map(
+          (request: ClientRequest) => (
+            <Link
+              key={request?.id}
+              href={`/project/${selectedProject?.id}/request/${request?.id}`}
+              className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
+                ? "bg-gray-200 text-black"
+                : "hover:bg-gray-100"
+                }`}
             >
-              {request.title}
-            </span>
-          </Link>
-        ))
+              {request.id === requestParamId ? (
+                <ChevronRight
+                  style={{
+                    marginRight: "0.5rem",
+                    height: "1rem",
+                    width: "1rem",
+                  }}
+                />
+              ) : (
+                <MessageSquare
+                  style={{
+                    marginRight: "0.5rem",
+                    height: "1rem",
+                    width: "1rem",
+                    color: "#4c4c4c",
+                  }}
+                />
+              )}
+              <span
+                className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
+              >
+                {request.title}
+              </span>
+            </Link>
+          )
+        )
       ) : (
         <div className="px-4 py-2 text-sm text-muted-foreground">
           No requests

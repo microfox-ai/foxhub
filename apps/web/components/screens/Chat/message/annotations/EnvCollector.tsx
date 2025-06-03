@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ActionButtons } from "./ActionButtons";
-import { EnvVariablesDialog } from "../EnvVariablesDialog";
+import { EnvVariablesDialog } from "../../configuration/EnvVariablesDialog";
 import { Markdown } from "../markdown";
 import {
   Tooltip,
@@ -42,6 +42,7 @@ import { motion } from "framer-motion";
 import { MotionConfig } from "framer-motion";
 import { ClientSecretVariable } from "@/server/types";
 import { ClientSecretPackageType } from "@/server/types";
+import { ExtraEnvVariable, TaskInstanceMetaType } from "@/server/convertfox/types";
 
 interface UIAnnotation {
   objectType: string;
@@ -192,6 +193,50 @@ const buildFileTree = (files: CodeFile[]): Record<string, FileNode> => {
   return tree;
 };
 
+const SkeletonLoader = () => (
+  <div className="animate-pulse">
+    <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+    <div className="h-4 bg-gray-700 rounded w-1/2 mb-2"></div>
+    <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+  </div>
+);
+
+const FileTreeSkeleton = () => (
+  <div className="flex flex-col gap-1">
+    <div className="flex items-center gap-2 py-1">
+      <div className="w-3 h-3 bg-gray-700 rounded"></div>
+      <div className="h-3 bg-gray-700 rounded w-24"></div>
+    </div>
+    <div className="flex items-center gap-2 py-1 pl-3">
+      <div className="w-3 h-3 bg-gray-700 rounded"></div>
+      <div className="h-3 bg-gray-700 rounded w-32"></div>
+    </div>
+    <div className="flex items-center gap-2 py-1 pl-3">
+      <div className="w-3 h-3 bg-gray-700 rounded"></div>
+      <div className="h-3 bg-gray-700 rounded w-28"></div>
+    </div>
+  </div>
+);
+
+const EnvVarsSkeleton = () => (
+  <div className="flex flex-col gap-2">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0 last:pb-0">
+        <div className="flex items-center gap-2">
+          <div className="h-3 bg-gray-700 rounded w-32"></div>
+          <div className="w-4 h-4 bg-gray-700 rounded-full"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const ButtonSkeleton = () => (
+  <div className="relative px-2 pb-3">
+    <div className="h-9 bg-gray-700 rounded w-32"></div>
+  </div>
+);
+
 export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCollectorProps) => {
   const annotation = uiAnnotation as any;
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
@@ -215,8 +260,6 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     }
   );
   const customSecret = secretsData?.clientSecrets?.[0];
-  const codeFiles = annotation.codeFiles as CodeFile[];
-
   // Populate form with existing values when secret is found
   useEffect(() => {
     if (customSecret?.variables) {
@@ -230,11 +273,25 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     }
   }, [customSecret]);
 
-  const clientSecretKeys = customSecret?.variables as any[];
-  const envVariables = annotation.envVariablesCollect;
-  // .filter((env: any) =>
-  //   clientSecretKeys?.some((key) => key.key !== env.env && !env.isSameAs)
-  // );
+  const { data: taskInstanceMeta, isLoading: isTaskInstanceMetaLoading } = useSWR<TaskInstanceMetaType>(
+    `/api/task-instance-meta?clientRequestId=${requestParamId}`,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch task instance meta");
+      return res.json();
+    }, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    revalidateOnMount: true,
+    refreshInterval: 10000
+  }
+  );
+
+  const isLoading = isTaskInstanceMetaLoading || !taskInstanceMeta;
+
+  const envVariables = taskInstanceMeta?.taskRequiredInfo?.customEnvVariables as ExtraEnvVariable[] ?? [];
+  const codeFiles = taskInstanceMeta?.buildingStep?.files as CodeFile[] ?? [];
+
 
   const handleSaveEnv = async (values: Record<string, string>) => {
     try {
@@ -304,7 +361,15 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     );
   });
 
-  const fileTree = buildFileTree(codeFiles);
+  const fileTree = codeFiles.length > 0 ? buildFileTree(codeFiles) : null;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-2 bg-neutral-900 rounded-lg p-2">
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -345,16 +410,20 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
           </button>
           {showCodeFiles && (
             <div className="flex flex-col gap-1 rounded-lg p-2">
-              {Object.entries(fileTree)
-                .sort(([aName, aNode], [bName, bNode]) => {
-                  if (aNode.isFile !== bNode.isFile) {
-                    return aNode.isFile ? 1 : -1;
-                  }
-                  return aName.localeCompare(bName);
-                })
-                .map(([name, node]) => (
-                  <FileTreeItem key={name} node={node} name={name} />
-                ))}
+              {isTaskInstanceMetaLoading || !fileTree ? (
+                <FileTreeSkeleton />
+              ) : (
+                Object.entries(fileTree)
+                  .sort(([aName, aNode], [bName, bNode]) => {
+                    if (aNode.isFile !== bNode.isFile) {
+                      return aNode.isFile ? 1 : -1;
+                    }
+                    return aName.localeCompare(bName);
+                  })
+                  .map(([name, node]) => (
+                    <FileTreeItem key={name} node={node} name={name} />
+                  ))
+              )}
             </div>
           )}
         </div>
@@ -385,32 +454,36 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
             </button>
             {showEnvVars && (
               <div className="flex flex-col gap-0 rounded-lg p-2">
-                {envVariables?.map((env: any) => (
-                  <div
-                    key={env.env + env.name}
-                    className={cn(
-                      "flex items-center justify-between py-2 border-b last:border-b-0 last:pb-0",
-                      hasAllRequiredKeys ? "border-gray-700" : "border-gray-200"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "font-medium text-xs",
-                        hasAllRequiredKeys ? "text-gray-300" : "text-gray-900"
-                      )}>{env.name}</span>
-                      {customSecret?.variables?.some((variable: any) =>
-                        variable.key === env.env && variable.value?.trim()
-                      ) ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <HelpCircle className="w-4 h-4 text-yellow-500" />
+                {isLoading ? (
+                  <EnvVarsSkeleton />
+                ) : (
+                  envVariables?.map((env: any) => (
+                    <div
+                      key={env.env + env.name}
+                      className={cn(
+                        "flex items-center justify-between py-2 border-b last:border-b-0 last:pb-0",
+                        hasAllRequiredKeys ? "border-gray-700" : "border-gray-200"
                       )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "font-medium text-xs",
+                          hasAllRequiredKeys ? "text-gray-300" : "text-gray-900"
+                        )}>{env.name}</span>
+                        {customSecret?.variables?.some((variable: any) =>
+                          variable.key === env.env && variable.value?.trim()
+                        ) ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <HelpCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
-            {showEnvVars && (
+            {showEnvVars && !isLoading && (
               <div className="relative px-2 pb-3">
                 <Button
                   variant="outline"
@@ -430,9 +503,12 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
                 </Button>
               </div>
             )}
+            {showEnvVars && isLoading && (
+              <ButtonSkeleton />
+            )}
           </div>
         )}
-        {hasAllRequiredKeys && (
+        {hasAllRequiredKeys && !isLoading && (
           <ActionButtons
             buttons={uiAnnotation.buttons}
             areKeysRequired={envVariables.length > 0}

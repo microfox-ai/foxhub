@@ -14,7 +14,10 @@ import {
     FileImage,
     FileIcon,
     Save,
-    Check
+    Check,
+    Code,
+    CopyIcon,
+    ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -22,10 +25,14 @@ import { Loader2 } from 'lucide-react';
 import { useClientProject } from '../../providers/ClientProjectProvider';
 import { PROJECT_REPO_OWNER } from '@/utils/constants/githubInfo';
 import useSWR from 'swr';
-import { ClientSecretVariable } from '@/server/types';
+import { ClientSecretPackageType, ClientSecretVariable } from '@/server/types';
 import { ClientSecret } from '@prisma/client';
 import { useParams } from 'next/navigation';
-import { IN_DEV } from '@/utils/constants/appInfo';
+import { IN_DEV, IN_STAGING } from '@/utils/constants/appInfo';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { generateDefaultEnvFile, generateDefaultReadmeFile, generateDefaultEnvJsonFile } from './defaultFiles';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 // Define a simple type for file entries from taskInstanceMeta
 interface BuildFile {
@@ -68,10 +75,12 @@ const buildFileTree = (files: BuildFile[]): FileTreeNode[] => {
     const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.replaceAll("\\", "/").split('/').slice(0, -1).join('/') || '';
 
     // Rewrite file paths relative to the root directory
-    const rewrittenFiles = files.map((file) => ({
-        ...file,
-        filePath: file.filePath.replaceAll("\\", "/").replace(rootDir, '')
-    }));
+    const rewrittenFiles = files
+        .filter((file) => file.filePath.replaceAll("\\", "/").includes(rootDir))
+        .map((file) => ({
+            ...file,
+            filePath: file.filePath.replaceAll("\\", "/").replace(rootDir, '')
+        }));
 
     const root: FileTreeNode = { id: 'root', name: 'root', path: '', isFolder: true, children: [], fileType: 'folder' };
 
@@ -178,11 +187,18 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isModified, setIsModified] = useState(false);
-    const { taskInstanceMeta } = useTaskInstanceMetaContext();
+    const { taskInstanceMeta, updateTaskInstanceMeta } = useTaskInstanceMetaContext();
     const { selectedRequest } = useClientProject();
+    const [codePopoverOpen, setCodePopoverOpen] = useState(false);
+    const { user } = useAuth();
 
     const files = taskInstanceMeta?.buildingStep?.files || [];
     const fileTree = useMemo(() => buildFileTree(files as any as BuildFile[]), [files]);
+
+    const gitUrl = useMemo(() => {
+        if (!selectedRequest || !selectedRequest.repoName || !selectedRequest.prBranch) return null;
+        return `https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest.repoName}/tree/${selectedRequest.prBranch}`;
+    }, [selectedRequest, activeFile]);
 
     // Sort root level items: folders first, then files alphabetically
     const sortedFileTree = useMemo(() => {
@@ -218,9 +234,87 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             setIsLoading(false);
         }
     };
+    const { data: secretsData, mutate: mutateSecrets } = useSWR<{
+        clientSecrets: ClientSecret[];
+    }>(
+        selectedRequest?.id
+            ? `/api/client-secrets?clientRequestId=${selectedRequest?.id}&status=FILLED`
+            : null,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch secrets");
+            return res.json();
+        },
+        {
+            revalidateOnFocus: true,
+        }
+    );
+    const existingCustomSecrets = secretsData?.clientSecrets?.filter((secret) => secret.packageType == ClientSecretPackageType.CUSTOM) || [];
+    const updateSecretsAndConfiguration = async () => {
+        if (activeFile?.id != ".env") return;
+        if (!taskInstanceMeta || !taskInstanceMeta.taskRequiredInfo) return;
+        try {
+            setIsSaving(true);
+            const variables = editorContent.split("\n").map((line) => {
+                const [key, value] = line.split("=");
+                return { key, value: value?.trim(), isOptional: false };
+            });
+            const existingSecret = existingCustomSecrets[0];
+            const body = { id: existingSecret?.id, variables }
+            await fetch("/api/client-secrets", {
+                method: "PUT",
+                body: JSON.stringify(body),
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            const existingEnvVariables = taskInstanceMeta?.taskRequiredInfo?.customEnvVariables?.map((variable) => variable.env);
+            await updateTaskInstanceMeta({
+                ...taskInstanceMeta,
+                taskRequiredInfo: {
+                    ...taskInstanceMeta?.taskRequiredInfo,
+                    customEnvVariables: [
+                        ...(taskInstanceMeta?.taskRequiredInfo?.customEnvVariables || []),
+                        ...variables.filter((variable: any) => variable.key && variable.value && !existingEnvVariables.includes(variable.key)).map((variable: any) => ({
+                            name: variable.key.replaceAll(/_/g, " ").replace(/\b\w/g, (match: string) => match.toUpperCase()),
+                            env: variable.key,
+                            what: "",
+                            how: "",
+                            why: "",
+                        }))
+                    ]
+                }
+            });
+            mutateSecrets();
+            toast.success("Environment variables updated successfully");
+            setIsSaving(false);
+            setIsModified(false);
+        } catch (error) {
+            console.error('Error updating secrets and configuration:', error);
+            toast.error('Failed to update secrets and configuration');
+            setIsSaving(false);
+            setIsModified(false);
+        }
+    }
 
     const saveFileContent = async () => {
         if (!activeFile || !selectedRequest || !selectedRequest.repoName || !selectedRequest.prBranch) return;
+
+        if (activeFile.id === ".env") {
+            await updateSecretsAndConfiguration();
+            return;
+        }
+
+        if (activeFile.id === "README.md") {
+            //await updateSecretsAndConfiguration();
+            return;
+        }
+
+        if (activeFile.id === "env.json") {
+            //await updateSecretsAndConfiguration();
+            return;
+        }
+
 
         const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath?.replaceAll("\\", "/").replace(selectedRequest.repoName + "/", '');
         try {
@@ -258,6 +352,12 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             if (activeFile) {
                 if (activeFile.id === ".env") {
                     setEditorContent(envFile.content);
+                    setIsModified(false);
+                } else if (activeFile.id === "README.md") {
+                    setEditorContent(readmeFile.content);
+                    setIsModified(false);
+                } else if (activeFile.id === "env.json") {
+                    setEditorContent(envJsonFile.content);
                     setIsModified(false);
                 } else {
                     const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath;
@@ -332,37 +432,56 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         request_id?: string;
     }>();
     const requestParamId = params?.request_id;
-    const { data: secretsData, mutate: mutateSecrets } = useSWR<{
-        clientSecrets: ClientSecret[];
-    }>(
-        requestParamId
-            ? `/api/client-secrets?clientRequestId=${requestParamId}&status=FILLED`
-            : null,
-        async (url: string) => {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Failed to fetch secrets");
-            return res.json();
-        },
-        {
-            revalidateOnFocus: true,
-        }
-    );
-    const secrets = secretsData?.clientSecrets?.filter((secret) => !secret.isHidden) || [];
     const envFile = useMemo(() => {
-        let variables = secrets.flatMap((secret: any) => (secret.variables ?? [])?.concat(secret.botConfig ?? []))?.filter((variable: ClientSecretVariable) => !variable.key.includes("CLIENT_"));
+        let variables = existingCustomSecrets.flatMap((secret: any) => (secret.variables ?? [])?.concat(secret.botConfig ?? []))?.filter((variable: ClientSecretVariable) => !variable.key.includes("CLIENT_"));
         return {
             id: ".env",
             name: ".env",
             path: ".env",
             isFolder: false,
             children: [],
-            content: variables.map((variable: ClientSecretVariable) => `${variable.key}=${variable.value}`).join('\n'),
+            content: generateDefaultEnvFile(variables),
             fileType: "env"
         }
-    }, [secrets]);
+    }, [existingCustomSecrets]);
+
+    const readmeFile = useMemo(() => {
+        return {
+            id: "README.md",
+            name: "README.md",
+            path: "README.md",
+            isFolder: false,
+            children: [],
+            content: selectedRequest ? generateDefaultReadmeFile(selectedRequest) : "",
+            fileType: "md"
+        }
+    }, [selectedRequest]);
+
+    const envJsonFile = useMemo(() => {
+        let variables = secretsData?.clientSecrets?.flatMap((secret) => (secret.variables ?? [])?.concat(secret.botConfig ?? [])) as any[] as ClientSecretVariable[] || [];
+        return {
+            id: "env.json",
+            name: "env.json",
+            path: "env.json",
+            isFolder: false,
+            children: [],
+            content: generateDefaultEnvJsonFile(variables),
+            fileType: "json"
+        }
+    }, [existingCustomSecrets]);
 
     const handleEnvSelect = () => {
         setActiveFile(envFile);
+        setIsModified(false);
+    }
+
+    const handleReadmeSelect = () => {
+        setActiveFile(readmeFile);
+        setIsModified(false);
+    }
+
+    const handleEnvJsonSelect = () => {
+        setActiveFile(envJsonFile);
         setIsModified(false);
     }
 
@@ -381,15 +500,21 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                     {IN_DEV && (
                         <FileTreeItem key={".env"} node={envFile} onFileSelect={handleEnvSelect} />
                     )}
+                    {IN_DEV && (
+                        <FileTreeItem key={"README.md"} node={readmeFile} onFileSelect={handleReadmeSelect} />
+                    )}
+                    {(IN_DEV || (IN_STAGING && user && user.email?.includes("themoondevs.com"))) && (
+                        <FileTreeItem key={"env.json"} node={envJsonFile} onFileSelect={handleEnvJsonSelect} />
+                    )}
                 </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={75}>
                 <div className="h-full flex flex-col bg-black">
-                    {activeFile && (
-                        <div className="p-2 border-b border-gray-800 text-sm bg-gray-900 text-gray-300 flex items-center justify-between">
-                            <span>{activeFile.path}</span>
-                            {isModified && (
+                    <div className="p-2 border-b border-gray-800 text-sm bg-gray-900 text-gray-300 flex items-center justify-between">
+                        <span>{activeFile ? activeFile.path : ""}</span>
+                        <div className="flex items-center gap-2">
+                            {isModified && activeFile && activeFile.id !== "env.json" && (
                                 <Button
                                     onClick={saveFileContent}
                                     disabled={isSaving}
@@ -408,8 +533,114 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                                     )}
                                 </Button>
                             )}
+                            <Popover open={codePopoverOpen} onOpenChange={setCodePopoverOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        className="bg-green-700 hover:bg-green-800 text-white flex items-center gap-1"
+                                        onClick={() => setCodePopoverOpen((open) => !open)}
+                                    >
+                                        <Code className="w-5 h-5 mr-1" />
+                                        Code
+                                        <ChevronDown className="w-3 h-3" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent align="end" className="w-96">
+                                    {selectedRequest && selectedRequest.repoName && selectedRequest.prBranch ? (
+                                        <div className="flex flex-col gap-4">
+
+                                            <Tabs defaultValue="https" className="w-full">
+                                                <TabsList className="flex flex-row items-center justify-between bg-transparent w-full">
+                                                    <div className="flex flex-row items-center gap-2">
+                                                        <TabsTrigger value="https">HTTPS</TabsTrigger>
+                                                        <TabsTrigger value="cli">GitHub CLI</TabsTrigger>
+                                                    </div>
+                                                    <div className="flex justify-end ml-auto">
+                                                        <a
+                                                            href={`https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest.repoName}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium"
+                                                        >
+                                                            Open on GitHub
+                                                            <ExternalLink className="w-4 h-4" />
+                                                        </a>
+                                                    </div>
+                                                </TabsList>
+                                                <TabsContent value="https">
+                                                    <div className="mb-2 text-xs text-gray-500">Clone using the web URL.</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            className="flex-1 bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 select-all"
+                                                            value={`https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest.repoName}.git`}
+                                                            readOnly
+                                                            onFocus={e => e.target.select()}
+                                                        />
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            type="button"
+                                                            onClick={() => navigator.clipboard.writeText(`https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest.repoName}.git`)}
+                                                        >
+                                                            <CopyIcon className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
+                                                </TabsContent>
+                                                <TabsContent value="cli">
+                                                    <div className="mb-2 text-xs text-gray-500">Work fast with our official CLI. <a href="https://cli.github.com/" target="_blank" rel="noopener noreferrer" className="underline">Learn more</a></div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            className="flex-1 bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 select-all"
+                                                            value={`gh repo clone ${PROJECT_REPO_OWNER}/${selectedRequest.repoName}`}
+                                                            readOnly
+                                                            onFocus={e => e.target.select()}
+                                                        />
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            type="button"
+                                                            onClick={() => navigator.clipboard.writeText(`gh repo clone ${PROJECT_REPO_OWNER}/${selectedRequest.repoName}`)}
+                                                        >
+                                                            Copy
+                                                        </Button>
+                                                    </div>
+                                                </TabsContent>
+                                            </Tabs>
+                                            <div className="">
+                                                <div className="font-semibold text-xs mb-1 text-gray-700 dark:text-gray-200">Checkout this PR branch:</div>
+                                                <div className="bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 mb-2 select-all flex items-center gap-2">
+                                                    <span className="flex-1">{`git checkout ${selectedRequest.prBranch}`}</span>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        type="button"
+                                                        onClick={() => navigator.clipboard.writeText(`git checkout ${selectedRequest.prBranch}`)}
+                                                    >
+                                                        <CopyIcon className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                                <div className="flex items-center gap-2 my-2">
+                                                    <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
+                                                    <span className="font-semibold text-xs text-gray-700 dark:text-gray-200 px-2">or</span>
+                                                    <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
+                                                </div>
+                                                <Button
+                                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold mt-2"
+                                                    onClick={() => {
+                                                        setCodePopoverOpen(false)
+                                                        window.open(`x-github-client://openRepo/https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest.repoName}?branch=${selectedRequest.prBranch}`)
+                                                    }}
+                                                >
+                                                    Open PR with GitHub Desktop
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-gray-800 dark:text-gray-200">No project selected.</div>
+                                    )}
+                                </PopoverContent>
+                            </Popover>
                         </div>
-                    )}
+                    </div>
                     <div className="flex-grow">
                         {isLoading ? (
                             <div className="h-full flex items-center justify-center">
@@ -423,6 +654,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                                 theme="vs-dark"
                                 onMount={handleEditorDidMount}
                                 onChange={(value) => {
+                                    if (activeFile?.id === "env.json") return;
                                     setEditorContent(value || '');
                                     setIsModified(true);
                                 }}
@@ -431,6 +663,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                                     automaticLayout: true,
                                     minimap: { enabled: true },
                                     wordWrap: 'on',
+                                    readOnly: activeFile?.id === "env.json"
                                 }}
                             />
                         )}

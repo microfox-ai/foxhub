@@ -77,8 +77,9 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const fileName = filePath.replaceAll("\\", "/").split("/").pop() || filePath;
-    const commitMessage = `nodeploy: microfox: update ${fileName}`;
+    const fileName =
+      filePath.replaceAll("\\", "/").split("/").pop() || filePath;
+    const commitMessage = `microcode: updatefox: Updated File ${fileName}`;
 
     const response = await octokit.rest.repos.createOrUpdateFileContents({
       owner,

@@ -33,6 +33,7 @@ interface SSEProgressData {
   status: string;
   clientDeployment: ClientDeployment;
   logs?: string;
+  stage: string;
 }
 
 interface SSECompleteData {
@@ -43,6 +44,7 @@ interface SSECompleteData {
   duration?: number;
   clientDeployment: ClientDeployment;
   logs?: string;
+  stage: string;
 }
 
 export const useDeployStatus = ({
@@ -74,11 +76,12 @@ export const useDeployStatus = ({
 
   // Real-time deployment status subscription using SSE
   const { data: deploymentData, error: sseError } = useSWRSubscription(
-    !requestParamId || !stage
-      ? null
-      : ["deployment-status-sse", requestParamId, stage],
+    ["deployment-status-sse", requestParamId, stage],
     ([_, clientRequestId, stage], { next }) => {
-      const sseUrl = `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/events/${clientRequestId}/${stage.toLowerCase()}`;
+      if (!clientRequestId || !stage) {
+        return;
+      }
+      const sseUrl = `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/events/${clientRequestId}/${stage?.toLowerCase()}`;
       console.log(`🔌 Establishing SSE connection to: ${sseUrl}`);
 
       const eventSource = new EventSource(sseUrl);
@@ -120,7 +123,7 @@ export const useDeployStatus = ({
               statusData.status === "deployed" ||
               statusData.status === "failed",
             deployment: {
-              stage: statusData.stage,
+              stage: statusData.stage.toUpperCase(),
               type: "deployment",
               id: statusData.clientRequestId,
             },
@@ -158,6 +161,11 @@ export const useDeployStatus = ({
               progress: progressData,
               lastUpdated: new Date().toISOString(),
             },
+            deployment: {
+              stage: progressData.stage.toUpperCase(),
+              type: "deployment",
+              id: progressData.clientDeployment.id,
+            },
             shouldBreak: progressData.isComplete,
           };
           next(null, {
@@ -186,6 +194,11 @@ export const useDeployStatus = ({
               duration: completeData.duration,
               finalStatus: completeData.status,
               lastUpdated: completeData.endTime,
+            },
+            deployment: {
+              stage: completeData.stage.toUpperCase(),
+              type: "deployment",
+              id: completeData.clientDeployment.id,
             },
             shouldBreak: true,
           };
@@ -238,7 +251,7 @@ export const useDeployStatus = ({
 
   useEffect(() => {
     const updateMetaAndInfo = async () => {
-      if (deploymentData) {
+      if (deploymentData?.deployStep) {
         await updateTaskInstanceMeta({
           originClientRequestId: requestParamId || "",
           ...taskInstanceMeta,

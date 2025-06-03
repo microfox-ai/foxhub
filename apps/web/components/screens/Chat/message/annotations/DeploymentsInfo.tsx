@@ -64,14 +64,13 @@ export const DeploymentsInfo = ({
     const [showLogsDialog, setShowLogsDialog] = useState(false);
 
     const { isRightCollapsed, handleRightCollapse } = useLayout();
-    const { setDeploymentInfo } = useTaskInstanceMetaContext();
+    const { setDeploymentInfo, taskInstanceMeta } = useTaskInstanceMetaContext();
     const { append } = useMicrofoxChat();
     const { setActiveTab } = useTabUi();
     const { setSubmitAnnotations, setAutoSubmit } = useClientProject();
     const { finalData, deployStep, clientRequest } = useDeployStatus({
         stage,
-        runId,
-        pingerInterval
+        initialDeployStep: taskInstanceMeta?.deployStep,
     });
 
     const deployToProduction = () => {
@@ -203,7 +202,7 @@ export const DeploymentsInfo = ({
         };
 
         // Calculate progress percentage (assuming 2 minutes = 120 seconds)
-        const progressPercentage = Math.min(
+        const progressPercentage = finalData?.deployStep?.metadata?.progress?.percentage || Math.min(
             Math.floor((elapsedTime / 120) * 100),
             95
         );
@@ -221,7 +220,7 @@ export const DeploymentsInfo = ({
                         <Cube size={16} color="#2b7fff" />
                         <h3 className="text-base font-medium text-gray-800">
                             Deploying to{" "}
-                            <span className="font-semibold text-blue-600">{stage}</span>{" "}
+                            <span className="font-semibold text-blue-600">{deployStep?.stage}</span>{" "}
                             environment
                         </h3>
                     </div>
@@ -263,7 +262,7 @@ export const DeploymentsInfo = ({
                             <PackageIcon size={14} color="#2b7fff" />
                             <span className="text-gray-500">Environment</span>
                         </div>
-                        <div className="font-medium text-gray-800">{stage}</div>
+                        <div className="font-medium text-gray-800">{deployStep?.stage}</div>
                     </div>
 
                     <div className="bg-gray-50 p-3 rounded-lg">
@@ -292,7 +291,6 @@ export const DeploymentsInfo = ({
             </motion.div>
         );
     }
-
 
     return (
         <>
@@ -333,10 +331,10 @@ export const DeploymentsInfo = ({
                     <GitPullRequest className="w-4 h-4 text-gray-500 mt-px" />
                     <div className="flex flex-col gap-1">
                         <div className="font-medium text-gray-900">
-                            {deployStep.metadata.display_title}
+                            {deployStep?.metadata?.display_title}
                         </div>
                         <div className="text-gray-500 mt-1 flex items-center gap-2">
-                            PR #{deployStep.metadata.pull_requests[0].number}
+                            PR #{deployStep?.metadata?.pull_requests?.[0]?.number}
                             <Link href={`https://github.com/${PROJECT_REPO_OWNER}/${clientRequest?.repoName}/actions/runs/${finalData?.runId}`} target="_blank" className="text-blue-500 hover:text-blue-600"> View Action</Link>
                         </div>
                     </div>
@@ -350,7 +348,7 @@ export const DeploymentsInfo = ({
                             <div className="text-gray-500">Environment</div>
                         </div>
                         <div className="font-medium text-gray-900 mt-1">
-                            {deployStep.stage}
+                            {deployStep?.stage}
                         </div>
                     </div>
 
@@ -360,7 +358,7 @@ export const DeploymentsInfo = ({
                             <div className="text-gray-500">Duration</div>
                         </div>
                         <div className="font-medium text-gray-900 mt-1">
-                            {prettyPrintDuration(deployStep.startTime, deployStep.endTime)}
+                            {prettyPrintDuration(deployStep?.startTime, deployStep?.endTime)}
                         </div>
                     </div>
                 </div>
@@ -388,7 +386,7 @@ export const DeploymentsInfo = ({
 
                 {deployStep.status === "success" && (
                     <>
-                        {deployStep.stage === DEPLOY_STAGE.STAGING ? (
+                        {deployStep?.stage === DEPLOY_STAGE.STAGING ? (
                             <div className="text-xs text-gray-500">
                                 <span className="font-medium text-gray-900">Staging </span>
                                 environment is ready to be promoted to{" "}
@@ -402,7 +400,7 @@ export const DeploymentsInfo = ({
                             </div>
                         )}
                         <div className="flex gap-2 mt-4">
-                            {deployStep.stage === DEPLOY_STAGE.STAGING && (
+                            {deployStep?.stage === DEPLOY_STAGE.STAGING && (
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
@@ -412,7 +410,7 @@ export const DeploymentsInfo = ({
                                     Deploy to Production
                                 </Button>
                             )}
-                            {deployStep.stage === DEPLOY_STAGE.PROD && (
+                            {deployStep?.stage === DEPLOY_STAGE.PROD && (
                                 <Button
                                     variant="outline"
                                     className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
@@ -426,7 +424,7 @@ export const DeploymentsInfo = ({
                             )}
                             <Button
                                 onClick={() => {
-                                    setDeploymentInfo(finalData.clientDeployment);
+                                    setDeploymentInfo(finalData?.clientDeployment);
                                     handleRightCollapse(false);
                                 }}
                                 variant="default"
@@ -443,7 +441,7 @@ export const DeploymentsInfo = ({
             <LogsDialog
                 isOpen={showLogsDialog}
                 onClose={() => setShowLogsDialog(false)}
-                jobId={deployStep.metadata.job_id}
+                jobId={deployStep?.metadata?.job_id}
                 repoName={finalData?.clientDeployment?.repoName}
             />
 

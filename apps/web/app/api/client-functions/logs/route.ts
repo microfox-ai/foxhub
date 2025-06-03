@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const functionName =
       serverlessConfig.functionBase + "-" + thisFunction.functionName;
 
-    console.log(functionName, "functionName");
+    //console.log(functionName, "functionName");
     const logs = await getLambdaLogs({
       functionName: functionName,
       region: "us-east-1",

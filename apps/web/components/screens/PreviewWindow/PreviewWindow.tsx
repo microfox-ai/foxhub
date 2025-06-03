@@ -48,6 +48,7 @@ import {
 } from "./utils";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandInput } from "@/components/ui/command";
+import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
 
 const PreviewWindow = () => {
   const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
@@ -82,7 +83,7 @@ const PreviewWindow = () => {
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
   //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
-  const BASE_URL = `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
+  const BASE_URL = forceBaseUrl || `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
@@ -325,11 +326,14 @@ const PreviewWindow = () => {
       // Handle error silently
     } finally {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      await fetchServerlessLogs({
-        clientDeploymentId: (deploymentInfo as ClientDeployment).id,
-        endpointLink: endpointLink,
-        setServerlessLogs: setServerlessLogs
-      });
+      // Only fetch logs if we're using the deployment URL (forceBaseUrl is null)
+      if (!forceBaseUrl && deploymentInfo) {
+        await fetchServerlessLogs({
+          clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+          endpointLink: endpointLink,
+          setServerlessLogs: setServerlessLogs
+        });
+      }
       setIsLoading(false);
       setAbortController(null);
     }
@@ -1046,46 +1050,47 @@ const PreviewWindow = () => {
           )}
         </div>
         <div className="px-3 py-2">
-          <div className="flex flex-col gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col gap-2">
-                <label htmlFor="baseUrl" className="text-xs font-medium text-neutral-700">
-                  Base URL
-                </label>
+          {(IN_STAGING || IN_DEV) &&
+            (<div className="flex flex-col gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="baseUrl" className="text-xs font-medium text-neutral-700">
+                    Base URL
+                  </label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
+                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000")}
+                >
+                  {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
-                onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000")}
-              >
-                {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
-              </Button>
-            </div>
-            <div className="flex flex-col items-start gap-2">
-              {forceBaseUrl ?
-                (<Input
-                  id="baseUrl"
-                  type="text"
-                  placeholder="Enter base URL (e.g., https://api.example.com)"
-                  className="h-8 w-full text-xs"
-                  value={forceBaseUrl || ""}
-                  onChange={(e) => {
-                    const value = e.target.value.trim();
-                    setForceBaseUrl(value || null);
-                  }}
-                />) : (
-                  <Input
+              <div className="flex flex-col items-start gap-2">
+                {forceBaseUrl ?
+                  (<Input
                     id="baseUrl"
                     type="text"
                     placeholder="Enter base URL (e.g., https://api.example.com)"
                     className="h-8 w-full text-xs"
-                    value={deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase()}
-                    disabled
-                  />
-                )}
-            </div>
-          </div>
+                    value={forceBaseUrl || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      setForceBaseUrl(value || null);
+                    }}
+                  />) : (
+                    <Input
+                      id="baseUrl"
+                      type="text"
+                      placeholder="Enter base URL (e.g., https://api.example.com)"
+                      className="h-8 w-full text-xs"
+                      value={deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase()}
+                      disabled
+                    />
+                  )}
+              </div>
+            </div>)}
           {endpoints.length > 0 ? (
             <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-1">
               <Select
@@ -1506,7 +1511,7 @@ const PreviewWindow = () => {
                             </button>
                           </div>
                         </div>)}
-                      {serverlessLogs && (
+                      {serverlessLogs && !forceBaseUrl && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <button
@@ -1540,7 +1545,7 @@ const PreviewWindow = () => {
                           )}
                         </div>
                       )}
-                      {serverlessLogs && (
+                      {serverlessLogs && !forceBaseUrl && (
                         <div className="flex flex-col items-center justify-between mb-3">
                           <Textarea
                             className="w-full mb-3"

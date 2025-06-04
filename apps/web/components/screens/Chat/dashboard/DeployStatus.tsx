@@ -106,14 +106,14 @@ export const DeployStatus = () => {
 
     const { taskInstanceMeta } = useTaskInstanceMetaContext();
     const { selectedRequest } = useClientProject()
-    const { data: clientDeployments } = useSWR<ClientDeployment[]>(
+    const { data: clientDeployments } = useSWR<{ clientFunctions: ClientDeployment[] }>(
         `/api/client-functions?id=${selectedRequest?.id}`,
         async (url: string) => {
             const response = await PortalSdk.getData(url, {});
             return response.clientFunctions;
         }
     );
-    const clientDeployment = clientDeployments?.[0] || null;
+    const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
     const { deployStep } = useDeployStatus({
         stage: taskInstanceMeta?.deployStep?.deployment?.stage as DEPLOY_STAGE || DEPLOY_STAGE.STAGING,
         initialDeployStep: taskInstanceMeta?.deployStep,

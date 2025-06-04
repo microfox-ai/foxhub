@@ -36,7 +36,14 @@ export const useTaskInstanceMeta = ({
         `/api/client-functions?id=${clientDeploymentId}`,
         {}
       );
-      setDeploymentInfo(response[0]);
+      if (
+        response.clientFunctions?.length > 0 &&
+        response.clientFunctions?.[0]
+      ) {
+        setDeploymentInfo(response.clientFunctions?.[0]);
+      } else {
+        setDeploymentInfo(null);
+      }
     };
     if (clientRequestId) {
       updateClientDeployment(clientRequestId);

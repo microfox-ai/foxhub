@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/usage-reports",
       "schedule": "59 23 * * *"
+    },
+    {
+      "path": "/api/cron/webhook-events",
+      "schedule": "*/1 * * * *"
     }
   ]
 }

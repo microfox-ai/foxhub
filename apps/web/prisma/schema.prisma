@@ -365,4 +365,6 @@ model WebhookEvent {
   event_name      String?
   payload         Json?
   triggerRoute    Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }

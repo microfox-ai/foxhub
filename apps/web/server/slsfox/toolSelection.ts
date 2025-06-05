@@ -5,7 +5,7 @@ import { ApiSearchResult, searchPublicApis, searchProjectApis } from "./queryApi
 import { createOpenAPIToolsClient, ToolSet } from "@/utils/services/OpenAPIToolsClient";
 import { createClient } from "@supabase/supabase-js";
 import { ClientSecret } from "@prisma/client";
-import { addAuthFromSchema, cleanEndpointSchema } from "./addAuthVars";
+import { addAuthFromSchema } from "./addAuthVars";
 
 // Define schema for parsing user prompts into service-based tasks
 const TasksSchema = z.array(z.object({
@@ -142,6 +142,13 @@ export const toolSelection = async (userPrompt: string, clientSecrets: ClientSec
                             continue;
                         }
 
+                        if (!api.base_url) {
+                            const errorMsg = `No base_url found for API ${api.id}`;
+                            console.error("❌", errorMsg);
+                            errors.push(errorMsg);
+                            continue;
+                        }
+
                         if (!apiData?.metadata) {
                             const errorMsg = `No metadata found for API ${api.id}`;
                             console.error("❌", errorMsg);
@@ -149,39 +156,55 @@ export const toolSelection = async (userPrompt: string, clientSecrets: ClientSec
                             continue;
                         }
 
-                        console.log(`✅ Retrieved API data for: ${api.base_url}${api.endpoint_path}`);
-
-                        const apiSchema = apiData?.metadata.openApiSchema;
-                        const pathSchema = {
-                            [apiData?.http_method.toLowerCase()]: apiData?.metadata.endpointSchema
-                        };
-
-                        if (!apiSchema || !pathSchema) {
-                            const errorMsg = `Missing schema data for API ${api.id}`;
+                        if (!apiData?.metadata.openApiSchema) {
+                            const errorMsg = `Missing openApi schema for API ${api.id}`;
                             console.error("❌", errorMsg);
                             errors.push(errorMsg);
                             continue;
                         }
 
-                        // Clean the path schema by removing auth and packageName
-                        const cleanResult = cleanEndpointSchema(pathSchema[apiData?.http_method.toLowerCase()]);
-                        if (cleanResult.error) {
-                            console.error("❌ Error cleaning schema:", cleanResult.error);
-                            errors.push(`Failed to clean schema for API ${api.id}: ${cleanResult.error}`);
+                        if (!apiData?.metadata.endpointSchema) {
+                            const errorMsg = `Missing endpoint schema for API ${api.id}`;
+                            console.error("❌", errorMsg);
+                            errors.push(errorMsg);
                             continue;
                         }
 
-                        const standaloneEndpointSchema = {
-                            openapi: apiSchema.openapi,
-                            info: apiSchema.info,
-                            servers: apiSchema.servers,
-                            paths: {
-                                [api?.endpoint_path]: { [apiData?.http_method.toLowerCase()]: cleanResult.cleanedSchema }
-                            }
+                        if (!api.endpoint_path) {
+                            const errorMsg = `Missing endpoint_path for API ${api.id}`;
+                            console.error("❌", errorMsg);
+                            errors.push(errorMsg);
+                            continue;
+                        }
+
+                        if (!apiData?.http_method) {
+                            const errorMsg = `Missing http_method for API ${api.id}`;
+                            console.error("❌", errorMsg);
+                            errors.push(errorMsg);
+                            continue;
+                        }
+
+                        console.log(`✅ Retrieved API data for: ${apiData?.http_method} ${api.base_url}${api.endpoint_path}`);
+
+                        const openApiSchema = apiData?.metadata.openApiSchema;
+                        const path = api.endpoint_path;
+                        const method = apiData?.http_method.toLowerCase();
+                        let methodSchema = apiData?.metadata.endpointSchema;
+                        let pathSchema = {
+                            [method]: methodSchema
                         };
 
+                        let singlePathOpenApiSchema = {
+                            openapi: openApiSchema.openapi,
+                            info: openApiSchema.info,
+                            servers: openApiSchema.servers,
+                            paths: {
+                                [path]: pathSchema
+                            }
+                        }
+
                         // Extract authentication and package name from the original schema
-                        const authResult = addAuthFromSchema(pathSchema[apiData?.http_method.toLowerCase()], clientSecrets);
+                        const authResult = addAuthFromSchema(pathSchema[method], clientSecrets);
                         if (authResult.error) {
                             console.error("❌ Error extracting auth:", authResult.error);
                             errors.push(`Failed to extract auth for API ${api.id}: ${authResult.error}`);
@@ -191,7 +214,7 @@ export const toolSelection = async (userPrompt: string, clientSecrets: ClientSec
                         console.log("🔧 Preset body for API:", authResult.presetBody);
 
                         toolWrapperInput.push({
-                            schema: standaloneEndpointSchema,
+                            schema: singlePathOpenApiSchema,
                             baseUrl: api.base_url,
                             headers: {},
                             presetBodyFields: authResult.presetBody
@@ -210,6 +233,8 @@ export const toolSelection = async (userPrompt: string, clientSecrets: ClientSec
                     errors.push(errorMsg);
                     continue;
                 }
+
+                console.log(`🛠️ Creating client for ${toolWrapperInput.length} tools`);
 
                 // Create client for this API
                 try {

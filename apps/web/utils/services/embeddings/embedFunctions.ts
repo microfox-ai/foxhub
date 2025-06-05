@@ -273,8 +273,11 @@ export async function deleteEmbedding(origin_client_request_id: string) {
 
     if (error) {
       console.error("Failed to delete embedding:", error);
+      return { success: false, error: error };
     }
+    return { success: true, error: null };
   } catch (error) {
     console.error("Failed to delete embedding:", error);
+    return { success: false, error: error };
   }
 }

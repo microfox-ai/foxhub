@@ -55,7 +55,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      const baseUrl = forceBaseUrl || deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase();
+      const baseUrl = forceBaseUrl || deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage?.toLowerCase();
       try {
         const response = await fetch(
           `${baseUrl}/docs.json`
@@ -108,6 +108,11 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
   // Initialize with first endpoint if none selected
   useEffect(() => {
     if (endpoints.length > 0 && !selectedEndpoint && endpoints[0]) {
+      const firstEndpoint = endpoints[0];
+      setSelectedEndpoint(firstEndpoint.path);
+      setSelectedMethod(firstEndpoint.method);
+    }
+    if (endpoints.length > 0 && selectedEndpoint && !endpoints.map((e) => e.path).includes(selectedEndpoint) && endpoints[0]) {
       const firstEndpoint = endpoints[0];
       setSelectedEndpoint(firstEndpoint.path);
       setSelectedMethod(firstEndpoint.method);

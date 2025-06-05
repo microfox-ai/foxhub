@@ -9,6 +9,8 @@ import {
 import { cn } from "@/lib/utils";
 import { ClientDeployment, ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { motion } from "framer-motion";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import {
   AlertCircle,
   ArrowRight,
@@ -42,6 +44,8 @@ import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 import { fetchServerlessLogs } from "@/components/screens/PreviewWindow/helpers";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import { toast } from "sonner";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface UIAnnotation {
   objectType: string;
@@ -55,6 +59,8 @@ interface DeploymentsInfoProps {
   uiAnnotation: UIAnnotation;
   idx: number;
 }
+
+dayjs.extend(relativeTime);
 
 export const DeploymentsInfo = ({
   uiAnnotation,
@@ -70,10 +76,19 @@ export const DeploymentsInfo = ({
   const { setDeploymentInfo, taskInstanceMeta } = useTaskInstanceMetaContext();
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
-  const { setSubmitAnnotations, setAutoSubmit } = useClientProject();
+  const { setSubmitAnnotations, setAutoSubmit, selectedRequest } = useClientProject();
+
+  const { data: clientDeployments } = useSWR<{ clientFunctions: ClientDeployment[] }>(
+    `/api/client-functions?id=${selectedRequest?.id}`,
+    async (url: string) => {
+      const response = await PortalSdk.getData(url, {});
+      return response.clientFunctions;
+    }
+  );
+  const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
   const { finalData, deployStep, clientRequest } = useDeployStatus({
     stage,
-    initialDeployStep: taskInstanceMeta?.deployStep,
+    initialClientDeployment: clientDeployment ?? undefined,
   });
 
   const deployToProduction = () => {
@@ -98,17 +113,27 @@ export const DeploymentsInfo = ({
     );
   };
 
+  const [deploymentLogs, setDeploymentLogs] = useState<any>(null);
   const [serverlessLogs, setServerlessLogs] = useState<any>(null);
   const [checkForErrors, setCheckForErrors] = useState<boolean>(false);
   const debugIssue = () => {
     setServerlessLogs(null);
     setCheckForErrors(true);
+    if (!finalData?.clientDeployment) {
+      toast.error("No client deployment found. Please try again later.");
+      return;
+    }
     const endpointLink =
-      (finalData?.clientDeployment as ClientDeployment).baseUrl +
+      (finalData?.clientDeployment as ClientDeployment)?.baseUrl +
       "/" +
       deployStep?.deployment?.stage?.toLowerCase() +
       "/docs.json";
-      
+
+    if (!finalData?.clientDeployment) {
+      toast.error("No client deployment found. Please try again later.");
+      return;
+    }
+
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
@@ -157,25 +182,36 @@ export const DeploymentsInfo = ({
 
   const fetchLogs = () => {
     setShowLogsDialog(true);
+    setDeploymentLogs(deployStep?.logs);
     setServerlessLogs(null);
     setCheckForErrors(true);
+    if (!finalData?.clientDeployment) {
+      toast.error("No client deployment found.");
+      return;
+    }
     const endpointLink =
-      (finalData?.clientDeployment as ClientDeployment).baseUrl +
+      (finalData?.clientDeployment as ClientDeployment)?.baseUrl +
       "/" +
       deployStep?.deployment?.stage?.toLowerCase() +
       "/docs.json";
+
+    if (!finalData?.clientDeployment) {
+      toast.error("No client deployment found. Please try again later.");
+      return;
+    }
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
           clientDeploymentId: (finalData?.clientDeployment).id,
           endpointLink,
-          setServerlessLogs: setServerlessLogs,
         });
+        console.log("serverless logs", logs);
+        setServerlessLogs(logs);
       })(),
       {
-        loading: "Fetching deployment logs...",
+        loading: "Fetching serverless logs...",
         success: "Successfully gathered debug information",
-        error: "Failed to fetch deployment logs",
+        error: "Failed to fetch serverless logs",
       }
     );
   };
@@ -222,7 +258,7 @@ export const DeploymentsInfo = ({
 
     // Calculate progress percentage (assuming 2 minutes = 120 seconds)
     const progressPercentage =
-      finalData?.deployStep?.metadata?.progress?.percentage ||
+      finalData?.deployStep?.metadata?.progress?.percentage ??
       Math.min(Math.floor((elapsedTime / 120) * 100), 95);
 
     return (
@@ -302,7 +338,7 @@ export const DeploymentsInfo = ({
               <Rocket size={14} color="#2b7fff" />
               <span className="text-gray-500">Status</span>
             </div>
-            <div className="font-medium text-yellow-600">In Progress</div>
+            <div className="font-medium text-yellow-600">{deployStep?.progress?.step ?? deployStep?.status}</div>
           </div>
         </div>
 
@@ -359,12 +395,12 @@ export const DeploymentsInfo = ({
               PR #{clientRequest?.prNumber}
               {clientRequest?.prUrl && (
                 <Link
-                  href={clientRequest?.prUrl}
-                  target="_blank"
+                  href="#"
+                  onClick={fetchLogs}
                   className="text-blue-500 hover:text-blue-600"
                 >
                   {" "}
-                  View Action
+                  View Logs
                 </Link>
               )}
             </div>
@@ -472,35 +508,10 @@ export const DeploymentsInfo = ({
       <LogsDialog
         isOpen={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
-        jobId={deployStep?.metadata?.job_id}
-        repoName={finalData?.clientDeployment?.repoName}
+        logs={deploymentLogs}
+        serverlessLogs={serverlessLogs}
       />
 
-      <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
-        <DialogContent className="sm:max-w-[800px] max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
-              <FileText className="h-5 w-5" />
-              Serverless Logs
-            </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500">
-              Detailed logs from the serverless deployment
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="relative mt-4">
-            {!serverlessLogs ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-              </div>
-            ) : (
-              <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
-                {JSON.stringify(serverlessLogs, null, 2)}
-              </pre>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };
@@ -508,45 +519,19 @@ export const DeploymentsInfo = ({
 const LogsDialog = ({
   isOpen,
   onClose,
-  jobId,
-  repoName,
+  logs,
+  serverlessLogs,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  jobId: string;
-  repoName: string;
+  logs: string;
+  serverlessLogs: string | null;
 }) => {
-  const [logs, setLogs] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(
-          `/api/github/logs?jobId=${encodeURIComponent(jobId)}&repoName=${encodeURIComponent(repoName)}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch logs");
-        }
-        const data = await response.json();
-        setLogs(data.logs);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch logs");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (isOpen && jobId) {
-      fetchLogs();
-    }
-  }, [isOpen, jobId, repoName]);
+  const [activeTab, setActiveTab] = useState<'deployment' | 'serverless'>('deployment');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[80vh]">
+      <DialogContent className="sm:max-w-[900px] max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
             <FileText className="h-5 w-5" />
@@ -557,21 +542,63 @@ const LogsDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative mt-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            </div>
-          ) : error ? (
-            <div className="flex items-center gap-2 text-red-500 py-4">
-              <AlertCircle className="h-5 w-5" />
-              <span>{error}</span>
-            </div>
-          ) : (
-            <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm font-mono whitespace-pre-wrap">
-              {logs}
-            </pre>
-          )}
+        <div className="mt-4">
+          <Tabs defaultValue="deployment" className="w-full" onValueChange={(value) => setActiveTab(value as 'deployment' | 'serverless')}>
+            <TabsList className="grid grid-cols-2">
+              <TabsTrigger value="deployment" className="data-[state=active]:bg-white">
+                <FileText className="w-4 h-4 mr-2" />
+                Deployment Logs
+              </TabsTrigger>
+              <TabsTrigger value="serverless" className="data-[state=active]:bg-white">
+                <PackageIcon className="w-4 h-4 mr-2" />
+                Serverless Logs
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="deployment" className="mt-4">
+              <div className="relative">
+                {!logs ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <div className="w-full overflow-hidden">
+                    <pre className="bg-neutral-900 text-neutral-200 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all max-h-[50vh] w-full overflow-y-auto">
+                      {logs.split('\n').map((line: string, index: number) => {
+                        // Try to parse timestamp if it exists in the line
+                        const timestampMatch = line.match(/^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\]/);
+                        if (timestampMatch) {
+                          const timestamp = timestampMatch[1];
+                          const relativeTime = dayjs(timestamp).fromNow();
+                          return (
+                            <div key={index} className="flex items-start gap-2 break-all">
+                              <span className="text-gray-400 shrink-0">{relativeTime}</span>
+                              <span className="break-all">{line.replace(timestampMatch[0], '')}</span>
+                            </div>
+                          );
+                        }
+                        return <div key={index} className="break-all">{line}</div>;
+                      })}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="serverless" className="mt-4">
+              <div className="relative">
+                {!serverlessLogs ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <pre className="bg-neutral-900 text-neutral-200 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-words max-h-[50vh] w-full overflow-y-auto">
+                    {JSON.stringify(serverlessLogs, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,10 +1,11 @@
 import { ClientDeployment, ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import useSWRSubscription from "swr/subscription";
 import { useTaskInstanceMetaContext } from "./TaskInstanceMetaProvider";
 import { DeployStep } from "@/server/convertfox/types";
+import { useClientProject } from "./ClientProjectProvider";
 
 interface SSEStatusData {
   clientRequestId: string;
@@ -49,11 +50,9 @@ interface SSECompleteData {
 
 export const useDeployStatus = ({
   stage,
-  initialDeployStep,
   initialClientDeployment,
 }: {
   stage: DEPLOY_STAGE;
-  initialDeployStep?: DeployStep;
   initialClientDeployment?: ClientDeployment;
 }) => {
   const params = useParams<{
@@ -61,18 +60,20 @@ export const useDeployStatus = ({
     request_id?: string;
   }>();
   const requestParamId = params?.request_id;
-  const initialData = {
-    shouldBreak: initialDeployStep?.shouldBreak || false,
-    deployStep: initialDeployStep,
-    clientDeployment: initialClientDeployment,
-  };
   const { setDeploymentInfo, updateTaskInstanceMeta, taskInstanceMeta } =
     useTaskInstanceMetaContext();
 
-  const { data: clientRequest } = useSWR<ClientRequest>(
-    requestParamId ? `/api/client-requests/${requestParamId}` : null,
-    (url: string) => fetch(url).then((res) => res.json())
-  );
+  const initialData = useMemo(() => {
+    return {
+      shouldBreak: taskInstanceMeta?.deployStep?.shouldBreak ??
+        (initialClientDeployment?.stage === stage && taskInstanceMeta?.deployStep?.status !== "pending") ??
+        false,
+      deployStep: { ...taskInstanceMeta?.deployStep },
+      clientDeployment: initialClientDeployment,
+    };
+  }, [taskInstanceMeta, initialClientDeployment, stage]);
+
+  const { selectedRequest: clientRequest } = useClientProject();
 
   // Real-time deployment status subscription using SSE
   const { data: deploymentData, error: sseError } = useSWRSubscription(
@@ -81,6 +82,11 @@ export const useDeployStatus = ({
       if (!clientRequestId || !stage) {
         return;
       }
+      // if (taskInstanceMeta?.deployStep?.deployment?.stage === stage && taskInstanceMeta?.deployStep?.status !== "pending") {
+      //   return () => {
+      //     console.log("🔌 Closing SSE connection as deployment already exists");
+      //   };
+      // }
       const sseUrl = `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/events/${clientRequestId}/${stage?.toLowerCase()}`;
       console.log(`🔌 Establishing SSE connection to: ${sseUrl}`);
 
@@ -100,7 +106,7 @@ export const useDeployStatus = ({
 
           // Create deployStep format compatible with the context
           const deployStepData: DeployStep = {
-            ...initialDeployStep,
+            ...taskInstanceMeta?.deployStep,
             startTime: statusData.startTime,
             endTime: statusData.endTime,
             status:
@@ -112,7 +118,7 @@ export const useDeployStatus = ({
             message: statusData.statusDescription,
             logs: statusData.logs,
             metadata: {
-              ...initialDeployStep?.metadata,
+              ...taskInstanceMeta?.deployStep?.metadata,
               progress: statusData.progress,
               pid: statusData.pid,
               pm2Id: statusData.pm2Id,
@@ -123,7 +129,7 @@ export const useDeployStatus = ({
               statusData.status === "deployed" ||
               statusData.status === "failed",
             deployment: {
-              stage: statusData.stage.toUpperCase(),
+              stage: statusData.stage?.toUpperCase(),
               type: "deployment",
               id: statusData.clientRequestId,
             },
@@ -148,7 +154,7 @@ export const useDeployStatus = ({
 
           // Create updated deployStep with new progress
           const updatedDeployStep: DeployStep = {
-            ...initialDeployStep,
+            ...taskInstanceMeta?.deployStep,
             status:
               progressData.status === "deployed"
                 ? "success"
@@ -157,14 +163,14 @@ export const useDeployStatus = ({
                   : "pending",
             logs: progressData.logs,
             metadata: {
-              ...initialDeployStep?.metadata,
+              ...taskInstanceMeta?.deployStep?.metadata,
               progress: progressData,
               lastUpdated: new Date().toISOString(),
             },
             deployment: {
-              stage: progressData.stage.toUpperCase(),
+              stage: progressData.stage?.toUpperCase(),
               type: "deployment",
-              id: progressData.clientDeployment.id,
+              id: progressData.clientDeployment?.id,
             },
             shouldBreak: progressData.isComplete,
           };
@@ -184,19 +190,19 @@ export const useDeployStatus = ({
           console.log("✅ Deployment completed:", completeData);
 
           const finalDeployStep: DeployStep = {
-            ...initialDeployStep,
+            ...taskInstanceMeta?.deployStep,
             endTime: completeData.endTime,
             status: completeData.success ? "success" : "failed",
             message: completeData.message,
             logs: completeData.logs,
             metadata: {
-              ...initialDeployStep?.metadata,
+              ...taskInstanceMeta?.deployStep?.metadata,
               duration: completeData.duration,
               finalStatus: completeData.status,
               lastUpdated: completeData.endTime,
             },
             deployment: {
-              stage: completeData.stage.toUpperCase(),
+              stage: completeData.stage?.toUpperCase(),
               type: "deployment",
               id: completeData.clientDeployment.id,
             },
@@ -253,7 +259,6 @@ export const useDeployStatus = ({
     const updateMetaAndInfo = async () => {
       if (deploymentData?.deployStep) {
         await updateTaskInstanceMeta({
-          originClientRequestId: requestParamId || "",
           ...taskInstanceMeta,
           deployStep: deploymentData.deployStep,
         });
@@ -269,7 +274,7 @@ export const useDeployStatus = ({
   return {
     isLoading: !deploymentData && !sseError && !deploymentData?.shouldBreak,
     isValidating: false,
-    deployStep: deploymentData?.deployStep || initialDeployStep,
+    deployStep: deploymentData?.deployStep || taskInstanceMeta?.deployStep,
     clientRequest,
     finalData: deploymentData || initialData,
     sseError,

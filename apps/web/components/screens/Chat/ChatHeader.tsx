@@ -7,6 +7,7 @@ import {
   LogOut,
   LayoutDashboard,
   Code,
+  RocketIcon,
 } from "lucide-react";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
@@ -65,6 +66,11 @@ const tabList = [
     label: "History",
     value: "history",
     icon: <History />,
+  },
+  {
+    label: "Publish",
+    value: "publish",
+    icon: <RocketIcon />,
   },
 ];
 const ChatHeader = ({

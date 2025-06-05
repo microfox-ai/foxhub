@@ -16,6 +16,9 @@
     "prisma:migrate-dev-reset": "prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-dev": "prisma migrate dev --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-deploy": "dotenv -- prisma migrate deploy --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-deploy-reset": "dotenv -- prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-resolve-deploy": "dotenv -- prisma migrate resolve --applied $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-rollback-deploy": "dotenv -- prisma migrate resolve --rolled-back $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
     "postinstall": "npm run prisma:generate"
   },
   "devDependencies": {
@@ -55,6 +58,7 @@
   ],
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "^3.800.0",
+    "@radix-ui/react-alert-dialog": "^1.1.14",
     "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0"

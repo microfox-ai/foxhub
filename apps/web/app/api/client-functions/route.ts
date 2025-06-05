@@ -169,13 +169,13 @@ export async function POST(req: NextRequest) {
     }
     const timeTaken = new Date().getTime() - clientRequest.createdAt.getTime();
 
-    await slackBotSdk.sendMessage({
-      icon_url: MICROFOX_LOGO,
-      channel: MySlackChannels.microfox_updates,
-      text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${newMetadata?.serverless?.functions?.length}. 
-      Functions Deployed: ${newMetadata?.serverless?.functions?.map((f: any) => f.functionName + " (" + f.size + ")").join(", ")}.
-      Total time taken since hellofox started conversation: ${timeTaken} seconds`,
-    });
+    // await slackBotSdk.sendMessage({
+    //   icon_url: MICROFOX_LOGO,
+    //   channel: MySlackChannels.microfox_updates,
+    //   text: `Deployfox finished deployment for ${stage} mode for ${clientRequest.title} - endpoints: ${newMetadata?.serverless?.functions?.length}.
+    //   Functions Deployed: ${newMetadata?.serverless?.functions?.map((f: any) => f.functionName + " (" + f.size + ")").join(", ")}.
+    //   Total time taken since hellofox started conversation: ${timeTaken} seconds`,
+    // });
 
     return NextResponse.json(clientFunction, { status: 201 });
   } catch (error) {
@@ -275,7 +275,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     // Delete the embedding
-    await deleteEmbedding(id);
+    await deleteEmbedding(clientFunction.originClientRequestId);
 
     // Notify in chat about deletion
     // TODO: VISHWAJEET - no need to send a mesaage i think, but will have to take a look later

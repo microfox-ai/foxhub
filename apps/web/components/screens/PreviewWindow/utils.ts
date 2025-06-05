@@ -1,5 +1,9 @@
 import { cn } from "@/lib/utils";
-import { OpenAPIOperation, OpenAPIParameter, OpenAPISchema } from "@/utils/services/OpenAPIToolsClient";
+import {
+  OpenAPIOperation,
+  OpenAPIParameter,
+  OpenAPISchema,
+} from "@/utils/services/OpenAPIToolsClient";
 
 // Function to get color class based on HTTP method
 export const getMethodColor = (method: string) => {
@@ -107,7 +111,7 @@ export const getPlaceholder = (
       case "integer":
         return `Enter numeric value for ${name} (e.g. ${exampleValue})`;
       case "array":
-        return `Enter JSON array for ${name} (e.g. ${exampleValue})`;
+        return `Type & Enter for adding ${name} (e.g. ${exampleValue})`;
       case "object":
         return `Enter JSON object for ${name} (e.g. ${exampleValue})`;
       default:
@@ -123,7 +127,7 @@ export const getPlaceholder = (
     case "integer":
       return `Enter numeric value for ${name}`;
     case "array":
-      return `Enter JSON array for ${name}`;
+      return `Type & Enter for adding ${name}`;
     case "object":
       return `Enter JSON object for ${name}`;
     default:

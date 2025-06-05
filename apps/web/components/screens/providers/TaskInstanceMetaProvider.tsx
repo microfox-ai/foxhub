@@ -61,7 +61,7 @@ export const useTaskInstanceMeta = ({
     return response as TaskInstanceMetaType & { id: string };
   };
   return {
-    taskInstanceMeta: data,
+    taskInstanceMeta: (Array.isArray(data) ? data[0] : data) as TaskInstanceMetaType & { id: string },
     isLoading: isLoading || isValidating,
     isError: error,
     mutate,

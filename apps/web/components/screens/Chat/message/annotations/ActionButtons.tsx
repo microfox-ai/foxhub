@@ -13,6 +13,7 @@ interface ActionButtonsProps {
     buttonHeaderText?: string;
     areKeysRequired?: boolean;
     areKeysFilled?: boolean;
+    className?: string;
 }
 
 export const ActionButtons = (props: ActionButtonsProps) => {
@@ -22,7 +23,7 @@ export const ActionButtons = (props: ActionButtonsProps) => {
         return null;
     }
     return (
-        <div className="flex flex-col gap-2 mt-4">
+        <div className={cn("flex flex-col gap-2 mt-4", props.className)}>
             {props?.buttonHeaderText && (
                 <div className="text-md text-gray-500">{props?.buttonHeaderText}</div>
             )}

@@ -11,6 +11,7 @@ import { Redis } from "@upstash/redis";
 import { ClientSecretPackageType } from "@/server/types";
 import { removeClientSecretFromClientRequest } from "@/utils/services/db_functions/secrets_helper";
 import { closePullRequest } from "@/utils/services/github_functions/deleteRepo";
+import { deleteEmbedding } from "@/utils/services/embeddings/embedFunctions";
 
 export const maxDuration = 300;
 
@@ -62,8 +63,12 @@ export async function DELETE(req: NextRequest) {
           true,
           undefined
         );
+        const embeddingDeleteResponse = await deleteEmbedding(
+          clientFunction.originClientRequestId
+        );
         deleteResponse.deployment = {
           deletingCommitSha: sha,
+          embeddingsDeleted: embeddingDeleteResponse.success,
         };
       }
     } catch (error) {

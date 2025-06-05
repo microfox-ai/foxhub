@@ -83,7 +83,7 @@ const PreviewWindow = () => {
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
   //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
-  const BASE_URL = forceBaseUrl || `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}`;
+  const BASE_URL = forceBaseUrl || `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage?.toLowerCase()}`;
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
@@ -692,7 +692,9 @@ const PreviewWindow = () => {
                                 if (!currentItems.includes(newValue)) {
                                   field.onChange([...currentItems, newValue].join(","));
                                 }
-                                e.currentTarget.value = '';
+                                // Use the input element's value property to clear it
+                                const input = e.currentTarget as HTMLInputElement;
+                                input.value = '';
                               }
                             }
                           }}
@@ -880,7 +882,7 @@ const PreviewWindow = () => {
     const fetchErrorLogs = async () => {
       try {
         if (deploymentInfo) {
-          const endpointLink = `${deploymentInfo.baseUrl}/${deploymentInfo.stage.toLowerCase()}/docs.json`;
+          const endpointLink = `${deploymentInfo.baseUrl}/${deploymentInfo.stage?.toLowerCase()}/docs.json`;
           await fetchServerlessLogs({
             clientDeploymentId: (deploymentInfo as ClientDeployment).id,
             endpointLink: endpointLink,
@@ -988,7 +990,7 @@ const PreviewWindow = () => {
                   variant={"default"}
                   onClick={() => {
                     const errorAttachment = {
-                      functionLink: `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage.toLowerCase()}/docs.json`,
+                      functionLink: `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage?.toLowerCase()}/docs.json`,
                       serverlessLogs: errorServerlessLogs,
                       error: error,
                       deploymentInfo: deploymentInfo,
@@ -1085,7 +1087,7 @@ const PreviewWindow = () => {
                       type="text"
                       placeholder="Enter base URL (e.g., https://api.example.com)"
                       className="h-8 w-full text-xs"
-                      value={deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase()}
+                      value={deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage?.toLowerCase()}
                       disabled
                     />
                   )}

@@ -11,7 +11,7 @@ interface TriggerRoute {
   timeout?: number;
 }
 
-export const maxDuration = 300;
+export const maxDuration = 600;
 const BATCH_SIZE = 10;
 
 export async function GET() {

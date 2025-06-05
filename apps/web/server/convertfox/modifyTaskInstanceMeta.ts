@@ -138,6 +138,7 @@ export const updateBuildStepFiles = (
   return Array.from(buildFilesMap.values());
 };
 
+// TODO: currently only supports adding/updating (not deletes)
 export const modifyTaskStructureBasedOnCommitFiles = async (
   taskStructure: TaskInstanceMetaType["taskStructure"],
   commitFiles: CommitFile[],
@@ -394,6 +395,8 @@ export const modifyTaskInfoBasedOnChanges = async (
     ${JSON.stringify(originalTaskStructure)}
     The following is the modified task structure information output:
     ${JSON.stringify(updatedTaskStructure)}
+
+    Generate the new task infor with changed field for name, goal, summary.
     `,
     schema: taskInfo,
   });

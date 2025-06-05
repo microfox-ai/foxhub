@@ -18,7 +18,7 @@ const apiDocs = {
       "API for handling GitHub webhook events and sending Slack notifications",
     contact: {
       name: "API Support",
-      email: "support@microfox.com",
+      email: "support@microfox.app",
     },
   },
   servers: [

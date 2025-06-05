@@ -116,7 +116,7 @@ export const DeployStatus = () => {
     const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
     const { deployStep } = useDeployStatus({
         stage: taskInstanceMeta?.deployStep?.deployment?.stage as DEPLOY_STAGE || DEPLOY_STAGE.STAGING,
-        initialDeployStep: taskInstanceMeta?.deployStep,
+        initialClientDeployment: clientDeployment ?? undefined,
     });
 
     //console.log("clientDeployment", clientDeployment);

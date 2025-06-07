@@ -6,8 +6,20 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     //console.log("body", body);
-    const message = await prisma.chatUIMessage.create({
-      data: {
+    if (!body.id) {
+      return NextResponse.json(
+        { error: "Message id is required" },
+        { status: 400 }
+      );
+    }
+    const message = await prisma.chatUIMessage.upsert({
+      where: {
+        id: body.id,
+      },
+      update: {
+        ...body,
+      },
+      create: {
         ...body,
       },
     });

@@ -1,4 +1,5 @@
 import { prisma } from "@/prisma/prisma";
+import { publishShard } from "@/utils/services/db_functions/publishShard";
 import { SHARD_PAGE_STATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -6,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
   const userId = request.nextUrl.searchParams.get("userId");
+  const clientRequestId = request.nextUrl.searchParams.get("clientRequestId");
   const status = request.nextUrl.searchParams.get(
     "status"
   ) as SHARD_PAGE_STATUS;
@@ -19,6 +21,7 @@ export async function GET(request: NextRequest) {
         ...(id ? { id } : {}),
         ...(userId ? { creatorId: userId } : {}),
         ...(status && { status }),
+        ...(clientRequestId ? { clientRequestId } : {}),
       },
       include: {
         creator: true,
@@ -34,20 +37,93 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST create shard page
+export async function POST(request: Request) {
+  const { clientRequestId, ...body } = await request.json();
+  const clientRequest = await prisma.clientRequest.findUnique({
+    where: {
+      id: clientRequestId,
+    },
+  });
+  if (!clientRequest) {
+    return NextResponse.json(
+      { error: "Client request not found" },
+      { status: 404 }
+    );
+  }
+  const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+    where: {
+      originClientRequestId: clientRequest.id,
+    },
+  });
+  if (!taskInstanceMeta) {
+    return NextResponse.json(
+      { error: "Task instance meta not found" },
+      { status: 404 }
+    );
+  }
+
+  const { shardPage, updated } = await publishShard(
+    clientRequest,
+    taskInstanceMeta,
+    body
+  );
+
+  if (updated) {
+    return NextResponse.json(shardPage);
+  }
+
+  return NextResponse.json(shardPage);
+}
+
 // PUT update shard page
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { id, ...data } = body;
 
-    const shardPage = await prisma.shardPage.update({
+    let inShardPage = await prisma.shardPage.findUnique({
       where: {
         id,
       },
-      data: {
-        ...data,
+    });
+    if (!inShardPage) {
+      return NextResponse.json(
+        { error: "Shard page not found" },
+        { status: 404 }
+      );
+    }
+
+    const clientRequest = await prisma.clientRequest.findUnique({
+      where: {
+        id: inShardPage.clientRequestId,
       },
     });
+    if (!clientRequest) {
+      return NextResponse.json(
+        { error: "Client request not found" },
+        { status: 404 }
+      );
+    }
+    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+      where: {
+        originClientRequestId: clientRequest.id,
+      },
+    });
+    if (!taskInstanceMeta) {
+      return NextResponse.json(
+        { error: "Task instance meta not found" },
+        { status: 404 }
+      );
+    }
+
+    const { shardPage, updated } = await publishShard(
+      clientRequest,
+      taskInstanceMeta,
+      {
+        ...data,
+      }
+    );
 
     return NextResponse.json(shardPage);
   } catch (error) {

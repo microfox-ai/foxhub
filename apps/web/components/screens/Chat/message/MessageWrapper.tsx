@@ -84,6 +84,8 @@ export const MessageWrapper = ({
   const toolInvocations = message.parts?.filter(
     (part) => part.type === "tool-invocation"
   );
+  const lastToolInvocation = toolInvocations?.length > 0 ? toolInvocations?.[toolInvocations.length - 1] : null;
+
   const [activeTab, setActiveTab] = useState<number>(0);
   useEffect(() => {
     if (displayParts && isStreaming) {
@@ -140,7 +142,7 @@ export const MessageWrapper = ({
             {message.role === "assistant" &&
               status === "streaming" &&
               index === length - 1 &&
-              (!message.content || message.content?.trim()?.length === 0) &&
+              //(!message.content || message.content?.trim()?.length === 0) &&
               (
                 <LoadingIndicator message={message} />
               )}
@@ -196,6 +198,7 @@ export const MessageWrapper = ({
                     key={idx + toolInvocation.type}
                     part={toolInvocation}
                     messageId={message.id}
+                    message={message}
                   />
                 ))}
               </div>
@@ -205,6 +208,15 @@ export const MessageWrapper = ({
                 uiAnnotations={uiAnnotations as any[]}
                 lastMessage={index === length - 1}
               />
+            )}
+            {lastToolInvocation && (
+              <div className="mt-2 flex flex-col gap-2">
+                <ToolInvocationPart
+                  part={lastToolInvocation}
+                  messageId={message.id}
+                  message={message}
+                />
+              </div>
             )}
             {metadata?.media && (
               <div className="mt-2 flex flex-wrap justify-evenly gap-2">

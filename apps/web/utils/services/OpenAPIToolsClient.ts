@@ -121,7 +121,7 @@ type Tool = {
   name: string;
   description: string;
   parameters: z.ZodType;
-  execute: ToolExecuteFn;
+  execute?: ToolExecuteFn;
 };
 
 // AI SDK compatible tools types
@@ -146,6 +146,21 @@ type ToolExecuteFn = (
 ) => Promise<any>;
 
 type ToolSet = Record<string, Tool>;
+
+type ToolMetadata = {
+  name: string;
+  description: string;
+  jsonSchema: JsonSchema & {
+    type: "object";
+  };
+  humanLayer: {
+    required: boolean;
+  };
+};
+
+type ToolMetadataSet = Record<string, ToolMetadata>;
+
+type ToolExecuteSet = Record<string, ToolExecuteFn>;
 
 // Schema source configuration
 type SchemaConfig = {
@@ -216,6 +231,19 @@ interface APIResponse {
   status: number;
 }
 
+type ToolOptions = {
+  schemas?: ToolSchemas;
+  validateParameters?: boolean;
+  disabledExecutions?: string[];
+  disableAllExecutions?: boolean;
+};
+
+type ToolResult = {
+  tools: ToolSet;
+  executions: ToolExecuteSet;
+  metadata: ToolMetadataSet;
+};
+
 /**
  * Client for interacting with APIs described by OpenAPI schemas
  * Provides methods for calling API operations and generating AI SDK-compatible tools
@@ -232,6 +260,9 @@ export class OpenAPIToolsClient {
 
     // Create a client for each option
     optionsArray.forEach((opt, index) => {
+      const schemName = (opt.schema as OpenAPIDoc).info?.title
+        ?.toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, "_");
       this.clients.push(
         new SingleOpenAPIToolsClient({
           ...opt,
@@ -240,8 +271,8 @@ export class OpenAPIToolsClient {
               ? JSON.parse(opt.schema)
               : opt.schema,
           name:
-            opt.name ||
-            `${(opt.schema as OpenAPIDoc).info.title.toLowerCase().replace(/ /g, "_")}`,
+            opt.name ??
+            `${schemName?.length > 16 ? schemName.substring(0, 16) : schemName}`,
         })
       );
     });
@@ -334,10 +365,9 @@ export class OpenAPIToolsClient {
   async tools({
     schemas = "automatic",
     validateParameters = false,
-  }: {
-    schemas?: ToolSchemas;
-    validateParameters?: boolean; // When true, validates parameters against the schema
-  } = {}): Promise<ToolSet> {
+    disabledExecutions = [],
+    disableAllExecutions = false,
+  }: ToolOptions = {}): Promise<ToolResult> {
     if (!this.initialized) {
       throw new Error("Clients not initialized. Call init() first.");
     }
@@ -348,27 +378,40 @@ export class OpenAPIToolsClient {
         client.tools({
           schemas,
           validateParameters, // Pass validation option to each client
+          disabledExecutions,
+          disableAllExecutions,
         })
       )
     );
 
     // Combine tools from all clients
-    const combinedTools: ToolSet = {};
+    const combinedTools: ToolResult = {
+      tools: {},
+      executions: {},
+      metadata: {},
+    };
 
     allToolsResults.forEach((toolSet, index) => {
       const client = this.clients[index];
-      if (!client) return; // Skip if client is undefined (shouldn't happen)
+      if (!client) return; // Skip if client is undefined
 
       const clientName = client.getName();
 
-      Object.entries(toolSet).forEach(([key, tool]) => {
+      Object.entries(toolSet.tools).forEach(([key, tool]) => {
         // Create a namespaced key to avoid collisions
         const namespacedKey = `${clientName}-${key}`;
 
-        combinedTools[namespacedKey] = {
+        // Add to tools
+        combinedTools.tools[namespacedKey] = {
           ...tool,
           name: namespacedKey, // Update name to include namespace
         };
+
+        // Add to executions if it exists
+        if (toolSet.executions[key] && toolSet.metadata[key]) {
+          combinedTools.executions[namespacedKey] = toolSet.executions[key];
+          combinedTools.metadata[namespacedKey] = toolSet.metadata[key]!;
+        }
       });
     });
 
@@ -393,6 +436,7 @@ class SingleOpenAPIToolsClient {
   private initialized: boolean = false;
   private schemaCache: Record<string, JsonSchema> = {};
   private mcp_version: string;
+  private toolExecutions: Record<string, ToolExecuteFn> = {};
 
   constructor(options: {
     schema: OpenAPIDoc;
@@ -462,8 +506,13 @@ class SingleOpenAPIToolsClient {
   private cleanUpMethodSchema(methodSchema: OpenAPIOperation) {
     let cleanedMethodSchema = methodSchema;
     if (this.mcp_version === "1.0.1") {
-      if (cleanedMethodSchema?.requestBody?.content["application/json"]?.schema?.properties?.body?.properties?.arguments) {
-        let bodySchema = methodSchema.requestBody?.content["application/json"]?.schema?.properties;
+      if (
+        cleanedMethodSchema?.requestBody?.content["application/json"]?.schema
+          ?.properties?.body?.properties?.arguments
+      ) {
+        let bodySchema =
+          methodSchema.requestBody?.content["application/json"]?.schema
+            ?.properties;
         const args = bodySchema?.body?.properties?.arguments?.items;
         if (args && Array.isArray(args)) {
           // if (args.length === 1) {
@@ -475,7 +524,9 @@ class SingleOpenAPIToolsClient {
           }, {});
           // }
         }
-        cleanedMethodSchema.requestBody.content["application/json"].schema.properties = bodySchema;
+        cleanedMethodSchema.requestBody.content[
+          "application/json"
+        ].schema.properties = bodySchema;
       }
     }
     return cleanedMethodSchema;
@@ -486,7 +537,7 @@ class SingleOpenAPIToolsClient {
       for (const [method, pathOperation] of Object.entries(
         methods as OpenAPIPath
       )) {
-        const operation = pathOperation
+        const operation = pathOperation;
         const operationId = this.generateOperationId(path, method, operation);
 
         this.operationMap.set(operationId, {
@@ -511,7 +562,7 @@ class SingleOpenAPIToolsClient {
     // Second priority: generate an ID from the path and method
     const pathPart = path
       .replace(/^\/|\/$/g, "")
-      .replace(/-/g, "_")
+      .replace(/[^a-zA-Z0-9]/g, "_")
       .replace(/\/\{([^}]+)\}/g, "_by_$1")
       .replace(/\//g, "_");
 
@@ -592,7 +643,12 @@ class SingleOpenAPIToolsClient {
     const { url, method, headers, body, signal } = options;
 
     try {
-      console.log("Making request", { url, method, headers: JSON.stringify(headers, null, 2), body: JSON.stringify(body, null, 2) });
+      console.log("Making request", {
+        url,
+        method,
+        headers: JSON.stringify(headers, null, 2),
+        body: JSON.stringify(body, null, 2),
+      });
       const response = await fetch(url, {
         method,
         headers,
@@ -1098,15 +1154,16 @@ class SingleOpenAPIToolsClient {
   async tools({
     schemas = "automatic",
     validateParameters = false,
-  }: {
-    schemas?: ToolSchemas;
-    validateParameters?: boolean; // When true, validates parameters against the schema
-  } = {}): Promise<ToolSet> {
+    disabledExecutions = [],
+    disableAllExecutions = false,
+  }: ToolOptions = {}): Promise<ToolResult> {
     if (!this.initialized) {
       throw new Error("Client not initialized. Call init() first.");
     }
 
     const tools: ToolSet = {};
+    const toolExecutions: ToolExecuteSet = {}; // Reset tool executions
+    const metadata: ToolMetadataSet = {};
 
     // Get all available operations
     const { operations } = await this.listOperations();
@@ -1123,88 +1180,14 @@ class SingleOpenAPIToolsClient {
       const fullOperation = this.operationMap.get(id) as OpenAPIOperation;
 
       // Clean up the operation schema for MCP 1.0.1
-      const cleanedOperation = this.cleanUpMethodSchema(fullOperation) as OpenAPIOperation & { path: string, method: string };
+      const cleanedOperation = this.cleanUpMethodSchema(
+        fullOperation
+      ) as OpenAPIOperation & { path: string; method: string };
       if (!cleanedOperation.path || !cleanedOperation.method) continue;
 
       // Convert operation schema to JSON schema and then to Zod schema
       const jsonSchema = this.convertOperationToJsonSchema(cleanedOperation);
       const zodSchema = this.convertOpenApiSchemaToZod(jsonSchema);
-
-      // // Better Zod schema debugging
-      // try {
-      //   // Recursive function to inspect Zod schema shapes
-      //   const inspectZodShape = (schema: any, path: string = '', depth: number = 0): void => {
-      //     if (depth > 6) return; // Increase depth limit to see more nesting
-
-      //     const indent = '  '.repeat(depth);
-      //     console.log(`${indent}🔍 Inspecting ${path || 'root'} (${schema._def?.typeName || 'unknown'})`);
-
-      //     if (schema._def?.typeName === 'ZodObject') {
-      //       const shape = schema._def.shape();
-      //       const keys = Object.keys(shape || {});
-      //       console.log(`${indent}  Object keys: [${keys.join(', ')}]`);
-
-      //       // Inspect each property
-      //       for (const [key, propSchema] of Object.entries(shape || {})) {
-      //         const newPath = path ? `${path}.${key}` : key;
-      //         inspectZodShape(propSchema, newPath, depth + 1);
-      //       }
-      //     } else if (schema._def?.typeName === 'ZodArray') {
-      //       console.log(`${indent}  Array element type: ${schema._def.type._def?.typeName || 'unknown'}`);
-      //       inspectZodShape(schema._def.type, `${path}[]`, depth + 1);
-      //     } else if (schema._def?.typeName === 'ZodTuple') {
-      //       const items = schema._def.items || [];
-      //       console.log(`${indent}  Tuple with ${items.length} items:`);
-      //       items.forEach((item: any, index: number) => {
-      //         console.log(`${indent}  --- Tuple Item ${index} ---`);
-      //         inspectZodShape(item, `${path}[${index}]`, depth + 1);
-      //       });
-      //     } else if (schema._def?.typeName === 'ZodOptional') {
-      //       console.log(`${indent}  Optional wrapper around: ${schema._def.innerType._def?.typeName || 'unknown'}`);
-      //       inspectZodShape(schema._def.innerType, `${path} (optional)`, depth + 1);
-      //     } else {
-      //       const schemaType = schema._def?.typeName || 'unknown';
-      //       console.log(`${indent}  Primitive type: ${schemaType}`);
-      //       // For strings, show format if available
-      //       if (schemaType === 'ZodString' && schema._def?.checks) {
-      //         const checks = schema._def.checks.map((check: any) => check.kind).join(', ');
-      //         if (checks) console.log(`${indent}    Format checks: ${checks}`);
-      //       }
-      //     }
-      //   };
-
-      //   console.log(`🔍 === COMPLETE ZOD SCHEMA STRUCTURE ===`);
-      //   inspectZodShape(zodSchema);
-      //   console.log(`🔍 === END SCHEMA STRUCTURE ===`);
-
-      //   // Test specific arguments structure
-      //   console.log(`🔍 === TESTING ARGUMENTS ARRAY STRUCTURE ===`);
-      //   const testBodyWithArguments = {
-      //     body: {
-      //       arguments: [{}] // Empty argument object to see what's required
-      //     }
-      //   };
-      //   const argsValidation = zodSchema.safeParse(testBodyWithArguments);
-      //   console.log(`🔍 Arguments validation result:`, {
-      //     success: argsValidation.success,
-      //     errorCount: argsValidation.success ? 0 : argsValidation.error.issues.length
-      //   });
-
-      //   if (!argsValidation.success) {
-      //     console.log(`🔍 Arguments validation errors:`,
-      //       argsValidation.error.issues.map(issue => ({
-      //         path: issue.path.join('.'),
-      //         message: issue.message,
-      //         expected: issue.code
-      //       }))
-      //     );
-      //   }
-      //   console.log(`🔍 === END ARGUMENTS TEST ===`);
-
-      // } catch (e) {
-      //   console.log(`🔍 Zod schema validation error:`, e);
-      // }
-      // // Zod schema created successfully
 
       // Create the tool
       const description =
@@ -1213,58 +1196,95 @@ class SingleOpenAPIToolsClient {
         `${operation.method} ${operation.path}`;
       const self = this;
 
+      const executeFn: ToolExecuteFn = async (
+        args: Record<string, any>,
+        options?: ToolExecuteOptions
+      ) => {
+        console.log(
+          `🔍 Calling tool ${id} with args:`,
+          JSON.stringify(args, null, 2)
+        );
+
+        // Throw if aborted
+        options?.abortSignal?.throwIfAborted();
+
+        // If validation is enabled, validate the arguments against Zod schema
+        if (validateParameters) {
+          try {
+            // Parse and validate arguments against the schema
+            const validatedArgs = zodSchema.parse(args);
+            args = validatedArgs;
+          } catch (error) {
+            // Format validation errors in a user-friendly way
+            if (error instanceof z.ZodError) {
+              const formattedError = new Error(
+                `Parameter validation failed: ${error.errors
+                  .map((e) => `${e.path.join(".")}: ${e.message}`)
+                  .join(", ")}`
+              );
+              formattedError.name = "ValidationError";
+              throw formattedError;
+            }
+            throw error;
+          }
+        }
+
+        // MCP 1.0.1 specific arguments structure
+        if (this.mcp_version === "1.0.1") {
+          args = {
+            body: {
+              body: {
+                arguments: Object.values(args),
+                auth: this.presetBodyFields.auth,
+                packageName: this.presetBodyFields.packageName,
+              },
+            },
+          };
+          console.log(
+            `🔍 Restructured args for MCP 1.0.1:`,
+            JSON.stringify(args, null, 2)
+          );
+        }
+
+        // Call the operation without validation
+        return self.callOperation(id, args, options);
+      };
+
+      const shouldStoreExecution =
+        !disableAllExecutions && !disabledExecutions.includes(id) && executeFn;
       tools[id] = {
         name: id,
         description,
         parameters: zodSchema,
-        execute: async (args, options) => {
-          console.log(`🔍 Calling tool ${id} with args:`, JSON.stringify(args, null, 2));
+        ...(shouldStoreExecution ? { execute: executeFn } : {}),
+      };
 
-          // Throw if aborted
-          options?.abortSignal?.throwIfAborted();
+      toolExecutions[id] = executeFn;
 
-          // If validation is enabled, validate the arguments against Zod schema
-          // if (validateParameters) {
-          //   try {
-          //     // Parse and validate arguments against the schema
-          //     const validatedArgs = zodSchema.parse(args);
-          //     return self.callOperation(id, validatedArgs, options);
-          //   } catch (error) {
-          //     // Format validation errors in a user-friendly way
-          //     if (error instanceof z.ZodError) {
-          //       const formattedError = new Error(
-          //         `Parameter validation failed: ${error.errors.map(e =>
-          //           `${e.path.join('.')}: ${e.message}`
-          //         ).join(', ')}`
-          //       );
-          //       formattedError.name = 'ValidationError';
-          //       throw formattedError;
-          //     }
-          //     throw error;
-          //   }
-          // }
-
-          // MCP 1.0.1 specific arguments structure
-          if (this.mcp_version === "1.0.1") {
-            args = {
-              body: {
-                body: {
-                  arguments: Object.values(args),
-                  auth: this.presetBodyFields.auth,
-                  packageName: this.presetBodyFields.packageName,
-                }
-              }
-            }
-            console.log(`🔍 Restructured args for MCP 1.0.1:`, JSON.stringify(args, null, 2));
-          }
-
-          // Call the operation without validation
-          return self.callOperation(id, args, options);
+      metadata[id] = {
+        name: id
+          .replace(/[^a-zA-Z0-9]/g, " ")
+          .split(" ")
+          .map(
+            (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          )
+          .join(" "),
+        description,
+        jsonSchema,
+        humanLayer: {
+          required: true,
         },
       };
     }
 
-    return tools;
+    return { tools, executions: toolExecutions, metadata };
+  }
+
+  /**
+   * Get the execute callback for a specific tool
+   */
+  getToolExecution(id: string): ToolExecuteFn | undefined {
+    return this.toolExecutions[id];
   }
 }
 

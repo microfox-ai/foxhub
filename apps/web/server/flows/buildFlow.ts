@@ -20,6 +20,37 @@ import {
 import { hotfixFoxRouter } from "../hotfixfox/_hotfixRouter";
 import { publishFoxRouter } from "../publishfox/_publishFoxRouter";
 import { installFoxRouter } from "../installfox/_installFoxRouter";
+import { taskQueryRouter } from "../taskqueryfox/_taskQueryRouter";
+
+const getMinionRouter = (minionType: MinionTypeType, props: any) => {
+  switch (minionType) {
+    case MinionType.HelloFox:
+      return hellofoxRouter(props);
+    case MinionType.ConvertFox:
+      return convertfoxRouter(props);
+    case MinionType.BuildFox:
+      return buildFoxRouter(props);
+    case MinionType.DeployFox:
+      return deployFoxRouter(props);
+    case MinionType.HotFixFox:
+      return hotfixFoxRouter(props);
+    case MinionType.PublishFox:
+      return publishFoxRouter(props);
+    case MinionType.InstallFox:
+      return installFoxRouter(props);
+    case MinionType.TaskQueryFox:
+      return taskQueryRouter(props);
+    default:
+      props.dataStream.writeMessageAnnotation({
+        type: "error",
+        content: "Unknown minion type",
+      });
+      return {
+        responseBody: { ...props.responseBody },
+        appendRequestBody: { ...props.requestBody },
+      };
+  }
+};
 // hellofox, convertfox, buildfox, deployfox, testfox.
 export const buildFlow: ServerStreamingFunction<
   any,
@@ -46,6 +77,10 @@ export const buildFlow: ServerStreamingFunction<
       responseBody: { ...responseBody },
       appendRequestBody: { ...requestBody },
     };
+
+  if (requestBody.minionContinue) {
+    return getMinionRouter(requestBody.minionType, props);
+  }
 
   props.dataStream.writeMessageAnnotation({
     type: "minionFlow",
@@ -80,6 +115,7 @@ export const buildFlow: ServerStreamingFunction<
     MinionSupports[minionType]?.includes("intent-observor"); // convertfox, hellofox
 
   let needIntentObserver = false;
+  // do i have to observe the last message to route to the correct minion?
 
   if (minionType === MinionType.Unknown) {
     needIntentObserver = true;
@@ -89,6 +125,7 @@ export const buildFlow: ServerStreamingFunction<
     !isMinionSupportsIntentReading &&
     isSameMinionJustBefore
   ) {
+    // if minion has already talked, and the poor minion does not know inside it, and it also has just responded, then lets do intent based classification here.
     needIntentObserver = true;
   }
 
@@ -117,6 +154,7 @@ export const buildFlow: ServerStreamingFunction<
           "Redeploy-App",
           "Casual-Chat",
           "Publish-App-to-Store",
+          "In-Task-Query",
         ]),
         reason: z.string(),
       }),
@@ -126,8 +164,9 @@ export const buildFlow: ServerStreamingFunction<
             we need to detect the exact intent of the user to understand what they want to do.
 
             CRITICAL:
-            If the user is asking for even a tiny change/modification, then always pass the intent as "Modify-Task"
+            If the user is asking for even a tiny change/modification of the built automation, then always pass the intent as "Modify-Task"
             If the user is asking for a new feature, then pass the intent as "Add-Features"
+            if the user is asking something related to the curren task, then pass the intent as "In-Task-Query"
         `,
       prompt: `
             The user has sent the following message:
@@ -150,6 +189,8 @@ export const buildFlow: ServerStreamingFunction<
         return deployFoxRouter(props);
       case "Publish-App-to-Store":
         return publishFoxRouter(props);
+      case "In-Task-Query":
+        return taskQueryRouter(props);
       default:
         props.dataStream.writeMessageAnnotation({
           type: "error",
@@ -161,30 +202,6 @@ export const buildFlow: ServerStreamingFunction<
         };
     }
   } else {
-    switch (minionType) {
-      case MinionType.HelloFox:
-        return hellofoxRouter(props);
-      case MinionType.ConvertFox:
-        return convertfoxRouter(props);
-      case MinionType.BuildFox:
-        return buildFoxRouter(props);
-      case MinionType.DeployFox:
-        return deployFoxRouter(props);
-      case MinionType.HotFixFox:
-        return hotfixFoxRouter(props);
-      case MinionType.PublishFox:
-        return publishFoxRouter(props);
-      case MinionType.InstallFox:
-        return installFoxRouter(props);
-      default:
-        props.dataStream.writeMessageAnnotation({
-          type: "error",
-          content: "Unknown minion type",
-        });
-        return {
-          responseBody: { ...responseBody },
-          appendRequestBody: { ...requestBody },
-        };
-    }
+    return getMinionRouter(minionType, props);
   }
 };

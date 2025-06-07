@@ -39,6 +39,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   const { setSelectedRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
 
+
   const {
     data: serverMessages,
     mutate,

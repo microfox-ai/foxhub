@@ -101,7 +101,7 @@ export const ProjectDropdown = ({
                   aria-expanded={open}
                   className="w-full justify-start border border-neutral-100 rounded-lg  p-2 px-4 flex items-center "
                 >
-                  <img src={selectedProject?.imageUrl ?? ""} className="w-4 h-4 rounded-md object-cover" />
+                  <img src={selectedProject?.imageUrl ?? "/images/default-bot-avatar.png"} className="w-4 h-4 rounded-md object-cover" />
                   <span className="">
                     {selectedProject ? selectedProject?.name
                       : "Select project..."}

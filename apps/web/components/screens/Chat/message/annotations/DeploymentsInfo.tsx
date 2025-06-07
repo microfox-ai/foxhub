@@ -73,22 +73,14 @@ export const DeploymentsInfo = ({
   const [showLogsDialog, setShowLogsDialog] = useState(false);
 
   const { isRightCollapsed, handleRightCollapse } = useLayout();
-  const { setDeploymentInfo, taskInstanceMeta } = useTaskInstanceMetaContext();
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
-  const { setSubmitAnnotations, setAutoSubmit, selectedRequest } = useClientProject();
+  const { setSubmitAnnotations, selectedRequest } = useClientProject();
 
-  const { data: clientDeployments } = useSWR<{ clientFunctions: ClientDeployment[] }>(
-    `/api/client-functions?id=${selectedRequest?.id}`,
-    async (url: string) => {
-      const response = await PortalSdk.getData(url, {});
-      return response.clientFunctions;
-    }
-  );
-  const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
-  const { finalData, deployStep, clientRequest } = useDeployStatus({
+  const { selectedRequest: clientRequest } = useClientProject();
+  const { deployment, logs, clientDeployment, shouldBreak } = useDeployStatus({
+    runId,
     stage,
-    initialClientDeployment: clientDeployment ?? undefined,
   });
 
   const deployToProduction = () => {
@@ -119,17 +111,17 @@ export const DeploymentsInfo = ({
   const debugIssue = () => {
     setServerlessLogs(null);
     setCheckForErrors(true);
-    if (!finalData?.clientDeployment) {
+    if (!clientDeployment) {
       toast.error("No client deployment found. Please try again later.");
       return;
     }
     const endpointLink =
-      (finalData?.clientDeployment as ClientDeployment)?.baseUrl +
+      (clientDeployment as ClientDeployment)?.baseUrl +
       "/" +
-      deployStep?.deployment?.stage?.toLowerCase() +
+      deployment?.stage?.toLowerCase() +
       "/docs.json";
 
-    if (!finalData?.clientDeployment) {
+    if (!clientDeployment) {
       toast.error("No client deployment found. Please try again later.");
       return;
     }
@@ -137,7 +129,7 @@ export const DeploymentsInfo = ({
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
-          clientDeploymentId: (finalData?.clientDeployment).id,
+          clientDeploymentId: (clientDeployment).id,
           endpointLink,
           setServerlessLogs: setServerlessLogs,
         });
@@ -145,7 +137,7 @@ export const DeploymentsInfo = ({
         const errorAttachment = {
           functionLink: endpointLink,
           serverlessLogs: logs,
-          deploymentInfo: finalData?.clientDeployment,
+          deploymentInfo: clientDeployment,
         };
 
         console.log("errorAttachment", errorAttachment);
@@ -182,27 +174,27 @@ export const DeploymentsInfo = ({
 
   const fetchLogs = () => {
     setShowLogsDialog(true);
-    setDeploymentLogs(deployStep?.logs);
+    setDeploymentLogs(logs[0]?.rawContent);
     setServerlessLogs(null);
     setCheckForErrors(true);
-    if (!finalData?.clientDeployment) {
+    if (!clientDeployment) {
       toast.error("No client deployment found.");
       return;
     }
     const endpointLink =
-      (finalData?.clientDeployment as ClientDeployment)?.baseUrl +
+      (clientDeployment as ClientDeployment)?.baseUrl +
       "/" +
-      deployStep?.deployment?.stage?.toLowerCase() +
+      deployment?.stage?.toLowerCase() +
       "/docs.json";
 
-    if (!finalData?.clientDeployment) {
+    if (!clientDeployment) {
       toast.error("No client deployment found. Please try again later.");
       return;
     }
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
-          clientDeploymentId: (finalData?.clientDeployment).id,
+          clientDeploymentId: (clientDeployment).id,
           endpointLink,
         });
         console.log("serverless logs", logs);
@@ -245,11 +237,11 @@ export const DeploymentsInfo = ({
     };
   }, []);
 
-  if (!finalData) {
+  if (!deployment) {
     return null;
   }
 
-  if (!finalData?.shouldBreak) {
+  if (!shouldBreak) {
     const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
       const secs = seconds % 60;
@@ -258,7 +250,7 @@ export const DeploymentsInfo = ({
 
     // Calculate progress percentage (assuming 2 minutes = 120 seconds)
     const progressPercentage =
-      finalData?.deployStep?.metadata?.progress?.percentage ??
+      deployment?.progress?.percentage ??
       Math.min(Math.floor((elapsedTime / 120) * 100), 95);
 
     return (
@@ -275,7 +267,7 @@ export const DeploymentsInfo = ({
             <h3 className="text-base font-medium text-gray-800">
               Deploying to{" "}
               <span className="font-semibold text-blue-600">
-                {deployStep?.deployment?.stage}
+                {deployment?.stage?.toUpperCase()}
               </span>{" "}
               environment
             </h3>
@@ -319,7 +311,7 @@ export const DeploymentsInfo = ({
               <span className="text-gray-500">Environment</span>
             </div>
             <div className="font-medium text-gray-800">
-              {deployStep?.deployment?.stage}
+              {deployment?.stage?.toUpperCase()}
             </div>
           </div>
 
@@ -329,7 +321,7 @@ export const DeploymentsInfo = ({
               <span className="text-gray-500">Branch</span>
             </div>
             <div className="font-medium text-gray-800 truncate">
-              {finalData?.clientDeployment?.branch || "main"}
+              {clientRequest?.prBranch || "main"}
             </div>
           </div>
 
@@ -338,13 +330,15 @@ export const DeploymentsInfo = ({
               <Rocket size={14} color="#2b7fff" />
               <span className="text-gray-500">Status</span>
             </div>
-            <div className="font-medium text-yellow-600">{deployStep?.progress?.step ?? deployStep?.status}</div>
+            <div className="font-medium text-yellow-600">
+              {deployment?.progress?.step ?? deployment?.status}
+            </div>
           </div>
         </div>
 
         <div className="text-xs text-gray-500 flex items-center gap-2">
           <Loader2 size={12} className="animate-spin" />
-          <span>{statusMessages[statusMessageIndex]}</span>
+          <span>{deployment?.statusDescription || statusMessages[statusMessageIndex]}</span>
         </div>
       </motion.div>
     );
@@ -359,9 +353,9 @@ export const DeploymentsInfo = ({
             <div
               className={cn(
                 "w-2 h-2 rounded-full",
-                deployStep.status === "failed"
+                deployment?.status === "failed"
                   ? "bg-red-500 animate-pulse"
-                  : deployStep.status === "success"
+                  : deployment?.status === "deployed"
                     ? "bg-green-500"
                     : "bg-yellow-500 animate-pulse"
               )}
@@ -373,14 +367,14 @@ export const DeploymentsInfo = ({
           <span
             className={cn(
               "text-xs font-medium px-2.5 py-1 rounded-full",
-              deployStep.status === "failed"
+              deployment?.status === "failed"
                 ? "bg-red-50 text-red-700"
-                : deployStep.status === "success"
+                : deployment?.status === "deployed"
                   ? "bg-green-50 text-green-700"
                   : "bg-yellow-50 text-yellow-700"
             )}
           >
-            {deployStep.status.toUpperCase()}
+            {deployment?.status?.toUpperCase()}
           </span>
         </div>
 
@@ -415,7 +409,7 @@ export const DeploymentsInfo = ({
               <div className="text-gray-500">Environment</div>
             </div>
             <div className="font-medium text-gray-900 mt-1">
-              {deployStep?.deployment?.stage || stage}
+              {deployment?.stage || stage}
             </div>
           </div>
 
@@ -425,12 +419,12 @@ export const DeploymentsInfo = ({
               <div className="text-gray-500">Duration</div>
             </div>
             <div className="font-medium text-gray-900 mt-1">
-              {prettyPrintDuration(deployStep?.startTime, deployStep?.endTime)}
+              {prettyPrintDuration(deployment?.startTime, deployment?.endTime)}
             </div>
           </div>
         </div>
 
-        {deployStep.status === "failed" && (
+        {deployment?.status === "failed" && (
           <div className="flex gap-2 mt-4">
             <Button
               variant="outline"
@@ -451,9 +445,9 @@ export const DeploymentsInfo = ({
           </div>
         )}
 
-        {deployStep.status === "success" && (
+        {deployment?.status === "deployed" && (
           <>
-            {deployStep?.deployment?.stage === DEPLOY_STAGE.STAGING ? (
+            {deployment?.stage === DEPLOY_STAGE.STAGING ? (
               <div className="text-xs text-gray-500">
                 <span className="font-medium text-gray-900">Staging </span>
                 environment is ready to be promoted to{" "}
@@ -467,7 +461,7 @@ export const DeploymentsInfo = ({
               </div>
             )}
             <div className="flex gap-2 mt-4">
-              {deployStep?.deployment?.stage === DEPLOY_STAGE.STAGING && (
+              {deployment?.stage === DEPLOY_STAGE.STAGING && (
                 <Button
                   variant="outline"
                   className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
@@ -477,7 +471,7 @@ export const DeploymentsInfo = ({
                   Deploy to Production
                 </Button>
               )}
-              {deployStep?.deployment?.stage === DEPLOY_STAGE.PROD && (
+              {deployment?.stage === DEPLOY_STAGE.PROD && (
                 <Button
                   variant="outline"
                   className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
@@ -491,7 +485,6 @@ export const DeploymentsInfo = ({
               )}
               <Button
                 onClick={() => {
-                  setDeploymentInfo(finalData?.clientDeployment);
                   handleRightCollapse(false);
                 }}
                 variant="default"
@@ -511,7 +504,6 @@ export const DeploymentsInfo = ({
         logs={deploymentLogs}
         serverlessLogs={serverlessLogs}
       />
-
     </>
   );
 };
@@ -527,7 +519,9 @@ const LogsDialog = ({
   logs: string;
   serverlessLogs: string | null;
 }) => {
-  const [activeTab, setActiveTab] = useState<'deployment' | 'serverless'>('deployment');
+  const [activeTab, setActiveTab] = useState<"deployment" | "serverless">(
+    "deployment"
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -543,13 +537,25 @@ const LogsDialog = ({
         </DialogHeader>
 
         <div className="mt-4">
-          <Tabs defaultValue="deployment" className="w-full" onValueChange={(value) => setActiveTab(value as 'deployment' | 'serverless')}>
+          <Tabs
+            defaultValue="deployment"
+            className="w-full"
+            onValueChange={(value) =>
+              setActiveTab(value as "deployment" | "serverless")
+            }
+          >
             <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="deployment" className="data-[state=active]:bg-white">
+              <TabsTrigger
+                value="deployment"
+                className="data-[state=active]:bg-white"
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 Deployment Logs
               </TabsTrigger>
-              <TabsTrigger value="serverless" className="data-[state=active]:bg-white">
+              <TabsTrigger
+                value="serverless"
+                className="data-[state=active]:bg-white"
+              >
                 <PackageIcon className="w-4 h-4 mr-2" />
                 Serverless Logs
               </TabsTrigger>
@@ -564,20 +570,33 @@ const LogsDialog = ({
                 ) : (
                   <div className="w-full overflow-hidden">
                     <pre className="bg-neutral-900 text-neutral-200 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all max-h-[50vh] w-full overflow-y-auto">
-                      {logs.split('\n').map((line: string, index: number) => {
+                      {logs.split("\n").map((line: string, index: number) => {
                         // Try to parse timestamp if it exists in the line
-                        const timestampMatch = line.match(/^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\]/);
+                        const timestampMatch = line.match(
+                          /^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\]/
+                        );
                         if (timestampMatch) {
                           const timestamp = timestampMatch[1];
                           const relativeTime = dayjs(timestamp).fromNow();
                           return (
-                            <div key={index} className="flex items-start gap-2 break-all">
-                              <span className="text-gray-400 shrink-0">{relativeTime}</span>
-                              <span className="break-all">{line.replace(timestampMatch[0], '')}</span>
+                            <div
+                              key={index}
+                              className="flex items-start gap-2 break-all"
+                            >
+                              <span className="text-gray-400 shrink-0">
+                                {relativeTime}
+                              </span>
+                              <span className="break-all">
+                                {line.replace(timestampMatch[0], "")}
+                              </span>
                             </div>
                           );
                         }
-                        return <div key={index} className="break-all">{line}</div>;
+                        return (
+                          <div key={index} className="break-all">
+                            {line}
+                          </div>
+                        );
                       })}
                     </pre>
                   </div>

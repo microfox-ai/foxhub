@@ -87,6 +87,7 @@ export const DeploymentsInfo = ({
   );
   const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
   const { finalData, deployStep, clientRequest } = useDeployStatus({
+    runId,
     stage,
     initialClientDeployment: clientDeployment ?? undefined,
   });
@@ -359,9 +360,9 @@ export const DeploymentsInfo = ({
             <div
               className={cn(
                 "w-2 h-2 rounded-full",
-                deployStep.status === "failed"
+                deployStep?.status === "failed"
                   ? "bg-red-500 animate-pulse"
-                  : deployStep.status === "success"
+                  : deployStep?.status === "success"
                     ? "bg-green-500"
                     : "bg-yellow-500 animate-pulse"
               )}
@@ -373,14 +374,14 @@ export const DeploymentsInfo = ({
           <span
             className={cn(
               "text-xs font-medium px-2.5 py-1 rounded-full",
-              deployStep.status === "failed"
+              deployStep?.status === "failed"
                 ? "bg-red-50 text-red-700"
-                : deployStep.status === "success"
+                : deployStep?.status === "success"
                   ? "bg-green-50 text-green-700"
                   : "bg-yellow-50 text-yellow-700"
             )}
           >
-            {deployStep.status.toUpperCase()}
+            {deployStep?.status?.toUpperCase()}
           </span>
         </div>
 
@@ -430,7 +431,7 @@ export const DeploymentsInfo = ({
           </div>
         </div>
 
-        {deployStep.status === "failed" && (
+        {deployStep?.status === "failed" && (
           <div className="flex gap-2 mt-4">
             <Button
               variant="outline"
@@ -451,7 +452,7 @@ export const DeploymentsInfo = ({
           </div>
         )}
 
-        {deployStep.status === "success" && (
+        {deployStep?.status === "success" && (
           <>
             {deployStep?.deployment?.stage === DEPLOY_STAGE.STAGING ? (
               <div className="text-xs text-gray-500">

@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         const deleteSls = commitMessage.includes("DELETE");
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&stage=${stage}&delete=${deleteSls}`
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&sha=${sha}&stage=${stage}&delete=${deleteSls}`
         );
         if (response.ok) {
           console.log(deleteSls ? "removing deployment" : "deployment triggered");

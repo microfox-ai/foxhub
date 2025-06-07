@@ -1,7 +1,6 @@
 import { ClientDeployment, ClientRequest, DEPLOY_STAGE } from "@prisma/client";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import useSWR from "swr";
 import useSWRSubscription from "swr/subscription";
 import { useTaskInstanceMetaContext } from "./TaskInstanceMetaProvider";
 import { DeployStep } from "@/server/convertfox/types";
@@ -49,9 +48,11 @@ interface SSECompleteData {
 }
 
 export const useDeployStatus = ({
+  runId,
   stage,
   initialClientDeployment,
 }: {
+  runId: string;
   stage: DEPLOY_STAGE;
   initialClientDeployment?: ClientDeployment;
 }) => {
@@ -65,31 +66,29 @@ export const useDeployStatus = ({
 
   const initialData = useMemo(() => {
     return {
-      shouldBreak: taskInstanceMeta?.deployStep?.shouldBreak ??
-        (initialClientDeployment?.stage === stage && taskInstanceMeta?.deployStep?.status !== "pending") ??
+      shouldBreak:
+        taskInstanceMeta?.deployStep?.shouldBreak ??
+        (initialClientDeployment?.stage === stage &&
+          taskInstanceMeta?.deployStep?.status !== "pending") ??
         false,
       deployStep: { ...taskInstanceMeta?.deployStep },
       clientDeployment: initialClientDeployment,
     };
-  }, [taskInstanceMeta, initialClientDeployment, stage]);
+  }, [taskInstanceMeta, initialClientDeployment]);
 
   const { selectedRequest: clientRequest } = useClientProject();
 
   // Real-time deployment status subscription using SSE
   const { data: deploymentData, error: sseError } = useSWRSubscription(
-    ["deployment-status-sse", requestParamId, stage],
-    ([_, clientRequestId, stage], { next }) => {
-      if (!clientRequestId || !stage) {
+    ["deployment-status-sse", requestParamId, runId],
+    ([_, clientRequestId, runId], { next }) => {
+      if (!clientRequestId || !runId) {
         return;
       }
-      // if (taskInstanceMeta?.deployStep?.deployment?.stage === stage && taskInstanceMeta?.deployStep?.status !== "pending") {
-      //   return () => {
-      //     console.log("🔌 Closing SSE connection as deployment already exists");
-      //   };
-      // }
-      const sseUrl = `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/events/${clientRequestId}/${stage?.toLowerCase()}`;
-      console.log(`🔌 Establishing SSE connection to: ${sseUrl}`);
 
+      const sseUrl = `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/events/${clientRequestId}/${stage?.toLowerCase()}/${runId}`;
+      console.log(`🔌 Establishing SSE connection to: ${sseUrl}`);
+      console.log("🔌 runId:", runId);
       const eventSource = new EventSource(sseUrl);
 
       eventSource.addEventListener("open", (event: MessageEvent) => {

@@ -115,6 +115,7 @@ export const DeployStatus = () => {
     );
     const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
     const { deployStep } = useDeployStatus({
+        runId: taskInstanceMeta?.deployStep?.runId?.toString() || "",
         stage: taskInstanceMeta?.deployStep?.deployment?.stage as DEPLOY_STAGE || DEPLOY_STAGE.STAGING,
         initialClientDeployment: clientDeployment ?? undefined,
     });
@@ -149,7 +150,7 @@ export const DeployStatus = () => {
         deployStep.endTime || ""
     );
 
-    const status = deployStep.status?.toLowerCase();
+    const status = deployStep?.status?.toLowerCase();
     const statusColors = getStatusColor(status || "");
     const StatusIcon = () => getStatusIcon(status || "");
 

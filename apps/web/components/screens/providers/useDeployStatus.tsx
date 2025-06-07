@@ -1,94 +1,213 @@
-import { ClientDeployment, ClientRequest, DEPLOY_STAGE } from "@prisma/client";
+import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import useSWR from "swr";
 import useSWRSubscription from "swr/subscription";
 import { useTaskInstanceMetaContext } from "./TaskInstanceMetaProvider";
-import { DeployStep } from "@/server/convertfox/types";
-import { useClientProject } from "./ClientProjectProvider";
 
-interface SSEStatusData {
+interface DeploymentLogData {
+  id: string;
+  logType: string;
+  fileName: string;
+  filePath: string;
+  rawContent: string;
+  fileSize: number;
+  createdAt: string;
+  lastModified: string;
+}
+
+// Updated interface to match the new standardized backend format
+interface DeploymentData {
+  id: string;
   clientRequestId: string;
+  sha: string;
   stage: string;
   status: string;
   statusDescription: string;
+  startTime?: string;
+  endTime?: string;
+  branchName?: string;
+  prUrl?: string;
   progress: {
     percentage: number;
     step: string;
     isComplete: boolean;
   };
-  startTime?: string;
-  endTime?: string;
-  pid?: string;
-  pm2Id?: string;
+  duration?: number;
+  durationUnit?: string;
+  resources?: {
+    peakCpu?: number;
+    peakMemory?: number;
+    finalSize?: number;
+  };
   error?: any;
   lastUpdated: string;
-  clientDeployment: ClientDeployment;
+  pid?: string;
+  pm2Id?: string;
+  clientDeployment?: ClientDeployment;
   logs?: string;
+}
+
+interface DeploymentApiResponse {
+  success: boolean;
+  data: {
+    deployment: DeploymentData;
+    logs: DeploymentLogData[];
+    sha: string;
+    logCount: number;
+  };
+}
+
+// SSE events now return the same standardized format
+interface SSEStatusData {
+  deployment: DeploymentData;
+  stage: DEPLOY_STAGE;
 }
 
 interface SSEProgressData {
-  percentage: number;
-  step: string;
-  isComplete: boolean;
-  status: string;
-  clientDeployment: ClientDeployment;
-  logs?: string;
-  stage: string;
+  deployment: DeploymentData;
+  stage: DEPLOY_STAGE;
 }
 
 interface SSECompleteData {
-  status: string;
-  success: boolean;
-  message: string;
-  endTime: string;
-  duration?: number;
-  clientDeployment: ClientDeployment;
-  logs?: string;
-  stage: string;
+  deployment: DeploymentData;
+  stage: DEPLOY_STAGE;
 }
 
 export const useDeployStatus = ({
   runId,
   stage,
-  initialClientDeployment,
 }: {
   runId: string;
   stage: DEPLOY_STAGE;
-  initialClientDeployment?: ClientDeployment;
 }) => {
   const params = useParams<{
     project_id?: string;
     request_id?: string;
   }>();
   const requestParamId = params?.request_id;
-  const { setDeploymentInfo, updateTaskInstanceMeta, taskInstanceMeta } =
-    useTaskInstanceMetaContext();
+  const { deploymentInfo, setDeploymentInfo } = useTaskInstanceMetaContext();
 
-  const initialData = useMemo(() => {
-    return {
-      shouldBreak:
-        taskInstanceMeta?.deployStep?.shouldBreak ??
-        (initialClientDeployment?.stage === stage &&
-          taskInstanceMeta?.deployStep?.status !== "pending") ??
-        false,
-      deployStep: { ...taskInstanceMeta?.deployStep },
-      clientDeployment: initialClientDeployment,
-    };
-  }, [taskInstanceMeta, initialClientDeployment]);
+  const fallbackDeployment: DeploymentData = {
+    id: new Date().getTime().toString(),
+    clientRequestId: requestParamId || "",
+    sha: runId,
+    stage: stage,
+    status: "connecting",
+    statusDescription: "Connecting to deployment server",
+    startTime: new Date().toISOString(),
+    progress: {
+      percentage: 80,
+      step: "connecting",
+      isComplete: false,
+    },
+    lastUpdated: new Date().toISOString(),
+    resources: {
+      peakCpu: 0,
+      peakMemory: 0,
+      finalSize: 0,
+    },
+    error: undefined,
+    pid: "",
+    pm2Id: "",
+    clientDeployment: undefined,
+    logs: "",
+  }
 
-  const { selectedRequest: clientRequest } = useClientProject();
-
-  // Real-time deployment status subscription using SSE
-  const { data: deploymentData, error: sseError } = useSWRSubscription(
-    ["deployment-status-sse", requestParamId, runId],
-    ([_, clientRequestId, runId], { next }) => {
-      if (!clientRequestId || !runId) {
-        return;
+  // STEP 1: First try to get deployment by SHA using simple API
+  const { data: deploymentApiData, error: apiError } = useSWR(
+    runId ? [`deployment-status`, runId] : null,
+    async ([_, sha]) => {
+      console.log(`🔍 Attempting to fetch deployment by SHA: ${sha}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/${sha}`
+      );
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log(`❌ Deployment not found for SHA: ${sha}`);
+          return null; // Deployment not found, will need SSE
+        }
+        throw new Error('Failed to fetch deployment status');
       }
+      const data = await response.json() as DeploymentApiResponse;
+      console.log(`✅ Found deployment via API:`, data.data.deployment);
+      return data;
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 0,
+    }
+  );
+
+  // STEP 2: Determine if deployment is finalized
+  const isDeploymentFinalized = useMemo(() => {
+    if (!deploymentApiData?.data?.deployment) return false;
+    
+    const deployment = deploymentApiData.data.deployment;
+    const isStatusFinalized = deployment.status === 'deployed' || deployment.status === 'failed';
+    const isProgressComplete = deployment.progress?.isComplete === true;
+    
+    console.log(`📊 Checking if deployment is finalized:`, {
+      status: deployment.status,
+      isStatusFinalized,
+      isProgressComplete,
+      shouldBreak: isStatusFinalized || isProgressComplete
+    });
+    
+    return isStatusFinalized || isProgressComplete;
+  }, [deploymentApiData]);
+
+  // STEP 3: Determine if we should start SSE
+  const shouldStartSSE = useMemo(() => {
+    // Don't start SSE if API call failed
+    if (apiError && apiError.message !== 'Failed to fetch deployment status') {
+      console.log(`❌ API error, not starting SSE:`, apiError.message);
+      return false;
+    }
+    
+    // Start SSE if deployment not found (404)
+    if (!deploymentApiData) {
+      console.log(`🔌 Deployment not found, will start SSE`);
+      return true;
+    }
+    
+    // Start SSE if deployment found but not finalized
+    if (!isDeploymentFinalized) {
+      console.log(`🔌 Deployment found but not finalized, will start SSE`);
+      return true;
+    }
+    
+    // Don't start SSE if deployment is finalized
+    console.log(`✅ Deployment is finalized, skipping SSE`);
+    return false;
+  }, [deploymentApiData, isDeploymentFinalized, apiError]);
+
+  // STEP 4: Start SSE only if needed
+  const { data: sseData, error: sseError } = useSWRSubscription(
+    shouldStartSSE && requestParamId && runId ? 
+      ["deployment-status-sse", requestParamId, runId] : 
+      null,
+    ([_, clientRequestId, runId], { next }) => {
+      if (!clientRequestId) {
+        return () => {
+          console.log("🔌 Closing SSE connection: clientRequestId is not defined");
+        };
+      }
+
+      if (!runId) {
+        return () => {
+          console.log("🔌 Closing SSE connection: runId is not defined");
+        };
+      }
+
+      console.log("🔌 Starting SSE for ongoing deployment:", {
+        clientRequestId,
+        runId,
+      });
 
       const sseUrl = `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployment-status/events/${clientRequestId}/${stage?.toLowerCase()}/${runId}`;
       console.log(`🔌 Establishing SSE connection to: ${sseUrl}`);
-      console.log("🔌 runId:", runId);
       const eventSource = new EventSource(sseUrl);
 
       eventSource.addEventListener("open", (event: MessageEvent) => {
@@ -103,42 +222,10 @@ export const useDeployStatus = ({
           const statusData: SSEStatusData = JSON.parse(event.data);
           console.log("📊 Received deployment status update:", statusData);
 
-          // Create deployStep format compatible with the context
-          const deployStepData: DeployStep = {
-            ...taskInstanceMeta?.deployStep,
-            startTime: statusData.startTime,
-            endTime: statusData.endTime,
-            status:
-              statusData.status === "deployed"
-                ? "success"
-                : statusData.status === "failed"
-                  ? "failed"
-                  : "pending",
-            message: statusData.statusDescription,
-            logs: statusData.logs,
-            metadata: {
-              ...taskInstanceMeta?.deployStep?.metadata,
-              progress: statusData.progress,
-              pid: statusData.pid,
-              pm2Id: statusData.pm2Id,
-              stage: statusData.stage,
-              lastUpdated: statusData.lastUpdated,
-            },
-            shouldBreak:
-              statusData.status === "deployed" ||
-              statusData.status === "failed",
-            deployment: {
-              stage: statusData.stage?.toUpperCase(),
-              type: "deployment",
-              id: statusData.clientRequestId,
-            },
-          };
+          // SSE now returns the same format as API, no conversion needed
           next(null, {
-            deployStep: deployStepData,
-            clientDeployment: statusData.clientDeployment,
-            shouldBreak:
-              statusData.status === "deployed" ||
-              statusData.status === "failed",
+            deployment: statusData.deployment,
+            shouldBreak: statusData.deployment.status === "deployed" || statusData.deployment.status === "failed",
           });
         } catch (error) {
           console.error("❌ Error parsing SSE status data:", error);
@@ -151,32 +238,10 @@ export const useDeployStatus = ({
           const progressData: SSEProgressData = JSON.parse(event.data);
           console.log("📈 Received deployment progress update:", progressData);
 
-          // Create updated deployStep with new progress
-          const updatedDeployStep: DeployStep = {
-            ...taskInstanceMeta?.deployStep,
-            status:
-              progressData.status === "deployed"
-                ? "success"
-                : progressData.status === "failed"
-                  ? "failed"
-                  : "pending",
-            logs: progressData.logs,
-            metadata: {
-              ...taskInstanceMeta?.deployStep?.metadata,
-              progress: progressData,
-              lastUpdated: new Date().toISOString(),
-            },
-            deployment: {
-              stage: progressData.stage?.toUpperCase(),
-              type: "deployment",
-              id: progressData.clientDeployment?.id,
-            },
-            shouldBreak: progressData.isComplete,
-          };
+          // SSE now returns the same format as API, no conversion needed
           next(null, {
-            deployStep: updatedDeployStep,
-            clientDeployment: progressData.clientDeployment,
-            shouldBreak: progressData.isComplete,
+            deployment: progressData.deployment,
+            shouldBreak: progressData.deployment.progress?.isComplete || false,
           });
         } catch (error) {
           console.error("❌ Error parsing SSE progress data:", error);
@@ -188,28 +253,9 @@ export const useDeployStatus = ({
           const completeData: SSECompleteData = JSON.parse(event.data);
           console.log("✅ Deployment completed:", completeData);
 
-          const finalDeployStep: DeployStep = {
-            ...taskInstanceMeta?.deployStep,
-            endTime: completeData.endTime,
-            status: completeData.success ? "success" : "failed",
-            message: completeData.message,
-            logs: completeData.logs,
-            metadata: {
-              ...taskInstanceMeta?.deployStep?.metadata,
-              duration: completeData.duration,
-              finalStatus: completeData.status,
-              lastUpdated: completeData.endTime,
-            },
-            deployment: {
-              stage: completeData.stage?.toUpperCase(),
-              type: "deployment",
-              id: completeData.clientDeployment.id,
-            },
-            shouldBreak: true,
-          };
+          // SSE now returns the same format as API, no conversion needed
           next(null, {
-            deployStep: finalDeployStep,
-            clientDeployment: completeData?.clientDeployment,
+            deployment: completeData.deployment,
             shouldBreak: true,
           });
         } catch (error) {
@@ -246,7 +292,6 @@ export const useDeployStatus = ({
         next(new Error("SSE connection failed"));
       };
 
-      // Return cleanup function
       return () => {
         console.log("🔌 Closing SSE connection for deployment status");
         eventSource.close();
@@ -254,28 +299,76 @@ export const useDeployStatus = ({
     }
   );
 
+  // STEP 5: Determine final data to return
+  const finalDeploymentData = useMemo(() => {
+    // If we have API data and it's finalized, use API data (no SSE needed)
+    if (deploymentApiData?.data?.deployment && isDeploymentFinalized) {
+      console.log(`✅ Using API data (deployment finalized)`);
+      
+      // For API data, merge the separate logs array into the deployment object
+      const deployment = {
+        ...deploymentApiData.data.deployment,
+        logs: deploymentApiData.data.logs, // Structured logs from API
+      };
+      
+      return {
+        deployment,
+        shouldBreak: true,
+        logCount: deploymentApiData.data.logCount,
+      };
+    }
+    
+    // If SSE is active and we have SSE data, use SSE data
+    if (sseData?.deployment) {
+      console.log(`🔌 Using SSE data (real-time updates)`);
+      return {
+        deployment: sseData.deployment, // Already includes logs as raw string
+        shouldBreak: sseData.shouldBreak,
+        logCount: 0, // SSE doesn't provide log count
+      };
+    }
+    
+    // If we have API data but it's not finalized, still return it while SSE connects
+    if (deploymentApiData?.data?.deployment) {
+      console.log(`📊 Using API data (not finalized, waiting for SSE)`);
+      
+      const deployment = {
+        ...deploymentApiData.data.deployment,
+        logs: deploymentApiData.data.logs, // Structured logs from API
+      };
+      
+      return {
+        deployment,
+        shouldBreak: false,
+        logCount: deploymentApiData.data.logCount,
+      };
+    }
+
+    return null;
+  }, [deploymentApiData, sseData, isDeploymentFinalized]);
+
   useEffect(() => {
     const updateMetaAndInfo = async () => {
-      if (deploymentData?.deployStep) {
-        await updateTaskInstanceMeta({
-          ...taskInstanceMeta,
-          deployStep: deploymentData.deployStep,
-        });
+      if (finalDeploymentData?.deployment?.clientDeployment) {
         setDeploymentInfo((prev: ClientDeployment) => ({
           ...prev,
-          ...deploymentData.clientDeployment,
+          ...finalDeploymentData.deployment.clientDeployment,
         }));
       }
     };
     updateMetaAndInfo();
-  }, [deploymentData]);
+  }, [finalDeploymentData, setDeploymentInfo]);
 
   return {
-    isLoading: !deploymentData && !sseError && !deploymentData?.shouldBreak,
+    isLoading: (!deploymentApiData && !apiError) || (shouldStartSSE && !sseData && !sseError),
     isValidating: false,
-    deployStep: deploymentData?.deployStep || taskInstanceMeta?.deployStep,
-    clientRequest,
-    finalData: deploymentData || initialData,
-    sseError,
+    deployment: finalDeploymentData?.deployment || fallbackDeployment,
+    clientDeployment: finalDeploymentData?.deployment?.clientDeployment || deploymentInfo,
+    shouldBreak: finalDeploymentData?.shouldBreak,
+    logs: finalDeploymentData?.deployment?.logs,
+    logCount: finalDeploymentData?.logCount || 0,
+    error: apiError || sseError,
+    isFinalized: isDeploymentFinalized,
+    usingSSE: shouldStartSSE,
   };
 };

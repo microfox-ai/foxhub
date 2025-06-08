@@ -1,3 +1,4 @@
+import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
@@ -160,24 +161,49 @@ async function getPackagesByStatus(status: string) {
   });
 }
 
-async function getAllPackages() {
+async function getAllPackages({
+  platformType,
+  status,
+  select,
+  statuses,
+}: {
+  platformType?: string;
+  status?: string;
+  select?: string;
+  statuses?: PackageStatus[];
+}): Promise<any[]> {
   console.log(`🔍 Getting all packages...`);
 
-  const { data, error } = await supabase
+  const query = supabase
     .from(PACKAGE_INFO_TABLE)
     .select(
-      "package_name, package_title, platform_type, status, auth_type, updated_at"
-    )
-    .order("package_name");
+      select
+        ? `package_name, package_title, platform_type, status, auth_type, updated_at ${select}`
+        : "package_name, package_title, platform_type, status, auth_type, updated_at"
+    );
+
+  if (platformType) {
+    query.eq("platform_type", platformType);
+  }
+
+  if (status) {
+    query.eq("status", status);
+  }
+
+  if (statuses) {
+    query.in("status", statuses);
+  }
+
+  const { data, error } = await query.order("package_name");
 
   if (error) {
     console.error("❌ Error getting all packages:", error);
-    return;
+    return [];
   }
 
   if (!data || data.length === 0) {
     console.log("ℹ️  No packages found");
-    return;
+    return [];
   }
 
   console.log(`\n✅ Found ${data.length} total packages:`);
@@ -186,6 +212,8 @@ async function getAllPackages() {
       `${index + 1}. ${pkg.package_name} (${pkg.platform_type}/${pkg.status}) - ${pkg.auth_type || "none"}`
     );
   });
+
+  return data;
 }
 
 export const PackageInfoHelper = {

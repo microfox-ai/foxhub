@@ -47,6 +47,7 @@ export enum PackageStatus {
   SEMISTABLE = "semiStable",
   PARTIAL = "partial",
   OAUTHCONNECTOR = "oauthConnector",
+  WEBHOOKCONNECTOR = "webhookConnector",
   INTERNAL = "internal",
 }
 

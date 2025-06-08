@@ -1,5 +1,7 @@
 import { Constructor, Package } from "@/components/screens/Chat/message/types";
+import { PackageStatus } from "@/server/types";
 import { prisma } from "@/prisma/prisma";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { NextResponse } from "next/server";
 
 // Base URL for package data
@@ -121,73 +123,15 @@ export async function GET(request: Request) {
       cacheOptions
     )) as any;
 
-    const allPackages: string[] = packagesList.stablePackages
-      .concat(packagesList.externalPackages)
-      .concat(packagesList.semiStablePackages);
-    // Fetch package info for each package
-    const packagePromises = allPackages.map(async (packagePath) => {
-      try {
-        // Fetch package-info.json
-        const packageInfo = (await fetchWithCache(
-          `${PACKAGE_BASE_URL}/${encodeURIComponent(packagePath)}/package-info.json`,
-          cacheOptions
-        )) as Package;
-
-        // Fetch package.json to get version and description
-        let version = "-";
-        let description = "No description available";
-        let _packageJson: any = {};
-        try {
-          const packageJson = (await fetchWithCache(
-            `${PACKAGE_BASE_URL}/${encodeURIComponent(packagePath)}/${packagePath.includes("@ext_") ? "@ext_" : ""}package.json`,
-            cacheOptions
-          )) as PackageJson;
-          version = packageJson.version || "-";
-          description = packageJson.description || "No description available";
-        } catch (error) {
-          console.warn(
-            `Failed to fetch package.json for ${packagePath}:`,
-            error
-          );
-          // Use version from package-info.json if available
-          version = "-";
-        }
-
-        // Find the first constructor with oauth2 or apiKey auth
-        const constructorName = findAuthConstructor(packageInfo.constructors);
-
-        // Get client secrets count
-        const inUse = await getClientSecretsCount(
-          packageInfo.name,
-          constructorName
-        );
-
-        // Format the package data
-        return {
-          ...packageInfo,
-          name: packageInfo.name,
-          status: getStatusDisplay(packageInfo.status),
-          version: version,
-          description: packageInfo.description || description,
-          installs: "Coming Soon",
-          inUse: inUse,
-        } as FormattedPackageData;
-      } catch (error) {
-        console.error(`Error fetching package info for ${packagePath}:`, error);
-        // Return a default object for failed packages
-        return {
-          name: packagePath.split("/").pop() || packagePath,
-          status: "ERROR",
-          version: "-",
-          description: "No description available",
-          installs: "Coming Soon",
-          inUse: "-",
-        } as FormattedPackageData;
-      }
+    const packages = await PackageInfoHelper.getAllPackages({
+      statuses: [
+        PackageStatus.STABLE,
+        PackageStatus.SEMISTABLE,
+        PackageStatus.EXTERNAL,
+      ],
     });
 
-    // Wait for all package info to be fetched
-    const packages = await Promise.all(packagePromises);
+    const packageNames = packages?.map((pkg: any) => pkg.package_name);
 
     // Return the formatted data
     return NextResponse.json(

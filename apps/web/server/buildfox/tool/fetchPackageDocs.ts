@@ -1,30 +1,26 @@
+import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
 import {
-  fetchGithubJson,
-  fetchGithubText,
   fetchPackageInfo,
   fetchPackageReadme,
   fetchText,
 } from "@/server/convertfox/gitFetchers";
 import {
-  codeTemplateType,
   CodeTemplateType,
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
 import { models } from "@/server/models";
 import { ClientRequest, ClientSecret } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { generateObject, generateText, tool } from "ai";
-import { z } from "zod";
-import { semanticFunctionSearch } from "./functionSearch";
+import { generateText, tool } from "ai";
 import dedent from "dedent";
-import { baseFilePrompt } from "../prompts/basePrompt";
-import { envsPrompt } from "../prompts/envsPrompt";
-import { type } from "os";
-import { fetchTemplateDir, readAllGenFilesList } from "./writeToFile";
 import fs from "fs/promises";
 import path from "path";
+import { z } from "zod";
+import { baseFilePrompt } from "../prompts/basePrompt";
+import { envsPrompt } from "../prompts/envsPrompt";
 import { helperFilesContext } from "../prompts/helperFilesContext";
-import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
+import { semanticFunctionSearch } from "./functionSearch";
+import { fetchTemplateDir, readAllGenFilesList } from "./writeToFile";
 
 async function fetchGithubReadMe(
   owner: string,

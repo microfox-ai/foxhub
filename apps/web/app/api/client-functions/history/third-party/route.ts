@@ -2,6 +2,7 @@ import { prisma } from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { MicrofoxUsagePricing } from "@microfox/usage-pricing";
 import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 
 //export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -61,13 +62,14 @@ export async function GET(req: NextRequest) {
         return packageInfo;
       })
     );
+    //const packageInfos = await PackageInfoHelper.getPackageInfos(uniquePackages);
     // TODO: fetch & attach package Infos.
 
     return NextResponse.json({
       results: usage.data
         ?.filter((usage) => usage != undefined)
         .map((usage) => {
-          const packageInfo = packageInfos.find(
+          const packageInfo = packageInfos?.find(
             (packageInfo) =>
               packageInfo?.name === fullPackageName(usage?.package)
           );

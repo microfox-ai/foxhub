@@ -41,3 +41,6 @@ yarn-error.log*
 .flaskenv*
 !.env.project
 !.env.vault
+
+# cron logs
+apps/cron/logs/*

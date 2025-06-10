@@ -1,0 +1,16 @@
+{
+  "crons": [],
+  "imports": [
+    {
+      "vercelJsonPath": "apps/web/vercel.json",
+      "baseUrl": "http://localhost:8000",
+      "description": "Imported from web app vercel.json",
+      "timeout": 300000
+    }
+  ],
+  "settings": {
+    "defaultTimeout": 300000,
+    "maxConcurrentExecutions": 10,
+    "executionCleanupDelay": 60000
+  }
+}

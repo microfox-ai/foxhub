@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import cronRoutes from './routes/cron.routes';
 
 const app = express();
-const PORT = 9001;
+const PORT = 8003;
 const NODE_ENV = 'production';
 
 // Middleware
@@ -44,15 +44,25 @@ app.get('/', (req, res) => {
     status: 'running',
     timestamp: new Date().toISOString(),
     endpoints: {
-      health: '/health',
-      status: '/api/cron/status',
-      jobs: '/api/cron/jobs',
-      trigger: 'POST /api/cron/trigger',
-      control: 'POST /api/cron/control',
-      reload: 'POST /api/cron/reload',
-      config: 'PUT /api/cron/config',
-      shutdown: 'POST /api/cron/shutdown'
+      health: 'GET /health',
+      status: 'GET /api/cron/status',
+      jobs: 'GET /api/cron/jobs',
+      jobStatus: 'GET /api/cron/jobs/:jobId',
+      trigger: 'GET /api/cron/trigger/:jobId or GET /api/cron/trigger?index=0',
+      start: 'GET /api/cron/start (all) or GET /api/cron/start/:jobId',
+      stop: 'GET /api/cron/stop (all) or GET /api/cron/stop/:jobId',
+      reload: 'GET /api/cron/reload',
+      logs: 'GET /api/cron/logs?limit=100&level=info',
+      logsCleanup: 'GET /api/cron/logs/cleanup',
+      logsClear: 'GET /api/cron/logs/clear'
     },
+    features: [
+      'All routes are GET-based for easy browser/curl access',
+      'Built-in logging with auto-cleanup',
+      'Concurrent execution support',
+      'Vercel.json import support',
+      'Real-time monitoring'
+    ],
     documentation: 'See README.md for detailed usage instructions'
   });
 });

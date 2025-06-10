@@ -120,7 +120,7 @@ jobs:
             cd "$MAIN_PATH"
             
             export NODE_ENV=production
-            export PORT=9001
+            export PORT=8003
 
             # Check if the cron process exists
             if pm2 list | grep -q "foxhub-cron" ; then

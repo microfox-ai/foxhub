@@ -126,7 +126,7 @@ Your `vercel.json` should have cron jobs in standard Vercel format:
    npm start
    ```
 
-The service will run on port 9001 and load configuration from the repository root `cron.json`. No environment variables are required - the service is completely self-contained.
+The service will run on port 8003 and load configuration from the repository root `cron.json`. No environment variables are required - the service is completely self-contained.
 
 ## API Endpoints
 
@@ -156,12 +156,12 @@ POST /api/cron/shutdown         # Graceful shutdown
 ### Manual Job Triggering
 ```bash
 # Trigger by job ID
-curl -X POST http://localhost:9001/api/cron/trigger \
+curl -X POST http://localhost:8003/api/cron/trigger \
   -H "Content-Type: application/json" \
   -d '{"jobId": "cron-job-0"}'
 
 # Trigger by job index
-curl -X POST http://localhost:9001/api/cron/trigger \
+curl -X POST http://localhost:8003/api/cron/trigger \
   -H "Content-Type: application/json" \
   -d '{"jobIndex": 0}'
 ```
@@ -169,17 +169,17 @@ curl -X POST http://localhost:9001/api/cron/trigger \
 ### Job Control
 ```bash
 # Stop all jobs
-curl -X POST http://localhost:9001/api/cron/control \
+curl -X POST http://localhost:8003/api/cron/control \
   -H "Content-Type: application/json" \
   -d '{"action": "stop"}'
 
 # Start specific job
-curl -X POST http://localhost:9001/api/cron/control \
+curl -X POST http://localhost:8003/api/cron/control \
   -H "Content-Type: application/json" \
   -d '{"action": "start", "jobId": "cron-job-0"}'
 
 # Restart service (reload config)
-curl -X POST http://localhost:9001/api/cron/control \
+curl -X POST http://localhost:8003/api/cron/control \
   -H "Content-Type: application/json" \
   -d '{"action": "restart"}'
 ```
@@ -222,7 +222,7 @@ The service consists of:
 ## Configuration
 
 The service is completely environment-free and runs with these hardcoded settings:
-- **Port**: 9001 (fixed)
+- **Port**: 8003 (fixed)
 - **Mode**: Production (always)
 - **CORS**: Allow all origins (`*`)
 - **Config Path**: Repository root `cron.json` (fixed)

@@ -73,6 +73,9 @@ export async function updateLambdaEnvironmentVariables({
   }
 }
 
+export const AWS_LAMBDA_LOG_GROUP_PREFIX = "/aws/lambda/";
+
+export const AWS_LAMBDA_DEFAULT_REGION = "us-east-1";
 /**
  * Fetches logs from a Lambda function
  * @param params GetLambdaLogsParams object containing function details and log parameters

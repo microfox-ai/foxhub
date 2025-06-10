@@ -101,6 +101,7 @@ const PublishTab = () => {
     const [activeTab, setActiveTab] = React.useState("details");
     const [initialValues, setInitialValues] = React.useState<FormValues | null>(null);
     const [showEnvDialog, setShowEnvDialog] = React.useState(false);
+    const [isPublishing, setIsPublishing] = React.useState(false);
 
     const publishTabs = [
         {
@@ -188,7 +189,7 @@ const PublishTab = () => {
     }, [shardPage, form]);
 
     const handleStartPublishing = async () => {
-
+        setIsPublishing(true);
         try {
             const emptyShardPage = {
                 title: selectedRequest?.title,
@@ -223,6 +224,8 @@ const PublishTab = () => {
         } catch (error) {
             console.error("Error starting publishing workflow:", error);
             toast.error("Failed to start publishing workflow. Please try again.");
+        } finally {
+            setIsPublishing(false);
         }
     };
 
@@ -359,8 +362,16 @@ const PublishTab = () => {
                     <Button
                         onClick={handleStartPublishing}
                         className="px-8 py-2 text-base font-semibold"
+                        disabled={isPublishing}
                     >
-                        Start Publishing
+                        {isPublishing ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Starting Publishing...
+                            </div>
+                        ) : (
+                            "Start Publishing"
+                        )}
                     </Button>
                 </div>
             </div>
@@ -404,7 +415,7 @@ const PublishTab = () => {
                                         className="w-full px-8 py-2 text-base font-semibold"
                                         onClick={form.handleSubmit(onSubmit)}
                                     >
-                                        {saving ? "Saving..." : "Save Changes"}
+                                        {saving ? "Saving..." : shardPage?.id ? "Save Changes" : "Create Shard"}
                                     </Button>
                                 </motion.div>
                             )}

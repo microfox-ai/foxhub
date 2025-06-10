@@ -143,18 +143,18 @@ export const useDeployStatus = ({
   // STEP 2: Determine if deployment is finalized
   const isDeploymentFinalized = useMemo(() => {
     if (!deploymentApiData?.data?.deployment) return false;
-    
+
     const deployment = deploymentApiData.data.deployment;
     const isStatusFinalized = deployment.status === 'deployed' || deployment.status === 'failed';
     const isProgressComplete = deployment.progress?.isComplete === true;
-    
+
     console.log(`📊 Checking if deployment is finalized:`, {
       status: deployment.status,
       isStatusFinalized,
       isProgressComplete,
       shouldBreak: isStatusFinalized || isProgressComplete
     });
-    
+
     return isStatusFinalized || isProgressComplete;
   }, [deploymentApiData]);
 
@@ -165,19 +165,19 @@ export const useDeployStatus = ({
       console.log(`❌ API error, not starting SSE:`, apiError.message);
       return false;
     }
-    
+
     // Start SSE if deployment not found (404)
     if (!deploymentApiData) {
       console.log(`🔌 Deployment not found, will start SSE`);
       return true;
     }
-    
+
     // Start SSE if deployment found but not finalized
     if (!isDeploymentFinalized) {
       console.log(`🔌 Deployment found but not finalized, will start SSE`);
       return true;
     }
-    
+
     // Don't start SSE if deployment is finalized
     console.log(`✅ Deployment is finalized, skipping SSE`);
     return false;
@@ -185,8 +185,8 @@ export const useDeployStatus = ({
 
   // STEP 4: Start SSE only if needed
   const { data: sseData, error: sseError } = useSWRSubscription(
-    shouldStartSSE && requestParamId && runId ? 
-      ["deployment-status-sse", requestParamId, runId] : 
+    shouldStartSSE && requestParamId && runId ?
+      ["deployment-status-sse", requestParamId, runId] :
       null,
     ([_, clientRequestId, runId], { next }) => {
       if (!clientRequestId) {
@@ -304,20 +304,20 @@ export const useDeployStatus = ({
     // If we have API data and it's finalized, use API data (no SSE needed)
     if (deploymentApiData?.data?.deployment && isDeploymentFinalized) {
       console.log(`✅ Using API data (deployment finalized)`);
-      
+
       // For API data, merge the separate logs array into the deployment object
       const deployment = {
         ...deploymentApiData.data.deployment,
         logs: deploymentApiData.data.logs, // Structured logs from API
       };
-      
+
       return {
         deployment,
         shouldBreak: true,
         logCount: deploymentApiData.data.logCount,
       };
     }
-    
+
     // If SSE is active and we have SSE data, use SSE data
     if (sseData?.deployment) {
       console.log(`🔌 Using SSE data (real-time updates)`);
@@ -327,16 +327,16 @@ export const useDeployStatus = ({
         logCount: 0, // SSE doesn't provide log count
       };
     }
-    
+
     // If we have API data but it's not finalized, still return it while SSE connects
     if (deploymentApiData?.data?.deployment) {
       console.log(`📊 Using API data (not finalized, waiting for SSE)`);
-      
+
       const deployment = {
         ...deploymentApiData.data.deployment,
         logs: deploymentApiData.data.logs, // Structured logs from API
       };
-      
+
       return {
         deployment,
         shouldBreak: false,
@@ -350,7 +350,7 @@ export const useDeployStatus = ({
   useEffect(() => {
     const updateMetaAndInfo = async () => {
       if (finalDeploymentData?.deployment?.clientDeployment) {
-        setDeploymentInfo((prev: ClientDeployment) => ({
+        setDeploymentInfo((prev: ClientDeployment | null) => ({
           ...prev,
           ...finalDeploymentData.deployment.clientDeployment,
         }));

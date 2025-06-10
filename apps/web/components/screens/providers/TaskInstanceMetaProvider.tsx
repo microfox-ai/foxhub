@@ -12,7 +12,7 @@ export const useTaskInstanceMeta = ({
   clientRequestId,
 }: UseTaskInstanceMetaProps) => {
   const [deploymentInfo, setDeploymentInfo] = useState<
-    any | ClientDeployment | null
+    ClientDeployment | null
   >(null);
   const { data, error, mutate, isLoading, isValidating } = useSWR<
     TaskInstanceMetaType & { id: string }

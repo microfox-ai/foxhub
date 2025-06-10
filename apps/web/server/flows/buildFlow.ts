@@ -152,6 +152,7 @@ export const buildFlow: ServerStreamingFunction<
           "Add-Features",
           "Rebuild-App",
           "Redeploy-App",
+          "Deploy-App-to-Production",
           "Casual-Chat",
           "Publish-App-to-Store",
           "In-Task-Query",
@@ -191,6 +192,8 @@ export const buildFlow: ServerStreamingFunction<
         return publishFoxRouter(props);
       case "In-Task-Query":
         return taskQueryRouter(props);
+      case "Deploy-App-to-Production":
+        return deployFoxRouter(props);
       default:
         props.dataStream.writeMessageAnnotation({
           type: "error",

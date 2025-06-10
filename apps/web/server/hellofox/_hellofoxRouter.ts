@@ -223,6 +223,7 @@ export const hellofoxRouter: ServerStreamingFunction<
        - what kind of details can you provide later about the webhook/job/api you want to build?
 
       In place of asking for any specific details, you can call tool - isTaskBuildable
+      If there is decent amount of details about the task/workflow/automation, you can call isTaskBuildable tool.
 
       DO NOT CALL ANY OTHER TOOL further, if isTaskBuildable is called.
       ${classification.type === "task-confirmation" && " YOU MUST CALL isTaskBuildable tool "}

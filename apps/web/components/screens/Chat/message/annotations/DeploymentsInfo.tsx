@@ -16,6 +16,8 @@ import {
   ArrowRight,
   CatIcon,
   Clock,
+  CodeIcon,
+  ExternalLink,
   FileText,
   GitFork,
   GitPullRequest,
@@ -317,11 +319,26 @@ export const DeploymentsInfo = ({
 
           <div className="bg-gray-50 p-3 rounded-lg">
             <div className="flex items-center gap-2 mb-1">
-              <GitFork size={14} color="#2b7fff" />
-              <span className="text-gray-500">Branch</span>
+              <CodeIcon size={14} color="#2b7fff" />
+              <span className="text-gray-500">Logs</span>
             </div>
-            <div className="font-medium text-gray-800 truncate">
-              {clientRequest?.prBranch || "main"}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchLogs}
+                className="flex-1 text-left font-medium text-gray-800 truncate hover:text-blue-600 transition-colors"
+              >
+                {deployment?.logs?.length}
+              </button>
+              {clientDeployment && (
+                <a
+                  href={`https://${process.env.NEXT_PUBLIC_AWS_REGION}.console.aws.amazon.com/cloudwatch/home?region=${process.env.NEXT_PUBLIC_AWS_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`/aws/lambda/${clientDeployment.functionName}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                >
+                  <ExternalLink className="h-3 w-3 text-neutral-500" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -340,6 +357,12 @@ export const DeploymentsInfo = ({
           <Loader2 size={12} className="animate-spin" />
           <span>{deployment?.statusDescription || statusMessages[statusMessageIndex]}</span>
         </div>
+        <LogsDialog
+          isOpen={showLogsDialog}
+          onClose={() => setShowLogsDialog(false)}
+          logs={deploymentLogs}
+          serverlessLogs={serverlessLogs}
+        />
       </motion.div>
     );
   }

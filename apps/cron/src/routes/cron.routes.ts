@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import CronManager from '../lib/cron-manager';
-import { ApiResponse, TriggerJobRequest, ControlJobRequest, UpdateConfigRequest } from '../types/cron.types';
+import LogService from '../lib/log-service';
+import { ApiResponse } from '../types/cron.types';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ const ensureCronManager = async (): Promise<CronManager> => {
     cronManager = new CronManager();
     await cronManager.initialize();
     cronManager.start();
+    LogService.log('info', 'Cron manager initialized and started');
   }
   return cronManager;
 };
@@ -38,12 +40,9 @@ router.get('/status', async (req: Request, res: Response) => {
     const status = manager.getStatus();
     res.json(createResponse(status));
   } catch (error) {
-    console.error('Error getting status:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error getting status', { error: errorMsg });
+    res.status(500).json(createResponse(null, false, errorMsg));
   }
 });
 
@@ -56,9 +55,10 @@ router.get('/health', async (req: Request, res: Response) => {
     const health = manager.healthCheck();
     res.status(health.status === 'healthy' ? 200 : 503).json(createResponse(health));
   } catch (error) {
-    console.error('Error in health check:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Health check failed', { error: errorMsg });
     res.status(503).json(createResponse(
-      { status: 'unhealthy', details: { error: error instanceof Error ? error.message : 'Unknown error' } },
+      { status: 'unhealthy', details: { error: errorMsg } },
       false
     ));
   }
@@ -74,12 +74,9 @@ router.get('/jobs', async (req: Request, res: Response) => {
     const jobs = service.getAllJobs();
     res.json(createResponse(jobs));
   } catch (error) {
-    console.error('Error getting jobs:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error getting jobs', { error: errorMsg });
+    res.status(500).json(createResponse(null, false, errorMsg));
   }
 });
 
@@ -93,201 +90,200 @@ router.get('/jobs/:jobId', async (req: Request, res: Response) => {
     const jobStatus = service.getJobStatus(req.params.jobId);
     res.json(createResponse(jobStatus));
   } catch (error) {
-    console.error('Error getting job status:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', `Error getting job status for ${req.params.jobId}`, { error: errorMsg });
+    res.status(500).json(createResponse(null, false, errorMsg));
   }
 });
 
 /**
- * POST /trigger - Trigger a cron job manually
+ * GET /trigger/:jobId - Trigger a cron job manually
+ * GET /trigger/:jobId?index=0 - Trigger by index
  */
-router.post('/trigger', async (req: Request, res: Response): Promise<void> => {
+router.get('/trigger/:jobId?', async (req: Request, res: Response): Promise<void> => {
   try {
     const manager = await ensureCronManager();
     const service = manager.getService();
-    const { jobId, jobIndex }: TriggerJobRequest = req.body;
+    const { jobId } = req.params;
+    const { index } = req.query;
 
     let targetJobId: string;
 
-    if (jobId) {
+    if (jobId && jobId !== 'undefined') {
       targetJobId = jobId;
-    } else if (typeof jobIndex === 'number') {
-      targetJobId = `cron-job-${jobIndex}`;
+    } else if (index !== undefined) {
+      targetJobId = `cron-job-${index}`;
     } else {
-      res.status(400).json(createResponse(
-        null,
-        false,
-        'Either jobId or jobIndex must be provided'
-      ));
+      const errorMsg = 'Either jobId parameter or index query parameter must be provided';
+      LogService.log('warn', 'Trigger attempt without proper parameters', { jobId, index });
+      res.status(400).json(createResponse(null, false, errorMsg));
       return;
     }
 
     const executionId = await service.triggerJob(targetJobId);
+    LogService.log('info', `Job ${targetJobId} triggered manually`, { executionId, triggeredBy: 'GET' });
+    
     res.json(createResponse({
       message: `Job ${targetJobId} triggered successfully`,
       executionId,
       jobId: targetJobId
     }));
   } catch (error) {
-    console.error('Error triggering job:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error triggering job', { error: errorMsg, params: req.params, query: req.query });
+    res.status(500).json(createResponse(null, false, errorMsg));
   }
 });
 
 /**
- * POST /control - Control cron jobs (start/stop/restart)
+ * GET /start - Start all jobs
+ * GET /start/:jobId - Start specific job
  */
-router.post('/control', async (req: Request, res: Response): Promise<void> => {
+router.get('/start/:jobId?', async (req: Request, res: Response): Promise<void> => {
   try {
     const manager = await ensureCronManager();
     const service = manager.getService();
-    const { action, jobId }: ControlJobRequest = req.body;
+    const { jobId } = req.params;
 
     let result: any = {};
 
-    switch (action) {
-      case 'start':
-        if (jobId) {
-          result.success = service.startJob(jobId);
-          result.message = `Job ${jobId} ${result.success ? 'started' : 'failed to start'}`;
-        } else {
-          service.startAllJobs();
-          result.success = true;
-          result.message = 'All jobs started';
-        }
-        break;
-
-      case 'stop':
-        if (jobId) {
-          result.success = service.stopJob(jobId);
-          result.message = `Job ${jobId} ${result.success ? 'stopped' : 'failed to stop'}`;
-        } else {
-          service.stopAllJobs();
-          result.success = true;
-          result.message = 'All jobs stopped';
-        }
-        break;
-
-      case 'restart':
-        if (jobId) {
-          service.stopJob(jobId);
-          result.success = service.startJob(jobId);
-          result.message = `Job ${jobId} ${result.success ? 'restarted' : 'failed to restart'}`;
-        } else {
-          await manager.reload();
-          result.success = true;
-          result.message = 'Service reloaded and all jobs restarted';
-        }
-        break;
-
-      default:
-        res.status(400).json(createResponse(
-          null,
-          false,
-          'Invalid action. Use: start, stop, or restart'
-        ));
-        return;
+    if (jobId && jobId !== 'undefined') {
+      result.success = service.startJob(jobId);
+      result.message = `Job ${jobId} ${result.success ? 'started' : 'failed to start'}`;
+      LogService.log('info', `Job ${jobId} start attempt`, { success: result.success });
+    } else {
+      service.startAllJobs();
+      result.success = true;
+      result.message = 'All jobs started';
+      LogService.log('info', 'All jobs started via GET request');
     }
 
     const status = manager.getStatus();
     res.json(createResponse({ ...result, status }));
   } catch (error) {
-    console.error('Error controlling jobs:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error starting jobs', { error: errorMsg, jobId: req.params.jobId });
+    res.status(500).json(createResponse(null, false, errorMsg));
   }
 });
 
 /**
- * POST /reload - Reload configuration
+ * GET /stop - Stop all jobs
+ * GET /stop/:jobId - Stop specific job
  */
-router.post('/reload', async (req: Request, res: Response) => {
+router.get('/stop/:jobId?', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const manager = await ensureCronManager();
+    const service = manager.getService();
+    const { jobId } = req.params;
+
+    let result: any = {};
+
+    if (jobId && jobId !== 'undefined') {
+      result.success = service.stopJob(jobId);
+      result.message = `Job ${jobId} ${result.success ? 'stopped' : 'failed to stop'}`;
+      LogService.log('info', `Job ${jobId} stop attempt`, { success: result.success });
+    } else {
+      service.stopAllJobs();
+      result.success = true;
+      result.message = 'All jobs stopped';
+      LogService.log('info', 'All jobs stopped via GET request');
+    }
+
+    const status = manager.getStatus();
+    res.json(createResponse({ ...result, status }));
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error stopping jobs', { error: errorMsg, jobId: req.params.jobId });
+    res.status(500).json(createResponse(null, false, errorMsg));
+  }
+});
+
+/**
+ * GET /reload - Reload configuration
+ */
+router.get('/reload', async (req: Request, res: Response) => {
   try {
     const manager = await ensureCronManager();
     await manager.reload();
     const status = manager.getStatus();
+    LogService.log('info', 'Configuration reloaded via GET request');
     res.json(createResponse({
       message: 'Configuration reloaded successfully',
       status
     }));
   } catch (error) {
-    console.error('Error reloading configuration:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error reloading configuration', { error: errorMsg });
+    res.status(500).json(createResponse(null, false, errorMsg));
   }
 });
 
 /**
- * PUT /config - Update configuration
+ * GET /logs - Get recent logs
+ * Query parameters:
+ * - limit: number of logs to return (default: 100)
+ * - level: filter by log level (info, warn, error, debug)
  */
-router.put('/config', async (req: Request, res: Response) => {
+router.get('/logs', async (req: Request, res: Response) => {
   try {
-    const manager = await ensureCronManager();
-    const { jobId, endpointUrl, settings }: UpdateConfigRequest = req.body;
-
-    if (endpointUrl && jobId) {
-      manager.updateJobEndpointUrl(jobId, endpointUrl);
-    }
-
-    const status = manager.getStatus();
-    res.json(createResponse({
-      message: 'Configuration updated successfully',
-      status
-    }));
-  } catch (error) {
-    console.error('Error updating configuration:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
-  }
-});
-
-/**
- * POST /shutdown - Graceful shutdown
- */
-router.post('/shutdown', async (req: Request, res: Response) => {
-  try {
-    if (cronManager) {
-      await cronManager.shutdown();
-      cronManager = null;
-    }
-    res.json(createResponse({
-      message: 'Service shutdown successfully'
-    }));
+    const { limit, level } = req.query;
+    const parsedLimit = limit ? parseInt(limit as string) : 100;
+    const logs = LogService.getLogs(parsedLimit, level as any);
+    const stats = LogService.getLogStats();
     
-    // Give response time to send before actually shutting down
-    setTimeout(() => {
-      process.exit(0);
-    }, 1000);
+    res.json(createResponse({
+      logs,
+      stats,
+      filters: { limit: parsedLimit, level: level || 'all' },
+      logFilePath: LogService.getLogFilePath()
+    }));
   } catch (error) {
-    console.error('Error during shutdown:', error);
-    res.status(500).json(createResponse(
-      null,
-      false,
-      error instanceof Error ? error.message : 'Unknown error'
-    ));
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error retrieving logs', { error: errorMsg });
+    res.status(500).json(createResponse(null, false, errorMsg));
+  }
+});
+
+/**
+ * GET /logs/cleanup - Manual log cleanup (also used by cron job)
+ */
+router.get('/logs/cleanup', async (req: Request, res: Response) => {
+  try {
+    const result = LogService.cleanupLogs();
+    LogService.log('info', 'Manual log cleanup performed', result);
+    
+    res.json(createResponse({
+      message: 'Log cleanup completed',
+      ...result
+    }));
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    LogService.log('error', 'Error during log cleanup', { error: errorMsg });
+    res.status(500).json(createResponse(null, false, errorMsg));
+  }
+});
+
+/**
+ * GET /logs/clear - Clear all logs
+ */
+router.get('/logs/clear', async (req: Request, res: Response) => {
+  try {
+    LogService.clearLogs();
+    LogService.log('info', 'All logs cleared via GET request');
+    
+    res.json(createResponse({
+      message: 'All logs cleared successfully'
+    }));
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json(createResponse(null, false, errorMsg));
   }
 });
 
 // Cleanup on process termination
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully...');
+  LogService.log('info', 'SIGTERM received, shutting down gracefully');
   if (cronManager) {
     await cronManager.shutdown();
   }
@@ -295,7 +291,7 @@ process.on('SIGTERM', async () => {
 });
 
 process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully...');
+  LogService.log('info', 'SIGINT received, shutting down gracefully');
   if (cronManager) {
     await cronManager.shutdown();
   }

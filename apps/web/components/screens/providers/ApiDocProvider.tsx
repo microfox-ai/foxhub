@@ -6,6 +6,7 @@ import {
   OpenAPIDoc,
   OpenAPIPath,
 } from "@/utils/services/OpenAPIToolsClient";
+import { ClientDeploymentMetadata } from "@/server/types";
 
 export interface Endpoint {
   path: string;
@@ -30,6 +31,7 @@ interface ApiDocContextType {
   | null;
   forceBaseUrl: string | null;
   setForceBaseUrl: (url: string | null) => void;
+  selectedFunctionName: string | null;
 }
 
 const ApiDocContext = createContext<ApiDocContextType | undefined>(undefined);
@@ -119,6 +121,13 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
     }
   }, [endpoints, selectedEndpoint]);
 
+  const thisFunction = (deploymentInfo?.metadata as any as ClientDeploymentMetadata).serverless?.functions.find(
+    (f: any) =>
+      f.endpointLink === selectedEndpoint || f.endpointLink.includes(selectedEndpoint)
+  );
+  const selectedFunctionName =
+    (deploymentInfo?.metadata as any as ClientDeploymentMetadata).serverless?.functionBase + "-" + thisFunction?.functionName;
+
   return (
     <ApiDocContext.Provider
       value={{
@@ -133,7 +142,8 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         setSelectedMethod,
         currentEndpointData,
         setForceBaseUrl,
-        forceBaseUrl
+        forceBaseUrl,
+        selectedFunctionName,
       }}
     >
       {children}

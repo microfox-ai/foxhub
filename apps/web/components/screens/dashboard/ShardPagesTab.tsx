@@ -10,9 +10,11 @@ export const ShardPagesTab = ({
 }: ShardPagesTabProps) => {
 
 
-    const { data: shardpages, isLoading: shardpagesLoading } = useSWR<ShardPage[]>("/api/shard-page",
-        (url: string) => fetch(url).then(res => res.json())
+    const { data: shardpages, isLoading: shardpagesLoading } = useSWR<ShardPage[]>("/api/shard-page?status=PUBLISHED",
+        (url: string) => fetch(url).then(res => res.ok ? res.json() : [])
     );
+
+    console.log("shardpages", shardpages);
 
     return (
         <div className="bg-white rounded-lg">

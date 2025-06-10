@@ -29,7 +29,7 @@ import {
 } from "@/utils/services/OpenAPIToolsClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ClientDeployment } from "@prisma/client";
-import { ArrowLeftIcon, ChevronDown, Clock, Copy, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
+import { ArrowLeftIcon, ChevronDown, Clock, Copy, ExternalLink, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -49,6 +49,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandInput } from "@/components/ui/command";
 import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
+import { AWS_LAMBDA_DEFAULT_REGION, AWS_LAMBDA_LOG_GROUP_PREFIX } from "@/utils/services/aws/aws_helper";
 
 const PreviewWindow = () => {
   const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
@@ -63,7 +64,8 @@ const PreviewWindow = () => {
     error,
     setError,
     setForceBaseUrl,
-    forceBaseUrl
+    forceBaseUrl,
+    selectedFunctionName
   } = useApiDoc();
   const [showValidation, setShowValidation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -1036,9 +1038,22 @@ const PreviewWindow = () => {
           <div className="flex gap-2 items-center">
             <p className="text-base font-medium">Preview</p>
             <Monitor className="h-4 w-4 " />
+
           </div>
           {endpoints.length > 0 && (
             <div className="flex items-center gap-2 ml-auto">
+              {IN_DEV && (
+                <a
+                  href={`https://${AWS_LAMBDA_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_LAMBDA_DEFAULT_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`${AWS_LAMBDA_LOG_GROUP_PREFIX}${selectedFunctionName}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center justify-center rounded-md hover:bg-neutral-100 gap-1"
+                >
+                  <span className="text-xs">AWS Logs</span>
+                  <ExternalLink className="h-3 w-3 text-neutral-500" />
+                </a>
+              )}
               <Button
                 variant={showDocs ? "default" : "outline"}
                 size="sm"
@@ -1532,6 +1547,15 @@ const PreviewWindow = () => {
                                 >
                                   <RefreshCw className={`h-3 w-3 text-neutral-500 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
                                 </button>
+                                <a
+                                  href={`https://${AWS_LAMBDA_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_LAMBDA_DEFAULT_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`${AWS_LAMBDA_LOG_GROUP_PREFIX}${selectedFunctionName}`)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                                >
+                                  <ExternalLink className="h-3 w-3 text-neutral-500" />
+                                </a>
                                 <ChevronDown className={`h-4 w-4 transition-transform ${showLogs ? 'rotate-180' : ''}`} />
                               </div>
                             </button>

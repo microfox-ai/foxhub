@@ -97,13 +97,13 @@ export const taskIntegrationPlatform = z.object({
   scopes: z
     .array(z.string())
     .describe("The scopes needed for this particular task."),
-  packageInfo: z.any().optional(),
+  //packageInfo: z.any().optional(),
 });
 export type TaskIntegrationPlatform = z.infer<typeof taskIntegrationPlatform>;
 
 // step2. get information about the integrations required for the task
 export const taskIntegrations = z.object({
-  platforms: z.array(taskIntegrationPlatform.omit({ packageInfo: true })),
+  platforms: z.array(taskIntegrationPlatform),
   // alternativePlatforms: z.array(
   //   z.object({
   //     alternativeFor: z

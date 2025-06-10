@@ -18,6 +18,7 @@ export interface KeyVariableConfig {
   instructions?: BotConfigInstructions;
   required?: boolean;
   isOptional?: boolean;
+  value?: string | string[] | any | any[];
 }
 
 export interface Constructor {
@@ -45,6 +46,8 @@ export interface Package {
   status: string;
   documentation: string;
   constructors: Constructor[];
+  readme_map: any;
+  addedDependencies: string[];
 }
 
 export interface UIAnnotation {

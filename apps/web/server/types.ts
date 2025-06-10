@@ -34,7 +34,7 @@ export interface ConfigUi {
 export interface ClientSecretVariable {
   stage?: "DEV" | "PROD" | "STAGING";
   key: string;
-  value: any;
+  value?: any;
   isOptional?: boolean;
   defaultValue?: string | string[] | any | any[];
   description?: string;

@@ -109,6 +109,7 @@ export async function GET(request: Request) {
     // Get cache duration from query params (in seconds)
     const url = new URL(request.url);
     const cacheDuration = url.searchParams.get("cache");
+    const rawContent = url.searchParams.get("rawContent");
 
     // Set cache options based on query param
     const cacheOptions: RequestInit = {
@@ -129,13 +130,16 @@ export async function GET(request: Request) {
         PackageStatus.SEMISTABLE,
         PackageStatus.EXTERNAL,
       ],
+      select: rawContent === "true" ? "*" : "*",
     });
-
-    const packageNames = packages?.map((pkg: any) => pkg.package_name);
-
     // Return the formatted data
     return NextResponse.json(
-      { packages },
+      {
+        packages: packages.map((pkg) =>
+          rawContent === "true" ? pkg.raw_content : pkg.raw_content
+        ),
+        count: packages.length,
+      },
       {
         status: 200,
         headers: {

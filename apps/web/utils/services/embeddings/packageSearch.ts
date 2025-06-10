@@ -1,3 +1,4 @@
+import { Package } from "@/components/screens/Chat/message/types";
 import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 
@@ -7,6 +8,32 @@ const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const PACKAGE_INFO_TABLE = "package_infos";
+
+export interface PackageDbInfo {
+  id: string;
+  package_name: string;
+  package_title: string;
+  package_path: string;
+  platform_type: string;
+  auth_type: string | null;
+  auth_endpoint: string | null;
+  webhook_endpoint: string | null;
+  oauth2_scopes: string[] | null;
+  description: string;
+  dependencies: string[] | null;
+  added_dependencies: string[] | null;
+  status: string;
+  documentation: string;
+  icon: string;
+  readme_map: any;
+  constructors: any[];
+  key_instructions: string | null;
+  extra_info: any;
+  raw_content: Package;
+  file_path: string;
+  github_url: string;
+  updated_at: string;
+}
 
 async function searchPackages(searchTerm: string) {
   console.log(`🔍 Searching for packages containing: "${searchTerm}"`);
@@ -80,29 +107,27 @@ async function getPackageByName(packageName: string) {
   console.log(`   Updated: ${new Date(data.updated_at).toLocaleDateString()}`);
 }
 
-async function getPackageInfos(packageNames: string[]) {
+async function getPackageInfos(packageNames: string[]): Promise<Package[]> {
   const { data, error } = await supabase
     .from(PACKAGE_INFO_TABLE)
-    .select(
-      "package_name, package_title, description, platform_type, status, auth_type, documentation, icon, updated_at"
-    )
+    .select("package_name, package_title, raw_content, updated_at")
     .in("package_name", packageNames);
 
   if (error) {
     console.error("❌ Error getting package infos:", error);
-    return;
+    throw error;
   }
 
   if (!data || data.length === 0) {
     console.log("ℹ️  No packages found");
-    return;
+    return [];
   }
 
   console.log(`\n✅ Found ${data.length} packages:`);
   data.forEach((pkg: any, index: number) => {
-    console.log(`${index + 1}. ${pkg.package_name} - ${pkg.description}`);
+    console.log(`${index + 1}. ${pkg.package_name} - ${pkg.package_title}`);
   });
-  return data;
+  return data.map((pkg: any) => pkg.raw_content);
 }
 
 async function getPackagesByPlatformType(platformType: string) {
@@ -161,6 +186,31 @@ async function getPackagesByStatus(status: string) {
   });
 }
 
+/**
+ *
+ * @param package_name @microfox/... or ...
+ */
+async function getPackageInfo(
+  package_name: string
+): Promise<Partial<Package> | null> {
+  if (package_name === "@microfox/null") {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from(PACKAGE_INFO_TABLE)
+    .select("*")
+    .eq("package_name", package_name)
+    .single();
+
+  if (error) {
+    console.error("❌ Error getting package info:", error);
+    throw error;
+  }
+
+  return data.raw_content;
+}
+
 async function getAllPackages({
   platformType,
   status,
@@ -171,15 +221,17 @@ async function getAllPackages({
   status?: string;
   select?: string;
   statuses?: PackageStatus[];
-}): Promise<any[]> {
+}): Promise<Partial<PackageDbInfo>[]> {
   console.log(`🔍 Getting all packages...`);
 
   const query = supabase
     .from(PACKAGE_INFO_TABLE)
     .select(
-      select
-        ? `package_name, package_title, platform_type, status, auth_type, updated_at ${select}`
-        : "package_name, package_title, platform_type, status, auth_type, updated_at"
+      select === "*"
+        ? "*"
+        : select
+          ? `package_name, package_title, platform_type, status, auth_type, updated_at, ${select}`
+          : "package_name, package_title, platform_type, status, auth_type, updated_at"
     );
 
   if (platformType) {
@@ -206,14 +258,16 @@ async function getAllPackages({
     return [];
   }
 
-  console.log(`\n✅ Found ${data.length} total packages:`);
-  data.forEach((pkg: any, index: number) => {
+  const typedData = data as Partial<PackageDbInfo>[];
+
+  console.log(`\n✅ Found ${typedData.length} total packages:`);
+  typedData.forEach((pkg, index) => {
     console.log(
       `${index + 1}. ${pkg.package_name} (${pkg.platform_type}/${pkg.status}) - ${pkg.auth_type || "none"}`
     );
   });
 
-  return data;
+  return typedData;
 }
 
 export const PackageInfoHelper = {
@@ -223,4 +277,5 @@ export const PackageInfoHelper = {
   getPackagesByStatus,
   getAllPackages,
   getPackageInfos,
+  getPackageInfo,
 };

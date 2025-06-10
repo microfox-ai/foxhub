@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { ActionButtons } from "./ActionButtons";
 import { ApiKeyButton } from "../secrets/ApiKeyButton";
 import { OAuthButton } from "../secrets/OAuthButton";
 import { ClientSecret } from "@prisma/client";
-import { Constructor, Package } from "../types";
+import { Constructor, KeyVariableConfig, Package } from "../types";
 import { TaskIntegrationPlatform } from "@/server/convertfox/types";
 import {
     Tooltip,
@@ -14,7 +14,10 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ClientSecretApiType, ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
+import { ClientSecretApiType, ClientSecretPackageType, ClientSecretVariable, PackageStatus } from "@/server/types";
+import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
+import { EditTaskIntegrationsDialog } from "./EditTaskIntegrationsDialog";
+import { Button } from "@/components/ui/button";
 
 interface UIAnnotation {
     objectType: string;
@@ -35,13 +38,29 @@ export const TaskIntegrations = ({
     idx,
     hideMetaInfo = false,
 }: TaskIntegrationsProps) => {
-    const platforms = uiAnnotation.object.platforms as TaskIntegrationPlatform[];
+    const { taskInstanceMeta, updateTaskInstanceMeta } = useTaskInstanceMetaContext();
+    const platforms = (taskInstanceMeta?.taskIntegrations?.platforms ?? uiAnnotation.object.platforms) as TaskIntegrationPlatform[];
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const params = useParams<{
         project_id?: string;
         request_id?: string;
     }>();
     const projectParamId = params?.project_id;
     const requestParamId = params?.request_id;
+
+    const { data: packagesData, mutate: mutatePackages } = useSWR<{
+        packages: Package[];
+    }>(
+        `/api/packages?status=${PackageStatus.STABLE},${PackageStatus.SEMISTABLE},${PackageStatus.EXTERNAL}&rawContent=true`,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch packages");
+            return res.json();
+        },
+        {
+            revalidateOnFocus: false,
+        }
+    );
 
     const { data: secretsData, mutate: mutateSecrets } = useSWR<{
         clientSecrets: ClientSecret[];
@@ -67,20 +86,21 @@ export const TaskIntegrations = ({
         const authStatus: Record<string, boolean> = {};
 
         platforms.forEach((platform) => {
+            let packageInfo = packagesData?.packages.find((pkg) => pkg.name === platform.package);
             // Set default status for non-optional platforms
             if (!platform.optional) {
                 keyStatus[platform.name] = false;
                 authStatus[platform.name] = false;
             }
             // Check API Keys
-            if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY)) {
-                const constructor = platform.packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
+            if (packageInfo?.constructors.some((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY)) {
+                const constructor = packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
                 const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
-                    secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === constructor?.name
+                    secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === constructor?.name
                 );
                 if (apiKeySecret && constructor && constructor.requiredKeys) {
                     keyStatus[platform.name] = apiKeySecret ? constructor.requiredKeys.every(
-                        (keyInfo: ClientSecretVariable) =>
+                        (keyInfo: KeyVariableConfig) =>
                             (apiKeySecret.variables as any[]).some(
                                 (variable: ClientSecretVariable) =>
                                     variable.key === keyInfo.key && variable.value?.trim()
@@ -89,18 +109,18 @@ export const TaskIntegrations = ({
                 }
             }
             // Check OAuth
-            if (platform.packageInfo?.constructors.some((c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2)) {
-                const oauthConstructor = platform.packageInfo.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2);
+            if (packageInfo?.constructors.some((c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2)) {
+                const oauthConstructor = packageInfo.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2);
                 const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
-                    secret !== undefined && secret.packageName === platform.packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
+                    secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
                 );
                 if (oauthConstructor && oauthSecret && oauthConstructor.internalKeys) {
                     authStatus[platform.name] = oauthSecret
                         ? (oauthSecret.variables as any[]).every(
-                            (variable: ClientSecretVariable) =>
+                            (variable: KeyVariableConfig) =>
                                 variable.value?.trim() !== "" &&
                                 oauthConstructor.internalKeys.some(
-                                    (key: ClientSecretVariable) => key.key === variable.key
+                                    (key: KeyVariableConfig) => key.key === variable.key
                                 )
                         )
                         : false;
@@ -109,7 +129,7 @@ export const TaskIntegrations = ({
         });
 
         return { platformKeyStatus: keyStatus, oauthStatus: authStatus };
-    }, [platforms, secretsData?.clientSecrets, oauthSecrets]);
+    }, [platforms, secretsData?.clientSecrets, oauthSecrets, packagesData?.packages]);
 
     // Memoize the areKeysFilled check
     const areKeysFilled = useMemo(() => {
@@ -117,10 +137,12 @@ export const TaskIntegrations = ({
             // If platform is optional, skip the check
             if (platform.optional) return true;
 
-            const requiresApiKey = platform.packageInfo?.constructors.some(
+            let packageInfo = packagesData?.packages.find((pkg) => pkg.name === platform.package);
+
+            const requiresApiKey = packageInfo?.constructors.some(
                 (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
             );
-            const requiresOauth = platform.packageInfo?.constructors.some(
+            const requiresOauth = packageInfo?.constructors.some(
                 (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
             );
 
@@ -134,13 +156,13 @@ export const TaskIntegrations = ({
             }
             // Check only OAuth status if required
             if (requiresOauth) {
-                const oauthConstructor = platform.packageInfo.constructors.find(
+                const oauthConstructor = packageInfo?.constructors.find(
                     (c: Constructor) => c.auth === "oauth2"
                 );
                 const matchingOAuthSecret = oauthSecrets?.find(
                     (secret) =>
                         secret.type ===
-                        `${platform.packageInfo.name}/${oauthConstructor?.name}`
+                        `${packageInfo?.name}/${oauthConstructor?.name}`
                 );
 
                 const doKeysHaveValues = matchingOAuthSecret?.variables.every(
@@ -149,7 +171,7 @@ export const TaskIntegrations = ({
 
                 const areKeysMatchingwithInternalKeys =
                     matchingOAuthSecret?.variables.every((variable: any) =>
-                        oauthConstructor?.internalKeys.some((key: ClientSecretVariable) => {
+                        oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
                             if (variable.key === "SCOPES") return true;
                             return key.key === variable.key;
                         })
@@ -159,8 +181,18 @@ export const TaskIntegrations = ({
             }
             return true;
         });
-    }, [platforms, platformKeyStatus, oauthStatus, oauthSecrets]);
+    }, [platforms, platformKeyStatus, oauthStatus, oauthSecrets, packagesData?.packages]);
 
+    const handleSaveTaskIntegrations = async (updatedPlatforms: TaskIntegrationPlatform[]) => {
+        if (taskInstanceMeta) {
+            await updateTaskInstanceMeta({
+                ...taskInstanceMeta,
+                taskIntegrations: {
+                    platforms: updatedPlatforms,
+                },
+            });
+        }
+    };
 
     //console.log("secretsData", secretsData);
     // If no platforms available, don't render anything
@@ -178,20 +210,29 @@ export const TaskIntegrations = ({
             transition={{ duration: 0.3 }}
         >
             {!hideMetaInfo && (
-                <div className="">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                        Configure Integration Settings
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                        Please configure the required integrations to continue
-                    </p>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Configure Integration Settings
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                            Please configure the required integrations to continue
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={() => setIsEditDialogOpen(true)}
+                        className="flex items-center gap-2"
+                    >
+                        Edit Integrations
+                    </Button>
                 </div>
             )}
 
             <div className="grid gap-4">
                 {platforms
                     .map((platform, index) => {
-                        const packageInfo = platform.packageInfo as Package;
+                        const packageInfo = packagesData?.packages.find((pkg) => pkg.name === platform.package);
                         const isApiKeyRequired = packageInfo?.constructors.some(
                             (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
                         );
@@ -247,17 +288,26 @@ export const TaskIntegrations = ({
                 (<ActionButtons
                     buttons={uiAnnotation.buttons}
                     areKeysRequired={platforms.some(
-                        (p) =>
+                        (p) => {
+                            const packageInfo = packagesData?.packages.find((pkg) => pkg.name === p.package);
                             !p.optional &&
-                            (p.packageInfo?.constructors.some(
-                                (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
-                            ) ||
-                                p.packageInfo?.constructors.some(
-                                    (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
-                                ))
-                    )}
+                                (packageInfo?.constructors.some(
+                                    (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
+                                ) ||
+                                    packageInfo?.constructors.some(
+                                        (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
+                                    ))
+                        })}
                     areKeysFilled={areKeysFilled}
                 />)}
+
+            <EditTaskIntegrationsDialog
+                isOpen={isEditDialogOpen}
+                onClose={() => setIsEditDialogOpen(false)}
+                platforms={platforms}
+                packages={packagesData?.packages || []}
+                onSave={handleSaveTaskIntegrations}
+            />
         </motion.div>
     );
 }; 

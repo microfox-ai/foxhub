@@ -1,16 +1,15 @@
-import { generateObject, Message, streamObject, streamText, tool } from "ai";
-import { z } from "zod";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { taskInfo, TaskInstanceMetaType } from "./types";
-import { models } from "../models";
-import { TaskInstanceMeta } from "@prisma/client";
 import {
   updateClientRequest,
   updateTaskInstanceMeta,
 } from "@/utils/services/db_functions/updateClientRequest";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
+import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { generateObject } from "ai";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { getMicrofoxCapabilities } from "../hellofox/getMicrofoxCapabilities";
-import { getPackageList } from "./getInternalPackages";
+import { models } from "../models";
+import { PackageStatus } from "../types";
+import { taskInfo, TaskInstanceMetaType } from "./types";
 
 export const createTaskInfo = async (
   props: StreamingFucntionProps<any, any>,
@@ -27,10 +26,13 @@ export const createTaskInfo = async (
     type: "thinking",
     content: "Creating your automation task",
   });
-  const packageList = await getPackageList();
-  const stablePackageNames = packageList.stablePackages;
-  const semiStablePackageNames = packageList.semiStablePackages;
-  const externalPackageNames = packageList.externalPackages;
+  const packageList = await PackageInfoHelper.getAllPackages({
+    statuses: [
+      PackageStatus.STABLE,
+      PackageStatus.SEMISTABLE,
+      PackageStatus.EXTERNAL,
+    ],
+  });
   //console.log("taskInstanceMeta", taskInstanceMeta);
   const result = await generateObject({
     model: models.googleGeminiPro,
@@ -43,9 +45,7 @@ export const createTaskInfo = async (
         ----
         ${getMicrofoxCapabilities()}
         Packages/Platforms we support:
-        ${stablePackageNames.join(", ")}
-        ${semiStablePackageNames.join(", ")}
-        ${externalPackageNames.join(", ")}
+        ${packageList.map((pkg) => pkg.package_name).join(", ")}
         `
       : `
         You are a task expert and also have developer experience.
@@ -55,9 +55,7 @@ export const createTaskInfo = async (
         ----
         ${getMicrofoxCapabilities()}
                 Packages/Platforms we support:
-        ${stablePackageNames.join(", ")}
-        ${semiStablePackageNames.join(", ")}
-        ${externalPackageNames.join(", ")}
+        ${packageList.map((pkg) => pkg.package_name).join(", ")}
     `,
     schema: taskInfo,
     prompt: modification

@@ -67,6 +67,66 @@ cd my-turborepo
 pnpm dev
 ```
 
+## Local Development with Microfox Packages
+
+For faster local development when working with @microfox/* packages, you can use local package copying instead of waiting for package publishing and installation.
+
+### Quick Setup
+
+**Method 1: Add specific package for local development** ⭐ **Recommended**
+```bash
+# Automatically adds package to package.json with "*" version and copies it
+npm run install-microfox "@microfox/aws-ses"
+npm run install-microfox "@microfox/google-oauth"
+
+# You can also install multiple packages at once
+npm run install-microfox "@microfox/aws-ses" "@microfox/google-oauth" "@microfox/slack-oauth"
+```
+
+**Method 2: Install all packages already marked with "*" version**
+```bash
+# Copy all @microfox/* packages that have "*" version in package.json
+npm run install-microfox
+```
+
+**Method 3: Manual setup (if you prefer)**
+1. **Set packages to wildcard version**: In `apps/web/package.json`, change any @microfox/* dependency you want to develop locally to:
+   ```json
+   {
+     "dependencies": {
+       "@microfox/some-package": "*"
+     }
+   }
+   ```
+
+2. **Run the install command**: After setting versions to "*", run:
+   ```bash
+   npm run install-microfox
+   ```
+
+### How it Works
+
+- The `install-microfox` script reads all @microfox/* dependencies in `apps/web/package.json`
+- For packages with version "*", it copies the corresponding package from `../Microfox/node_modules/@microfox/`
+- Since `node_modules` is gitignored, this won't affect production deployments
+
+### Production Safety
+
+A pre-commit git hook automatically checks for any @microfox/* packages with "*" version and blocks the commit if found. This ensures you never accidentally commit code with local development dependencies.
+
+**Enhanced Hook Features:**
+- 🎨 **Colored output** for better visibility
+- 🔍 **Detailed error messages** with specific fix instructions
+- 🛠️ **Environment validation** (checks for Node.js, script files)
+- 📊 **Clear success/failure reporting** with exit codes
+- 💡 **Helpful troubleshooting tips** and quick fixes
+
+**To fix blocked commits:**
+1. Update the "*" versions to specific version numbers in `apps/web/package.json`
+2. Ensure the packages are properly published in the Microfox repo  
+3. Run `npm install` to get the published versions
+4. Try committing again
+
 ### Remote Caching
 
 > [!TIP]

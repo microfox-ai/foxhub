@@ -11,6 +11,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
+    "install-microfox": "node scripts/install-microfox.js",
     "prisma:generate": "prisma generate --schema=./apps/web/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-dev-reset": "prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
@@ -19,6 +20,7 @@
     "prisma:migrate-deploy-reset": "dotenv -- prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-resolve-deploy": "dotenv -- prisma migrate resolve --applied $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-rollback-deploy": "dotenv -- prisma migrate resolve --rolled-back $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
+    "prepare": "husky",
     "postinstall": "npm run prisma:generate"
   },
   "devDependencies": {
@@ -44,6 +46,7 @@
     "@types/webidl-conversions": "^7.0.3",
     "@types/yargs-parser": "^21.0.3",
     "eslint": "^9.22.0",
+    "husky": "^9.1.7",
     "prettier": "^3.5.3",
     "prisma": "^6.6.0",
     "turbo": "^2.4.4",

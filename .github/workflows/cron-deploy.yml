@@ -43,6 +43,9 @@ jobs:
       - name: Install cron service dependencies
         id: install
         run: |
+          # Remove root package.json to prevent npm from installing root dependencies
+          # that require database environment variables
+          rm -f package.json package-lock.json
           cd apps/cron
           if ! npm install; then
             echo "install-status=0" >> $GITHUB_OUTPUT

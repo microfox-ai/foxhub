@@ -208,13 +208,14 @@ export const fetchPackageDocs = (
         ),
     }),
     execute: async ({ packages }, options) => {
+      console.log("packages raw", packages);
       const fetchReadMePackages = packages.filter((pkg) =>
         pkg.package.includes("@microfox/")
           ? pkg.package != "@microfox/null"
           : !EXCLUDED_PACKAGES_LIST.includes(pkg.package) &&
             !pkg.package.startsWith("@types/")
       );
-      console.log("packages", fetchReadMePackages);
+      console.log("packages filtered", fetchReadMePackages);
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;

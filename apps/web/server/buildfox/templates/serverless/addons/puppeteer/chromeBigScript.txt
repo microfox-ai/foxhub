@@ -38,8 +38,6 @@ export const puppeteerLaunchProps = async () => {
     executablePath = await chromium.executablePath()
   }
 
-  console.log('Chrome executable path:', executablePath)
-
   return {
     args: [
       ...chromium.args,
@@ -56,6 +54,7 @@ export const puppeteerLaunchProps = async () => {
 
 // Use the above helper function like this:
 
+// import puppeteer from 'puppeteer-core'
 // import { puppeteerLaunchProps } from "./helpers/chromeScript.js";
 // const browser = await puppeteer.launch(await puppeteerLaunchProps());
 // const page = await browser.newPage();

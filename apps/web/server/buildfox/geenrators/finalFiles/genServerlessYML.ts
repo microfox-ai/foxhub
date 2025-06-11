@@ -80,6 +80,37 @@ const validateServerlessYML = (
   return { isValid, errors };
 };
 
+const processImportsFromFiles = (allGenFilesList: any[]) => {
+  return allGenFilesList
+    ?.filter((file: any) => file.filePath.includes("/functions"))
+    .map((file: any) => {
+      const fileContent = file.content || "";
+      const imports =
+        fileContent
+          .match(
+            /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"]([^'"]+)['"]/g
+          )
+          ?.map((match: string) => {
+            const matches = match.match(/from\s+['"]([^'"]+)['"]/);
+            return matches?.[1];
+          })
+          .filter(Boolean) || [];
+
+      const isPuppet = imports.some(
+        (imp: string) =>
+          imp.includes("helpers/chromeScript.js") ||
+          imp.includes("puppeteer") ||
+          imp.includes("chrome")
+      );
+
+      return {
+        fileName: file.fileName?.split(".")[0],
+        imports,
+        isPuppet,
+      };
+    });
+};
+
 export const genServerlessYML = async (
   props: StreamingFucntionProps<any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
@@ -92,6 +123,8 @@ export const genServerlessYML = async (
     "serverless.yml"
   );
   const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");
+
+  const imports = processImportsFromFiles(allGenFilesList);
 
   // The following functions are generated for the task:
   // ${allGenFilesList
@@ -111,7 +144,7 @@ export const genServerlessYML = async (
                 ` name: ${lambda.name} \n
               path: ${lambda.path}\n
               method: ${lambda.method}\n
-              handler: dist/index.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
+              handler: dist/${getFunctionNameFromKebabCase(lambda.name)}.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
             )
             .join("\n\n - ")}
           ${taskInstanceMeta?.taskStructure?.cronJobs
@@ -119,7 +152,7 @@ export const genServerlessYML = async (
               (cron) => `
               name: ${cron.name} \n
               method: post\n 
-              handler: dist/index.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
+              handler: dist/${getFunctionNameFromKebabCase(cron.name)}.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
               - schedule:\n
                 rate: ${cron.cronExpression}`
             )
@@ -184,6 +217,7 @@ export const genServerlessYML = async (
   const generatedContent = await fs.readFile(generatedFilePath, "utf8");
   const validation = validateServerlessYML(generatedContent);
 
+  // MSUT BE SHIFTED TO FIRST AI GENERATION oF YML FILE ONLY, with the correct context being passed,and rules given from packagages instead of the current way
   await updateYMLFile(
     generatedFilePath
       .replace("/serverless.yml", "")
@@ -192,17 +226,6 @@ export const genServerlessYML = async (
     (config) => {
       let newConfig = { ...config };
       newConfig.provider.timeout = 60;
-      // newConfig.plugins = [
-      //   ...(newConfig.plugins ?? []),
-      //   "serverless-plugin-chrome",
-      // ];
-      // newConfig.package = {
-      //   ...newConfig.package,
-      //   exclude: [
-      //     ...(newConfig.package?.exclude ?? []),
-      //     "node_modules/puppeteer/.local-browsers/**",
-      //   ],
-      // };
       if (
         taskInstanceMeta.taskStructure?.templateAddons?.includes(
           codeTemplateAddon.enum.sls_puppeteer_chrome
@@ -225,17 +248,20 @@ export const genServerlessYML = async (
                 [functionName]: functionConfig,
               };
             }
-            // return {
-            //   ...acc,
-            //   [functionName]: functionConfig,
-            // };
+            const thisFile = imports.find(
+              (imp: any) => imp.fileName === functionName
+            );
             return {
               ...acc,
               [functionName]: {
                 ...(functionConfig as any),
-                layers: [
-                  "arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
-                ],
+                ...(thisFile?.isPuppet
+                  ? {
+                      layers: [
+                        "arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
+                      ],
+                    }
+                  : {}),
               },
             };
           },

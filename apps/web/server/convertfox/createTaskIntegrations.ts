@@ -9,6 +9,7 @@ import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { models } from "../models";
 import { PackageStatus } from "../types";
 import { TaskInstanceMetaType, taskIntegrations } from "./types";
+import { IN_STAGING } from "@/utils/constants/appInfo";
 
 // IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
 // THIS OPERATION IS USELESSY CALLING AI TOO MANY TIMES BECAUSE OF IMPORPER EMBEDDING USAGE.
@@ -32,11 +33,9 @@ export const createTaskIntegrations = async (
 
   // serach internal packages for each platform & attach them to the platform
   const packageList = await PackageInfoHelper.getAllPackages({
-    statuses: [
-      PackageStatus.STABLE,
-      //PackageStatus.SEMISTABLE,
-      PackageStatus.EXTERNAL,
-    ],
+    statuses: IN_STAGING
+      ? [PackageStatus.STABLE, PackageStatus.SEMISTABLE, PackageStatus.EXTERNAL]
+      : [PackageStatus.STABLE, PackageStatus.EXTERNAL],
   });
 
   // first, get a text of all the platforms we need to integrate with for this task

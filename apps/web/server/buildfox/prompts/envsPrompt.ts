@@ -3,7 +3,10 @@ import {
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
 import { ClientRequest, ClientSecret } from "@prisma/client";
-import { envsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
+import {
+  envsFromTaskIntegrations,
+  getPackageInfosFromTaskIntegrations,
+} from "../helper/coreEnvsFromTaskIntegrations";
 import {
   InternalTemplateEnv,
   templateEnvsFromTaskIntegrations,
@@ -33,29 +36,35 @@ export const envsPrompt = async (
     taskInstanceMeta.taskStructure?.templateType!,
     clientRequest
   );
+  const packages = await getPackageInfosFromTaskIntegrations(
+    taskInstanceMeta.taskIntegrations
+  );
   let coreEnvs: string[] = [];
   const requiredEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(
-        taskInstanceMeta.taskIntegrations,
-        "requiredKeys",
-        clientSecrets?.map((secret) => secret.type)
-      )
+    ? envsFromTaskIntegrations({
+        taskIntegrations: taskInstanceMeta.taskIntegrations,
+        type: "requiredKeys",
+        packages: packages,
+        selectedConstructors: clientSecrets?.map((secret) => secret.type),
+      })
     : [];
   coreEnvs = coreEnvs.concat(requiredEnvs);
   const oauthEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(
-        taskInstanceMeta.taskIntegrations,
-        "internalKeys",
-        clientSecrets?.map((secret) => secret.type)
-      )
+    ? envsFromTaskIntegrations({
+        taskIntegrations: taskInstanceMeta.taskIntegrations,
+        type: "internalKeys",
+        packages: packages,
+        selectedConstructors: clientSecrets?.map((secret) => secret.type),
+      })
     : [];
   coreEnvs = coreEnvs.concat(oauthEnvs);
   let configEnvs = taskInstanceMeta.taskIntegrations
-    ? envsFromTaskIntegrations(
-        taskInstanceMeta.taskIntegrations,
-        "botConfig",
-        clientSecrets?.map((secret) => secret.type)
-      )
+    ? envsFromTaskIntegrations({
+        taskIntegrations: taskInstanceMeta.taskIntegrations,
+        type: "botConfig",
+        packages: packages,
+        selectedConstructors: clientSecrets?.map((secret) => secret.type),
+      })
     : [];
 
   // ONLY ADD THOSE CONFIG ENVS THAT ARE FILLED (SKIP UNFILLED)

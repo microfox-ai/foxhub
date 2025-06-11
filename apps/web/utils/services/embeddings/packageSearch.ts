@@ -123,10 +123,10 @@ async function getPackageInfos(packageNames: string[]): Promise<Package[]> {
     return [];
   }
 
-  console.log(`\n✅ Found ${data.length} packages:`);
-  data.forEach((pkg: any, index: number) => {
-    console.log(`${index + 1}. ${pkg.package_name} - ${pkg.package_title}`);
-  });
+  // console.log(`\n✅ Found ${data.length} packages:`);
+  // data.forEach((pkg: any, index: number) => {
+  //   console.log(`${index + 1}. ${pkg.package_name} - ${pkg.package_title}`);
+  // });
   return data.map((pkg: any) => pkg.raw_content);
 }
 
@@ -261,11 +261,11 @@ async function getAllPackages({
   const typedData = data as Partial<PackageDbInfo>[];
 
   console.log(`\n✅ Found ${typedData.length} total packages:`);
-  typedData.forEach((pkg, index) => {
-    console.log(
-      `${index + 1}. ${pkg.package_name} (${pkg.platform_type}/${pkg.status}) - ${pkg.auth_type || "none"}`
-    );
-  });
+  // typedData.forEach((pkg, index) => {
+  //   console.log(
+  //     `${index + 1}. ${pkg.package_name} (${pkg.platform_type}/${pkg.status}) - ${pkg.auth_type || "none"}`
+  //   );
+  // });
 
   return typedData;
 }

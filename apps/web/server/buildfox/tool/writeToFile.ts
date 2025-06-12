@@ -174,6 +174,16 @@ export const readAllGenFilesList = async (
           const matches = match.match(/process\.env\.([\w]+)/);
           return matches?.[1];
         });
+      const importsUsed =
+        fileContent
+          .match(
+            /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"]([^'"]+)['"]/g
+          )
+          ?.map((match: string) => {
+            const matches = match.match(/from\s+['"]([^'"]+)['"]/);
+            return matches?.[1];
+          })
+          .filter(Boolean) || [];
       if (withPackages) {
         return {
           ...file,
@@ -183,6 +193,7 @@ export const readAllGenFilesList = async (
                 (pkg) => pkg != undefined && pkg != "undefined"
               ) ?? [],
             envVariablesUsed: envVariablesUsed ?? [],
+            importsUsed: importsUsed ?? [],
           },
         };
       }

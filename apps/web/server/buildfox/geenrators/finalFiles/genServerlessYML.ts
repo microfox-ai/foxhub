@@ -84,19 +84,9 @@ const processImportsFromFiles = (allGenFilesList: any[]) => {
   return allGenFilesList
     ?.filter((file: any) => file.filePath.includes("/functions"))
     .map((file: any) => {
-      const fileContent = file.content || "";
-      const imports =
-        fileContent
-          .match(
-            /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"]([^'"]+)['"]/g
-          )
-          ?.map((match: string) => {
-            const matches = match.match(/from\s+['"]([^'"]+)['"]/);
-            return matches?.[1];
-          })
-          .filter(Boolean) || [];
+      const imports = file.meta?.importsUsed;
 
-      const isPuppet = imports.some(
+      const isPuppet = imports?.some(
         (imp: string) =>
           imp.includes("helpers/chromeScript.js") ||
           imp.includes("puppeteer") ||
@@ -125,6 +115,8 @@ export const genServerlessYML = async (
   const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");
 
   const imports = processImportsFromFiles(allGenFilesList);
+
+  console.log("imports", imports);
 
   // The following functions are generated for the task:
   // ${allGenFilesList

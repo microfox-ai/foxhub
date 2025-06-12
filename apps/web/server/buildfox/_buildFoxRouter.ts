@@ -200,10 +200,10 @@ export const buildFoxRouter: ServerStreamingFunction<
     type: "ui",
     objectType: "envCollector",
     persona: "buildfox",
-    text: envVariables.length > 0 ? `Need Some Minor Details !` : `All Done !`,
+    text: envVariables.length > 0 ? `All Done !` : `All Done !`,
     description:
       envVariables.length > 0
-        ? `I need some more details to complete the build. Please add the secrets below.`
+        ? `Your task is built, butI need some more details to complete the build. Please add the secrets below.`
         : `All done! You can now test your automation by clicking the button below.`,
     buttons: [
       {

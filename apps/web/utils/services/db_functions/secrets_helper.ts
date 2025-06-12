@@ -427,10 +427,13 @@ export const updateDeploymentsOfClientSecret = async (
     for (const deployment of clientDeployments) {
       const serverlessMetadata = (
         deployment?.metadata as unknown as ClientDeploymentMetadata
-      ).serverless;
-      for (const functionInfo of serverlessMetadata?.functions) {
+      )?.serverless;
+      if (!serverlessMetadata) {
+        continue;
+      }
+      for (const functionInfo of serverlessMetadata?.functions ?? []) {
         let envVarsmap =
-          clientSecret?.variables.reduce(
+          clientSecret?.variables?.reduce(
             (acc: Record<string, string>, curr: any) => {
               acc[curr.key] = curr.value;
               return acc;

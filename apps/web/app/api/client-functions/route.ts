@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     const { userId, botProjectId } = clientRequest;
 
-    const serverlessLog = metadata.serverless.output;
+    const serverlessLog = metadata.serverless?.output;
     const serviceName = getServiceName(
       clientRequest,
       clientRequest.taskInstanceMeta as unknown as TaskInstanceMetaType

@@ -249,7 +249,7 @@ export const DeployStatus = () => {
                                 </div>
                                 {clientDeployment?.metadata && (
                                     <div className="flex justify-between">
-                                        <span className="text-xs text-gray-500">{(clientDeployment.metadata as unknown as ClientDeploymentMetadata).serverless?.stage} functions</span>
+                                        <span className="text-xs text-gray-500">{(clientDeployment.metadata as unknown as ClientDeploymentMetadata)?.serverless?.stage} functions</span>
                                         <span className="text-xs font-medium">{(clientDeployment.metadata as unknown as ClientDeploymentMetadata)?.serverless?.functions?.length}</span>
                                     </div>
                                 )}

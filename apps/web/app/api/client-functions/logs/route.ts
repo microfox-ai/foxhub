@@ -22,7 +22,14 @@ export async function POST(req: NextRequest) {
 
     const serverlessConfig = (
       clientDeployment.metadata as any as ClientDeploymentMetadata
-    ).serverless;
+    )?.serverless;
+
+    if (!serverlessConfig) {
+      return NextResponse.json(
+        { error: "Serverless config not found" },
+        { status: 404 }
+      );
+    }
     const thisFunction = serverlessConfig.functions.find(
       (f: any) =>
         endpointLink.includes(f.endpointLink) || f.endpointLink === endpointLink

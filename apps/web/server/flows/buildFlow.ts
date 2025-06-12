@@ -148,7 +148,7 @@ export const buildFlow: ServerStreamingFunction<
       model: models.googleGeminiPro,
       schema: z.object({
         intent: z.enum([
-          "Modify-Task",
+          "Modify-App",
           "Add-Features",
           "Rebuild-App",
           "Redeploy-App",
@@ -165,9 +165,13 @@ export const buildFlow: ServerStreamingFunction<
             we need to detect the exact intent of the user to understand what they want to do.
 
             CRITICAL:
-            If the user is asking for even a tiny change/modification of the built automation, then always pass the intent as "Modify-Task"
+            If the user is asking for even a tiny change/modification of the built task/automation, then always pass the intent as "Modify-App"
+            if the user is asking something related to the current task or looking to trigger something inside the task, then pass the intent as "In-Task-Query"
             If the user is asking for a new feature, then pass the intent as "Add-Features"
-            if the user is asking something related to the curren task, then pass the intent as "In-Task-Query"
+            If the user is asking to rebuild the task, then pass the intent as "Rebuild-App"
+            If the user is asking to redeploy the task, then pass the intent as "Redeploy-App"
+            If the user is asking to publish the task, then pass the intent as "Publish-App-to-Store"
+            if nothing else matches, fallback to "In-Task-Query" or "Casual-Chat"
         `,
       prompt: `
             The user has sent the following message:
@@ -178,7 +182,7 @@ export const buildFlow: ServerStreamingFunction<
     console.log("result", result.object.intent);
 
     switch (result.object.intent) {
-      case "Modify-Task":
+      case "Modify-App":
         return convertfoxRouter(props);
       case "Add-Features":
         return hellofoxRouter(props);

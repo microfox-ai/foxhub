@@ -121,12 +121,12 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
     }
   }, [endpoints, selectedEndpoint]);
 
-  const thisFunction = (deploymentInfo?.metadata as any as ClientDeploymentMetadata).serverless?.functions.find(
+  const thisFunction = (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functions.find(
     (f: any) =>
       f.endpointLink === selectedEndpoint || f.endpointLink.includes(selectedEndpoint)
   );
   const selectedFunctionName =
-    (deploymentInfo?.metadata as any as ClientDeploymentMetadata).serverless?.functionBase + "-" + thisFunction?.functionName;
+    (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functionBase + "-" + thisFunction?.functionName;
 
   return (
     <ApiDocContext.Provider

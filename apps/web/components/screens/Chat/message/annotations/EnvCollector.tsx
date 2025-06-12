@@ -43,6 +43,7 @@ import { MotionConfig } from "framer-motion";
 import { ClientSecretVariable } from "@/server/types";
 import { ClientSecretPackageType } from "@/server/types";
 import { ExtraEnvVariable, TaskInstanceMetaType } from "@/server/convertfox/types";
+import { FileTree, type BuildFile, type FileTreeNode } from "../../code/FileTree";
 
 interface UIAnnotation {
   objectType: string;
@@ -66,132 +67,7 @@ interface CodeFile {
   meta: any;
 }
 
-interface FileNode {
-  name: string;
-  type: string;
-  children?: Record<string, FileNode>;
-  isFile: boolean;
-}
 
-const getFileIcon = (fileType: string) => {
-  const type = fileType.toLowerCase();
-  if (type.includes('json')) return <FileJson className="w-3 h-3 text-yellow-500" />;
-  if (type.includes('typescript') || type.includes('tsx')) return <FileCode className="w-3 h-3 text-blue-500" />;
-  if (type.includes('javascript') || type.includes('jsx')) return <FileCode className="w-3 h-3 text-yellow-400" />;
-  if (type.includes('css')) return <FileCode className="w-3 h-3 text-pink-500" />;
-  if (type.includes('html')) return <FileCode className="w-3 h-3 text-orange-500" />;
-  if (type.includes('image')) return <FileImage className="w-3 h-3 text-green-500" />;
-  if (type.includes('text')) return <FileText className="w-3 h-3 text-gray-500" />;
-  return <FileIcon className="w-3 h-3 text-gray-500" />;
-};
-
-const FileTreeItem = ({ node, name, level = 0 }: { node: FileNode; name: string; level?: number }) => {
-  const [isOpen, setIsOpen] = useState(true);
-  const isFolder = !node.isFile;
-
-  return (
-    <div className="flex flex-col">
-      <div className={cn(
-        "flex items-center gap-2 py-1 relative",
-        level > 0 && "pl-3"
-      )}>
-        {level > 0 && (
-          <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-700" />
-        )}
-        {isFolder ? (
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
-          >
-            <ChevronDown
-              className={cn(
-                "w-3 h-3 transition-transform duration-200",
-                isOpen ? "transform rotate-180" : ""
-              )}
-            />
-            <FolderIcon className="w-3 h-3 text-blue-400" />
-            <span className="text-xs">{name}</span>
-          </button>
-        ) : (
-          <div className="flex items-center gap-2">
-            {getFileIcon(node.type)}
-            <span className="text-xs text-gray-400">{name}</span>
-            {node.type && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-300">
-                {node.type}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      {isFolder && isOpen && node.children && (
-        <div className="flex flex-col">
-          {Object.entries(node.children)
-            .sort(([aName, aNode], [bName, bNode]) => {
-              if (aNode.isFile !== bNode.isFile) {
-                return aNode.isFile ? 1 : -1;
-              }
-              return aName.localeCompare(bName);
-            })
-            .map(([childName, childNode]) => (
-              <FileTreeItem
-                key={childName}
-                node={childNode}
-                name={childName}
-                level={level + 1}
-              />
-            ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const buildFileTree = (files: CodeFile[]): Record<string, FileNode> => {
-  const tree: Record<string, FileNode> = {};
-  const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.replaceAll("\\", "/").split('/').slice(0, -1).join('/') || '';
-  const rewrittenFiles = files.map((file) => ({
-    ...file,
-    filePath: file.filePath.replaceAll("\\", "/").replace(rootDir, '')
-  }));
-
-  rewrittenFiles.forEach((file) => {
-    const pathParts = file.filePath.replaceAll("\\", "/").split('/').filter(Boolean); // Filter out empty strings
-    const fileName = pathParts.pop()!;
-
-    // If no path parts, it's a root level file
-    if (pathParts.length === 0) {
-      tree[fileName] = {
-        name: fileName,
-        type: file.fileType || '',
-        isFile: true
-      };
-      return;
-    }
-
-    // Handle nested files
-    let currentLevel = tree;
-    pathParts.forEach((part: string) => {
-      if (!currentLevel[part]) {
-        currentLevel[part] = {
-          name: part,
-          type: '',
-          children: {},
-          isFile: false
-        };
-      }
-      currentLevel = currentLevel[part].children!;
-    });
-
-    currentLevel[fileName] = {
-      name: fileName,
-      type: file.fileType || '',
-      isFile: true
-    };
-  });
-
-  return tree;
-};
 
 const SkeletonLoader = () => (
   <div className="animate-pulse">
@@ -278,7 +154,8 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     async (url: string) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch task instance meta");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data[0] : data;
     }, {
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
@@ -292,6 +169,10 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
   const envVariables = taskInstanceMeta?.taskRequiredInfo?.customEnvVariables as ExtraEnvVariable[] ?? [];
   const codeFiles = taskInstanceMeta?.buildingStep?.files as CodeFile[] ?? [];
 
+  const handleFileSelect = (file: FileTreeNode) => {
+    // Handle file selection if needed
+    console.log('Selected file:', file);
+  };
 
   const handleSaveEnv = async (values: Record<string, string>) => {
     try {
@@ -361,7 +242,12 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     );
   });
 
-  const fileTree = codeFiles.length > 0 ? buildFileTree(codeFiles) : null;
+  // Convert CodeFile[] to BuildFile[]
+  const buildFiles: BuildFile[] = codeFiles.map(file => ({
+    filePath: file.filePath,
+    fileType: file.fileType,
+    content: file.meta?.content
+  }));
 
   if (isLoading) {
     return (
@@ -410,19 +296,15 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
           </button>
           {showCodeFiles && (
             <div className="flex flex-col gap-1 rounded-lg p-2">
-              {isTaskInstanceMetaLoading || !fileTree ? (
+              {isTaskInstanceMetaLoading || !buildFiles.length ? (
                 <FileTreeSkeleton />
               ) : (
-                Object.entries(fileTree)
-                  .sort(([aName, aNode], [bName, bNode]) => {
-                    if (aNode.isFile !== bNode.isFile) {
-                      return aNode.isFile ? 1 : -1;
-                    }
-                    return aName.localeCompare(bName);
-                  })
-                  .map(([name, node]) => (
-                    <FileTreeItem key={name} node={node} name={name} />
-                  ))
+                <FileTree
+                  files={buildFiles}
+                  onFileSelect={handleFileSelect}
+                  showTitle={false}
+                  allChildrenCollapsed={true}
+                />
               )}
             </div>
           )}

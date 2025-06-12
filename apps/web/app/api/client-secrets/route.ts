@@ -1,6 +1,5 @@
 // api/client-secrets/route.ts
 import { prisma } from "@/prisma/prisma";
-import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
 import { ClientSecretPackageType } from "@/server/types";
 import {
   addClientSecretToClientRequest,
@@ -8,6 +7,7 @@ import {
   updateClientSecret,
   updateDeploymentsOfClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 // Create ClientSecret
@@ -125,7 +125,9 @@ export async function GET(req: NextRequest) {
           (templateSecret.packageType === ClientSecretPackageType.APIKEY ||
             templateSecret.packageType === ClientSecretPackageType.OAUTH2)
         ) {
-          packageInfo = await fetchPackageInfo(templateSecret.packageName);
+          packageInfo = await PackageInfoHelper.getPackageInfo(
+            templateSecret.packageName
+          );
         }
         finalTemplateSecrets.push({
           ...templateSecret,
@@ -142,7 +144,9 @@ export async function GET(req: NextRequest) {
         (clientSecret.packageType === ClientSecretPackageType.APIKEY ||
           clientSecret.packageType === ClientSecretPackageType.OAUTH2)
       ) {
-        packageInfo = await fetchPackageInfo(clientSecret.packageName);
+        packageInfo = await PackageInfoHelper.getPackageInfo(
+          clientSecret.packageName
+        );
       }
       finalClientSecrets.push({
         ...clientSecret,

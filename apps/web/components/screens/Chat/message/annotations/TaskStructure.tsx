@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle, Clock, FileText, GitFork, Info, PackageIcon, Target, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckCircle, Clock, FileText, GitFork, Info, PackageIcon, Target, ChevronDown, ChevronRight, Edit } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
+import { EditTaskStructureDialog } from "./EditTaskStructureDialog";
+import { Button } from "@/components/ui/button";
 
 interface UIAnnotation {
     objectType: string;
@@ -32,10 +34,11 @@ export const TaskStructure = ({
     uiAnnotation,
     idx,
 }: TaskStructureProps) => {
-    const { taskInstanceMeta } = useTaskInstanceMetaContext();
+    const { taskInstanceMeta, updateTaskInstanceMeta } = useTaskInstanceMetaContext();
     const object = taskInstanceMeta?.taskStructure ? taskInstanceMeta.taskStructure : uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
     const [selectedBrief, setSelectedBrief] = useState<{ title: string; content: string } | null>(null);
     const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const toggleSchema = (modelName: string) => {
         setExpandedSchemas(prev => {
@@ -49,6 +52,15 @@ export const TaskStructure = ({
         });
     };
 
+    const handleSaveTaskStructure = async (updatedStructure: TaskInstanceMetaType["taskStructure"]) => {
+        if (taskInstanceMeta) {
+            await updateTaskInstanceMeta({
+                ...taskInstanceMeta,
+                taskStructure: updatedStructure
+            });
+        }
+    };
+
     return (
         <motion.div
             key={uiAnnotation.objectType + idx}
@@ -58,13 +70,24 @@ export const TaskStructure = ({
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
         >
-            <div className="">
-                <h3 className="text-lg font-semibold text-gray-900">
-                    {uiAnnotation.text}
-                </h3>
-                <p className="text-sm text-gray-500">
-                    Review and manage your task&apos;s components
-                </p>
+            <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        {uiAnnotation.text}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                        Review and manage your task&apos;s components
+                    </p>
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditDialogOpen(true)}
+                    className="flex items-center gap-2"
+                >
+                    <Edit className="w-4 h-4" />
+                    Edit Structure
+                </Button>
             </div>
 
             {object && (
@@ -334,6 +357,12 @@ export const TaskStructure = ({
                     )}
                 </Tabs>
             )}
+            <EditTaskStructureDialog
+                isOpen={isEditDialogOpen}
+                onClose={() => setIsEditDialogOpen(false)}
+                taskStructure={object}
+                onSave={handleSaveTaskStructure}
+            />
             <ActionButtons buttons={uiAnnotation.buttons} />
         </motion.div>
     );

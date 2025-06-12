@@ -1,7 +1,6 @@
-import { prisma } from "@/prisma/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { MicrofoxUsagePricing } from "@microfox/usage-pricing";
-import { fetchPackageInfo } from "@/server/convertfox/gitFetchers";
+import { NextRequest, NextResponse } from "next/server";
 
 //export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -55,11 +54,10 @@ export async function GET(req: NextRequest) {
       ?.filter((pkg) => pkg !== undefined);
     const uniquePackages = [...new Set(packages)];
 
-    const packageInfos = await Promise.all(
-      uniquePackages.map(async (pkg) => {
-        const packageInfo = await fetchPackageInfo(fullPackageName(pkg));
-        return packageInfo;
-      })
+    //const packageInfo = await PackageInfoHelper.getPackageInfos(uniquePackages);
+    // all packages are internal packages
+    const packageInfos = await PackageInfoHelper.getPackageInfos(
+      uniquePackages.map((pkg) => fullPackageName(pkg))
     );
     // TODO: fetch & attach package Infos.
 
@@ -67,7 +65,7 @@ export async function GET(req: NextRequest) {
       results: usage.data
         ?.filter((usage) => usage != undefined)
         .map((usage) => {
-          const packageInfo = packageInfos.find(
+          const packageInfo = packageInfos?.find(
             (packageInfo) =>
               packageInfo?.name === fullPackageName(usage?.package)
           );

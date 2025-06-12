@@ -32,7 +32,7 @@ export const AnnotationUIList = ({
       return (
         <TaskInfo
           key={uiAnnotation.objectType + idx}
-          uiAnnotation={uiAnnotation}
+          uiAnnotation={uiAnnotation as any}
           idx={idx}
         />
       );

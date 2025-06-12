@@ -35,7 +35,7 @@ plugins:
 functions:
   # External API Endpoints
   getExternalData:
-    handler: dist/index.getExternalData
+    handler: dist/getExternalData.getExternalDataFunction
     events:
       - http:
           path: /external
@@ -43,7 +43,7 @@ functions:
           cors: true
 
   postExternalData:
-    handler: dist/index.postExternalData
+    handler: dist/postExternalData.postExternalDataFunction
     events:
       - http:
           path: /external
@@ -52,7 +52,7 @@ functions:
 
   # Cron Jobs
   dailyMorningJob:
-    handler: dist/index.dailyMorningJob
+    handler: dist/dailyMorningJob.dailyMorningJobFunction
     events:
       # HTTP endpoint for testing in all environments
       - http:

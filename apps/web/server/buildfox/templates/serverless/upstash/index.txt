@@ -1,8 +1,6 @@
 // Re-export external API functions
 import { getExternalDataDocs } from "./functions/getExternalData.js";
 import { postExternalDataDocs } from "./functions/postExternalData.js";
-export { getExternalData } from "./functions/getExternalData.js";
-export { postExternalData } from "./functions/postExternalData.js";
 
 /**
  * Complete API documentation
@@ -18,7 +16,7 @@ const apiDocs = {
       "API for handling GitHub webhook events and sending Slack notifications",
     contact: {
       name: "API Support",
-      email: "support@microfox.com",
+      email: "support@microfox.app",
     },
   },
   servers: [

@@ -1,4 +1,5 @@
 import {
+  codeTemplateAddon,
   codeTemplateType,
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
@@ -28,6 +29,7 @@ export const packagesPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {
               )
               .map((platform) => platform?.package + " - " + platform?.reason)
               .join("\n - ")}
+            ${taskInstanceMeta?.taskStructure?.templateAddons?.includes(codeTemplateAddon.enum.sls_puppeteer_chrome) ? "- puppeteer-core" : ""}
             ${taskInstanceMeta?.taskStructure?.templateType === codeTemplateType.enum.upstash_sls ? "- @upstash/redis" : ""}
             - dotenv
             - @types/aws-lambda

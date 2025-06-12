@@ -12,7 +12,7 @@ export const useTaskInstanceMeta = ({
   clientRequestId,
 }: UseTaskInstanceMetaProps) => {
   const [deploymentInfo, setDeploymentInfo] = useState<
-    any | ClientDeployment | null
+    ClientDeployment | null
   >(null);
   const { data, error, mutate, isLoading, isValidating } = useSWR<
     TaskInstanceMetaType & { id: string }
@@ -36,7 +36,14 @@ export const useTaskInstanceMeta = ({
         `/api/client-functions?id=${clientDeploymentId}`,
         {}
       );
-      setDeploymentInfo(response[0]);
+      if (
+        response.clientFunctions?.length > 0 &&
+        response.clientFunctions?.[0]
+      ) {
+        setDeploymentInfo(response.clientFunctions?.[0]);
+      } else {
+        setDeploymentInfo(null);
+      }
     };
     if (clientRequestId) {
       updateClientDeployment(clientRequestId);
@@ -54,7 +61,7 @@ export const useTaskInstanceMeta = ({
     return response as TaskInstanceMetaType & { id: string };
   };
   return {
-    taskInstanceMeta: data,
+    taskInstanceMeta: (Array.isArray(data) ? data[0] : data) as TaskInstanceMetaType & { id: string },
     isLoading: isLoading || isValidating,
     isError: error,
     mutate,

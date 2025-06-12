@@ -1,30 +1,23 @@
+import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
+import { fetchPackageReadme, fetchText } from "@/server/convertfox/gitFetchers";
 import {
-  fetchGithubJson,
-  fetchGithubText,
-  fetchPackageInfo,
-  fetchPackageReadme,
-  fetchText,
-} from "@/server/convertfox/gitFetchers";
-import {
-  codeTemplateType,
   CodeTemplateType,
   TaskInstanceMetaType,
 } from "@/server/convertfox/types";
 import { models } from "@/server/models";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { ClientRequest, ClientSecret } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { generateObject, generateText, tool } from "ai";
-import { z } from "zod";
-import { semanticFunctionSearch } from "./functionSearch";
+import { generateText, tool } from "ai";
 import dedent from "dedent";
-import { baseFilePrompt } from "../prompts/basePrompt";
-import { envsPrompt } from "../prompts/envsPrompt";
-import { type } from "os";
-import { fetchTemplateDir, readAllGenFilesList } from "./writeToFile";
 import fs from "fs/promises";
 import path from "path";
+import { z } from "zod";
+import { baseFilePrompt } from "../prompts/basePrompt";
+import { envsPrompt } from "../prompts/envsPrompt";
 import { helperFilesContext } from "../prompts/helperFilesContext";
-import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
+import { semanticFunctionSearch } from "./functionSearch";
+import { fetchTemplateDir, readAllGenFilesList } from "./writeToFile";
 
 async function fetchGithubReadMe(
   owner: string,
@@ -215,13 +208,14 @@ export const fetchPackageDocs = (
         ),
     }),
     execute: async ({ packages }, options) => {
+      console.log("packages raw", packages);
       const fetchReadMePackages = packages.filter((pkg) =>
         pkg.package.includes("@microfox/")
           ? pkg.package != "@microfox/null"
           : !EXCLUDED_PACKAGES_LIST.includes(pkg.package) &&
             !pkg.package.startsWith("@types/")
       );
-      console.log("packages", fetchReadMePackages);
+      console.log("packages filtered", fetchReadMePackages);
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;
@@ -235,7 +229,9 @@ export const fetchPackageDocs = (
             //     (p) => p.package === pkg
             //   );
             let mainReadme = await fetchPackageReadme(pkg.package);
-            let packageInfo = await fetchPackageInfo(pkg.package);
+            let packageInfo = await PackageInfoHelper.getPackageInfo(
+              pkg.package
+            );
             let constructorPath;
             readme = mainReadme;
             if (!pkg.readmeSearch) {
@@ -246,8 +242,11 @@ export const fetchPackageDocs = (
                 reason: pkg.readmeSearch,
               };
             }
-            if (packageInfo.readme_map?.all_readmes?.length > 0) {
-              constructorPath = packageInfo.readme_map?.all_readmes.find(
+            if (
+              packageInfo &&
+              packageInfo?.readme_map?.all_readmes?.length > 0
+            ) {
+              constructorPath = packageInfo?.readme_map?.all_readmes.find(
                 (r: any) => r.type === "constructor"
               )?.path;
               if (constructorPath) {

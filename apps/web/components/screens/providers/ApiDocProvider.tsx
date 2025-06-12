@@ -6,6 +6,7 @@ import {
   OpenAPIDoc,
   OpenAPIPath,
 } from "@/utils/services/OpenAPIToolsClient";
+import { ClientDeploymentMetadata } from "@/server/types";
 
 export interface Endpoint {
   path: string;
@@ -30,6 +31,7 @@ interface ApiDocContextType {
   | null;
   forceBaseUrl: string | null;
   setForceBaseUrl: (url: string | null) => void;
+  selectedFunctionName: string | null;
 }
 
 const ApiDocContext = createContext<ApiDocContextType | undefined>(undefined);
@@ -55,7 +57,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      const baseUrl = forceBaseUrl || deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage.toLowerCase();
+      const baseUrl = forceBaseUrl || deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage?.toLowerCase();
       try {
         const response = await fetch(
           `${baseUrl}/docs.json`
@@ -112,7 +114,19 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
       setSelectedEndpoint(firstEndpoint.path);
       setSelectedMethod(firstEndpoint.method);
     }
+    if (endpoints.length > 0 && selectedEndpoint && !endpoints.map((e) => e.path).includes(selectedEndpoint) && endpoints[0]) {
+      const firstEndpoint = endpoints[0];
+      setSelectedEndpoint(firstEndpoint.path);
+      setSelectedMethod(firstEndpoint.method);
+    }
   }, [endpoints, selectedEndpoint]);
+
+  const thisFunction = (deploymentInfo?.metadata as any as ClientDeploymentMetadata).serverless?.functions.find(
+    (f: any) =>
+      f.endpointLink === selectedEndpoint || f.endpointLink.includes(selectedEndpoint)
+  );
+  const selectedFunctionName =
+    (deploymentInfo?.metadata as any as ClientDeploymentMetadata).serverless?.functionBase + "-" + thisFunction?.functionName;
 
   return (
     <ApiDocContext.Provider
@@ -128,7 +142,8 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         setSelectedMethod,
         currentEndpointData,
         setForceBaseUrl,
-        forceBaseUrl
+        forceBaseUrl,
+        selectedFunctionName,
       }}
     >
       {children}

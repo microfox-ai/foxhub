@@ -16,6 +16,9 @@
     "prisma:migrate-dev-reset": "prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-dev": "prisma migrate dev --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-deploy": "dotenv -- prisma migrate deploy --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-deploy-reset": "dotenv -- prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-resolve-deploy": "dotenv -- prisma migrate resolve --applied $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
+    "prisma:migrate-rollback-deploy": "dotenv -- prisma migrate resolve --rolled-back $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
     "postinstall": "npm run prisma:generate"
   },
   "devDependencies": {
@@ -27,6 +30,7 @@
     "@types/istanbul-lib-report": "^3.0.3",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/lodash": "^4.17.17",
     "@types/minimatch": "^5.1.2",
     "@types/ms": "^0.7.34",
     "@types/node": "^22.13.9",
@@ -55,8 +59,10 @@
   ],
   "dependencies": {
     "@aws-sdk/client-cloudwatch-logs": "^3.800.0",
+    "@radix-ui/react-alert-dialog": "^1.1.14",
     "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",
-    "dotenv-cli": "^8.0.0"
+    "dotenv-cli": "^8.0.0",
+    "lodash": "^4.17.21"
   }
 }

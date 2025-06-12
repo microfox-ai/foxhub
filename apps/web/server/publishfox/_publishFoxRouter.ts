@@ -23,6 +23,7 @@ import {
 import { cloneTemplate } from "../deployfox/cloneTemplate";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { publishShard } from "@/utils/services/db_functions/publishShard";
 
 export const publishFoxRouter: ServerStreamingFunction<
   any,
@@ -33,11 +34,6 @@ export const publishFoxRouter: ServerStreamingFunction<
   const { clientRequestId } = requestBody;
   let clientRequest = await getClientRequest(clientRequestId);
   let taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
-  let shardPage = await prisma.shardPage.findFirst({
-    where: {
-      clientRequestId: clientRequestId,
-    },
-  });
 
   if (!clientRequest || !taskInstanceMeta?.taskInfo) {
     return {
@@ -70,69 +66,7 @@ export const publishFoxRouter: ServerStreamingFunction<
   // Create a new branch name based on the client request
   //const branchName = `publish-${clientRequest.id}-${Date.now()}`;
   try {
-    // Clone the code from client request repo to published-shards repo
-    await cloneTemplate({
-      sourceOwner: PROJECT_REPO_OWNER,
-      targetOwner: TEMPLATE_REPO_OWNER,
-      sourceRepo: clientRequest.repoName || "",
-      targetRepo: PUBLISHED_SHARD_REPO,
-      sourcePath: clientRequest.requestDir || "",
-      targetPath: clientRequest.requestDir || "",
-      sourceBranch: clientRequest.prBranch || "main",
-      targetBranch: "main",
-      commitMessage: `[skip ci] Publishfox published shard for ${clientRequest.title}`,
-      excludeFiles: ["clientRequest.json", "CHANGELOG.md"],
-    });
-
-    // In future when action is outsourced to users.
-    // Create a pull request
-    // const { data: pr } = await octokit.rest.pulls.create({
-    //   owner: TEMPLATE_REPO_OWNER,
-    //   repo: PUBLISHED_SHARD_REPO,
-    //   title: `Publish: ${clientRequest.title}`,
-    //   body: `Publishing automation from ${clientRequest.title}\n\nDescription: ${clientRequest.description}`,
-    //   head: branchName,
-    //   base: "main",
-    // });
-
-    // Create ShardPage entry
-    if (shardPage) {
-      await prisma.shardPage.update({
-        where: { id: shardPage.id },
-        data: {
-          taskInstanceMeta: taskInstanceMeta || {},
-        },
-      });
-    } else {
-      shardPage = await prisma.shardPage.create({
-        data: {
-          taskInstanceMeta: taskInstanceMeta || {},
-          clientRequestMeta: {
-            title: clientRequest.title,
-            description: clientRequest.description || "",
-            repoName: clientRequest.repoName || "",
-            repoDir: clientRequest.requestDir || "",
-            prBranch: clientRequest.prBranch || "",
-            prNumber: clientRequest.prNumber || "",
-            prUrl: clientRequest.prUrl || "",
-            metadata: clientRequest.metadata || {},
-          },
-          repoDir: clientRequest.requestDir || "",
-          title: clientRequest.title,
-          description: clientRequest.description || "",
-          version: "1.0.0", // Initial version
-          versionNumber: "1", // Initial version number
-          creatorId: clientRequest.userId,
-          clientRequestId: clientRequestId,
-        },
-      });
-    }
-
-    await slackBotSdk.sendMessage({
-      icon_url: MICROFOX_LOGO,
-      channel: MySlackChannels.microfox_updates,
-      text: `Publishfox triggered a publication for ${clientRequest.title}. Shard ID: ${shardPage.id}`,
-    });
+    const { shardPage } = await publishShard(clientRequest, taskInstanceMeta);
 
     dataStream.writeMessageAnnotation({
       type: "ui",

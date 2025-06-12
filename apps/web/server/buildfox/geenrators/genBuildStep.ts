@@ -72,7 +72,7 @@ export async function genBuildStep({
           ...taskInstanceMeta.buildingStep,
           files: newFilesList,
           allEnvs: envVariablesUsedUnique,
-          allPackages: allPackagesUsed,
+          allPackages: packagesUsedUnique,
         },
       },
     });

@@ -341,9 +341,9 @@ export async function fetchServerlessLogs(
     });
     const logsData = await logs.json();
     if (setServerlessLogs) {
-      setServerlessLogs(logsData);
+      setServerlessLogs(logsData?.logs);
     }
-    return logsData;
+    return logsData?.logs;
   } catch (error) {
     console.error("Error fetching logs:", error);
     if (setServerlessLogs) {

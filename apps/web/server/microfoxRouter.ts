@@ -1,5 +1,6 @@
 import {
   defaultCallbackResultBody,
+  ServerStreamingFunction,
   ServerStreamingRouter,
 } from "@repo/ai-utils/router";
 import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
@@ -11,6 +12,8 @@ import { modifyFoxRouter } from "./system/modifier";
 import { buildFlow } from "./flows/buildFlow";
 import { MinionFlow } from "@/components/screens/hooks/convertors";
 import { unknown } from "zod";
+import { chatFlow } from "./flows/chatFlow";
+import { assistantMessageProcessor } from "./system/assistantProcess";
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
   userId?: string;
@@ -25,15 +28,49 @@ const microfoxRouter = new ServerStreamingRouter<
 
 // ratelimit should be per time per model ().
 
+const processAnyMinionFlow: ServerStreamingFunction<
+  any,
+  defaultCallbackResultBody
+> = async (props) => {
+  const { dataStream, requestBody, responseBody } = props;
+
+  let _minionFlow = requestBody.minionFlow;
+
+  if (requestBody.messages.length < 2 && _minionFlow === MinionFlow.Unknown) {
+    _minionFlow = MinionFlow.BuildFlow;
+  }
+
+  switch (_minionFlow) {
+    case MinionFlow.BuildFlow:
+      return buildFlow(props);
+    case MinionFlow.ChatFlow:
+      return chatFlow(props);
+    default:
+      console.log(
+        "WARNING: hitting old routes as minionFlow is not set",
+        requestBody.minionFlow,
+        requestBody.minionType,
+        requestBody.messages[requestBody.messages.length - 1]
+      );
+      return {
+        responseBody: { ...responseBody },
+        appendRequestBody: { ...requestBody },
+      };
+  }
+};
+
 // TODO: remove this & bifract this into multiple small steps in both server & frontend
 //microfoxRouter.addPath("createMessage", createMessageRouter);
-microfoxRouter.addPath("hellofox", hellofoxRouter);
-microfoxRouter.addPath("convertfox", convertfoxRouter);
-microfoxRouter.addPath("buildfox", buildFoxRouter);
-microfoxRouter.addPath("deployfox", deployFoxRouter);
+// microfoxRouter.addPath("hellofox", hellofoxRouter);
+// microfoxRouter.addPath("convertfox", convertfoxRouter);
+// microfoxRouter.addPath("buildfox", buildFoxRouter);
+// microfoxRouter.addPath("deployfox", deployFoxRouter);
 microfoxRouter.addPath("modifyfox", modifyFoxRouter);
 microfoxRouter.addPath("usageTracker", usageTrackerRouter);
 microfoxRouter.addPath(MinionFlow.BuildFlow, buildFlow);
+microfoxRouter.addPath(MinionFlow.ChatFlow, chatFlow);
+microfoxRouter.addPath("msgProcessor", assistantMessageProcessor);
+microfoxRouter.addPath("processAnyMinionFlow", processAnyMinionFlow);
 //microfoxRouter.addPath(MinionFlow.InstallFlow, installFlow);
 
 // action - defines from the user end. - abrupt-switch, switch-notsure, unknown,
@@ -42,46 +79,28 @@ microfoxRouter.addPath(MinionFlow.BuildFlow, buildFlow);
 
 // CHANGING THIS WILL REQUIRE RESTARTING THE SERVER
 microfoxRouter.setRouting((requestBody: any) => {
-  // if (requestBody.somethin === "nothing") {
-  //   return ["nothing"];
+  return ["usageTracker", "msgProcessor", "processAnyMinionFlow"];
+
+  // if (
+  //   requestBody.action === "abrupt-switch" ||
+  //   requestBody.action === "switch-notsure" ||
+  //   requestBody.action === "unknown"
+  // ) {
+  //   return ["usageTracker", "msgProcessor", "modifyfox"];
   // }
-
-  //console.log("requestBody", requestBody);
-  let _minionFlow = requestBody.minionFlow;
-  if (requestBody.messages.length < 2 && _minionFlow === MinionFlow.Unknown) {
-    _minionFlow = MinionFlow.BuildFlow;
-  }
-
-  if (_minionFlow && _minionFlow != MinionFlow.Unknown) {
-    return ["usageTracker", _minionFlow];
-  }
-
-  console.log(
-    "WARNING: hitting old routes",
-    requestBody.minionFlow,
-    requestBody.minionType
-  );
-
-  if (
-    requestBody.action === "abrupt-switch" ||
-    requestBody.action === "switch-notsure" ||
-    requestBody.action === "unknown"
-  ) {
-    return ["usageTracker", "modifyfox"];
-  }
-  let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
-  if (minionType === "hellofox") {
-    return ["usageTracker", "hellofox"];
-  } else if (minionType === "convertfox") {
-    return ["usageTracker", "convertfox"];
-  } else if (minionType === "buildfox") {
-    return ["usageTracker", "buildfox"];
-  } else if (minionType === "deployfox") {
-    return ["usageTracker", "deployfox"];
-  } else if (minionType === "modifyfox") {
-    return ["usageTracker", "modifyfox"];
-  }
-  return ["usageTracker"];
+  // let minionType = requestBody.minionType.replaceAll('"', "") || "hellofox";
+  // if (minionType === "hellofox") {
+  //   return ["usageTracker", "hellofox"];
+  // } else if (minionType === "convertfox") {
+  //   return ["usageTracker", "convertfox"];
+  // } else if (minionType === "buildfox") {
+  //   return ["usageTracker", "buildfox"];
+  // } else if (minionType === "deployfox") {
+  //   return ["usageTracker", "deployfox"];
+  // } else if (minionType === "modifyfox") {
+  //   return ["usageTracker", "modifyfox"];
+  // }
+  // return ["usageTracker"];
 });
 
 export { microfoxRouter };

@@ -14,7 +14,7 @@ import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProv
 import { useDeployStatus } from "../../providers/useDeployStatus";
 const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-        case "success":
+        case "deployed":
             return {
                 bg: "bg-green-50",
                 border: "border-green-100",
@@ -30,14 +30,6 @@ const getStatusColor = (status: string) => {
                 badge: "bg-red-50 text-red-700 border-red-100",
                 icon: "text-red-500",
             };
-        case "in_progress":
-            return {
-                bg: "bg-blue-50",
-                border: "border-blue-100",
-                text: "text-blue-700",
-                badge: "bg-blue-50 text-blue-700 border-blue-100",
-                icon: "text-blue-500",
-            };
         default:
             return {
                 bg: "bg-gray-50",
@@ -51,14 +43,12 @@ const getStatusColor = (status: string) => {
 
 const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
-        case "success":
+        case "deployed":
             return <CheckCircle className="w-5 h-5" />;
         case "failed":
             return <XCircle className="w-5 h-5" />;
-        case "in_progress":
-            return <Loader2 className="w-5 h-5 animate-spin" />;
         default:
-            return <Clock className="w-5 h-5 " />;
+            return <Loader2 className="w-5 h-5 animate-spin" />;
     }
 };
 
@@ -106,23 +96,23 @@ export const DeployStatus = () => {
 
     const { taskInstanceMeta } = useTaskInstanceMetaContext();
     const { selectedRequest } = useClientProject()
-    const { data: clientDeployments } = useSWR<ClientDeployment[]>(
+    const { data: clientDeployments } = useSWR<{ clientFunctions: ClientDeployment[] }>(
         `/api/client-functions?id=${selectedRequest?.id}`,
         async (url: string) => {
             const response = await PortalSdk.getData(url, {});
             return response.clientFunctions;
         }
     );
-    const clientDeployment = clientDeployments?.[0] || null;
-    const { deployStep } = useDeployStatus({
+    const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
+    const { deployment, shouldBreak } = useDeployStatus({
+        runId: taskInstanceMeta?.deployStep?.runId?.toString() || "",
         stage: taskInstanceMeta?.deployStep?.deployment?.stage as DEPLOY_STAGE || DEPLOY_STAGE.STAGING,
-        initialDeployStep: taskInstanceMeta?.deployStep,
     });
 
     //console.log("clientDeployment", clientDeployment);
     const { setActiveTab } = useTabUi();
 
-    if (!deployStep)
+    if (!deployment)
         return (
             <div className="mb-8 p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
                 <div className="flex flex-col space-y-6">
@@ -142,19 +132,19 @@ export const DeployStatus = () => {
             </div>
         );
 
-    const startTime = dayjs(deployStep.startTime);
-    const endTime = deployStep.endTime ? dayjs(deployStep.endTime) : null;
+    const startTime = dayjs(deployment.startTime);
+    const endTime = deployment.endTime ? dayjs(deployment.endTime) : null;
     const duration = prettyPrintDuration(
-        deployStep.startTime || "",
-        deployStep.endTime || ""
+        deployment.startTime || "",
+        deployment.endTime || ""
     );
 
-    const status = deployStep.status?.toLowerCase();
+    const status = deployment?.status?.toLowerCase();
     const statusColors = getStatusColor(status || "");
     const StatusIcon = () => getStatusIcon(status || "");
 
     // Get stage from either deployStep or clientDeployment
-    const stage = deployStep.deployment?.stage || clientDeployment?.stage || "UNKNOWN";
+    const stage = deployment.stage || clientDeployment?.stage || "UNKNOWN";
     const stageColors = getStageColor(stage);
 
     // Determine if this is a production deployment
@@ -181,9 +171,9 @@ export const DeployStatus = () => {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-lg font-semibold text-gray-900">
-                                    {status === "failed" && "Deployment Failed"}
-                                    {status === "success" && "Successfully Deployed 🎉"}
-                                    {status === "in_progress" && "Deployment Pending"}
+                                    {status === "failed" ? "Deployment Failed" :
+                                        status === "deployed" ? "Successfully Deployed 🎉" :
+                                            "Deployment Pending"}
                                 </h3>
                                 <div className={cn(
                                     "px-2 py-0.5 rounded-full text-xs font-medium",
@@ -192,7 +182,7 @@ export const DeployStatus = () => {
                                     {stage}
                                 </div>
                             </div>
-                            {status === "success" && duration && (
+                            {status === "deployed" && duration && (
                                 <p className="text-sm text-gray-500">Completed in {duration}</p>
                             )}
                         </div>
@@ -209,7 +199,7 @@ export const DeployStatus = () => {
                                 <div className={cn(
                                     "w-2 h-2 rounded-full",
                                     status === "failed" ? "bg-red-500" :
-                                        status === "success" ? "bg-green-500" :
+                                        status === "deployed" ? "bg-green-500" :
                                             "bg-blue-500 animate-pulse"
                                 )} />
                                 <span className="text-sm font-medium capitalize">{status || "pending"}</span>
@@ -267,7 +257,7 @@ export const DeployStatus = () => {
                         </div>
 
                         {/* Stage-specific actions */}
-                        {status === "success" && (
+                        {status === "deployed" && (
                             <div className="p-3 bg-gray-50 rounded-lg">
                                 <h4 className="text-sm font-medium text-gray-700 mb-2">Next Steps</h4>
                                 {isStaging && (

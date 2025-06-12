@@ -315,6 +315,7 @@ model ShardPage {
   clientRequestMeta Json
   repoDir        String
   title          String?
+  miniDescription String?
   description    String?
   video_url      String?
   thumbnail_url  String?
@@ -365,4 +366,6 @@ model WebhookEvent {
   event_name      String?
   payload         Json?
   triggerRoute    Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }

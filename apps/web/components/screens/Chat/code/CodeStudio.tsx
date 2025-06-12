@@ -33,29 +33,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { generateDefaultEnvFile, generateDefaultReadmeFile, generateDefaultEnvJsonFile } from './defaultFiles';
 import { useAuth } from '@/components/auth/AuthProvider';
-
-// Define a simple type for file entries from taskInstanceMeta
-interface BuildFile {
-    filePath: string;
-    content?: string;
-    fileType?: string;
-}
-
-// Type for the hierarchical file structure used by the FileTree
-interface FileTreeNode {
-    id: string;
-    name: string;
-    path: string;
-    children?: FileTreeNode[];
-    content?: string;
-    isFolder: boolean;
-    fileType: string;
-}
-
-interface CodeStudioProps {
-    // Potentially a function to fetch file content if not readily available
-    // onFileContentFetch?: (filePath: string) => Promise<string>; 
-}
+import { FileTree, FileTreeNode, BuildFile } from './FileTree';
 
 // Helper function to get file icon based on type
 const getFileIconCmp = (fileType: string) => {
@@ -180,6 +158,11 @@ const FileTreeItem: React.FC<{ node: FileTreeNode; onFileSelect: (file: FileTree
     );
 };
 
+interface CodeStudioProps {
+    // Potentially a function to fetch file content if not readily available
+    // onFileContentFetch?: (filePath: string) => Promise<string>; 
+}
+
 const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
     const [activeFile, setActiveFile] = useState<FileTreeNode | null>(null);
     const [editorContent, setEditorContent] = useState<string>('');
@@ -193,22 +176,11 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
     const { user } = useAuth();
 
     const files = taskInstanceMeta?.buildingStep?.files || [];
-    const fileTree = useMemo(() => buildFileTree(files as any as BuildFile[]), [files]);
 
     const gitUrl = useMemo(() => {
         if (!selectedRequest || !selectedRequest.repoName || !selectedRequest.prBranch) return null;
         return `https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest.repoName}/tree/${selectedRequest.prBranch}`;
     }, [selectedRequest, activeFile]);
-
-    // Sort root level items: folders first, then files alphabetically
-    const sortedFileTree = useMemo(() => {
-        return [...fileTree].sort((a, b) => {
-            if (a.isFolder !== b.isFolder) {
-                return a.isFolder ? -1 : 1;
-            }
-            return a.name.localeCompare(b.name);
-        });
-    }, [fileTree]);
 
     const fetchFileContent = async (filePath: string) => {
         if (!selectedRequest || !selectedRequest.repoName || !selectedRequest.prBranch) {
@@ -234,6 +206,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             setIsLoading(false);
         }
     };
+
     const { data: secretsData, mutate: mutateSecrets } = useSWR<{
         clientSecrets: ClientSecret[];
     }>(
@@ -249,7 +222,9 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             revalidateOnFocus: true,
         }
     );
+
     const existingCustomSecrets = secretsData?.clientSecrets?.filter((secret) => secret.packageType == ClientSecretPackageType.CUSTOM) || [];
+
     const updateSecretsAndConfiguration = async () => {
         if (activeFile?.id != ".env") return;
         if (!taskInstanceMeta || !taskInstanceMeta.taskRequiredInfo) return;
@@ -306,15 +281,12 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         }
 
         if (activeFile.id === "README.md") {
-            //await updateSecretsAndConfiguration();
             return;
         }
 
         if (activeFile.id === "env.json") {
-            //await updateSecretsAndConfiguration();
             return;
         }
-
 
         const fullFilePath = files.find((file) => file.fileName === activeFile.name)?.filePath?.replaceAll("\\", "/").replace(selectedRequest.repoName + "/", '');
         try {
@@ -427,11 +399,13 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                 return 'plaintext';
         }
     };
+
     const params = useParams<{
         project_id?: string;
         request_id?: string;
     }>();
     const requestParamId = params?.request_id;
+
     const envFile = useMemo(() => {
         let variables = existingCustomSecrets.flatMap((secret: any) => (secret.variables ?? [])?.concat(secret.botConfig ?? []))?.filter((variable: ClientSecretVariable) => !variable.key.includes("CLIENT_"));
         return {
@@ -470,43 +444,27 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         }
     }, [existingCustomSecrets]);
 
-    const handleEnvSelect = () => {
-        setActiveFile(envFile);
-        setIsModified(false);
-    }
-
-    const handleReadmeSelect = () => {
-        setActiveFile(readmeFile);
-        setIsModified(false);
-    }
-
-    const handleEnvJsonSelect = () => {
-        setActiveFile(envJsonFile);
-        setIsModified(false);
-    }
+    const additionalFiles = useMemo(() => {
+        const files: FileTreeNode[] = [];
+        if (IN_DEV) {
+            files.push(envFile);
+            files.push(readmeFile);
+        }
+        if (IN_DEV || (IN_STAGING && user && user.email?.includes("themoondevs.com"))) {
+            files.push(envJsonFile);
+        }
+        return files;
+    }, [envFile, readmeFile, envJsonFile, user]);
 
     return (
         <ResizablePanelGroup direction="horizontal" className="h-full w-full rounded-lg border">
             <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
-                <div className="p-4 h-full overflow-y-auto bg-black">
-                    <h2 className="text-lg font-semibold mb-2 text-gray-200">Files</h2>
-                    {sortedFileTree.length > 0 ? (
-                        sortedFileTree.map(node => (
-                            <FileTreeItem key={node.id} node={node} onFileSelect={handleFileSelect} />
-                        ))
-                    ) : (
-                        <p className="text-sm text-gray-500">No files available.</p>
-                    )}
-                    {IN_DEV && (
-                        <FileTreeItem key={".env"} node={envFile} onFileSelect={handleEnvSelect} />
-                    )}
-                    {IN_DEV && (
-                        <FileTreeItem key={"README.md"} node={readmeFile} onFileSelect={handleReadmeSelect} />
-                    )}
-                    {(IN_DEV || (IN_STAGING && user && user.email?.includes("themoondevs.com"))) && (
-                        <FileTreeItem key={"env.json"} node={envJsonFile} onFileSelect={handleEnvJsonSelect} />
-                    )}
-                </div>
+                <FileTree
+                    files={files as BuildFile[]}
+                    onFileSelect={handleFileSelect}
+                    additionalFiles={additionalFiles}
+                    className='p-4'
+                />
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={75}>
@@ -547,7 +505,6 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
                                 <PopoverContent align="end" className="w-96">
                                     {selectedRequest && selectedRequest.repoName && selectedRequest.prBranch ? (
                                         <div className="flex flex-col gap-4">
-
                                             <Tabs defaultValue="https" className="w-full">
                                                 <TabsList className="flex flex-row items-center justify-between bg-transparent w-full">
                                                     <div className="flex flex-row items-center gap-2">

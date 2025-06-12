@@ -18,6 +18,7 @@ import CodeStudio from "./code/CodeStudio";
 import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
 import { HistoryTab } from "./history/HistoryTab";
 import { useRouter } from "next/navigation";
+import PublishTab from "./publish/PublishTab";
 
 export type AttachedMedia = {
   file: File;
@@ -228,6 +229,16 @@ function ChatWindow({
                   >
                     <div className="p-4 h-full mx-auto">
                       <HistoryTab />
+                    </div>
+                  </motion.div>
+                )}
+                {activeTab === "publish" && (
+                  <motion.div
+                    key="publish"
+                    className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
+                  >
+                    <div className="p-4 h-full mx-auto">
+                      <PublishTab />
                     </div>
                   </motion.div>
                 )}

@@ -1,15 +1,15 @@
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
+import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateObject, streamText } from "ai";
+import dedent from "dedent";
 import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { models } from "../models";
-import { getPackageList } from "./getInternalPackages";
-import { fetchPackageInfo } from "./gitFetchers";
+import { PackageStatus } from "../types";
 import { TaskInstanceMetaType, taskIntegrations } from "./types";
-import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
-import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
-import dedent from "dedent";
+import { IN_STAGING } from "@/utils/constants/appInfo";
 
 // IMPORTANT TODO: create another multi-agent workflow to figure out the platform, package, auth method, etc. (check types.ts for more details)
 // THIS OPERATION IS USELESSY CALLING AI TOO MANY TIMES BECAUSE OF IMPORPER EMBEDDING USAGE.
@@ -32,10 +32,12 @@ export const createTaskIntegrations = async (
   });
 
   // serach internal packages for each platform & attach them to the platform
-  const packageList = await getPackageList();
-  const stablePackageNames = packageList.stablePackages;
-  const semiStablePackageNames = packageList.semiStablePackages;
-  const externalPackageNames = packageList.externalPackages;
+  const packageList = await PackageInfoHelper.getAllPackages({
+    statuses: IN_STAGING
+      ? [PackageStatus.STABLE, PackageStatus.SEMISTABLE, PackageStatus.EXTERNAL]
+      : [PackageStatus.STABLE, PackageStatus.EXTERNAL],
+  });
+
   // first, get a text of all the platforms we need to integrate with for this task
   const textPlatformsStream = streamText({
     model: models.googleGeminiPro,
@@ -59,9 +61,7 @@ export const createTaskIntegrations = async (
           alternatives: <alternative platforms/internal packages for this platform/internal package>
         ----
         IN BUILT PACKAGES SUPPORT:
-        ${stablePackageNames.join(", ")}
-        ${semiStablePackageNames.join(", ")}
-        ${externalPackageNames.join(", ")}
+        ${packageList.map((pkg) => pkg.package_name).join(", ")}
         ---
         Exclude the following platforms from the list:
         - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
@@ -104,6 +104,8 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     model: models.googleGeminiPro,
     system: `
     You are an expert fullstack developer.
+    Your job is to clasify the platforms, and select internalPackages & externalPackages that are related to the platforms.
+    You will be given a list of supported internal packages & external packages.
     You are given a list of platforms and two lists of packages (internal and external).
     Your task is to identify ALL packages from both lists that have ANY remote relation to the platforms.
     This means:
@@ -124,8 +126,18 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     }),
     prompt: `
     platforms: ${textOfPlatforms}
-    internal packages: ${stablePackageNames.join(", ")}${IN_STAGING ? `${semiStablePackageNames.join(", ")}` : ""}
-    external packages: ${externalPackageNames.join(", ")}
+    internal packages: ${packageList
+      .filter(
+        (pkg) =>
+          pkg.status === PackageStatus.STABLE ||
+          pkg.status === PackageStatus.SEMISTABLE
+      )
+      .map((pkg) => pkg.package_name)
+      .join(", ")}
+    external packages: ${packageList
+      .filter((pkg) => pkg.status === PackageStatus.EXTERNAL)
+      .map((pkg) => pkg.package_name)
+      .join(", ")}
     `,
   });
 
@@ -144,26 +156,15 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
   });
 
   // Fetch package information for internal packages
-  const internalPackagesWithInfo = await Promise.all(
-    filteredInternalPackages.map(async (packageName) => {
-      const packageInfo = await fetchPackageInfo(packageName);
-      // console.log(
-      //   "packageInfo for ",
-      //   packageName,
-      //   packageInfo?.readme_map?.functionalities
-      // );
-      return {
-        name: packageName,
-        functionalities: packageInfo?.readme_map?.functionalities || [],
-        packageInfo: packageInfo || null,
-      };
-    })
-  );
-
-  // Filter out packages with null packageInfo
-  const validInternalPackagesWithInfo = internalPackagesWithInfo.filter(
-    (pkg) => pkg.packageInfo !== null
-  );
+  const validInternalPackagesWithInfo = (
+    await PackageInfoHelper.getPackageInfos(filteredInternalPackages)
+  )
+    .map((pkg) => ({
+      name: pkg.name,
+      functionalities: pkg.readme_map?.functionalities || [],
+      packageInfo: pkg,
+    }))
+    .filter((pkg) => pkg.packageInfo !== null);
 
   dataStream.writeMessageAnnotation({
     type: "loading",
@@ -175,10 +176,6 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     model: models.googleGeminiPro.modelId,
     usage: filteredPackagesResult.usage,
   });
-
-  console.log("validInternalPackagesWithInfo", filteredInternalPackages);
-  console.log("filteredExternalPackages", filteredExternalPackages);
-  console.log("textOfPlatforms", textOfPlatforms);
 
   // TODO: pick all packages as relatedPackages, not just one, & then select at a second step.
   const packageResult = await generateObject({
@@ -230,65 +227,39 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     platforms.map((p) => p.name + "-" + p.package)
   );
 
+  // Step 4. ADD he addedDepencies also into platforms list.
   try {
-    let addedPlatforms: {
-      name: string;
-      package: string;
-      reason: string;
-      optional: boolean;
-      scopes: string[];
-      packageInfo: any;
-    }[] = [];
-    let finalPlatforms = await Promise.all(
-      platforms
-        .filter((platform) => platform.package != undefined)
-        .map(async (platform) => {
-          let packageInfo = validInternalPackagesWithInfo.find(
-            (pkg) => pkg.name === platform.package
-          )?.packageInfo;
-          if (!packageInfo) {
-            packageInfo = await fetchPackageInfo(platform.package as string);
-          }
-          if (
-            packageInfo &&
-            packageInfo.addedDependencies &&
-            packageInfo.addedDependencies.length > 0
-          ) {
-            packageInfo.addedDependencies.forEach(
-              async (dependency: string) => {
-                if (!addedPlatforms.some((p) => p.package === dependency)) {
-                  const packageInfo = await fetchPackageInfo(dependency);
-                  addedPlatforms.push({
-                    name: dependency,
-                    package: dependency,
-                    reason: packageInfo.description,
-                    packageInfo: packageInfo,
-                    optional: true,
-                    scopes: [],
-                  });
-                }
-              }
-            );
-          }
-          return { ...platform, ...(packageInfo ? { packageInfo } : {}) };
-        })
+    let finalPlatforms = platforms.filter(
+      (platform) => platform.package != undefined
     );
 
-    finalPlatforms = finalPlatforms.filter(
-      (platform) => (platform as any).packageInfo !== null
-    );
+    platforms.forEach(async (platform) => {
+      if (platform.package === undefined) return;
+      let packageInfo = validInternalPackagesWithInfo.find(
+        (pkg) => pkg.name === platform.package
+      )?.packageInfo;
+      if (
+        packageInfo &&
+        packageInfo.addedDependencies &&
+        packageInfo.addedDependencies.length > 0
+      ) {
+        packageInfo.addedDependencies.forEach(async (dependency: string) => {
+          if (!finalPlatforms.some((p) => p.package === dependency)) {
+            const packageInfo =
+              await PackageInfoHelper.getPackageInfo(dependency);
+            finalPlatforms.push({
+              name: dependency,
+              package: dependency,
+              reason: packageInfo?.description || "",
+              optional: true,
+              scopes: [],
+            });
+          }
+        });
+      }
+    });
 
-    console.log("addedPlatforms", addedPlatforms?.length);
-    for (const _platform of addedPlatforms) {
-      finalPlatforms.push({
-        name: _platform.name,
-        reason: _platform.reason,
-        optional: _platform.optional,
-        scopes: [],
-        package: _platform.package,
-        packageInfo: _platform.packageInfo,
-      });
-    }
+    console.log("addedPlatforms", finalPlatforms?.length);
 
     TokenUsageAnalyticsTracker.trackUsage({
       ...props.requestBody,

@@ -9,8 +9,9 @@ export interface MessageMetadata {
 }
 
 export const MinionFlow = {
+  ChatFlow: "chatFlow",
   BuildFlow: "buildFlow",
-  InstallFlow: "installFlow",
+  //InstallFlow: "installFlow",
   Unknown: "unknown",
 } as const;
 
@@ -28,6 +29,7 @@ export const MinionType = {
   PackageFox: "packagefox",
   PublishFox: "publishfox",
   InstallFox: "installfox",
+  TaskQueryFox: "taskqueryfox",
 } as const;
 
 export type MinionTypeType = (typeof MinionType)[keyof typeof MinionType];
@@ -44,6 +46,7 @@ export const MinionSupports = {
   [MinionType.Unknown]: [] as string[],
   [MinionType.PublishFox]: [] as string[],
   [MinionType.InstallFox]: [] as string[],
+  [MinionType.TaskQueryFox]: [] as string[],
 } as const;
 
 export interface ChatUIMessageWithTypes

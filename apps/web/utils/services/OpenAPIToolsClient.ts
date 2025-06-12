@@ -98,6 +98,7 @@ type OpenAPIDoc = {
   info: {
     title: string;
     version: string;
+    mcp_version?: string;
     description?: string;
   };
   paths: {
@@ -120,7 +121,7 @@ type Tool = {
   name: string;
   description: string;
   parameters: z.ZodType;
-  execute: ToolExecuteFn;
+  execute?: ToolExecuteFn;
 };
 
 // AI SDK compatible tools types
@@ -145,6 +146,21 @@ type ToolExecuteFn = (
 ) => Promise<any>;
 
 type ToolSet = Record<string, Tool>;
+
+type ToolMetadata = {
+  name: string;
+  description: string;
+  jsonSchema: JsonSchema & {
+    type: "object";
+  };
+  humanLayer: {
+    required: boolean;
+  };
+};
+
+type ToolMetadataSet = Record<string, ToolMetadata>;
+
+type ToolExecuteSet = Record<string, ToolExecuteFn>;
 
 // Schema source configuration
 type SchemaConfig = {
@@ -215,6 +231,19 @@ interface APIResponse {
   status: number;
 }
 
+type ToolOptions = {
+  schemas?: ToolSchemas;
+  validateParameters?: boolean;
+  disabledExecutions?: string[];
+  disableAllExecutions?: boolean;
+};
+
+type ToolResult = {
+  tools: ToolSet;
+  executions: ToolExecuteSet;
+  metadata: ToolMetadataSet;
+};
+
 /**
  * Client for interacting with APIs described by OpenAPI schemas
  * Provides methods for calling API operations and generating AI SDK-compatible tools
@@ -231,6 +260,9 @@ export class OpenAPIToolsClient {
 
     // Create a client for each option
     optionsArray.forEach((opt, index) => {
+      const schemName = (opt.schema as OpenAPIDoc).info?.title
+        ?.toLowerCase()
+        .replace(/[^a-zA-Z0-9]/g, "_");
       this.clients.push(
         new SingleOpenAPIToolsClient({
           ...opt,
@@ -239,8 +271,8 @@ export class OpenAPIToolsClient {
               ? JSON.parse(opt.schema)
               : opt.schema,
           name:
-            opt.name ||
-            `${(opt.schema as OpenAPIDoc).info.title.toLowerCase().replace(/ /g, "_")}`,
+            opt.name ??
+            `${schemName?.length > 16 ? schemName.substring(0, 16) : schemName}`,
         })
       );
     });
@@ -333,10 +365,9 @@ export class OpenAPIToolsClient {
   async tools({
     schemas = "automatic",
     validateParameters = false,
-  }: {
-    schemas?: ToolSchemas;
-    validateParameters?: boolean; // When true, validates parameters against the schema
-  } = {}): Promise<ToolSet> {
+    disabledExecutions = [],
+    disableAllExecutions = false,
+  }: ToolOptions = {}): Promise<ToolResult> {
     if (!this.initialized) {
       throw new Error("Clients not initialized. Call init() first.");
     }
@@ -347,27 +378,40 @@ export class OpenAPIToolsClient {
         client.tools({
           schemas,
           validateParameters, // Pass validation option to each client
+          disabledExecutions,
+          disableAllExecutions,
         })
       )
     );
 
     // Combine tools from all clients
-    const combinedTools: ToolSet = {};
+    const combinedTools: ToolResult = {
+      tools: {},
+      executions: {},
+      metadata: {},
+    };
 
     allToolsResults.forEach((toolSet, index) => {
       const client = this.clients[index];
-      if (!client) return; // Skip if client is undefined (shouldn't happen)
+      if (!client) return; // Skip if client is undefined
 
       const clientName = client.getName();
 
-      Object.entries(toolSet).forEach(([key, tool]) => {
+      Object.entries(toolSet.tools).forEach(([key, tool]) => {
         // Create a namespaced key to avoid collisions
         const namespacedKey = `${clientName}-${key}`;
 
-        combinedTools[namespacedKey] = {
+        // Add to tools
+        combinedTools.tools[namespacedKey] = {
           ...tool,
           name: namespacedKey, // Update name to include namespace
         };
+
+        // Add to executions if it exists
+        if (toolSet.executions[key] && toolSet.metadata[key]) {
+          combinedTools.executions[namespacedKey] = toolSet.executions[key];
+          combinedTools.metadata[namespacedKey] = toolSet.metadata[key]!;
+        }
       });
     });
 
@@ -391,6 +435,8 @@ class SingleOpenAPIToolsClient {
   private name: string;
   private initialized: boolean = false;
   private schemaCache: Record<string, JsonSchema> = {};
+  private mcp_version: string;
+  private toolExecutions: Record<string, ToolExecuteFn> = {};
 
   constructor(options: {
     schema: OpenAPIDoc;
@@ -407,6 +453,7 @@ class SingleOpenAPIToolsClient {
     this.onError = options.onError;
     this.operationMap = new Map();
     this.name = options.name || "openapi-tools-client";
+    this.mcp_version = options.schema.info.mcp_version || "1.0.0";
   }
 
   /**
@@ -456,12 +503,41 @@ class SingleOpenAPIToolsClient {
     }
   }
 
+  private cleanUpMethodSchema(methodSchema: OpenAPIOperation) {
+    let cleanedMethodSchema = methodSchema;
+    if (this.mcp_version === "1.0.1") {
+      if (
+        cleanedMethodSchema?.requestBody?.content["application/json"]?.schema
+          ?.properties?.body?.properties?.arguments
+      ) {
+        let bodySchema =
+          methodSchema.requestBody?.content["application/json"]?.schema
+            ?.properties;
+        const args = bodySchema?.body?.properties?.arguments?.items;
+        if (args && Array.isArray(args)) {
+          // if (args.length === 1) {
+          //   bodySchema = args[0];
+          // } else {
+          bodySchema = args.reduce((acc, arg, index) => {
+            acc[`arg_${index}`] = arg;
+            return acc;
+          }, {});
+          // }
+        }
+        cleanedMethodSchema.requestBody.content[
+          "application/json"
+        ].schema.properties = bodySchema;
+      }
+    }
+    return cleanedMethodSchema;
+  }
+
   private setupOperationMap() {
     for (const [path, methods] of Object.entries(this.schema.paths)) {
       for (const [method, pathOperation] of Object.entries(
         methods as OpenAPIPath
       )) {
-        const operation = pathOperation as OpenAPIOperation;
+        const operation = pathOperation;
         const operationId = this.generateOperationId(path, method, operation);
 
         this.operationMap.set(operationId, {
@@ -486,7 +562,7 @@ class SingleOpenAPIToolsClient {
     // Second priority: generate an ID from the path and method
     const pathPart = path
       .replace(/^\/|\/$/g, "")
-      .replace(/-/g, "_")
+      .replace(/[^a-zA-Z0-9]/g, "_")
       .replace(/\/\{([^}]+)\}/g, "_by_$1")
       .replace(/\//g, "_");
 
@@ -557,80 +633,7 @@ class SingleOpenAPIToolsClient {
       ["POST", "PUT", "PATCH"].includes(operation.method) &&
       operation.requestBody?.content?.["application/json"]?.schema
     ) {
-      const requestBodySchema =
-        operation.requestBody.content["application/json"].schema;
-
-      console.log(`🔍 Preparing request body for ${operation.operationId}:`, {
-        schema: requestBodySchema,
-        args: args,
-        presetFields: this.presetBodyFields,
-      });
-
-      if (requestBodySchema.type === "object" && requestBodySchema.properties) {
-        // Start with preset body fields
-        let bodyData: Record<string, any> = { ...this.presetBodyFields };
-
-        // Handle the case where we have a nested 'body' property in the schema
-        // This is common in serverless function wrappers like the temp.json example
-        if (requestBodySchema.properties.body) {
-          // The schema expects a 'body' property, so we need to construct the full structure
-          const providedBodyData: Record<string, any> = {};
-
-          // Check if user provided a complete body object
-          if (args.body && typeof args.body === "object") {
-            Object.assign(providedBodyData, args.body);
-          } else {
-            // Build body from individual properties in args
-            // Look for properties that aren't path/query parameters
-            for (const [key, value] of Object.entries(args)) {
-              // Skip parameter properties (they should be handled separately)
-              const isParameter = operation.parameters?.some(
-                (param) => param.name === key
-              );
-              if (!isParameter && value !== undefined) {
-                providedBodyData[key] = value;
-              }
-            }
-          }
-
-          // Merge preset fields with provided data for the body
-          bodyData.body = { ...bodyData, ...providedBodyData };
-
-          console.log(`🔍 Constructed nested body structure:`, bodyData);
-        } else {
-          // No nested 'body' property - handle as flat structure
-          if (args.body && typeof args.body === "object") {
-            // Merge preset fields with the provided body, user fields take precedence
-            bodyData = { ...bodyData, ...args.body };
-          } else {
-            // Build body from individual properties and merge with presets
-            Object.keys(requestBodySchema.properties).forEach((key) => {
-              if (args[key] !== undefined) {
-                bodyData[key] = args[key]; // User-provided fields override presets
-              }
-            });
-          }
-        }
-
-        body = JSON.stringify(bodyData);
-      } else if (requestBodySchema.type === "array" && args.body) {
-        // For array request bodies, preset fields don't apply
-        try {
-          if (Array.isArray(args.body)) {
-            body = JSON.stringify(args.body);
-          } else {
-            body = JSON.stringify(JSON.parse(args.body));
-          }
-        } catch (e) {
-          body = JSON.stringify([]);
-        }
-      } else if (args.body !== undefined) {
-        // For primitive request bodies, preset fields don't apply
-        body = JSON.stringify(args.body);
-      } else if (Object.keys(this.presetBodyFields).length > 0) {
-        // If no body is provided but we have preset fields, use them
-        body = JSON.stringify(this.presetBodyFields);
-      }
+      body = JSON.stringify(args.body);
     }
 
     return { url, headers, body };
@@ -640,7 +643,12 @@ class SingleOpenAPIToolsClient {
     const { url, method, headers, body, signal } = options;
 
     try {
-      console.log("Making request", { url });
+      console.log("Making request", {
+        url,
+        method,
+        headers: JSON.stringify(headers, null, 2),
+        body: JSON.stringify(body, null, 2),
+      });
       const response = await fetch(url, {
         method,
         headers,
@@ -658,7 +666,7 @@ class SingleOpenAPIToolsClient {
       } else {
         data = await response.text();
       }
-      console.log("Response", { data, contentType, status: response.status });
+      console.log("Response", { status: response.status, contentType, data });
 
       return {
         data,
@@ -699,7 +707,6 @@ class SingleOpenAPIToolsClient {
       path: string;
       method: string;
     }[] = [];
-
     for (const [id, operation] of this.operationMap.entries()) {
       operations.push({
         id,
@@ -810,10 +817,10 @@ class SingleOpenAPIToolsClient {
           }
         }
 
-        console.log(
-          `🔍 Final tool schema for ${operation.operationId}:`,
-          JSON.stringify(schema, null, 2)
-        );
+        // console.log(
+        //   `🔍 Final tool schema for ${operation.operationId}:`,
+        //   JSON.stringify(schema, null, 2)
+        // );
       }
     }
 
@@ -987,7 +994,7 @@ class SingleOpenAPIToolsClient {
         }
       } else {
         // If no items specified, default to object type for Google AI compatibility
-        console.log(`🔍 Array without items, defaulting to object type`);
+        // console.log(`🔍 Array without items, defaulting to object type`);
         result.items = {
           type: "object",
           additionalProperties: true,
@@ -1147,15 +1154,16 @@ class SingleOpenAPIToolsClient {
   async tools({
     schemas = "automatic",
     validateParameters = false,
-  }: {
-    schemas?: ToolSchemas;
-    validateParameters?: boolean; // When true, validates parameters against the schema
-  } = {}): Promise<ToolSet> {
+    disabledExecutions = [],
+    disableAllExecutions = false,
+  }: ToolOptions = {}): Promise<ToolResult> {
     if (!this.initialized) {
       throw new Error("Client not initialized. Call init() first.");
     }
 
     const tools: ToolSet = {};
+    const toolExecutions: ToolExecuteSet = {}; // Reset tool executions
+    const metadata: ToolMetadataSet = {};
 
     // Get all available operations
     const { operations } = await this.listOperations();
@@ -1169,88 +1177,17 @@ class SingleOpenAPIToolsClient {
       }
 
       // Get the full operation details from the map
-      const fullOperation = this.operationMap.get(id);
-      if (!fullOperation) continue;
+      const fullOperation = this.operationMap.get(id) as OpenAPIOperation;
+
+      // Clean up the operation schema for MCP 1.0.1
+      const cleanedOperation = this.cleanUpMethodSchema(
+        fullOperation
+      ) as OpenAPIOperation & { path: string; method: string };
+      if (!cleanedOperation.path || !cleanedOperation.method) continue;
 
       // Convert operation schema to JSON schema and then to Zod schema
-      const jsonSchema = this.convertOperationToJsonSchema(fullOperation);
+      const jsonSchema = this.convertOperationToJsonSchema(cleanedOperation);
       const zodSchema = this.convertOpenApiSchemaToZod(jsonSchema);
-
-      // Better Zod schema debugging
-      // try {
-      // Recursive function to inspect Zod schema shapes
-      // const inspectZodShape = (schema: any, path: string = '', depth: number = 0): void => {
-      //   if (depth > 6) return; // Increase depth limit to see more nesting
-
-      //   const indent = '  '.repeat(depth);
-      //   console.log(`${indent}🔍 Inspecting ${path || 'root'} (${schema._def?.typeName || 'unknown'})`);
-
-      //   if (schema._def?.typeName === 'ZodObject') {
-      //     const shape = schema._def.shape();
-      //     const keys = Object.keys(shape || {});
-      //     console.log(`${indent}  Object keys: [${keys.join(', ')}]`);
-
-      //     // Inspect each property
-      //     for (const [key, propSchema] of Object.entries(shape || {})) {
-      //       const newPath = path ? `${path}.${key}` : key;
-      //       inspectZodShape(propSchema, newPath, depth + 1);
-      //     }
-      //   } else if (schema._def?.typeName === 'ZodArray') {
-      //     console.log(`${indent}  Array element type: ${schema._def.type._def?.typeName || 'unknown'}`);
-      //     inspectZodShape(schema._def.type, `${path}[]`, depth + 1);
-      //   } else if (schema._def?.typeName === 'ZodTuple') {
-      //     const items = schema._def.items || [];
-      //     console.log(`${indent}  Tuple with ${items.length} items:`);
-      //     items.forEach((item: any, index: number) => {
-      //       console.log(`${indent}  --- Tuple Item ${index} ---`);
-      //       inspectZodShape(item, `${path}[${index}]`, depth + 1);
-      //     });
-      //   } else if (schema._def?.typeName === 'ZodOptional') {
-      //     console.log(`${indent}  Optional wrapper around: ${schema._def.innerType._def?.typeName || 'unknown'}`);
-      //     inspectZodShape(schema._def.innerType, `${path} (optional)`, depth + 1);
-      //   } else {
-      //     const schemaType = schema._def?.typeName || 'unknown';
-      //     console.log(`${indent}  Primitive type: ${schemaType}`);
-      //     // For strings, show format if available
-      //     if (schemaType === 'ZodString' && schema._def?.checks) {
-      //       const checks = schema._def.checks.map((check: any) => check.kind).join(', ');
-      //       if (checks) console.log(`${indent}    Format checks: ${checks}`);
-      //     }
-      //   }
-      // };
-
-      // console.log(`🔍 === COMPLETE ZOD SCHEMA STRUCTURE ===`);
-      // inspectZodShape(zodSchema);
-      // console.log(`🔍 === END SCHEMA STRUCTURE ===`);
-
-      // Test specific arguments structure
-      //   console.log(`🔍 === TESTING ARGUMENTS ARRAY STRUCTURE ===`);
-      //   const testBodyWithArguments = {
-      //     body: {
-      //       arguments: [{}] // Empty argument object to see what's required
-      //     }
-      //   };
-      //   const argsValidation = zodSchema.safeParse(testBodyWithArguments);
-      //   console.log(`🔍 Arguments validation result:`, {
-      //     success: argsValidation.success,
-      //     errorCount: argsValidation.success ? 0 : argsValidation.error.issues.length
-      //   });
-
-      //   if (!argsValidation.success) {
-      //     console.log(`🔍 Arguments validation errors:`,
-      //       argsValidation.error.issues.map(issue => ({
-      //         path: issue.path.join('.'),
-      //         message: issue.message,
-      //         expected: issue.code
-      //       }))
-      //     );
-      //   }
-      //   console.log(`🔍 === END ARGUMENTS TEST ===`);
-
-      // } catch (e) {
-      //   console.log(`🔍 Zod schema validation error:`, e);
-      // }
-      // Zod schema created successfully
 
       // Create the tool
       const description =
@@ -1259,44 +1196,95 @@ class SingleOpenAPIToolsClient {
         `${operation.method} ${operation.path}`;
       const self = this;
 
+      const executeFn: ToolExecuteFn = async (
+        args: Record<string, any>,
+        options?: ToolExecuteOptions
+      ) => {
+        console.log(
+          `🔍 Calling tool ${id} with args:`,
+          JSON.stringify(args, null, 2)
+        );
+
+        // Throw if aborted
+        options?.abortSignal?.throwIfAborted();
+
+        // If validation is enabled, validate the arguments against Zod schema
+        if (validateParameters) {
+          try {
+            // Parse and validate arguments against the schema
+            const validatedArgs = zodSchema.parse(args);
+            args = validatedArgs;
+          } catch (error) {
+            // Format validation errors in a user-friendly way
+            if (error instanceof z.ZodError) {
+              const formattedError = new Error(
+                `Parameter validation failed: ${error.errors
+                  .map((e) => `${e.path.join(".")}: ${e.message}`)
+                  .join(", ")}`
+              );
+              formattedError.name = "ValidationError";
+              throw formattedError;
+            }
+            throw error;
+          }
+        }
+
+        // MCP 1.0.1 specific arguments structure
+        if (this.mcp_version === "1.0.1") {
+          args = {
+            body: {
+              body: {
+                arguments: Object.values(args),
+                auth: this.presetBodyFields.auth,
+                packageName: this.presetBodyFields.packageName,
+              },
+            },
+          };
+          console.log(
+            `🔍 Restructured args for MCP 1.0.1:`,
+            JSON.stringify(args, null, 2)
+          );
+        }
+
+        // Call the operation without validation
+        return self.callOperation(id, args, options);
+      };
+
+      const shouldStoreExecution =
+        !disableAllExecutions && !disabledExecutions.includes(id) && executeFn;
       tools[id] = {
         name: id,
         description,
         parameters: zodSchema,
-        execute: async (args, options) => {
-          console.log(`🔍 Calling tool ${id} with args:`, args);
+        ...(shouldStoreExecution ? { execute: executeFn } : {}),
+      };
 
-          // Throw if aborted
-          options?.abortSignal?.throwIfAborted();
+      toolExecutions[id] = executeFn;
 
-          // If validation is enabled, validate the arguments against Zod schema
-          // if (validateParameters) {
-          //   try {
-          //     // Parse and validate arguments against the schema
-          //     const validatedArgs = zodSchema.parse(args);
-          //     return self.callOperation(id, validatedArgs, options);
-          //   } catch (error) {
-          //     // Format validation errors in a user-friendly way
-          //     if (error instanceof z.ZodError) {
-          //       const formattedError = new Error(
-          //         `Parameter validation failed: ${error.errors.map(e =>
-          //           `${e.path.join('.')}: ${e.message}`
-          //         ).join(', ')}`
-          //       );
-          //       formattedError.name = 'ValidationError';
-          //       throw formattedError;
-          //     }
-          //     throw error;
-          //   }
-          // }
-
-          // Call the operation without validation
-          return self.callOperation(id, args, options);
+      metadata[id] = {
+        name: id
+          .replace(/[^a-zA-Z0-9]/g, " ")
+          .split(" ")
+          .map(
+            (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          )
+          .join(" "),
+        description,
+        jsonSchema,
+        humanLayer: {
+          required: true,
         },
       };
     }
 
-    return tools;
+    return { tools, executions: toolExecutions, metadata };
+  }
+
+  /**
+   * Get the execute callback for a specific tool
+   */
+  getToolExecution(id: string): ToolExecuteFn | undefined {
+    return this.toolExecutions[id];
   }
 }
 

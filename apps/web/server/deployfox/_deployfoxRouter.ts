@@ -70,31 +70,6 @@ export const deployFoxRouter: ServerStreamingFunction<
   }
 
   dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: `Deployement triggered, checking status updates!`,
-  });
-
-  // Wait for 20 seconds before starting to check logs
-  await new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(undefined);
-    }, 10000);
-  });
-
-  let runId = await getRunforClientRequestbySha({
-    head_sha: sha,
-    clientRequest,
-    mustRunId: true,
-  });
-
-  if (!runId) {
-    console.log("runId not found, getting latest run");
-
-    //runId = await getLatestRunForClientRequest(clientRequest, stage);
-    //console.log("runId", runId);
-  }
-
-  dataStream.writeMessageAnnotation({
     type: "loading",
     content: `Deploymnent detected, waiting for completion!`,
   });
@@ -103,58 +78,20 @@ export const deployFoxRouter: ServerStreamingFunction<
     clientRequestId,
     otherData: {
       deployStep: {
-        runId,
+        runId: sha,
         stage: stage ?? DEPLOY_STAGE.STAGING,
         status: "pending",
         shouldBreak: false,
       },
     },
   });
-  // dataStream.writeMessageAnnotation({
-  //   type: "thinking",
-  //   value: "Checking logs",
-  // });
-
-  // while (true) {
-  //   const conditions = await fetchLogs(
-  //     props,
-  //     clientRequest,
-  //     taskInstanceMeta as TaskInstanceMetaType
-  //   );
-  //   taskInstanceMeta = conditions?.taskInstanceMeta as any;
-
-  //   // Handle success case
-  //   if (taskInstanceMeta?.deployStep?.status === "success") {
-  //     break;
-  //   }
-
-  //   // Handle failure cases
-  //   if (taskInstanceMeta?.deployStep?.status === "failed") {
-  //     break;
-  //   }
-
-  //   // Handle timeout
-  //   if (attempts >= MAX_ATTEMPTS) {
-  //     throw new Error("Deployment timed out after 5 minutes");
-  //   }
-
-  //   if (conditions?.taskInstanceMeta) {
-  //     taskInstanceMeta = conditions?.taskInstanceMeta as any;
-  //   }
-  //   if (conditions?.shouldBreak) {
-  //     break;
-  //   }
-
-  //   attempts++;
-  //   await new Promise((resolve) => setTimeout(resolve, 3000));
-  // }
 
   // const clientDeployment = await getClientDeployment(clientRequestId);
   await slackBotSdk.sendMessage({
     icon_url: MICROFOX_LOGO,
     channel: MySlackChannels.microfox_updates,
     text: `Deployfox triggered ${(stage ?? DEPLOY_STAGE.STAGING).toLowerCase()} deployment for ${clientRequest.title} ${
-      runId ? `with runId ${runId}` : ""
+      sha ? `with runId ${sha}` : ""
     }`,
   });
 
@@ -165,7 +102,7 @@ export const deployFoxRouter: ServerStreamingFunction<
     text: `Deployments Completed !`,
     pingerInterval: 5000,
     stage: stage ?? DEPLOY_STAGE.STAGING,
-    ...(runId && { runId }),
+    ...(sha && { runId: sha }),
   });
   return {
     responseBody: { ...responseBody },

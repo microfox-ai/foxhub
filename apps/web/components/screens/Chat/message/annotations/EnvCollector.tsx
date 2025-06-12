@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ClientSecret } from "@prisma/client";
+import { ClientSecret, DEPLOY_STAGE } from "@prisma/client";
 import {
   HelpCircle,
   Key,
@@ -22,7 +22,9 @@ import {
   FileType,
   FileImage,
   FileIcon,
-  PencilIcon
+  PencilIcon,
+  ArrowRight,
+  Rocket
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -44,6 +46,10 @@ import { ClientSecretVariable } from "@/server/types";
 import { ClientSecretPackageType } from "@/server/types";
 import { ExtraEnvVariable, TaskInstanceMetaType } from "@/server/convertfox/types";
 import { FileTree, type BuildFile, type FileTreeNode } from "../../code/FileTree";
+import { useLayout } from "@/components/screens/providers/LayoutProvider";
+import { constructAppendBody } from "../messageHelpers";
+import { constructMessageFromButton } from "../messageHelpers";
+import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 
 interface UIAnnotation {
   objectType: string;
@@ -123,6 +129,10 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
   const requestParamId = params?.request_id;
   const projectParamId = params?.project_id;
   const { user } = useAuth();
+
+  const { isRightCollapsed, handleRightCollapse } = useLayout();
+  const { append } = useMicrofoxChat();
+
   const { data: secretsData, mutate: mutateSecrets } = useSWR<{
     clientSecrets: ClientSecret[];
   }>(
@@ -163,6 +173,28 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
     refreshInterval: 10000
   }
   );
+
+  const deployToProduction = () => {
+    console.log("deployToProduction");
+    append(
+      constructMessageFromButton(
+        {
+          text: "Deploy to Production !",
+          minionType: "deployfox",
+        },
+        [
+          {
+            type: "attachment",
+            key: "stage",
+            value: DEPLOY_STAGE.PROD,
+          },
+        ]
+      ),
+      constructAppendBody("deployfox", {
+        stage: DEPLOY_STAGE.PROD,
+      })
+    );
+  };
 
   const isLoading = isTaskInstanceMetaLoading || !taskInstanceMeta;
 
@@ -391,11 +423,26 @@ export const EnvCollector = ({ uiAnnotation, idx, hideMetaInfo = false }: EnvCol
           </div>
         )}
         {hasAllRequiredKeys && !isLoading && (
-          <ActionButtons
-            buttons={uiAnnotation.buttons}
-            areKeysRequired={envVariables.length > 0}
-            areKeysFilled={hasAllRequiredKeys}
-          />
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+              onClick={deployToProduction}
+            >
+              <Rocket className="w-4 h-4" />
+              Deploy to Production
+            </Button>
+            <Button
+              onClick={() => {
+                handleRightCollapse(false);
+              }}
+              variant="default"
+              className="group/button flex items-center gap-2"
+            >
+              Test Endpoints
+              <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
+            </Button>
+          </div>
         )}
       </motion.div>
 

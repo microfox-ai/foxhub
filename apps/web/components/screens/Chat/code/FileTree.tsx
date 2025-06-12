@@ -26,6 +26,7 @@ interface FileTreeNode {
     content?: string;
     isFolder: boolean;
     fileType: string;
+    originalFilePath?: string;
 }
 
 interface FileTreeProps {
@@ -50,7 +51,7 @@ const getFileIconCmp = (fileType: string) => {
     return <FileIcon className="w-4 h-4 text-gray-500" />;
 };
 
-const buildFileTree = (files: BuildFile[]): FileTreeNode[] => {
+export const buildFileTree = (files: BuildFile[]): FileTreeNode[] => {
     // Find the root directory based on package.json
     const rootDir: string = files.find((file) => file.filePath.includes('package.json'))?.filePath.replaceAll("\\", "/").split('/').slice(0, -1).join('/') || '';
 
@@ -88,6 +89,7 @@ const buildFileTree = (files: BuildFile[]): FileTreeNode[] => {
                     children: !isLastPart ? [] : undefined,
                     content: isLastPart ? file.content : undefined,
                     fileType: nodeFileType,
+                    originalFilePath: file.filePath,
                 };
                 currentNode.children = currentNode.children || [];
                 currentNode.children.push(newNode);

@@ -3,6 +3,8 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { ClientDeployment } from "@prisma/client";
 import { createContext, useContext, useEffect, useState } from "react";
 import useSWR from "swr";
+import { buildFileTree } from "../Chat/code/FileTree";
+import { useClientProject } from "./ClientProjectProvider";
 
 interface UseTaskInstanceMetaProps {
   clientRequestId: string;
@@ -14,6 +16,8 @@ export const useTaskInstanceMeta = ({
   const [deploymentInfo, setDeploymentInfo] = useState<
     ClientDeployment | null
   >(null);
+
+  const { selectedRequest } = useClientProject();
   const { data, error, mutate, isLoading, isValidating } = useSWR<
     TaskInstanceMetaType & { id: string }
   >(

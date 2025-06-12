@@ -205,22 +205,6 @@ export const buildFoxRouter: ServerStreamingFunction<
       envVariables.length > 0
         ? `I need some more details to complete the build. Please add the secrets below.`
         : `All done! You can now test your automation by clicking the button below.`,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Make changes",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
-      },
-      {
-        action: "shiftMinion",
-        actionText: "Test Automation !",
-        type: "confirm",
-        text: "Test Automation !",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "deployfox",
-      },
-    ],
   });
   // TODO: require a router for further file modifications if needed (means changing the prompts & input Data should be the file)
   // TODO: shiftMinion to deployfox

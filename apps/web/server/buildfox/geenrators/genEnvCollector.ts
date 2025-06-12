@@ -9,12 +9,17 @@ import { ClientRequest } from "@prisma/client";
 import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { envsFromTaskIntegrations } from "../helper/coreEnvsFromTaskIntegrations";
+import {
+  envsFromTaskIntegrations,
+  getPackageInfosFromTaskIntegrations,
+} from "../helper/coreEnvsFromTaskIntegrations";
 import {
   addTemplateSecretsToClientRequest,
   getClientSecretsFromTemplateEnvs,
   templateEnvsFromTaskIntegrations,
 } from "../helper/templateEnvsFromTaskIntegrations";
+
+const IGNORE_ENVS = ["IS_OFFLINE", "SERVERLESS_OFFLINE"];
 
 export const genEnvCollector = async (
   props: StreamingFucntionProps<any, any>,
@@ -51,22 +56,31 @@ export const genEnvCollector = async (
     // add the secrets to the clientRequest
     await addTemplateSecretsToClientRequest(clientRequest, templateSecrets);
 
+    const packages = await getPackageInfosFromTaskIntegrations(
+      taskInstanceMeta.taskIntegrations
+    );
     // also filter out the env variables from the taskInstanceMeta.taskIntegrations.platforms.packages
     // NOTE: packageInfo exists even though it is not in type
     const coreEnvs = taskInstanceMeta.taskIntegrations
-      ? envsFromTaskIntegrations(
-          taskInstanceMeta.taskIntegrations,
-          "requiredKeys"
-        )
+      ? envsFromTaskIntegrations({
+          taskIntegrations: taskInstanceMeta.taskIntegrations,
+          type: "requiredKeys",
+          packages,
+        })
       : [];
     const botConfigEnvs = taskInstanceMeta.taskIntegrations
-      ? envsFromTaskIntegrations(taskInstanceMeta.taskIntegrations, "botConfig")
+      ? envsFromTaskIntegrations({
+          taskIntegrations: taskInstanceMeta.taskIntegrations,
+          type: "botConfig",
+          packages,
+        })
       : [];
     const oauthEnvs = taskInstanceMeta.taskIntegrations
-      ? envsFromTaskIntegrations(
-          taskInstanceMeta.taskIntegrations,
-          "internalKeys"
-        )
+      ? envsFromTaskIntegrations({
+          taskIntegrations: taskInstanceMeta.taskIntegrations,
+          type: "internalKeys",
+          packages,
+        })
       : [];
 
     // filter out template envs & corepackage based envs - only keep custom envs
@@ -77,6 +91,7 @@ export const genEnvCollector = async (
       envs = envs.filter((env) => !coreEnvs?.includes(env));
       envs = envs.filter((env) => !botConfigEnvs?.includes(env));
       envs = envs.filter((env) => !oauthEnvs?.includes(env));
+      envs = envs.filter((env) => !IGNORE_ENVS?.includes(env));
     } catch (error) {
       console.error("Error generating core envs", error);
     }

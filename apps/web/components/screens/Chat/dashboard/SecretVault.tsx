@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ClientSecretPackageType, ClientSecretVariable, ClientSecretWithPackageInfo } from "@/server/types";
+import { ClientSecretPackageType, ClientSecretVariable, ClientSecretWithPackageInfo, PackageStatus } from "@/server/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { ClientSecret } from "@prisma/client";
 import { Edit, Key, RouteIcon, ShieldAlertIcon } from "lucide-react";
@@ -11,7 +11,7 @@ import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProv
 import { EnvVariablesDialog } from "../configuration/EnvVariablesDialog";
 import { ApiKeyButton } from "../message/secrets/ApiKeyButton";
 import { OAuthButton } from "../message/secrets/OAuthButton";
-import { Constructor } from "../message/types";
+import { Constructor, Package } from "../message/types";
 import { DeleteConfirmationDialog } from "./DeleteConfirmationDialogue";
 
 export const SecretVault = () => {
@@ -82,6 +82,17 @@ export const SecretVault = () => {
     const envsToCollect = (taskInstanceMeta?.buildingStep as any)?.envsToCollect;
     const platforms = taskInstanceMeta?.taskIntegrations?.platforms as any[];
 
+    const { data: packagesData } = useSWR<{
+        packages: Package[];
+    }>(
+        `/api/packages?rawContent=true&status=${PackageStatus.STABLE},${PackageStatus.SEMISTABLE},${PackageStatus.EXTERNAL}`,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch packages");
+            return res.json();
+        }
+    );
+
     return (
         <div>
             <div className="w-full flex flex-col gap-4">
@@ -97,42 +108,42 @@ export const SecretVault = () => {
                 </div>
 
                 {platforms?.map((platform) => {
-                    const packageInfo = platform.packageInfo as any;
+                    const packageInfo = packagesData?.packages.find((pkg) => pkg.name === platform.package);
                     const isApiKeyRequired = packageInfo?.constructors.some(
                         (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
                     );
                     const isOAuthRequired = packageInfo?.constructors.some(
                         (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.OAUTH2
                     );
-                    const secret = allSecrets?.clientSecrets?.find((secret) => secret?.packageName === platform?.packageInfo?.name && secret?.packageConstructor === platform?.packageInfo?.constructor);
+                    const secret = allSecrets?.clientSecrets?.find((secret) => secret?.packageName === packageInfo?.name && packageInfo?.constructors.some((constructor: Constructor) => constructor.name === secret?.packageConstructor));
                     return (
                         <div
                             key={platform?.name + "-" + platform?.package}
                             className="flex rounded-lg border p-4 flex-col gap-2"
                         >
                             <div className="flex items-start gap-3">
-                                <img src={platform?.packageInfo?.icon} alt={platform?.packageInfo?.name} className="w-5 h-5 mt-2" />
+                                <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />
                                 <div className="flex-1">
                                     <div className="flex gap-2 items-center justify-between">
                                         <div className="flex flex-col items-start gap-2">
                                             <span className="leading-none font-medium w-fit text-gray-900">
-                                                {secret?.name ?? platform.packageInfo?.title ?? platform.packageInfo?.name}
+                                                {secret?.name ?? packageInfo?.title ?? packageInfo?.name}
                                             </span>
                                             <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
-                                                {platform.packageInfo?.name}
+                                                {packageInfo?.name}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 rounded-lg border border-gray-200">
                                             {isOAuthRequired && !isApiKeyRequired && (
                                                 <OAuthButton
-                                                    packageInfo={platform?.packageInfo}
+                                                    packageInfo={packageInfo}
                                                     secretsData={allSecrets}
                                                     mutateSecrets={mutateSecrets}
                                                 />
                                             )}
                                             {isApiKeyRequired && (
                                                 <ApiKeyButton
-                                                    packageInfo={platform?.packageInfo}
+                                                    packageInfo={packageInfo}
                                                     secretsData={allSecrets}
                                                     mutateSecrets={mutateSecrets}
                                                 />

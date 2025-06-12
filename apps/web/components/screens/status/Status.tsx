@@ -23,6 +23,7 @@ import {
   ChevronRight,
   Box,
   Plus,
+  Loader2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -48,6 +49,7 @@ import { toast } from "sonner";
 
 // Interface for package data
 interface PackageData {
+  title: string;
   name: string;
   icon: string;
   status: PackageStatus
@@ -76,8 +78,8 @@ const Status = () => {
   });
 
   // Use SWR for data fetching
-  const { data, error, isLoading } = useSWR<{ packages: PackageData[] }>(
-    "/api/packages",
+  const { data, error, isLoading } = useSWR<{ packages: PackageData[], count: number }>(
+    "/api/packages?rawContent=true",
     fetcher,
     {
       // Refresh data every 5 minutes
@@ -105,6 +107,7 @@ const Status = () => {
         oauthConnector: 3,
         semiStable: 4,
         internal: 5,
+        webhookConnector: 6,
       };
 
       // Compare status first
@@ -173,9 +176,9 @@ const Status = () => {
         <div className="mx-auto w-full flex items-center justify-tart gap-8 mb-2 sticky top-0 bg-white/20 backdrop-blur-sm z-10 p-6">
           <div className="flex items-center gap-2">
             <div className="relative w-6 h-6">
-              <Box className="w-6 h-6 animate-spin" style={{ animationDuration: '3s' }} />
+              <Box className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold">Status</h1>
+            <h1 className="text-2xl font-bold">{data?.count}+ Integrations</h1>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -229,7 +232,7 @@ const Status = () => {
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
               <p className="text-lg">Loading package data...</p>
             </div>
           </div>
@@ -260,7 +263,7 @@ const Status = () => {
                             className="w-10 h-10 rounded-lg"
                           />
                           <div className="space-y-1">
-                            <div className="font-medium">{item.name}</div>
+                            <div className="font-medium">{item.title}</div>
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant={

@@ -11,7 +11,7 @@ dotenv.config();
 /**
  * POST endpoint to fetch data from an external API
  */
-export const postExternalData = async (
+export const postExternalDataFunction = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {

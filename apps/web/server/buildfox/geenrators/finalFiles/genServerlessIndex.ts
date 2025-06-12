@@ -107,10 +107,8 @@ export const genServerlessIndex = async (
               .join("\n - ")}
 
             CRITICALLY:
-            make sure to use the correct function name in the import & export.
             make sure the imports follow the '.js' extension like this:
             like this:          
-            export { getExternalDataFunction } from './functions/getExternalData.js'
             import { externalDataDocs } from './functions/ExternalData.js'
   
             your workflow should be as follows:
@@ -121,7 +119,6 @@ export const genServerlessIndex = async (
             5. store the index.ts file is writen in "src/" folder.
   
             make sure you replace $$$clientRequestId$$$ with the ${clientRequest?.id} in the index.ts file inside apiDocs object.
-            make sure that all the functions are imported and re-exported in the index.ts file.
             make sure that the docs are properly setup in the index.ts file based on docs imported from the function files.
             make sure you rewrite the entire file instead of any diffs.
             `,

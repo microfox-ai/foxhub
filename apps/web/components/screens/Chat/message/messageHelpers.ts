@@ -29,6 +29,30 @@ export const constructMessageFromButton = (
   };
 };
 
+export const constructAutoSubmitMessage = (autoSubmit: string) => {
+  return {
+    id: crypto.randomUUID(),
+    content: autoSubmit,
+    role: "user" as const,
+    parts: [
+      {
+        type: "text" as const,
+        text: autoSubmit,
+      },
+    ],
+  };
+};
+
+export const constructAutoSubmitBody = (autoSubmitAnnotations: any[]) => {
+  return autoSubmitAnnotations.reduce((acc: any, annotation: any) => {
+    if (annotation.type === "body") {
+      acc[annotation.key] = annotation.value;
+      return acc;
+    }
+    return acc;
+  }, {});
+};
+
 /**
  * Constructs a message object for shiftMinion action
  */

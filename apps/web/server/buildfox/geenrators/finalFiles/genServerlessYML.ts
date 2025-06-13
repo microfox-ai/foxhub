@@ -136,7 +136,7 @@ export const genServerlessYML = async (
                 ` name: ${lambda.name} \n
               path: ${lambda.path}\n
               method: ${lambda.method}\n
-              handler: dist/${getFunctionNameFromKebabCase(lambda.name)}.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
+              handler: dist/functions/${getFunctionNameFromKebabCase(lambda.name)}.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
             )
             .join("\n\n - ")}
           ${taskInstanceMeta?.taskStructure?.cronJobs
@@ -144,7 +144,7 @@ export const genServerlessYML = async (
               (cron) => `
               name: ${cron.name} \n
               method: post\n 
-              handler: dist/${getFunctionNameFromKebabCase(cron.name)}.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
+              handler: dist/functions/${getFunctionNameFromKebabCase(cron.name)}.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
               - schedule:\n
                 rate: ${cron.cronExpression}`
             )

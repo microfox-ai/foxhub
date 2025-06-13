@@ -13,6 +13,7 @@ import { useFileUpload } from "../providers/FileUploadProvider";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { MinionFlow, MinionType, MinionTypeType } from "../hooks/convertors";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { constructAutoSubmitBody, constructAutoSubmitMessage } from "./message/messageHelpers";
 interface ChatInputBoxProps {
   input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
@@ -34,7 +35,7 @@ export default function ChatInputBox({
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
   const { selectedRequest, submitAnnotations, setSubmitAnnotations, autoSubmit, setAutoSubmit } = useClientProject();
-  const { handleSubmit, setInput, messages, status } = useMicrofoxChat();
+  const { handleSubmit, setInput, messages, status, append } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     //console.log("textareaRef", textareaRef.current);
@@ -70,13 +71,7 @@ export default function ChatInputBox({
     const isFirstMessage = messages.length === 0;
     const minionFlow: any = isFirstMessage ? selectedRequest?.minionFlow ?? MinionFlow.BuildFlow : undefined;
     let minionType: any = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
-    const extraBody = submitAnnotations.reduce((acc: any, annotation: any) => {
-      if (annotation.type === "body") {
-        acc[annotation.key] = annotation.value;
-        return acc;
-      }
-      return acc;
-    }, {});
+    const extraBody = constructAutoSubmitBody(submitAnnotations);
     if (extraBody.api_errors) {
       minionType = MinionType.HotFixFox;
     }
@@ -100,11 +95,20 @@ export default function ChatInputBox({
   }, [apiErrors]);
 
   useEffect(() => {
-    if (autoSubmit) {
-      setInput(autoSubmit);
-      handleSend();
+    if (autoSubmit && autoSubmit.length > 0) {
+      const minionFlow: any = selectedRequest?.minionFlow ?? MinionFlow.BuildFlow;
+      const minionType: any = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
+      append(constructAutoSubmitMessage(autoSubmit), {
+        body: {
+          minionFlow: minionFlow,
+          minionType: minionType,
+          ...constructAutoSubmitBody(submitAnnotations)
+        }
+      });
+      setAutoSubmit(null);
+      setSubmitAnnotations([]);
     }
-  }, [autoSubmit, status]);
+  }, [autoSubmit, submitAnnotations]);
 
   return (
     <div className={cn("w-full overflow-visible", className)}>

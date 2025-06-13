@@ -4,10 +4,11 @@ import { MinionType } from "../hooks/convertors";
 import { MinionFlow } from "../hooks/convertors";
 import useSWR from "swr";
 import { ShardPage } from "@prisma/client";
+import { useClientProject } from "../providers/ClientProjectProvider";
 
-export const ShardPagesTab = ({
-    createNewEmptyRequest
-}: ShardPagesTabProps) => {
+export const ShardPagesTab = (props: ShardPagesTabProps) => {
+
+    const { selectedProject, createNewEmptyRequest } = useClientProject();
 
 
     const { data: shardpages, isLoading: shardpagesLoading } = useSWR<ShardPage[]>("/api/shard-page?status=PUBLISHED",

@@ -47,13 +47,13 @@ export const mapProviderToAuthFunction = (
         redirectUri: APP_BASE_URL + process.env.SLACK_REDIRECT_URI!,
         ...(scopes && { scopes: scopes }),
       });
-    // case "reddit-oauth":
-    //   return new RedditOAuthSdk({
-    //     clientId: process.env.REDDIT_CLIENT_ID!,
-    //     clientSecret: process.env.REDDIT_CLIENT_SECRET!,
-    //     redirectUri: process.env.REDDIT_REDIRECT_URI!,
-    //     ...(scopes && { scopes: scopes }),
-    //   });
+    case "reddit-oauth":
+      return new RedditOAuthSdk({
+        clientId: process.env.REDDIT_CLIENT_ID!,
+        clientSecret: process.env.REDDIT_CLIENT_SECRET!,
+        redirectUri:  APP_BASE_URL + process.env.REDDIT_REDIRECT_URI!,
+        ...(scopes && { scopes: scopes }),
+      });
     default:
       return null;
   }

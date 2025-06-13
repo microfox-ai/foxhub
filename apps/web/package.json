@@ -35,7 +35,7 @@
     "@microfox/google-sdk": "^1.0.2",
     "@microfox/linkedin-oauth": "^1.0.4",
     "@microfox/reddit-oauth": "^1.1.2",
-    "@microfox/slack-oauth": "*",
+    "@microfox/slack-oauth": "^1.1.0",
     "@microfox/slack-web-tiny": "^1.0.3",
     "@microfox/usage-pricing": "^0.0.11",
     "@microfox/usage-tracker": "^0.0.5",

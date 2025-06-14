@@ -11,7 +11,6 @@ custom:
   serverless-offline:
     httpPort: 4000
     lambdaPort: 4002
-    noPrependStageInUrl: true
     useChildProcesses: true
     useWorkerThreads: true
     noCookieValidation: true

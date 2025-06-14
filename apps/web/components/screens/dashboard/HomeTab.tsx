@@ -27,7 +27,7 @@ export const HomeTab = ({ activeTab, setActiveTab, createNewEmptyRequest }: TabP
             </Link>
             <li
                 onClick={() => {
-                    createNewEmptyRequest();
+                    createNewEmptyRequest?.();
                 }}
                 className="bg-black text-white flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
                 <CornerDownRightIcon className="w-4 h-4" />

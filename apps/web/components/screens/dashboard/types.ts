@@ -4,7 +4,7 @@ import { MinionFlowType } from "../hooks/convertors";
 export interface TabProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  createNewEmptyRequest: (
+  createNewEmptyRequest?: (
     flow?: MinionFlowType,
     annotations?: Array<{ type: string; key: string; value: string }>,
     title?: string

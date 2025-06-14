@@ -38,7 +38,7 @@ export const TasksTab = ({
                                     const hasCronJobs = taskInstance?.taskStructure?.cronJobs?.length ?? 0 > 0;
                                     const hasDbSchemas = taskInstance?.taskStructure?.dbSchemas?.length ?? 0 > 0;
                                     const hasIntegrations = taskInstance?.taskIntegrations?.platforms?.length ?? 0 > 0;
-                                    const deployStage = taskInstance?.deployStep?.deployment?.stage;
+                                    // const deployStage = taskInstance?.deployStep?.deployment?.stage;
 
                                     return (
                                         <Link
@@ -98,8 +98,8 @@ export const TasksTab = ({
                                                                 <span>{taskInstance?.taskStructure?.dbSchemas?.length ?? 0} Data</span>
                                                             </div>
                                                         )}
-                                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                                            <span className="text-xs">{dayjs(taskInstance?.deployStep?.endTime ?? taskInstance?.deployStep?.startTime ?? request.createdAt).fromNow()}</span>
+                                                        {/* <div className="flex items-center gap-2 text-muted-foreground">
+                                                        <span className="text-xs">{dayjs(taskInstance?.deployStep?.endTime ?? taskInstance?.deployStep?.startTime ?? request.createdAt).fromNow()}</span>
                                                         </div>
                                                         <div className="ml-auto flex items-center gap-2">
                                                             {deployStage ? (
@@ -111,7 +111,7 @@ export const TasksTab = ({
                                                                     Building
                                                                 </Badge>
                                                             )}
-                                                        </div>
+                                                        </div> */}
                                                     </div>
                                                 </CardContent>
                                             </Card>

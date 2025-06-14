@@ -403,7 +403,7 @@ export const DeploymentsInfo = ({
             </div>
             <div className="font-medium text-gray-900 mt-1">
               {deployment?.metrics?.timing?.totalDuration
-                ? `${deployment?.metrics?.timing?.totalDuration} seconds`
+                ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds`
                 : "N/A"}
             </div>
           </div>

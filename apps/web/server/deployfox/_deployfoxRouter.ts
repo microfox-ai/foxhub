@@ -14,7 +14,6 @@ import {
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
 import { deployViaGit } from "./deployGit";
-import { getRunforClientRequestbySha } from "./fetchLogs";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -44,16 +43,6 @@ export const deployFoxRouter: ServerStreamingFunction<
     content: `Deploying Automation to ${stage ?? DEPLOY_STAGE.STAGING}`,
   });
 
-  await updateTaskInstanceMeta({
-    clientRequestId,
-    otherData: {
-      deployStep: {
-        startTime: new Date().toISOString(),
-        status: "pending",
-      },
-    },
-  });
-
   //clone template in dev mode
   // await recloneTemplateStuffToClientRequest(props, clientRequest);
 
@@ -74,24 +63,12 @@ export const deployFoxRouter: ServerStreamingFunction<
     content: `Deploymnent detected, waiting for completion!`,
   });
 
-  await updateTaskInstanceMeta({
-    clientRequestId,
-    otherData: {
-      deployStep: {
-        runId: sha,
-        stage: stage ?? DEPLOY_STAGE.STAGING,
-        status: "pending",
-        shouldBreak: false,
-      },
-    },
-  });
-
   // const clientDeployment = await getClientDeployment(clientRequestId);
   await slackBotSdk.sendMessage({
     icon_url: MICROFOX_LOGO,
     channel: MySlackChannels.microfox_updates,
     text: `Deployfox triggered ${(stage ?? DEPLOY_STAGE.STAGING).toLowerCase()} deployment for ${clientRequest.title} ${
-      sha ? `with runId ${sha}` : ""
+      sha ? `with sha ${sha}` : ""
     }`,
   });
 
@@ -102,7 +79,7 @@ export const deployFoxRouter: ServerStreamingFunction<
     text: `Deployments Completed !`,
     pingerInterval: 5000,
     stage: stage ?? DEPLOY_STAGE.STAGING,
-    ...(sha && { runId: sha }),
+    ...(sha && { sha: sha }),
   });
   return {
     responseBody: { ...responseBody },

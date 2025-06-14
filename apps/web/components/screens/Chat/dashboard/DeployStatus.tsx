@@ -94,20 +94,8 @@ const getStageColor = (stage: string) => {
 
 export const DeployStatus = () => {
 
-    const { taskInstanceMeta } = useTaskInstanceMetaContext();
-    const { selectedRequest } = useClientProject()
-    const { data: clientDeployments } = useSWR<{ clientFunctions: ClientDeployment[] }>(
-        `/api/client-functions?id=${selectedRequest?.id}`,
-        async (url: string) => {
-            const response = await PortalSdk.getData(url, {});
-            return response.clientFunctions;
-        }
-    );
-    const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
-    const { deployment, shouldBreak } = useDeployStatus({
-        runId: taskInstanceMeta?.deployStep?.runId?.toString() || "",
-        stage: taskInstanceMeta?.deployStep?.deployment?.stage as DEPLOY_STAGE || DEPLOY_STAGE.STAGING,
-    });
+    const { selectedRequest } = useClientProject();
+    const { deployment, clientDeployment } = useDeployStatus();
 
     //console.log("clientDeployment", clientDeployment);
     const { setActiveTab } = useTabUi();
@@ -143,7 +131,7 @@ export const DeployStatus = () => {
     const statusColors = getStatusColor(status || "");
     const StatusIcon = () => getStatusIcon(status || "");
 
-    // Get stage from either deployStep or clientDeployment
+    // Get stage from clientDeployment
     const stage = deployment.stage || clientDeployment?.stage || "UNKNOWN";
     const stageColors = getStageColor(stage);
 

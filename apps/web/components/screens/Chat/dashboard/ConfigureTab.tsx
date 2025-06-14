@@ -10,7 +10,6 @@ import { useLayout } from "../../providers/LayoutProvider";
 import { useApiDoc } from "../../providers/ApiDocProvider";
 import { DeployStatus } from "./DeployStatus";
 import { EndpointsSection } from "./EndpointsSection";
-import { DeployStep } from "@/server/convertfox/types";
 import { SecretVault } from "./SecretVault";
 import { Button } from "@/components/ui/button";
 import {

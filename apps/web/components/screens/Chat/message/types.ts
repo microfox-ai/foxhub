@@ -113,8 +113,6 @@ export interface DeploymentStep {
 }
 
 export interface DeploymentData {
-  shouldBreak: boolean;
-  deployStep: DeploymentStep;
   clientDeployment: {
     branch?: string;
     repoName?: string;

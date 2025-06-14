@@ -255,25 +255,6 @@ export const buildingStep = z.object({
 });
 export type BuildingStep = z.infer<typeof buildingStep>;
 
-export const deployStep = z.object({
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
-  status: z.enum(["pending", "success", "failed"]).optional(),
-  message: z.string().optional(),
-  logs: z.any().optional(),
-  metadata: z.any().optional(),
-  shouldBreak: z.boolean().optional(),
-  deployment: z
-    .object({
-      stage: z.string(),
-      type: z.string(),
-      id: z.string(),
-    })
-    .optional(),
-  runId: z.number().optional(),
-});
-export type DeployStep = z.infer<typeof deployStep>;
-
 // step3
 export const taskInstance = z.object({
   initialSummary: z
@@ -289,7 +270,6 @@ export const taskInstance = z.object({
   taskRequiredInfo: taskRequiredInfo.optional(),
   taskStructure: taskStructure.optional(),
   buildingStep: buildingStep.optional(),
-  deployStep: deployStep.optional(),
 });
 
 export type TaskInstanceMetaType = z.infer<typeof taskInstance>;

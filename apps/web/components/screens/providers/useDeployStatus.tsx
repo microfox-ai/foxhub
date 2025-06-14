@@ -174,7 +174,7 @@ export const useDeployStatus = (
 
       if (!response.ok) {
         if (response.status === 404) {
-          return null;
+          throw new Error("404: Deployment not found");
         }
         const errorMessage = `HTTP ${response.status}: Failed to fetch deployment`;
         console.error(`❌ API Error: ${errorMessage}`);
@@ -187,7 +187,7 @@ export const useDeployStatus = (
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      refreshInterval: 0,
+      refreshInterval: 3000,
     }
   );
 
@@ -208,21 +208,21 @@ export const useDeployStatus = (
       return false;
     }
 
-    // If API had a non-404 error, don't start SSE
-    if (apiError && !apiError.message.includes("404")) {
-      console.log(
-        `❌ API error (non-404), not starting SSE:`,
-        apiError.message
-      );
-      return false;
-    }
-
     // If deployment not found (404), start SSE to wait for deployment creation
-    if (apiError && apiError.message.includes("404")) {
-      console.log(
-        `🔌 Deployment not found (404), starting SSE to wait for creation`
-      );
-      return true;
+    if (apiError) {
+      console.log(`🔌 API error:`, apiError);
+      if (apiError.message.includes("404")) {
+        console.log(
+          `🔌 Deployment not found (404), starting SSE to wait for creation`
+        );
+        return true;
+      } else {
+        console.log(
+          `❌ API error (non-404), not starting SSE:`,
+          apiError.message
+        );
+        return false;
+      }
     }
 
     // If deployment found but not finalized, start SSE for real-time updates

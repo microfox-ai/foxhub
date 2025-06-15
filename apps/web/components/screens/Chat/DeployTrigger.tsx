@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,59 +23,72 @@ const DeployTrigger = () => {
     clientRequestId: selectedClientDeployment?.originClientRequestId || "",
     sha: selectedClientDeployment?.sha || "",
   });
-  console.log("deployment", deployment);
+  const [currentDisplay, setCurrentDisplay] = useState<{
+    text: string;
+    color: string;
+  } | null>({
+    text: "Deploy",
+    color: "border-gray-500 text-gray-600",
+  });
   const { append } = useMicrofoxChat();
 
-  // If no clientDeployment, show deploy button
-  if (!selectedClientDeployment) {
-    return (
-      <Button
-        variant="outline"
-        className="mx-2 flex items-center gap-2"
-        onClick={() => handleDeploy("staging")}
-      >
-        <RocketIcon className="h-4 w-4" />
-        <span>Deploy</span>
-      </Button>
-    );
-  }
-
-  // Determine current deployment status and display text
-  const getCurrentDeploymentDisplay = () => {
-    if (!deployment?._id) {
-      return { text: "Deploy", color: "border-gray-500 text-gray-600" };
-    }
-    const localState = deployment.localState;
-    const stage = deployment.stage;
-    const status = deployment.status;
-    console.log(localState, stage, status);
-    if (!localState || localState === "awsLambda") {
-      if (status === "deployed") {
-        if (stage === "STAGING") {
-          return { text: "Staging", color: "border-blue-600 text-blue-600" };
-        } else if (stage === "PROD") {
+  useEffect(() => {
+    // Determine current deployment status and display text
+    const getCurrentDeploymentDisplay = () => {
+      if (!deployment?._id) {
+        return { text: "Deploy", color: "border-gray-500 text-gray-600" };
+      }
+      const localState = deployment.localState;
+      const stage = deployment.stage;
+      const status = deployment.status;
+      console.log(localState, stage, status);
+      if (!localState || localState === "awsLambda") {
+        if (status === "deployed") {
+          if (stage === "STAGING") {
+            return { text: "Staging", color: "border-blue-600 text-blue-600" };
+          } else if (stage === "PROD") {
+            return {
+              text: "Production",
+              color: "border-green-500 text-green-600",
+            };
+          } else if (stage === "DEV") {
+            return {
+              text: "Local",
+              color: "border-yellow-600 text-yellow-600",
+            };
+          }
+        } else if (status === "failed") {
+          return { text: "Failed", color: "border-red-500 text-red-600" };
+        } else {
           return {
-            text: "Production",
-            color: "border-green-500 text-green-600",
+            text: status?.charAt(0)?.toUpperCase() + status?.slice(1),
+            color: "border-blue-600 text-blue-600",
           };
-        } else if (stage === "DEV") {
-          return { text: "Local", color: "border-yellow-600 text-yellow-600" };
         }
+      } else if (localState === "active") {
+        return {
+          text: "Active",
+          color: "border-green-500 text-green-600",
+        };
+      } else if (localState === "errored") {
+        return {
+          text: "Errored",
+          color: "border-red-500 text-red-600",
+        };
+      } else if (localState === "stopped") {
+        return {
+          text: "Stopped",
+          color: "border-gray-500 text-gray-600",
+        };
       } else {
         return {
-          text:
-            deployment.status?.charAt(0)?.toUpperCase() +
-            deployment.status?.slice(1),
+          text: localState?.charAt(0)?.toUpperCase() + localState?.slice(1),
           color: "border-blue-600 text-blue-600",
         };
       }
-    } else {
-      return {
-        text: localState?.charAt(0)?.toUpperCase() + localState?.slice(1),
-        color: "border-blue-600 text-blue-600",
-      };
-    }
-  };
+    };
+    setCurrentDisplay(getCurrentDeploymentDisplay() || null);
+  }, [deployment?.status, deployment?.localState, deployment?.stage]);
 
   const handleDeploy = (targetStage: string) => {
     let deployStage: DEPLOY_STAGE;
@@ -92,7 +105,7 @@ const DeployTrigger = () => {
         break;
       case "local":
         deployStage = DEPLOY_STAGE.STAGING;
-        buttonText = "Start Local Automation";
+        buttonText = "Deploy to Local";
         break;
       default:
         return;
@@ -139,13 +152,11 @@ const DeployTrigger = () => {
     },
     {
       value: "local",
-      label: "Local Testing",
+      label: "Deploy to Local",
       shortLabel: "Local",
       color: "border-yellow-600 text-yellow-600",
     },
   ];
-
-  const currentDisplay = getCurrentDeploymentDisplay();
 
   return (
     <DropdownMenu>
@@ -164,7 +175,7 @@ const DeployTrigger = () => {
             onClick={() => handleDeploy(option.value)}
             className={`cursor-pointer ${option.color}`}
           >
-            <RocketIcon className="h-4 w-4 mr-2" />
+            <RocketIcon className={`h-4 w-4 mr-2 ${option.color}`} />
             {option.label}
           </DropdownMenuItem>
         ))}

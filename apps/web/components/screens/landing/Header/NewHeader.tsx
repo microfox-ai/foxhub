@@ -67,7 +67,7 @@ const NewHeader = () => {
               height={36}
               width={32}
             />
-            <p className="px-2 py-2 text-sm font-semibold max-lg:hidden">
+            <p className="px-2 py-2 text-sm font-semibold">
               Microfox
             </p>
           </Link>
@@ -133,7 +133,7 @@ const HamBurger = () => {
       <div className="mx-2 my-[-10px] bg-black px-5 py-4 text-white lg:mx-6 lg:my-0">
         <>
           <Accordion className="w-full" type="single" defaultValue={'resources'}>
-            <AccordionItem value="resources" className="w-full border-none">
+            {/* <AccordionItem value="resources" className="w-full border-none">
               <AccordionTrigger
                 className="text-left text-2xl font-bold"
               >
@@ -142,7 +142,7 @@ const HamBurger = () => {
               <AccordionContent className="w-full bg-white text-base text-neutral-600">
                 <ResourcesContent orientation="mobile" className="bg-white" />
               </AccordionContent>
-            </AccordionItem>
+            </AccordionItem> */}
             {/* <AccordionItem value="products" className="w-full border-none">
                 <AccordionTrigger
                   className="text-left text-2xl font-bold"
@@ -173,19 +173,6 @@ const HamBurger = () => {
           </Accordion>
         </>
         <>
-          <p className="flex items-center justify-between py-2 text-2xl font-bold max-sm:text-lg">
-            Public Bots{' '}
-            <span className="material-symbols-outlined">
-              keyboard_arrow_down
-            </span>
-          </p>
-          <p className="flex items-center justify-between py-2 text-2xl font-bold max-sm:text-lg">
-            Resources
-            <span className="material-symbols-outlined">
-              keyboard_arrow_down
-            </span>
-          </p>
-          <p className="py-2 text-2xl font-bold max-sm:text-lg">Pricing</p>
           <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
             <button
               className="w-1/2 rounded-md bg-white py-2 text-sm font-semibold text-black max-sm:w-full"

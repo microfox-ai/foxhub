@@ -8,17 +8,10 @@ import {
   LayoutDashboard,
   Code,
   RocketIcon,
+  ChevronDown,
 } from "lucide-react";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { TabsTrigger } from "@/components/ui/tabs";
 import { TabsList } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
@@ -34,6 +27,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LogoutConfirmationDialog from "@/components/auth/LogoutConfirmationDialog";
 import { useAuth } from "@/components/auth/AuthProvider";
 import LogoutElement from "@/components/auth/LogoutElement";
+import { ButtonSCN } from "@/components/elements/Button";
+import DeployTrigger from "./DeployTrigger";
+
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
   mutate: () => void;
@@ -73,6 +69,7 @@ const tabList = [
     icon: <RocketIcon />,
   },
 ];
+
 const ChatHeader = ({
   messages,
   clientRequest,
@@ -110,13 +107,14 @@ const ChatHeader = ({
               Request ID: {clientRequest?.id}
             </p>
             <p className="text-xs text-gray-500">
-              Minion: {lastKnownMinionType};  Flow: {lastKnownMinionFlow} Status: {clientRequest?.archiveStatus}
+              Minion: {lastKnownMinionType}; Flow: {lastKnownMinionFlow} Status:{" "}
+              {clientRequest?.archiveStatus}
             </p>
           </>
         )}
       </div>
 
-      <div className="col-span-4 flex justify-center">
+      <div className="col-span-4 flex justify-start">
         {messages.length > 0 && (
           <TabsList className="relative flex bg-gray-100 p-[3px] h-11 rounded-lg">
             {tabList.map((tab) => (
@@ -154,10 +152,10 @@ const ChatHeader = ({
                 )}
               </TabsTrigger>
             ))}
+            <DeployTrigger />
           </TabsList>
         )}
       </div>
-
       <div className="col-span-4 flex justify-end">
         <LogoutElement />
       </div>

@@ -118,7 +118,7 @@ export const triggerDeployment = async (
           `## Latest Deployment\n` +
           `- Timestamp: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}\n` +
           `- Details:\n` +
-          `\`\`\`json\n${taskInstanceMeta ? JSON.stringify(taskInstanceMeta?.deployStep, null, 2) : "{}"}\n\`\`\`\n`
+          `\`\`\`json\n${taskInstanceMeta ? JSON.stringify(taskInstanceMeta, null, 2) : "{}"}\n\`\`\`\n`
       ).toString("base64"),
       branch: clientRequest.prBranch,
       ...(sha ? { sha } : {}),
@@ -129,6 +129,7 @@ export const triggerDeployment = async (
         where: { originClientRequestId: clientRequest.id },
         data: {
           status: DEPLOY_STATUS.TRIGGERED,
+          sha: data.commit.sha,
         },
       });
     } catch (error) {

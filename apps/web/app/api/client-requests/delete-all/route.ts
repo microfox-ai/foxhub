@@ -245,10 +245,12 @@ export async function DELETE(req: NextRequest) {
       };
     } catch (error) {
       console.error("Error deleting chat messages & taskInstanceMeta:", error);
+      // if (!(error as any).includes("Record to delete does not exist.")) {
       return NextResponse.json(
         { error: "Error deleting chat messages & taskInstanceMeta" },
         { status: 500 }
       );
+      // }
     }
 
     // 5. delete the github repo.

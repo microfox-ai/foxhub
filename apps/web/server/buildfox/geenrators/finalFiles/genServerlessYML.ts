@@ -84,19 +84,9 @@ const processImportsFromFiles = (allGenFilesList: any[]) => {
   return allGenFilesList
     ?.filter((file: any) => file.filePath.includes("/functions"))
     .map((file: any) => {
-      const fileContent = file.content || "";
-      const imports =
-        fileContent
-          .match(
-            /import\s+(?:(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))\s+from\s+['"]([^'"]+)['"]/g
-          )
-          ?.map((match: string) => {
-            const matches = match.match(/from\s+['"]([^'"]+)['"]/);
-            return matches?.[1];
-          })
-          .filter(Boolean) || [];
+      const imports = file.meta?.importsUsed;
 
-      const isPuppet = imports.some(
+      const isPuppet = imports?.some(
         (imp: string) =>
           imp.includes("helpers/chromeScript.js") ||
           imp.includes("puppeteer") ||
@@ -126,6 +116,8 @@ export const genServerlessYML = async (
 
   const imports = processImportsFromFiles(allGenFilesList);
 
+  console.log("imports", imports);
+
   // The following functions are generated for the task:
   // ${allGenFilesList
   //   ?.filter((file: any) => file.filePath.includes("/functions"))
@@ -144,7 +136,7 @@ export const genServerlessYML = async (
                 ` name: ${lambda.name} \n
               path: ${lambda.path}\n
               method: ${lambda.method}\n
-              handler: dist/${getFunctionNameFromKebabCase(lambda.name)}.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
+              handler: dist/functions/${getFunctionNameFromKebabCase(lambda.name)}.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
             )
             .join("\n\n - ")}
           ${taskInstanceMeta?.taskStructure?.cronJobs
@@ -152,7 +144,7 @@ export const genServerlessYML = async (
               (cron) => `
               name: ${cron.name} \n
               method: post\n 
-              handler: dist/${getFunctionNameFromKebabCase(cron.name)}.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
+              handler: dist/functions/${getFunctionNameFromKebabCase(cron.name)}.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
               - schedule:\n
                 rate: ${cron.cronExpression}`
             )

@@ -1,5 +1,4 @@
 import { prisma } from "@/prisma/prisma";
-import { triggerDeployment } from "@/server/deployfox/deployGit";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { deleteRepository } from "@/utils/services/github_functions/deleteRepo";
 import { DEPLOY_STAGE } from "@prisma/client";

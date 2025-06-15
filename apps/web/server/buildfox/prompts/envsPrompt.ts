@@ -139,6 +139,7 @@ export const envsPrompt = async (
 
               CRITICAL:
               Always try to use queryStringparameters or body from the event object to get theese variables instead of ENV variables (as long as its not a cron job).
+              Though, if the variables are accessTokens or clientIds, clientSecrets or ApiKeys, then use the process.env variables.
             `;
 };
 

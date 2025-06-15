@@ -32,37 +32,10 @@ const AuthPopupWindow = async ({
     return <div>Invalid Provider</div>;
   }
 
+
   // get DOCUMENT_ID from cookie
   const cookieStore = await cookies();
   const DOCUMENT_ID = cookieStore.get(`connect/${packageName}`)?.value;
-
-  if (!DOCUMENT_ID) {
-    return <div>Authorization Failed!</div>;
-  }
-
-  const clientSecret = await prisma.clientSecret.findUnique({
-    where: {
-      id: DOCUMENT_ID,
-    },
-  });
-
-  if (!clientSecret) {
-    return <div>Client Secret Not Found</div>;
-  }
-
-
-  const scopes = (clientSecret.variables as any[] as ClientSecretVariable[]).find(
-    (variable: any) => (variable.key as string).includes("SCOPES")
-  )?.value;
-
-  const providerInstance = mapProviderToAuthFunction(
-    packageName,
-    scopes ? scopes.split(",") : []
-  );
-
-  if (!providerInstance) {
-    return <div>Invalid Provider</div>;
-  }
 
   if (segment.length === 2 && segment[1] === "callback") {
     const code = searchParamsAwaited.code as string;
@@ -71,11 +44,53 @@ const AuthPopupWindow = async ({
       return <div>Authorization code not found in URL</div>;
     }
 
-    const tokenResponse = await providerInstance.exchangeCodeForTokens(code);
-
     if (!DOCUMENT_ID) {
-      return <div>Authorization Failed!</div>;
+      const providerInstance = mapProviderToAuthFunction(
+        packageName,
+        []
+      );
+
+      if (!providerInstance) {
+        return <div>Invalid Provider</div>;
+      }
+
+      const tokenResponse = await providerInstance.exchangeCodeForTokens(code);
+      if ("accessToken" in tokenResponse || "access_token" in tokenResponse) {
+        const accessToken =
+          "accessToken" in tokenResponse ? tokenResponse.accessToken : tokenResponse.access_token;
+        const refreshToken =
+          "refreshToken" in tokenResponse ? tokenResponse.refreshToken : null;
+        return <div>Authorization succesful! - {JSON.stringify(tokenResponse)}</div>;
+      }
+      else {
+        return <div>Authorization Failed!</div>;
+      }
     }
+
+    const clientSecret = await prisma.clientSecret.findUnique({
+      where: {
+        id: DOCUMENT_ID,
+      },
+    });
+
+    if (!clientSecret) {
+      return <div>Client Secret Not Found</div>;
+    }
+
+    const scopes = (clientSecret.variables as any[] as ClientSecretVariable[]).find(
+      (variable: any) => (variable.key as string).includes("SCOPES")
+    )?.value;
+
+    const providerInstance = mapProviderToAuthFunction(
+      packageName,
+      scopes ? scopes.split(",") : []
+    );
+
+    if (!providerInstance) {
+      return <div>Invalid Provider</div>;
+    }
+
+    const tokenResponse = await providerInstance.exchangeCodeForTokens(code);
 
     const accessToken =
       "accessToken" in tokenResponse ? tokenResponse.accessToken : tokenResponse.access_token;
@@ -111,10 +126,38 @@ const AuthPopupWindow = async ({
       };
     });
 
-    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} />;
+    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} tokenResponse={tokenResponse} />;
   }
+  else if (segment.length === 1) {
 
-  if (segment.length === 1) {
+    if (!DOCUMENT_ID) {
+      return <div>Authorization Failed! - Authentication not initiated from a valid source</div>;
+    }
+
+    const clientSecret = await prisma.clientSecret.findUnique({
+      where: {
+        id: DOCUMENT_ID,
+      },
+    });
+
+    if (!clientSecret) {
+      return <div>Client Secret Not Found</div>;
+    }
+
+
+    const scopes = (clientSecret.variables as any[] as ClientSecretVariable[]).find(
+      (variable: any) => (variable.key as string).includes("SCOPES")
+    )?.value;
+
+    const providerInstance = mapProviderToAuthFunction(
+      packageName,
+      scopes ? scopes.split(",") : []
+    );
+
+    if (!providerInstance) {
+      return <div>Invalid Provider</div>;
+    }
+
     const authUrl = providerInstance.getAuthUrl();
     if (!authUrl) {
       throw new Error("Invalid provider");

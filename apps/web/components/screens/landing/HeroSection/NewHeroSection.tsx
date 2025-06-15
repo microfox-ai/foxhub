@@ -1,8 +1,11 @@
+'use client';
+
 import { FlipWords } from '@/components/ui/flip-words';
 import { Mrs_Sheppards } from 'next/font/google';
 import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react';
+import StackSection from './StackSection';
 
 const words = ['Kickstart with an MVP', 'work with edge-tech devs', ''];
 const mrsSheppard = Mrs_Sheppards({ weight: '400', subsets: ['latin'] });
@@ -10,18 +13,26 @@ const NewHeroSection = () => {
   return (
     <div className="relative w-full">
       {/* Hero text */}
-      <div className="relative z-10 flex h-[100vh] flex-col items-center justify-center gap-8 text-center">
-        <h1 className="text-5xl font-extrabold text-black max-sm:px-10 xl:text-6xl">
-          speed-up your start-up
+      <div className="relative z-10 flex h-[100vh] flex-col items-center justify-center gap-4 sm:gap-8 text-center">
+        <h1 className="-mt-20 text-4xl sm:text-5xl font-extrabold text-black px-4 sm:px-10 xl:text-6xl">
+          Speed-up your business
         </h1>
 
-        <p className="w-1/2 text-3xl font-bold text-neutral-700 max-sm:w-full max-sm:px-8 xl:text-2xl">
-          Microfox can access & execute tasks across any platform to automate your processes.
-        </p>
-
-        <p className="absolute bottom-6 left-1/2 w-4/5 -translate-x-1/2 text-lg font-medium md:w-full md:text-xl">
+        <p className="text-xl sm:text-2xl xl:text-3xl font-bold text-neutral-400 text-center px-4 sm:px-8 flex items-center gap-2">
           Save time & resources volumetrically, with effective automations.
         </p>
+
+        <div className="bg-black/80 animate-bounce h-3 w-3 sm:h-4 sm:w-4 rounded-full p-0 text-xs text-white"></div>
+
+        <div className='absolute bottom-4 sm:bottom-6 left-0 w-full'>
+          <div className='w-full'>
+            <StackSection />
+          </div>
+          <p className="w-4/5 mx-auto text-base sm:text-lg text-neutral-400 font-regular md:w-full md:text-xl px-4 sm:px-0">
+            Microfox can access & execute tasks across any tool or agent or platform.
+          </p>
+        </div>
+
       </div>
 
       {/* Additional content */}

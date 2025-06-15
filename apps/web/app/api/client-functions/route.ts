@@ -1,7 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { getServiceName } from "@/server/buildfox/helper/getServiceName";
 import {
-  DeployStep,
   TaskInstanceMetaType,
   TaskStructure,
 } from "@/server/convertfox/types";
@@ -31,6 +30,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       originClientRequestId,
+      sha,
       name,
       baseUrl,
       stage,
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       endpoints,
     } = body;
 
-    if (!originClientRequestId || !name || !baseUrl || !type || !stage) {
+    if (!originClientRequestId || !name || !baseUrl || !type || !stage || !sha) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     const { userId, botProjectId } = clientRequest;
 
-    const serverlessLog = metadata.serverless.output;
+    const serverlessLog = metadata.serverless?.output;
     const serviceName = getServiceName(
       clientRequest,
       clientRequest.taskInstanceMeta as unknown as TaskInstanceMetaType
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
     const clientFunction = await prisma.clientDeployment.upsert({
       where: { id: originClientRequestId },
       update: {
+        sha,
         baseUrl,
         name: `${name}-${stage}-${originClientRequestId}`,
         stage: stage as DEPLOY_STAGE,
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
         botProjectId,
         originClientRequestId,
         name: `${name}-${stage}-${originClientRequestId}`,
+        sha,
         baseUrl,
         stage: stage as DEPLOY_STAGE,
         type: type as FUNCTIONTYPE,
@@ -125,22 +127,6 @@ export async function POST(req: NextRequest) {
         originClientRequestId: originClientRequestId,
       },
     });
-
-    if (taskInstanceMeta) {
-      taskInstanceMeta = await updateTaskInstanceMeta({
-        clientRequestId: originClientRequestId,
-        otherData: {
-          deployStep: {
-            ...(taskInstanceMeta?.deployStep as DeployStep),
-            deployment: {
-              stage,
-              type,
-              id: originClientRequestId,
-            },
-          } as DeployStep,
-        },
-      });
-    }
 
     // Add notification in chat if needed
     // TODO: VISHWAJEET - send not only a message, but also an email to the user.
@@ -195,8 +181,9 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get("userId");
     const botProjectId = searchParams.get("botProjectId");
     const clientRequestId = searchParams.get("clientRequestId");
+    const sha = searchParams.get("sha");
 
-    if (!id && !userId && !botProjectId && !clientRequestId) {
+    if (!id && !userId && !botProjectId && !clientRequestId && !sha) {
       return NextResponse.json(
         {
           error:
@@ -212,6 +199,7 @@ export async function GET(req: NextRequest) {
         ...(userId && { userId }),
         ...(botProjectId && { botProjectId }),
         ...(clientRequestId && { originClientRequestId: clientRequestId }),
+        ...(sha && { sha }),
       },
       include: {
         originClientRequest: true,
@@ -254,20 +242,6 @@ export async function DELETE(req: NextRequest) {
 
     // Store data before deletion for notifications
     // const { name, originClientRequestId, userId, stage } = clientFunction;
-
-    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
-      where: { originClientRequestId: clientFunction.originClientRequestId },
-    });
-
-    if (taskInstanceMeta) {
-      // reset deployStep
-      await updateTaskInstanceMeta({
-        clientRequestId: clientFunction.originClientRequestId,
-        otherData: {
-          deployStep: null,
-        },
-      });
-    }
 
     // Delete the function
     await prisma.clientDeployment.delete({

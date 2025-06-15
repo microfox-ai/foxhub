@@ -94,20 +94,8 @@ const getStageColor = (stage: string) => {
 
 export const DeployStatus = () => {
 
-    const { taskInstanceMeta } = useTaskInstanceMetaContext();
-    const { selectedRequest } = useClientProject()
-    const { data: clientDeployments } = useSWR<{ clientFunctions: ClientDeployment[] }>(
-        `/api/client-functions?id=${selectedRequest?.id}`,
-        async (url: string) => {
-            const response = await PortalSdk.getData(url, {});
-            return response.clientFunctions;
-        }
-    );
-    const clientDeployment = clientDeployments?.clientFunctions?.[0] || null;
-    const { deployment, shouldBreak } = useDeployStatus({
-        runId: taskInstanceMeta?.deployStep?.runId?.toString() || "",
-        stage: taskInstanceMeta?.deployStep?.deployment?.stage as DEPLOY_STAGE || DEPLOY_STAGE.STAGING,
-    });
+    const { selectedRequest, selectedClientDeployment: clientDeployment } = useClientProject();
+    const { deployment } = useDeployStatus(clientDeployment?.sha ?? undefined);
 
     //console.log("clientDeployment", clientDeployment);
     const { setActiveTab } = useTabUi();
@@ -143,7 +131,7 @@ export const DeployStatus = () => {
     const statusColors = getStatusColor(status || "");
     const StatusIcon = () => getStatusIcon(status || "");
 
-    // Get stage from either deployStep or clientDeployment
+    // Get stage from clientDeployment
     const stage = deployment.stage || clientDeployment?.stage || "UNKNOWN";
     const stageColors = getStageColor(stage);
 
@@ -249,7 +237,7 @@ export const DeployStatus = () => {
                                 </div>
                                 {clientDeployment?.metadata && (
                                     <div className="flex justify-between">
-                                        <span className="text-xs text-gray-500">{(clientDeployment.metadata as unknown as ClientDeploymentMetadata).serverless?.stage} functions</span>
+                                        <span className="text-xs text-gray-500">{(clientDeployment.metadata as unknown as ClientDeploymentMetadata)?.serverless?.stage} functions</span>
                                         <span className="text-xs font-medium">{(clientDeployment.metadata as unknown as ClientDeploymentMetadata)?.serverless?.functions?.length}</span>
                                     </div>
                                 )}

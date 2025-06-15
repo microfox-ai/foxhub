@@ -188,3 +188,32 @@
 .scrollbar-hidden::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
+
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-50% - 20px));
+  }
+}
+
+[data-scroll-speed="slow"] {
+  --_animation-duration: 100s;
+}
+
+[data-scroll-speed="medium"] {
+  --_animation-duration: 40s;
+}
+
+[data-scroll-speed="fast"] {
+  --_animation-duration: 10s;
+}
+/* Apply scrolling only if data-scroll="true" */
+[data-scroll="true"] {
+  animation: scroll var(--_animation-duration, 40s) linear infinite;
+}
+
+[data-scroll-to-left="true"] {
+  animation-direction: reverse;
+}

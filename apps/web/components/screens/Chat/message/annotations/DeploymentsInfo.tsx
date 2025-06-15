@@ -71,19 +71,16 @@ export const DeploymentsInfo = ({
   const annotation = uiAnnotation as any;
   const pingerInterval = annotation.pingerInterval;
   const stage = annotation.stage;
-  const runId = annotation.runId;
+  const sha = annotation.sha;
   const [showLogsDialog, setShowLogsDialog] = useState(false);
 
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
-  const { setSubmitAnnotations, selectedRequest } = useClientProject();
+  const { setSubmitAnnotations, selectedRequest, selectedClientDeployment: clientDeployment } =
+    useClientProject();
 
-  const { selectedRequest: clientRequest } = useClientProject();
-  const { deployment, logs, clientDeployment, shouldBreak } = useDeployStatus({
-    runId,
-    stage,
-  });
+  const { deployment, logs, shouldBreak, progress } = useDeployStatus(sha);
 
   const deployToProduction = () => {
     console.log("deployToProduction");
@@ -107,7 +104,6 @@ export const DeploymentsInfo = ({
     );
   };
 
-  const [deploymentLogs, setDeploymentLogs] = useState<any>(null);
   const [serverlessLogs, setServerlessLogs] = useState<any>(null);
   const [checkForErrors, setCheckForErrors] = useState<boolean>(false);
   const debugIssue = () => {
@@ -131,7 +127,7 @@ export const DeploymentsInfo = ({
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
-          clientDeploymentId: (clientDeployment).id,
+          clientDeploymentId: clientDeployment?.id,
           endpointLink,
           setServerlessLogs: setServerlessLogs,
         });
@@ -176,7 +172,6 @@ export const DeploymentsInfo = ({
 
   const fetchLogs = () => {
     setShowLogsDialog(true);
-    setDeploymentLogs(logs[0]?.rawContent);
     setServerlessLogs(null);
     setCheckForErrors(true);
     if (!clientDeployment) {
@@ -184,7 +179,7 @@ export const DeploymentsInfo = ({
       return;
     }
     const endpointLink =
-      (clientDeployment as ClientDeployment)?.baseUrl +
+      clientDeployment?.baseUrl +
       "/" +
       deployment?.stage?.toLowerCase() +
       "/docs.json";
@@ -196,7 +191,7 @@ export const DeploymentsInfo = ({
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
-          clientDeploymentId: (clientDeployment).id,
+          clientDeploymentId: clientDeployment.id,
           endpointLink,
         });
         console.log("serverless logs", logs);
@@ -210,51 +205,11 @@ export const DeploymentsInfo = ({
     );
   };
 
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [statusMessageIndex, setStatusMessageIndex] = useState(0);
-
-  // Rotating status messages to keep the user engaged
-  const statusMessages = [
-    "Preparing deployment resources and configuring environment...",
-    "Building application packages and dependencies...",
-    "Optimizing assets and code bundles...",
-    "Setting up infrastructure and services...",
-    "Configuring environment variables and secrets...",
-    "Almost there! Finalizing deployment process...",
-  ];
-
-  useEffect(() => {
-    const timeInterval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
-
-    // Rotate status messages every 15 seconds
-    const messageInterval = setInterval(() => {
-      setStatusMessageIndex((prev) => (prev + 1) % statusMessages.length);
-    }, 15000);
-
-    return () => {
-      clearInterval(timeInterval);
-      clearInterval(messageInterval);
-    };
-  }, []);
-
   if (!deployment) {
     return null;
   }
 
   if (!shouldBreak) {
-    const formatTime = (seconds: number) => {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins > 0 ? `${mins}m ` : ""}${secs}s`;
-    };
-
-    // Calculate progress percentage (assuming 2 minutes = 120 seconds)
-    const progressPercentage =
-      deployment?.progress?.percentage ??
-      Math.min(Math.floor((elapsedTime / 120) * 100), 95);
-
     return (
       <motion.div
         className="flex flex-col gap-4 p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
@@ -277,7 +232,10 @@ export const DeploymentsInfo = ({
           <div className="flex items-center gap-2">
             <Clock size={14} className="text-gray-500" />
             <span className="text-sm font-medium text-gray-600">
-              {formatTime(elapsedTime)}
+              {prettyPrintDuration(
+                deployment?.metrics?.timing?.startTime as string,
+                new Date().toISOString()
+              )}
             </span>
           </div>
         </div>
@@ -294,13 +252,13 @@ export const DeploymentsInfo = ({
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-gray-500">
             <span>Progress</span>
-            <span>{progressPercentage}%</span>
+            <span>{progress}%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
             <motion.div
               className="h-full bg-blue-500 rounded-full"
               initial={{ width: "0%" }}
-              animate={{ width: `${progressPercentage}%` }}
+              animate={{ width: `${progress}%` }}
               transition={{ duration: 0.5 }}
             />
           </div>
@@ -327,11 +285,11 @@ export const DeploymentsInfo = ({
                 onClick={fetchLogs}
                 className="flex-1 text-left font-medium text-gray-800 truncate hover:text-blue-600 transition-colors"
               >
-                {deployment?.logs?.length}
+                {logs?.length || 0}
               </button>
               {clientDeployment && (
                 <a
-                  href={`https://${process.env.NEXT_PUBLIC_AWS_REGION}.console.aws.amazon.com/cloudwatch/home?region=${process.env.NEXT_PUBLIC_AWS_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`/aws/lambda/${clientDeployment.functionName}`)}`}
+                  href={`https://${process.env.NEXT_PUBLIC_AWS_REGION}.console.aws.amazon.com/cloudwatch/home?region=${process.env.NEXT_PUBLIC_AWS_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`/aws/lambda/${clientDeployment.name}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
@@ -348,19 +306,21 @@ export const DeploymentsInfo = ({
               <span className="text-gray-500">Status</span>
             </div>
             <div className="font-medium text-yellow-600">
-              {deployment?.progress?.step ?? deployment?.status}
+              {deployment?.status}
             </div>
           </div>
         </div>
 
         <div className="text-xs text-gray-500 flex items-center gap-2">
           <Loader2 size={12} className="animate-spin" />
-          <span>{deployment?.statusDescription || statusMessages[statusMessageIndex]}</span>
+          <span>
+            {deployment?.statusDescription}
+          </span>
         </div>
         <LogsDialog
           isOpen={showLogsDialog}
           onClose={() => setShowLogsDialog(false)}
-          logs={deploymentLogs}
+          logs={logs || ""}
           serverlessLogs={serverlessLogs}
         />
       </motion.div>
@@ -406,11 +366,11 @@ export const DeploymentsInfo = ({
           <GitPullRequest className="w-4 h-4 text-gray-500 mt-px" />
           <div className="flex flex-col gap-1">
             <div className="font-medium text-gray-900">
-              {(clientRequest?.metadata as any)?.pr?.title as string}
+              {(selectedRequest?.metadata as any)?.pr?.title as string}
             </div>
             <div className="text-gray-500 mt-1 flex items-center gap-2">
-              PR #{clientRequest?.prNumber}
-              {clientRequest?.prUrl && (
+              PR #{selectedRequest?.prNumber}
+              {selectedRequest?.prUrl && (
                 <Link
                   href="#"
                   onClick={fetchLogs}
@@ -442,7 +402,9 @@ export const DeploymentsInfo = ({
               <div className="text-gray-500">Duration</div>
             </div>
             <div className="font-medium text-gray-900 mt-1">
-              {prettyPrintDuration(deployment?.startTime, deployment?.endTime)}
+              {deployment?.metrics?.timing?.totalDuration
+                ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds`
+                : "N/A"}
             </div>
           </div>
         </div>
@@ -524,7 +486,7 @@ export const DeploymentsInfo = ({
       <LogsDialog
         isOpen={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
-        logs={deploymentLogs}
+        logs={logs || null}
         serverlessLogs={serverlessLogs}
       />
     </>
@@ -539,7 +501,7 @@ const LogsDialog = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  logs: string;
+  logs: string | null;
   serverlessLogs: string | null;
 }) => {
   const [activeTab, setActiveTab] = useState<"deployment" | "serverless">(
@@ -593,7 +555,7 @@ const LogsDialog = ({
                 ) : (
                   <div className="w-full overflow-hidden">
                     <pre className="bg-neutral-900 text-neutral-200 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all max-h-[50vh] w-full overflow-y-auto">
-                      {logs.split("\n").map((line: string, index: number) => {
+                      {logs?.split("\n")?.map((line: string, index: number) => {
                         // Try to parse timestamp if it exists in the line
                         const timestampMatch = line.match(
                           /^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\]/

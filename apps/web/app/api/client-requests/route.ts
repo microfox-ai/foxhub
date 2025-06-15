@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit") || "30";
     const includeTaskInstanceMeta =
       searchParams.get("includeTaskInstanceMeta") || "false";
+    const includeDeployedFunctions =
+      searchParams.get("includeDeployedFunctions") || "false";
     const archiveStatus = searchParams.get("archiveStatus") || "active";
 
     // Build query conditions based on provided parameters
@@ -40,6 +42,9 @@ export async function GET(request: NextRequest) {
     if (includeTaskInstanceMeta === "true") {
       include.taskInstanceMeta = true;
     }
+    if (includeDeployedFunctions === "true") {
+      include.deployedFunctions = true;
+    }
 
     // TODO: Add your database query logic here using the conditions
     // Example:
@@ -47,7 +52,10 @@ export async function GET(request: NextRequest) {
       where: { ...conditions },
       skip: (parseInt(page) - 1) * parseInt(limit),
       take: parseInt(limit),
-      include,
+      include: {
+        taskInstanceMeta: includeTaskInstanceMeta === "true",
+        deployedFunctions: includeDeployedFunctions === "true",
+      },
     });
 
     let finalResults = results.filter(

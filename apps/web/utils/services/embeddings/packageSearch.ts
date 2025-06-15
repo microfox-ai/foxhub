@@ -5,8 +5,6 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const PACKAGE_INFO_TABLE = "package_infos";
 
 export interface PackageDbInfo {
@@ -36,6 +34,7 @@ export interface PackageDbInfo {
 }
 
 async function searchPackages(searchTerm: string) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log(`🔍 Searching for packages containing: "${searchTerm}"`);
 
   const { data, error } = await supabase
@@ -71,6 +70,7 @@ async function searchPackages(searchTerm: string) {
 }
 
 async function getPackageByName(packageName: string) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log(`🔍 Getting package details for: "${packageName}"`);
 
   const { data, error } = await supabase
@@ -108,6 +108,7 @@ async function getPackageByName(packageName: string) {
 }
 
 async function getPackageInfos(packageNames: string[]): Promise<Package[]> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const { data, error } = await supabase
     .from(PACKAGE_INFO_TABLE)
     .select("package_name, package_title, raw_content, updated_at")
@@ -131,6 +132,7 @@ async function getPackageInfos(packageNames: string[]): Promise<Package[]> {
 }
 
 async function getPackagesByPlatformType(platformType: string) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log(`🔍 Getting packages by platform type: "${platformType}"`);
 
   const { data, error } = await supabase
@@ -158,6 +160,7 @@ async function getPackagesByPlatformType(platformType: string) {
 }
 
 async function getPackagesByStatus(status: string) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log(`🔍 Getting packages by status: "${status}"`);
 
   const { data, error } = await supabase
@@ -193,6 +196,7 @@ async function getPackagesByStatus(status: string) {
 async function getPackageInfo(
   package_name: string
 ): Promise<Partial<Package> | null> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   if (package_name === "@microfox/null") {
     return null;
   }
@@ -222,6 +226,7 @@ async function getAllPackages({
   select?: string;
   statuses?: PackageStatus[];
 }): Promise<Partial<PackageDbInfo>[]> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log(`🔍 Getting all packages...`);
 
   const query = supabase

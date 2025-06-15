@@ -19,7 +19,11 @@ export interface LambdaUsageResult {
 export const getLambdaFunctionMap = (clientDeployment: ClientDeployment) => {
   const metadata =
     clientDeployment.metadata as unknown as ClientDeploymentMetadata;
-  if (!metadata?.serverless?.functionBase || !metadata?.serverless?.functions) {
+  if (
+    !metadata ||
+    !metadata?.serverless?.functionBase ||
+    !metadata?.serverless?.functions
+  ) {
     throw new Error("Invalid deployment metadata");
   }
 

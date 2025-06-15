@@ -214,6 +214,7 @@ model ClientDeployment {
   botProjectId          String
   originClientRequestId String
   name                  String        @unique
+  sha                   String?
   baseUrl               String
   stage                 DEPLOY_STAGE
   type                  FUNCTIONTYPE

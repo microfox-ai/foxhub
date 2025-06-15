@@ -11,9 +11,10 @@ interface OAuthConnectCallbackProps {
     value: string;
     isOptional: boolean;
   }>;
+  tokenResponse: any;
 }
 
-const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
+const OAuthConnectCallback = ({ docId, keys, tokenResponse }: OAuthConnectCallbackProps) => {
 
   useEffect(() => {
     const updateClientSecret = async () => {
@@ -27,6 +28,7 @@ const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
             id: docId,
             variables: keys,
             status: CLIENTSECRETSTATUS.FILLED,
+            tokenResponse: tokenResponse,
           }),
         });
 
@@ -46,9 +48,8 @@ const OAuthConnectCallback = ({ docId, keys }: OAuthConnectCallbackProps) => {
         toast.error("Failed to connect Google account");
       }
     };
-
     updateClientSecret();
-  }, [docId, keys]);
+  }, [docId, keys, tokenResponse]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">

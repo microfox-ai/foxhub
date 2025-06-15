@@ -93,6 +93,7 @@ function useClientProjectContext() {
       ) {
         const clientDeployment = response.clientFunctions[0];
         console.log(`✅ Found client deployment:`, clientDeployment);
+        setSelectedClientDeployment(clientDeployment);
         return clientDeployment;
       } else if (Array.isArray(response)) {
         const clientDeployment = response[0];
@@ -104,6 +105,7 @@ function useClientProjectContext() {
         return clientDeployment;
       } else {
         console.log(`✅ Using direct response:`, response);
+        setSelectedClientDeployment(response);
         return response;
       }
     } catch (error) {

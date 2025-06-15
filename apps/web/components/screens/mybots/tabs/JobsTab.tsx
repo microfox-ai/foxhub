@@ -60,7 +60,7 @@ const JobsTab = ({ clientRequestIds }: JobsTabProps) => {
                 const hasCronJobs = taskInstance?.taskStructure?.cronJobs?.length ?? 0 > 0;
                 const hasDbSchemas = taskInstance?.taskStructure?.dbSchemas?.length ?? 0 > 0;
                 const hasIntegrations = taskInstance?.taskIntegrations?.platforms?.length ?? 0 > 0;
-                const deployStage = taskInstance?.deployStep?.deployment?.stage;
+                // const deployStage = request?.stage;
 
                 return (
                     <Link
@@ -75,11 +75,11 @@ const JobsTab = ({ clientRequestIds }: JobsTabProps) => {
                                         <CardTitle className="text-sm font-medium">
                                             {request.title || "Unnamed Request"}
                                         </CardTitle>
-                                        {deployStage && (
+                                        {/* {deployStage && (
                                             <Badge variant="outline" className="text-xs">
                                                 {deployStage}
                                             </Badge>
-                                        )}
+                                        )} */}
                                     </div>
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <Clock className="h-4 w-4" />

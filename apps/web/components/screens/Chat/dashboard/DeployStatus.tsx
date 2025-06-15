@@ -94,8 +94,8 @@ const getStageColor = (stage: string) => {
 
 export const DeployStatus = () => {
 
-    const { selectedRequest } = useClientProject();
-    const { deployment, clientDeployment } = useDeployStatus();
+    const { selectedRequest, selectedClientDeployment: clientDeployment } = useClientProject();
+    const { deployment } = useDeployStatus(clientDeployment?.sha ?? undefined);
 
     //console.log("clientDeployment", clientDeployment);
     const { setActiveTab } = useTabUi();

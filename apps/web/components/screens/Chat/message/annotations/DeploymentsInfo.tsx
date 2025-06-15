@@ -77,10 +77,10 @@ export const DeploymentsInfo = ({
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
-  const { setSubmitAnnotations, selectedRequest } = useClientProject();
+  const { setSubmitAnnotations, selectedRequest, selectedClientDeployment: clientDeployment } =
+    useClientProject();
 
-  const { deployment, logs, shouldBreak, clientDeployment, progress } =
-    useDeployStatus(sha);
+  const { deployment, logs, shouldBreak, progress } = useDeployStatus(sha);
 
   const deployToProduction = () => {
     console.log("deployToProduction");
@@ -403,7 +403,7 @@ export const DeploymentsInfo = ({
             </div>
             <div className="font-medium text-gray-900 mt-1">
               {deployment?.metrics?.timing?.totalDuration
-                ? `${deployment?.metrics?.timing?.totalDuration} seconds`
+                ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds`
                 : "N/A"}
             </div>
           </div>

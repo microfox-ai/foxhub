@@ -4,6 +4,7 @@ import useSWRSubscription from "swr/subscription";
 import { ClientDeployment } from "@prisma/client";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useParams } from "next/navigation";
+import { useClientProject } from "./ClientProjectProvider";
 
 // Backend MongoDB models interfaces
 interface IDeployment {
@@ -142,25 +143,8 @@ export const useDeployStatus = (
   const [clientDeployment, setClientDeployment] =
     useState<ClientDeployment | null>(null);
   const [sha, setSha] = useState<string | undefined>(initialSha);
-
-  // Fetch client deployment if we don't have SHA but have request ID
-  useEffect(() => {
-    if (!sha && requestParamId && !clientDeployment) {
-      getClientDeploymentById(requestParamId)
-        .then((deployment) => {
-          if (deployment) {
-            setClientDeployment(deployment);
-            if (deployment.sha) {
-              setSha(deployment.sha);
-              console.log(`🔍 Found SHA: ${deployment.sha}`);
-            }
-          }
-        })
-        .catch((error) => {
-          console.error(`❌ Error fetching client deployment:`, error);
-        });
-    }
-  }, [sha, requestParamId, clientDeployment]);
+  
+  const { updateClientDeploymentById } = useClientProject();
 
   // Get deployment data via REST API - only if we have a SHA
   const swrKey = sha ? [`deployment-status-api`, sha] : null;
@@ -301,6 +285,9 @@ export const useDeployStatus = (
         try {
           hasReceivedData = true;
           const completeData = JSON.parse(event.data);
+          if (completeData.status === "deployed" && requestParamId) {
+            updateClientDeploymentById(requestParamId);
+          }
           console.log("✅ Deployment completed:", completeData);
           next(null, { shouldBreak: true, finalStatus: completeData.status });
         } catch (error) {
@@ -425,38 +412,3 @@ export const getDeploymentProgress = (deployment: Partial<IDeployment>) => {
   return progress;
 };
 
-export const getClientDeploymentById = async (id: string) => {
-  try {
-    if (!id) {
-      console.log("❌ No ID provided to getClientDeploymentById");
-      return null;
-    }
-
-    console.log(`🔍 Fetching client deployment with ID: ${id}`);
-    const response = await PortalSdk.getData(
-      `/api/client-functions?id=${id}`,
-      {}
-    );
-    console.log(`📊 Raw API response:`, response);
-
-    // Handle different response structures
-    if (response?.clientFunctions && Array.isArray(response.clientFunctions)) {
-      const clientDeployment = response.clientFunctions[0];
-      console.log(`✅ Found client deployment:`, clientDeployment);
-      return clientDeployment;
-    } else if (Array.isArray(response)) {
-      const clientDeployment = response[0];
-      console.log(
-        `✅ Found client deployment (array response):`,
-        clientDeployment
-      );
-      return clientDeployment;
-    } else {
-      console.log(`✅ Using direct response:`, response);
-      return response;
-    }
-  } catch (error) {
-    console.error("❌ Error fetching client deployment:", error);
-    return null;
-  }
-};

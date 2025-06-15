@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { ClientDeployment, ClientRequest, DEPLOY_STAGE } from "@prisma/client";
+import { ClientDeployment, DEPLOY_STAGE } from "@prisma/client";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -193,9 +193,9 @@ export const DeploymentsInfo = ({
         const logs = await fetchServerlessLogs({
           clientDeploymentId: clientDeployment.id,
           endpointLink,
+          setServerlessLogs: setServerlessLogs,
         });
         console.log("serverless logs", logs);
-        setServerlessLogs(logs);
       })(),
       {
         loading: "Fetching serverless logs...",

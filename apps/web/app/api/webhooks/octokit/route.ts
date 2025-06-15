@@ -42,12 +42,15 @@ export async function POST(req: NextRequest) {
         }
 
         const deleteSls = commitMessage.includes("DELETE");
+        const isLocal = commitMessage.includes("LOCAL");
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&sha=${sha}&stage=${stage}&delete=${deleteSls}`
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&sha=${sha}&stage=${stage}&delete=${deleteSls}&isLocal=${isLocal}`
         );
         if (response.ok) {
-          console.log(deleteSls ? "removing deployment" : "deployment triggered");
+          console.log(
+            deleteSls ? "removing deployment" : isLocal ? "local deployment triggered" : "deployment triggered"
+          );
         } else {
           console.log("deployment failed");
         }

@@ -77,10 +77,10 @@ export const DeploymentsInfo = ({
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
-  const { setSubmitAnnotations, selectedRequest } = useClientProject();
+  const { setSubmitAnnotations, selectedRequest, selectedClientDeployment: clientDeployment } =
+    useClientProject();
 
-  const { deployment, logs, shouldBreak, clientDeployment, progress } =
-    useDeployStatus(sha);
+  const { deployment, logs, shouldBreak, progress } = useDeployStatus(sha);
 
   const deployToProduction = () => {
     console.log("deployToProduction");

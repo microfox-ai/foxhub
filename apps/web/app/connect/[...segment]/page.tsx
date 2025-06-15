@@ -126,7 +126,7 @@ const AuthPopupWindow = async ({
       };
     });
 
-    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} />;
+    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} tokenResponse={tokenResponse} />;
   }
   else if (segment.length === 1) {
 

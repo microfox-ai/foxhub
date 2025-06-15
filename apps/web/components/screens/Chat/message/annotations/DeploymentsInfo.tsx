@@ -81,7 +81,10 @@ export const DeploymentsInfo = ({
   const { setSubmitAnnotations, selectedRequest, selectedClientDeployment: clientDeployment } =
     useClientProject();
 
-  const { deployment, logs, shouldBreak, progress } = useDeployStatus(sha);
+  const { deployment, logs, shouldBreak, progress } = useDeployStatus({
+    clientRequestId: selectedRequest?.id || "",
+    sha: sha || "",
+  });
 
   const deployToProduction = () => {
     console.log("deployToProduction");

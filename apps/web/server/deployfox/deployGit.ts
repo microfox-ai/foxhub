@@ -40,9 +40,7 @@ export const deployViaGit = async (
 
   dataStream.writeMessageAnnotation({
     type: "loading",
-    content: isLocal
-      ? `Starting Local Automation`
-      : `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation`,
+    content: `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation ${isLocal ? "locally" : ""}`,
   });
 
   const { sha } = await triggerDeployment(

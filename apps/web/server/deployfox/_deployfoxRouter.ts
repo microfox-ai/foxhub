@@ -41,9 +41,7 @@ export const deployFoxRouter: ServerStreamingFunction<
 
   dataStream.writeMessageAnnotation({
     type: "loading",
-    content: isLocal
-      ? `Starting Local Automation`
-      : `Deploying Automation to ${stage ?? DEPLOY_STAGE.STAGING}`,
+    content: `Deploying Automation to ${stage ?? DEPLOY_STAGE.STAGING} ${isLocal ? "locally" : ""}`,
   });
 
   //clone template in dev mode

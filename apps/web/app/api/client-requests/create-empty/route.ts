@@ -12,6 +12,12 @@ export async function POST(request: Request) {
     );
   }
   try {
+    // Get botProject to fetch awsRegion
+    const botProject = await prisma.botProject.findUnique({
+      where: { id: botProjectId },
+      select: { awsRegion: true },
+    });
+
     const clientRequest =
       (await prisma.clientRequest.create({
         data: {
@@ -20,6 +26,7 @@ export async function POST(request: Request) {
           title: title || "Untitled",
           description: description || "",
           minionFlow: minionFlow || MinionFlow.Unknown,
+          awsRegion: botProject?.awsRegion,
         },
       })) || {};
 

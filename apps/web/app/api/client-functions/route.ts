@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       serviceName + "-" + stage?.toLowerCase();
     console.log("newMetadata", newMetadata);
 
-    // Create the ClientDeployment
+    // Create the ClientDeployment with awsRegion from clientRequest
     // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),
     const clientFunction = await prisma.clientDeployment.upsert({
       where: { id: originClientRequestId },
@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
         metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
+        awsRegion: clientRequest.awsRegion,
       },
       create: {
         id: originClientRequestId,
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
         metadata: newMetadata,
         endpoints:
           typeof endpoints === "string" ? JSON.parse(endpoints) : endpoints,
+        awsRegion: clientRequest.awsRegion,
       },
     });
 

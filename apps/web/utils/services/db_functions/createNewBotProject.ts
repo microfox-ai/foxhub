@@ -22,6 +22,7 @@ import { Octokit } from "octokit";
 import path from "path";
 import { getTemplateVersion } from "../github_functions/getTemplateVersion";
 import { MinionFlow } from "@/components/screens/hooks/convertors";
+import { detectOptimalAwsRegion } from "../aws/region-detector";
 
 export async function createNewBotProject({
   userId,
@@ -138,6 +139,10 @@ export async function createNewBotProject({
   console.log("prResult", prResult);
   const templateVersion = await getTemplateVersion();
 
+  // Detect optimal AWS region based on request metadata
+  const regionInfo = await detectOptimalAwsRegion();
+  console.log(`AWS Region Detection: ${regionInfo.reasoning}`);
+
   // Save botProject to DB
   const botProject = await prisma.botProject.create({
     data: {
@@ -154,9 +159,16 @@ export async function createNewBotProject({
       imageUrl: imageUrl,
       slug: slug,
       templateVersion,
+      awsRegion: regionInfo.region,
       metadata: {
         repo: repoResult.data as any,
         pr: prResult.data as any,
+        regionDetection: {
+          detectedRegion: regionInfo.region,
+          geoInfo: regionInfo.geoInfo,
+          reasoning: regionInfo.reasoning,
+          detectedAt: new Date().toISOString(),
+        } as any,
       },
       permissions: {
         create: {
@@ -212,7 +224,7 @@ export async function createNewBotProject({
   }
   console.log("botProjectFile", botProjectFile);
 
-  // Create empty ClientRequest
+  // Create empty ClientRequest with awsRegion from botProject
   const clientRequest =
     (await prisma.clientRequest.create({
       data: {
@@ -221,6 +233,7 @@ export async function createNewBotProject({
         title: "Untitled",
         description: "",
         minionFlow: MinionFlow.Unknown,
+        awsRegion: botProject.awsRegion,
       },
     })) || {};
 

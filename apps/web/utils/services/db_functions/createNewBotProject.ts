@@ -22,6 +22,7 @@ import { Octokit } from "octokit";
 import path from "path";
 import { getTemplateVersion } from "../github_functions/getTemplateVersion";
 import { MinionFlow } from "@/components/screens/hooks/convertors";
+import { detectOptimalAwsRegion } from "../aws/region-detector";
 
 export async function createNewBotProject({
   userId,
@@ -30,6 +31,8 @@ export async function createNewBotProject({
   slug,
   homepageUrl,
   imageUrl,
+  awsRegion,
+  regionInfo,
 }: {
   userId: string;
   projectName: string;
@@ -37,6 +40,8 @@ export async function createNewBotProject({
   slug?: string;
   homepageUrl?: string;
   imageUrl?: string;
+  awsRegion?: string;
+  regionInfo?: any;
 }) {
   if (!userId) {
     console.error("No user ID provided");
@@ -138,6 +143,19 @@ export async function createNewBotProject({
   console.log("prResult", prResult);
   const templateVersion = await getTemplateVersion();
 
+  // Use passed region info or fallback to detection
+  let finalRegionInfo = regionInfo;
+  let finalAwsRegion = awsRegion;
+  
+  if (!finalAwsRegion || !finalRegionInfo) {
+    // Fallback to server-side detection (should not happen with new flow)
+    finalRegionInfo = await detectOptimalAwsRegion();
+    finalAwsRegion = finalRegionInfo.region;
+    console.log(`Fallback AWS Region Detection: ${finalRegionInfo.reasoning}`);
+  } else {
+    console.log(`Using client-detected AWS Region: ${finalRegionInfo.reasoning}`);
+  }
+
   // Save botProject to DB
   const botProject = await prisma.botProject.create({
     data: {
@@ -154,9 +172,17 @@ export async function createNewBotProject({
       imageUrl: imageUrl,
       slug: slug,
       templateVersion,
+      awsRegion: finalAwsRegion,
       metadata: {
         repo: repoResult.data as any,
         pr: prResult.data as any,
+        regionDetection: {
+          detectedRegion: finalAwsRegion,
+          geoInfo: finalRegionInfo.geoInfo,
+          reasoning: finalRegionInfo.reasoning,
+          detectedAt: new Date().toISOString(),
+          source: awsRegion ? 'client-request' : 'server-fallback',
+        } as any,
       },
       permissions: {
         create: {
@@ -212,7 +238,7 @@ export async function createNewBotProject({
   }
   console.log("botProjectFile", botProjectFile);
 
-  // Create empty ClientRequest
+  // Create empty ClientRequest with awsRegion from botProject
   const clientRequest =
     (await prisma.clientRequest.create({
       data: {
@@ -221,6 +247,7 @@ export async function createNewBotProject({
         title: "Untitled",
         description: "",
         minionFlow: MinionFlow.Unknown,
+        awsRegion: botProject.awsRegion,
       },
     })) || {};
 

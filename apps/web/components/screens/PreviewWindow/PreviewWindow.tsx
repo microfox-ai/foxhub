@@ -28,7 +28,6 @@ import {
   OpenAPISchema
 } from "@/utils/services/OpenAPIToolsClient";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ClientDeployment } from "@prisma/client";
 import { ArrowLeftIcon, ChevronDown, Clock, Copy, ExternalLink, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -52,7 +51,6 @@ import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
 import { AWS_LAMBDA_DEFAULT_REGION, AWS_LAMBDA_LOG_GROUP_PREFIX } from "@/utils/services/aws/aws_helper";
 
 const PreviewWindow = () => {
-  const { taskInstanceMeta, deploymentInfo } = useTaskInstanceMetaContext();
   const {
     apiDoc,
     endpoints,
@@ -80,12 +78,12 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const [showLogs, setShowLogs] = useState(false);
-  const { setSubmitAnnotations, setAutoSubmit } = useClientProject();
+  const { setSubmitAnnotations, setAutoSubmit, selectedClientDeployment: clientDeployment } = useClientProject();
   const { setActiveTab } = useTabUi()
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
   //const baseURLFROMDOCS = `${apiDoc?.servers?.[0]?.url}`;
-  const BASE_URL = forceBaseUrl || `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage?.toLowerCase()}`;
+  const BASE_URL = forceBaseUrl || `${clientDeployment?.baseUrl}/${clientDeployment?.stage?.toLowerCase()}`;
 
   // Create form schema based on request parameters
   const createFormSchema = () => {
@@ -329,9 +327,9 @@ const PreviewWindow = () => {
     } finally {
       await new Promise(resolve => setTimeout(resolve, 1000));
       // Only fetch logs if we're using the deployment URL (forceBaseUrl is null)
-      if (!forceBaseUrl && deploymentInfo) {
+      if (!forceBaseUrl && clientDeployment) {
         await fetchServerlessLogs({
-          clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+          clientDeploymentId: clientDeployment?.id,
           endpointLink: endpointLink,
           setServerlessLogs: setServerlessLogs
         });
@@ -883,10 +881,10 @@ const PreviewWindow = () => {
     if (!error) return;
     const fetchErrorLogs = async () => {
       try {
-        if (deploymentInfo) {
-          const endpointLink = `${deploymentInfo.baseUrl}/${deploymentInfo.stage?.toLowerCase()}/docs.json`;
+        if (clientDeployment) {
+          const endpointLink = `${clientDeployment.baseUrl}/${clientDeployment.stage?.toLowerCase()}/docs.json`;
           await fetchServerlessLogs({
-            clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+            clientDeploymentId: clientDeployment?.id,
             endpointLink: endpointLink,
             setServerlessLogs: setErrorServerlessLogs
           });
@@ -898,17 +896,17 @@ const PreviewWindow = () => {
       }
     };
     fetchErrorLogs();
-  }, [error, deploymentInfo]);
+  }, [error, clientDeployment]);
 
 
   const refreshServerlessLogs = async () => {
-    if (!currentEndpointData || !deploymentInfo) return;
+    if (!currentEndpointData || !clientDeployment) return;
 
     setIsRefreshingLogs(true);
     try {
       const endpointLink = `${BASE_URL}${currentEndpointData.path}`;
       await fetchServerlessLogs({
-        clientDeploymentId: (deploymentInfo as ClientDeployment).id,
+        clientDeploymentId: clientDeployment?.id,
         endpointLink: endpointLink,
         setServerlessLogs: setServerlessLogs
       });
@@ -919,7 +917,7 @@ const PreviewWindow = () => {
     }
   };
 
-  if (!deploymentInfo && apiDoc) {
+  if (!clientDeployment && apiDoc) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-background">
         {/* Header - Fixed */}
@@ -992,10 +990,10 @@ const PreviewWindow = () => {
                   variant={"default"}
                   onClick={() => {
                     const errorAttachment = {
-                      functionLink: `${deploymentInfo?.baseUrl}/${deploymentInfo?.stage?.toLowerCase()}/docs.json`,
+                      functionLink: `${clientDeployment?.baseUrl}/${clientDeployment?.stage?.toLowerCase()}/docs.json`,
                       serverlessLogs: errorServerlessLogs,
                       error: error,
-                      deploymentInfo: deploymentInfo,
+                      clientDeployment: clientDeployment,
                       fetchError: fetchError
                     }
                     setSubmitAnnotations((sa) => {
@@ -1102,7 +1100,7 @@ const PreviewWindow = () => {
                       type="text"
                       placeholder="Enter base URL (e.g., https://api.example.com)"
                       className="h-8 w-full text-xs"
-                      value={deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage?.toLowerCase()}
+                      value={clientDeployment?.baseUrl + "/" + clientDeployment?.stage?.toLowerCase()}
                       disabled
                     />
                   )}

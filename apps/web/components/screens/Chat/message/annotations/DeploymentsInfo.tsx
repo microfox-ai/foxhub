@@ -48,6 +48,7 @@ import { useClientProject } from "@/components/screens/providers/ClientProjectPr
 import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { AWS_LAMBDA_DEFAULT_REGION, AWS_LAMBDA_LOG_GROUP_PREFIX } from "@/utils/services/aws/aws_helper";
 
 interface UIAnnotation {
   objectType: string;
@@ -80,7 +81,10 @@ export const DeploymentsInfo = ({
   const { setSubmitAnnotations, selectedRequest, selectedClientDeployment: clientDeployment } =
     useClientProject();
 
-  const { deployment, logs, shouldBreak, progress } = useDeployStatus(sha);
+  const { deployment, logs, shouldBreak, progress } = useDeployStatus({
+    clientRequestId: selectedRequest?.id || "",
+    sha: sha || "",
+  });
 
   const deployToProduction = () => {
     console.log("deployToProduction");
@@ -96,10 +100,16 @@ export const DeploymentsInfo = ({
             key: "stage",
             value: DEPLOY_STAGE.PROD,
           },
+          {
+            type: "attachment",
+            key: "is_local",
+            value: false,
+          },
         ]
       ),
       constructAppendBody("deployfox", {
         stage: DEPLOY_STAGE.PROD,
+        is_local: false,
       })
     );
   };
@@ -289,7 +299,7 @@ export const DeploymentsInfo = ({
               </button>
               {clientDeployment && (
                 <a
-                  href={`https://${process.env.NEXT_PUBLIC_AWS_REGION}.console.aws.amazon.com/cloudwatch/home?region=${process.env.NEXT_PUBLIC_AWS_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`/aws/lambda/${clientDeployment.name}`)}`}
+                  href={`https://${AWS_LAMBDA_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_LAMBDA_DEFAULT_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`${AWS_LAMBDA_LOG_GROUP_PREFIX}${clientDeployment.name}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"

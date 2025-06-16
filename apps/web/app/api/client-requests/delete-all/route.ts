@@ -2,14 +2,12 @@ import { prisma } from "@/prisma/prisma";
 import { fetchTemplateDir } from "@/server/buildfox/tool/writeToFile";
 import { TaskStructure } from "@/server/convertfox/types";
 import { triggerDeployment } from "@/server/deployfox/deployGit";
-import { DEPLOY_STAGE, REQUESTSTATUS } from "@prisma/client";
 import { readFile } from "fs/promises";
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "path";
 import { Redis } from "@upstash/redis";
 import { ClientSecretPackageType } from "@/server/types";
-import { removeClientSecretFromClientRequest } from "@/utils/services/db_functions/secrets_helper";
 import { closePullRequest } from "@/utils/services/github_functions/deleteRepo";
 import { deleteEmbedding } from "@/utils/services/embeddings/embedFunctions";
 

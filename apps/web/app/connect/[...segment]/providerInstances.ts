@@ -5,16 +5,6 @@ import { RedditOAuthSdk } from "@microfox/reddit-oauth";
 import { NotionOAuthSdk } from "@microfox/notion-oauth";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
-// const LinkedInOAuthInstance = (scopes: string[]) =>
-
-// const GoogleOAuthInstance = (scopes: string[]) =>
-//   new GoogleOAuthSdk({
-//     clientId: process.env.GOOGLE_CLIENT_ID!,
-//     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-//     redirectUri: process.env.GOOGLE_REDIRECT_URI!,
-//     scopes: scopes,
-//   });
-
 // NOTE:edit this whenever new provider is added
 
 // export const mapProviderToAuthFunction: Record<string, any> = {

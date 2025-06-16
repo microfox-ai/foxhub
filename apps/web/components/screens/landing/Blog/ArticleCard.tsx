@@ -1,6 +1,5 @@
 import { cn } from '@/lib/utils';
 import { QuoteIcon } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 
 const ArticleCard = ({
@@ -81,9 +80,7 @@ const ArticleCard = ({
         <div className="flex flex-col justify-between gap-2">
             <div className="h-full w-full">
                 {article.image_url ? (
-                    <Image
-                        quality={80}
-                        sizes="100vw"
+                    <img
                         src={article.image_url || '/images/abstract-red.png'}
                         alt={article.title}
                         width={300}

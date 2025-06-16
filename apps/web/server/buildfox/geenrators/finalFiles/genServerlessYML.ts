@@ -250,7 +250,8 @@ export const genServerlessYML = async (
                 ...(thisFile?.isPuppet
                   ? {
                       layers: [
-                        "arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
+                        "arn:aws:lambda:us-east-1:211125656699:layer:chromium-x86-135:1",
+                        //"arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
                       ],
                     }
                   : {}),

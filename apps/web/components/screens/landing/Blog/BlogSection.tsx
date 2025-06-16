@@ -1,16 +1,47 @@
-import { IIndustryAndProjects } from "./Data";
+import { useEffect, useState } from "react";
+import { IIndustryAndProjects, IProjects } from "./Data";
 import { projectsData } from "./Data";
 import IndustryCarousel from "./IndustryCarousel";
+import useSWR from "swr";
+import { type QueryDatabaseResponse } from "@microfox/notion";
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export const BlogSection = () => {
-    return projectsData.map((industry: IIndustryAndProjects, index) => (
-        <div className={`w-full ${index % 2 === 0 ? 'bg-black' : 'bg-white'}`}>
+
+    const { data, isLoading, error } = useSWR("/api/landing/blog/articles?databaseId=213fa11b8894800d89f8fffb4e133784", fetcher);
+
+    const results = data?.results as QueryDatabaseResponse["results"]
+
+    const industryArticles = results?.map((result) => {
+        if (result.object === "page" && "properties" in result) {
+            const properties = result.properties as Record<string, any>;
+            console.log(properties);
+            const title = properties?.["Doc name"]?.title[0]?.plain_text;
+            const description = properties?.["Description"]?.rich_text[0]?.plain_text;
+            const link = properties?.["Link"]?.url;
+            const categories = properties?.["Category"]?.multi_select.map((item: any) => item.name);
+            const last_edited_time = result.last_edited_time;
+            const image = result.cover?.type === "external" ? result.cover.external.url : result.cover?.type === "file" ? result.cover.file.url : null;
+            return {
+                id: result.id,
+                link: APP_BASE_URL + "/blog/" + result.id,
+                title, description, categories, type: "article" as const, image_url: image, last_edited_time
+            }
+        }
+        return null;
+    }).filter((article) => article !== null) ?? [];
+
+    console.log(industryArticles);
+
+    return (
+        <div className={`w-full bg-black`}>
             <IndustryCarousel
-                theme={index % 2 === 0 ? 'dark' : 'light'}
-                key={industry.industry}
-                industryArticles={industry.projects}
-                industryName={industry.industry}
+                theme={'dark'}
+                industryArticles={industryArticles}
+                industryName={"Blog"}
             />
         </div>
-    ));
+    );
 };

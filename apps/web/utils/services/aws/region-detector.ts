@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 
-interface GeoInfo {
+export interface GeoInfo {
   ip: string;
   city: string;
   country: string;
@@ -186,9 +186,9 @@ async function getGeoInfo(ip?: string): Promise<GeoInfo> {
 }
 
 /**
- * Determines the best AWS region based on request metadata
+ * Determines the best AWS region based on client request metadata
  */
-export async function detectOptimalAwsRegion(): Promise<{
+export async function detectOptimalAwsRegion(request?: Request): Promise<{
   region: string;
   geoInfo: GeoInfo;
   reasoning: string;
@@ -199,7 +199,7 @@ export async function detectOptimalAwsRegion(): Promise<{
     // Get the optimal AWS region for the country
     const optimalRegion = COUNTRY_TO_AWS_REGION[geoInfo.countryCode] || DEFAULT_AWS_REGION;
     
-    let reasoning = `Detected country: ${geoInfo.country} (${geoInfo.countryCode})`;
+    let reasoning = `Detected client country: ${geoInfo.country} (${geoInfo.countryCode})`;
     
     if (geoInfo.city !== "(not set)") {
       reasoning += `, City: ${geoInfo.city}`;
@@ -228,7 +228,144 @@ export async function detectOptimalAwsRegion(): Promise<{
         region: "(error)",
         countryCode: "US",
       },
-      reasoning: `Error detecting location, using default region: ${DEFAULT_AWS_REGION}`,
+      reasoning: `Error detecting client location, using default region: ${DEFAULT_AWS_REGION}`,
+    };
+  }
+}
+
+/**
+ * Alternative function that extracts client info directly from request headers
+ * Use this when you have access to the raw Request object
+ */
+export async function detectOptimalAwsRegionFromRequest(request: Request): Promise<{
+  region: string;
+  geoInfo: GeoInfo;
+  reasoning: string;
+}> {
+  try {
+    const clientIp = getClientIpFromRequest(request);
+    const geoInfo = await getGeoInfoFromIp(clientIp);
+    
+    // Get the optimal AWS region for the country
+    const optimalRegion = COUNTRY_TO_AWS_REGION[geoInfo.countryCode] || DEFAULT_AWS_REGION;
+    
+    let reasoning = `Detected client IP: ${clientIp}, Country: ${geoInfo.country} (${geoInfo.countryCode})`;
+    
+    if (geoInfo.city !== "(not set)") {
+      reasoning += `, City: ${geoInfo.city}`;
+    }
+    
+    if (optimalRegion === DEFAULT_AWS_REGION && !COUNTRY_TO_AWS_REGION[geoInfo.countryCode]) {
+      reasoning += `. Using default region ${DEFAULT_AWS_REGION} (no specific mapping found)`;
+    } else {
+      reasoning += `. Optimal AWS region: ${optimalRegion}`;
+    }
+    
+    return {
+      region: optimalRegion,
+      geoInfo,
+      reasoning,
+    };
+  } catch (error) {
+    console.error("Error detecting optimal AWS region from request:", error);
+    
+    return {
+      region: DEFAULT_AWS_REGION,
+      geoInfo: {
+        ip: "unknown",
+        city: "(error)",
+        country: "Unknown",
+        region: "(error)",
+        countryCode: "US",
+      },
+      reasoning: `Error detecting client location from request, using default region: ${DEFAULT_AWS_REGION}`,
+    };
+  }
+}
+
+/**
+ * Extract client IP directly from request headers
+ */
+function getClientIpFromRequest(request: Request): string {
+  const headers = request.headers;
+  
+  // Try CloudFlare headers first (most reliable)
+  const cfConnectingIp = headers.get("cf-connecting-ip");
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+  
+  // Try X-Forwarded-For (common in load balancers)
+  const xForwardedFor = headers.get("x-forwarded-for");
+  if (xForwardedFor) {
+    const firstIp = xForwardedFor.split(',')[0];
+    if (firstIp) {
+      return firstIp.trim();
+    }
+  }
+  
+  // Try X-Real-IP
+  const xRealIp = headers.get("x-real-ip");
+  if (xRealIp) {
+    return xRealIp;
+  }
+  
+  // Try Forwarded header
+  const forwarded = headers.get("forwarded");
+  if (forwarded) {
+    const forMatch = forwarded.match(/for=([^;,\s]+)/);
+    if (forMatch?.[1]) {
+      return forMatch[1].replace(/"/g, '');
+    }
+  }
+
+  // Default fallback for testing
+  return "8.8.8.8";
+}
+
+/**
+ * Get geo info from a specific IP address
+ */
+async function getGeoInfoFromIp(ip: string): Promise<GeoInfo> {
+  try {
+    // Handle localhost/private IPs
+    if (ip === "::1" || ip === "127.0.0.1" || ip.startsWith("192.168.") || ip.startsWith("10.")) {
+      ip = "8.8.8.8"; // Use public IP for testing
+    }
+    
+    // Use ipinfo.io for geolocation
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(`https://ipinfo.io/${ip}/json`, {
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    return {
+      ip: data.ip || ip,
+      city: data.city || "(not set)",
+      country: data.country || "US",
+      region: data.region || "(not set)",
+      countryCode: data.country || "US",
+    };
+  } catch (error) {
+    console.error("Error getting geo information for IP:", ip, error);
+    
+    // Return default US location on error
+    return {
+      ip: ip,
+      city: "(not set)",
+      country: "US",
+      region: "(not set)",
+      countryCode: "US",
     };
   }
 }

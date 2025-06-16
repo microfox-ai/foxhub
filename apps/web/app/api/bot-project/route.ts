@@ -3,6 +3,7 @@ import { prisma } from "@/prisma/prisma";
 import { createNewBotProject } from "@/utils/services/db_functions/createNewBotProject";
 import { serverAnalytics } from "@/utils/services/analytics/server";
 import { Prisma } from "@prisma/client";
+import { detectOptimalAwsRegionFromRequest } from "@/utils/services/aws/region-detector";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -30,10 +31,16 @@ export async function GET(request: Request) {
     });
 
     if (!botProjects || botProjects.length === 0) {
+      // Detect optimal AWS region based on client's location
+      const regionInfo = await detectOptimalAwsRegionFromRequest(request);
+      console.log(`Client region detection for Personal Space: ${regionInfo.reasoning}`);
+      
       const newBotProject = await createNewBotProject({
         userId,
         projectName: "Personal Space",
         projectDescription: "This is a personal space for the user",
+        awsRegion: regionInfo.region,
+        regionInfo,
       });
       botProjects = [newBotProject];
       // Track personal space creation

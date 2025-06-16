@@ -31,6 +31,8 @@ export async function createNewBotProject({
   slug,
   homepageUrl,
   imageUrl,
+  awsRegion,
+  regionInfo,
 }: {
   userId: string;
   projectName: string;
@@ -38,6 +40,8 @@ export async function createNewBotProject({
   slug?: string;
   homepageUrl?: string;
   imageUrl?: string;
+  awsRegion?: string;
+  regionInfo?: any;
 }) {
   if (!userId) {
     console.error("No user ID provided");
@@ -139,9 +143,18 @@ export async function createNewBotProject({
   console.log("prResult", prResult);
   const templateVersion = await getTemplateVersion();
 
-  // Detect optimal AWS region based on request metadata
-  const regionInfo = await detectOptimalAwsRegion();
-  console.log(`AWS Region Detection: ${regionInfo.reasoning}`);
+  // Use passed region info or fallback to detection
+  let finalRegionInfo = regionInfo;
+  let finalAwsRegion = awsRegion;
+  
+  if (!finalAwsRegion || !finalRegionInfo) {
+    // Fallback to server-side detection (should not happen with new flow)
+    finalRegionInfo = await detectOptimalAwsRegion();
+    finalAwsRegion = finalRegionInfo.region;
+    console.log(`Fallback AWS Region Detection: ${finalRegionInfo.reasoning}`);
+  } else {
+    console.log(`Using client-detected AWS Region: ${finalRegionInfo.reasoning}`);
+  }
 
   // Save botProject to DB
   const botProject = await prisma.botProject.create({
@@ -159,15 +172,16 @@ export async function createNewBotProject({
       imageUrl: imageUrl,
       slug: slug,
       templateVersion,
-      awsRegion: regionInfo.region,
+      awsRegion: finalAwsRegion,
       metadata: {
         repo: repoResult.data as any,
         pr: prResult.data as any,
         regionDetection: {
-          detectedRegion: regionInfo.region,
-          geoInfo: regionInfo.geoInfo,
-          reasoning: regionInfo.reasoning,
+          detectedRegion: finalAwsRegion,
+          geoInfo: finalRegionInfo.geoInfo,
+          reasoning: finalRegionInfo.reasoning,
           detectedAt: new Date().toISOString(),
+          source: awsRegion ? 'client-request' : 'server-fallback',
         } as any,
       },
       permissions: {

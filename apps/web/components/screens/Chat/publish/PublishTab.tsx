@@ -56,6 +56,7 @@ import isEqual from "lodash/isEqual";
 import { EnvVariablesDialog } from "../configuration/EnvVariablesDialog";
 import { ExtraEnvVariable } from "@/server/convertfox/types";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { APP_BASE_URL, APP_BASE_URL_PROD, IN_STAGING } from "@/utils/constants/appInfo";
 
 const STATUS_OPTIONS = [
     { value: "UNPUBLISHED", label: "Unpublished" },
@@ -1112,7 +1113,10 @@ const PublishTab = () => {
                                 </TabsContent>
 
                                 <TabsContent value="admin">
-                                    <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-x-8 gap-y-6 items-start">
+                                    {!IN_STAGING && <div className="p-4 text-center text-gray-500">
+                                        This feature is only available on the production environment.
+                                    </div>}
+                                    {IN_STAGING && <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-x-8 gap-y-6 items-start">
                                         {/* Transfer Action */}
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
@@ -1138,7 +1142,7 @@ const PublishTab = () => {
                                                             return;
                                                         }
                                                         try {
-                                                            const res = await fetch("/api/shard-page/transfer", {
+                                                            const res = await fetch(APP_BASE_URL_PROD + "/api/shard-page/transfer", {
                                                                 method: "POST",
                                                                 headers: {
                                                                     "Content-Type": "application/json",
@@ -1187,7 +1191,7 @@ const PublishTab = () => {
                                                             return;
                                                         }
                                                         try {
-                                                            const res = await fetch("/api/shard-page/transfer", {
+                                                            const res = await fetch(APP_BASE_URL_PROD + "/api/shard-page/transfer", {
                                                                 method: "PUT",
                                                                 headers: {
                                                                     "Content-Type": "application/json",
@@ -1209,7 +1213,7 @@ const PublishTab = () => {
                                                 </Button>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div>}
                                 </TabsContent>
                             </form>
                         </Form>

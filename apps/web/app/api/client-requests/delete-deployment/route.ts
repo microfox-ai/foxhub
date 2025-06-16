@@ -35,12 +35,14 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const { sha } = await triggerDeployment(
-      clientRequest,
-      clientFunction.stage,
-      true,
-      undefined
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?pause=true&clientRequestId=${clientFunction.originClientRequestId}${clientFunction.stage ? `&stage=${clientFunction.stage}` : ""}${clientFunction.sha ? `&sha=${clientFunction.sha}` : ""}`
     );
+    if (response.ok) {
+      console.log("lambda deployments deletion triggered");
+    } else {
+      console.log("lambda deployments deletion failed");
+    }
 
     // ALSO MODIFY THE DEPLOY STEP.
 
@@ -49,7 +51,6 @@ export async function DELETE(req: NextRequest) {
         success: true,
         message:
           "Deletion triggered. We will delete the function in a few minutes.",
-        sha,
       },
       { status: 200 }
     );

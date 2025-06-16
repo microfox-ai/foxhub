@@ -55,17 +55,19 @@ export async function DELETE(req: NextRequest) {
     // 1. delete the deployment
     try {
       if (clientFunction && clientFunction.stage) {
-        const { sha } = await triggerDeployment(
-          clientRequest,
-          clientFunction.stage,
-          true,
-          undefined
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?clientRequestId=${clientFunction.originClientRequestId}${clientFunction.stage ? `&stage=${clientFunction.stage}` : ""}`
         );
+        if (response.ok) {
+          console.log("lambda deployments deletion triggered");
+        } else {
+          console.log("lambda deployments deletion failed");
+        }
         const embeddingDeleteResponse = await deleteEmbedding(
           clientFunction.originClientRequestId
         );
         deleteResponse.deployment = {
-          deletingCommitSha: sha,
+          isDeletionTriggered: response.ok,
           embeddingsDeleted: embeddingDeleteResponse.success,
         };
       }

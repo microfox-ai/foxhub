@@ -223,6 +223,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+    const pause = searchParams.get("pause");
 
     if (!id) {
       return NextResponse.json(
@@ -242,35 +243,49 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Store data before deletion for notifications
-    // const { name, originClientRequestId, userId, stage } = clientFunction;
-
-    // Delete the function
-    await prisma.clientDeployment.delete({
-      where: { id },
-    });
-
     // Delete the embedding
     await deleteEmbedding(clientFunction.originClientRequestId);
 
-    // Notify in chat about deletion
-    // TODO: VISHWAJEET - no need to send a mesaage i think, but will have to take a look later
-    // await prisma.chatUIMessage.create({
-    //   data: {
-    //     originClientRequestId,
-    //     userId,
-    //     content: `Function "${name}" has been removed from ${mode} mode`,
-    //     context: `server`,
-    //     role: `assistant`,
-    //     minionType: `other`,
-    //     createdAt: new Date(),
-    //   },
-    // });
+    // Store data before deletion for notifications
+    // const { name, originClientRequestId, userId, stage } = clientFunction;
 
-    return NextResponse.json(
-      { message: "Function deleted successfully" },
-      { status: 200 }
-    );
+    if (pause === "true") {
+      // If pause=true, archive the function instead of deleting
+      const archivedFunction = await prisma.clientDeployment.update({
+        where: { id },
+        data: {
+          status: DEPLOY_STATUS.ARCHIVED,
+        },
+      });
+
+      return NextResponse.json(
+        { message: "Function archived successfully", function: archivedFunction },
+        { status: 200 }
+      );
+    } else {
+      // Delete the function
+      await prisma.clientDeployment.delete({
+        where: { id },
+      });
+      // Notify in chat about deletion
+      // TODO: VISHWAJEET - no need to send a mesaage i think, but will have to take a look later
+      // await prisma.chatUIMessage.create({
+      //   data: {
+      //     originClientRequestId,
+      //     userId,
+      //     content: `Function "${name}" has been removed from ${mode} mode`,
+      //     context: `server`,
+      //     role: `assistant`,
+      //     minionType: `other`,
+      //     createdAt: new Date(),
+      //   },
+      // });
+
+      return NextResponse.json(
+        { message: "Function deleted successfully" },
+        { status: 200 }
+      );
+    }
   } catch (error) {
     console.error("Error deleting ClientDeployment:", error);
     return NextResponse.json(

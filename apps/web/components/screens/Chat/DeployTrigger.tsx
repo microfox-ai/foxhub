@@ -32,6 +32,10 @@ const DeployTrigger = () => {
   });
   const { append } = useMicrofoxChat();
 
+  if (!deployment || !deployment?._id) {
+    return null;
+  }
+
   useEffect(() => {
     // Determine current deployment status and display text
     const getCurrentDeploymentDisplay = () => {

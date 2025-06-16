@@ -1,6 +1,7 @@
 import { prisma } from "@/prisma/prisma";
 import { NextResponse } from "next/server";
 import { MinionFlow } from "@/components/screens/hooks/convertors";
+import { detectOptimalAwsRegionFromRequest } from "@/utils/services/aws/region-detector";
 
 export async function POST(request: Request) {
   const { userId, botProjectId, title, description, minionFlow } =
@@ -12,6 +13,21 @@ export async function POST(request: Request) {
     );
   }
   try {
+    // Get botProject to fetch awsRegion, or detect from client if not available
+    const botProject = await prisma.botProject.findUnique({
+      where: { id: botProjectId },
+      select: { awsRegion: true },
+    });
+
+    let awsRegion = botProject?.awsRegion;
+    
+    // If botProject doesn't have awsRegion, detect from client
+    if (!awsRegion) {
+      const regionInfo = await detectOptimalAwsRegionFromRequest(request);
+      awsRegion = regionInfo.region;
+      console.log(`Client region detection for ClientRequest: ${regionInfo.reasoning}`);
+    }
+
     const clientRequest =
       (await prisma.clientRequest.create({
         data: {
@@ -20,6 +36,7 @@ export async function POST(request: Request) {
           title: title || "Untitled",
           description: description || "",
           minionFlow: minionFlow || MinionFlow.Unknown,
+          awsRegion: awsRegion,
         },
       })) || {};
 

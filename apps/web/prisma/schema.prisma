@@ -78,6 +78,7 @@ model BotProject {
   description      String?
   projectDir       String
   templateVersion  String?
+  awsRegion        String?
   metadata         Json?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
@@ -119,6 +120,7 @@ model ClientRequest {
   prNumber                 Int?
   prBranch                 String?
   prTargetBranch           String?
+  awsRegion                String?
   requestDir               String?
   requestStatus            REQUESTSTATUS      @default(UN_ASSIGNED)
   archiveStatus            String?
@@ -216,6 +218,7 @@ model ClientDeployment {
   name                  String        @unique
   sha                   String?
   baseUrl               String
+  awsRegion             String?
   stage                 DEPLOY_STAGE
   type                  FUNCTIONTYPE
   status                DEPLOY_STATUS @default(TRIGGERED)

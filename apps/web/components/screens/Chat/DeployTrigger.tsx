@@ -16,6 +16,7 @@ import {
   constructMessageFromButton,
   constructAppendBody,
 } from "./message/messageHelpers";
+import { IN_DEV } from "@/utils/constants/appInfo";
 
 const DeployTrigger = () => {
   const { selectedClientDeployment } = useClientProject();
@@ -32,9 +33,6 @@ const DeployTrigger = () => {
   });
   const { append } = useMicrofoxChat();
 
-  if (!deployment || !deployment?._id) {
-    return null;
-  }
 
   useEffect(() => {
     // Determine current deployment status and display text
@@ -141,7 +139,7 @@ const DeployTrigger = () => {
     );
   };
 
-  const deploymentOptions = [
+  let deploymentOptions = [
     {
       value: "production",
       label: "Deploy to Production",
@@ -153,18 +151,21 @@ const DeployTrigger = () => {
       label: "Deploy to Staging",
       shortLabel: "Staging",
       color: "border-blue-600 text-blue-600",
-    },
-    {
+    }
+  ];
+
+  if (IN_DEV) {
+    deploymentOptions.push({
       value: "local",
       label: "Deploy to Local",
       shortLabel: "Local",
       color: "border-yellow-600 text-yellow-600",
-    },
-  ];
+    });
+  }
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger disabled={!deployment?._id} asChild>
         <Button
           variant="outline"
           className={`mx-2 flex items-center gap-2 ${currentDisplay?.color}`}

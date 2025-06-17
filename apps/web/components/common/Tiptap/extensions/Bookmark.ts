@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
-import { BookmarkComponent } from "./BookmarkComponent";
+import { BookmarkComponent } from "@/components/common/Tiptap/extensions/BookmarkComponent";
 
 export interface BookmarkAttributes {
   url: string;

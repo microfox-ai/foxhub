@@ -5,9 +5,9 @@ import { notFound } from 'next/navigation';
 export default async function BlogPage({
     params,
 }: {
-    params: { article_id: string };
+    params: Promise<{ article_id: string }>;
 }) {
-    const { article_id } = params;
+    const { article_id } = await params;
     try {
         const articleData = await getArticleData(article_id);
 

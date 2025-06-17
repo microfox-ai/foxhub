@@ -7,6 +7,7 @@ import { serverAnalytics } from "@/utils/services/analytics/server";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import FeatureBase from "@/components/auth/FeatureBase";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -97,6 +98,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             <AnalyticsProvider>
+              <FeatureBase />
               <div className="flex-1">{children}</div>
             </AnalyticsProvider>
           </AuthProvider>

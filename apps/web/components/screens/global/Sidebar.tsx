@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useLayout } from "../providers/LayoutProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
+import { FeatureBaseLinkAttributes } from "@/components/auth/FeatureBase";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -58,6 +59,7 @@ interface NavigationConfig {
   collapsedIcon?: React.ReactNode;
   label: string;
   href?: string;
+  attributes?: any;
   hrefCallback?: (selectedProject: any) => string;
   requiresProject?: boolean;
   onClick?: (props: {
@@ -134,7 +136,9 @@ const navigationConfig: NavigationConfig[] = [
       <Flag strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
     ),
     label: "Beta-Feedback",
-    onClick: ({ setIsFeedbackModalOpen }) => setIsFeedbackModalOpen(true),
+    href: "/feedback",
+    //attributes: FeatureBaseLinkAttributes,
+    //onClick: ({ setIsFeedbackModalOpen }) => setIsFeedbackModalOpen(true),
   },
   {
     icon: (
@@ -217,6 +221,7 @@ export default function Sidebar({
                         : undefined
                     }
                     isCollapsed={isCollapsed}
+                    {...item.attributes}
                   />
                 ))}
             </ul>

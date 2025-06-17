@@ -10,6 +10,10 @@ import FeebackModal from "@/components/global/FeebackModal";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import ResizableSidebar from "@/components/screens/global/ResizableSidebar";
 import LogoutElement from "@/components/auth/LogoutElement";
+import FeaturebaseFeedback from "@/components/auth/FeatureBaseFeedback";
+
+const routesWithOuLogout = ["/feedback", "/request"];
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
@@ -36,12 +40,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <>{children}</>
               )}
             </ResizablePanelGroup>
-            {!pathname?.includes("request") && (
+            {!routesWithOuLogout.some(route => pathname?.includes(route)) && (
               <div className="absolute top-10 right-10 z-100">
                 <LogoutElement />
               </div>
             )}
           </main>
+          <FeaturebaseFeedback />
         </LayoutProvider>
       </ClientProjectProvider>
     </FileUploadProvider>

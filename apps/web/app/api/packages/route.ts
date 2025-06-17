@@ -110,6 +110,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const cacheDuration = url.searchParams.get("cache");
     const rawContent = url.searchParams.get("rawContent");
+    const statuses = url.searchParams.get("statuses");
 
     // Set cache options based on query param
     const cacheOptions: RequestInit = {
@@ -118,18 +119,14 @@ export async function GET(request: Request) {
       },
     };
 
-    // Fetch packages list
-    const packagesList = (await fetchWithCache(
-      `${PACKAGE_BASE_URL}/packages-list.json`,
-      cacheOptions
-    )) as any;
-
     const packages = await PackageInfoHelper.getAllPackages({
-      statuses: [
-        PackageStatus.STABLE,
-        PackageStatus.SEMISTABLE,
-        PackageStatus.EXTERNAL,
-      ],
+      statuses: statuses
+        ? statuses.split(",").map((status) => status as PackageStatus)
+        : [
+            PackageStatus.STABLE,
+            PackageStatus.SEMISTABLE,
+            PackageStatus.EXTERNAL,
+          ],
       select: rawContent === "true" ? "*" : "*",
     });
     // Return the formatted data

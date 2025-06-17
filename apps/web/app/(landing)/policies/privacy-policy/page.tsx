@@ -1,12 +1,11 @@
 'use client';
 
-import { LandingLayout } from '@/components/screens/landing/LandingLayout';
-import PageHero from '../../../components/screens/policies/PageHero';
+import PageHero from '@/components/screens/policies/PageHero';
 
 import FooterCtaSection from '@/components/screens/landing/FooterCTASection/FooterCtaSection';
 const PrivacyPolicy = () => {
   return (
-    <LandingLayout>
+    <>
       <div className="min-h-screen mt-20 bg-[#FAFAFA]">
         <PageHero
           title="Privacy Policy"
@@ -204,7 +203,7 @@ const PrivacyPolicy = () => {
 
         <FooterCtaSection />
       </div>
-    </LandingLayout>
+    </>
   );
 };
 

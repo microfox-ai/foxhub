@@ -99,7 +99,7 @@ const NewHeader = () => {
 
           <>
             <div className="flex items-center">
-              <MenuItem label="Pricing" to="/pricing" />
+              <MenuItem label="Status" to="/status" />
             </div>
             <CustomButton label="Enter App" onClick={handleButtonClick} />
           </>

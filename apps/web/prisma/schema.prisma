@@ -27,6 +27,7 @@ model User {
   isOnboarded        Boolean             @default(false)
   onboardingData     Json?
   projectPermissions ProjectPermission[]
+  isAdmin            Boolean?
   isBetaAccess       Boolean?
   isBillingVerified  Boolean?
   shardPages         ShardPage[]
@@ -318,6 +319,7 @@ model ShardPage {
   category       String[]
   clientRequestMeta Json
   repoDir        String
+  slug           String   @unique
   title          String?
   miniDescription String?
   description    String?

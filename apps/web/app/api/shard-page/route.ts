@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
   const userId = request.nextUrl.searchParams.get("userId");
+  const slug = request.nextUrl.searchParams.get("slug");
   const clientRequestId = request.nextUrl.searchParams.get("clientRequestId");
   const status = request.nextUrl.searchParams.get(
     "status"
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
         ...(userId ? { creatorId: userId } : {}),
         ...(status && { status }),
         ...(clientRequestId ? { clientRequestId } : {}),
+        ...(slug ? { slug } : {}),
       },
       include: {
         creator: true,

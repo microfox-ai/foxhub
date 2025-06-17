@@ -43,7 +43,13 @@ export async function POST(req: NextRequest) {
 
         // if (deleteSls) {
         //   const response = await fetch(
-        //     `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?clientRequestId=${clientRequest.id}${sha ? `&sha=${sha}` : ""}${stage ? `&stage=${stage}` : ""}`
+        //     `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?clientRequestId=${clientRequest.id}${sha ? `&sha=${sha}` : ""}${stage ? `&stage=${stage}` : ""}`,
+        //   {
+        //     method: "DELETE",
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //     },
+        //   }
         //   );
         //   if (response.ok) {
         //     console.log("lambda deployments deletion triggered");

@@ -56,7 +56,13 @@ export async function DELETE(req: NextRequest) {
     try {
       if (clientFunction && clientFunction.stage) {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?clientRequestId=${clientFunction.originClientRequestId}${clientFunction.stage ? `&stage=${clientFunction.stage}` : ""}`
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?clientRequestId=${clientFunction.originClientRequestId}${clientFunction.stage ? `&stage=${clientFunction.stage}` : ""}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (response.ok) {
           console.log("lambda deployments deletion triggered");

@@ -25,7 +25,8 @@ export const deployViaGit = async (
   props: StreamingFucntionProps<any, any>,
   clientRequest: ClientRequest,
   taskInstanceMeta: TaskInstanceMetaType,
-  stage: DEPLOY_STAGE
+  stage: DEPLOY_STAGE,
+  isLocal: boolean
 ) => {
   const { dataStream } = props;
 
@@ -39,14 +40,15 @@ export const deployViaGit = async (
 
   dataStream.writeMessageAnnotation({
     type: "loading",
-    content: `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation`,
+    content: `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation ${isLocal ? "locally" : ""}`,
   });
 
   const { sha } = await triggerDeployment(
     clientRequest,
     stage ?? DEPLOY_STAGE.STAGING,
     false,
-    taskInstanceMeta
+    taskInstanceMeta,
+    isLocal
   );
 
   return { sha };
@@ -56,7 +58,8 @@ export const triggerDeployment = async (
   clientRequest: ClientRequest,
   stage: DEPLOY_STAGE,
   isDelete?: boolean,
-  taskInstanceMeta?: TaskInstanceMetaType
+  taskInstanceMeta?: TaskInstanceMetaType,
+  isLocal?: boolean
 ) => {
   if (
     !clientRequest.repoName ||
@@ -112,7 +115,7 @@ export const triggerDeployment = async (
       owner: PROJECT_REPO_OWNER,
       repo: clientRequest.repoName,
       path: changelogPath,
-      message: `${stage}: deployfox: ${isDelete ? "DELETE: deleting the serverless function" : " Update CHANGELOG.md to trigger deployment"}`,
+      message: `${stage}: deployfox: ${isLocal ? "LOCAL: starting local automation" : isDelete ? "DELETE: deleting the serverless function" : " Update CHANGELOG.md to trigger deployment"}`,
       content: Buffer.from(
         `# Deployment Log\n\n` +
           `## Latest Deployment\n` +

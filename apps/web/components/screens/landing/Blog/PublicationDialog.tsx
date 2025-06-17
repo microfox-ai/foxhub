@@ -1,6 +1,5 @@
 import { CardBody, CardContainer, CardItem } from '@/components/ui/3d-card';
 import { Dialog } from '@mui/material';
-import Image from 'next/image';
 import Link from 'next/link';
 
 export interface IPublication {
@@ -59,7 +58,7 @@ export const PublicationDialog = ({
                             translateZ="100"
                             className="w-full !overflow-hidden rounded-tl-xl rounded-tr-xl md:group-hover:rounded-bl-xl md:group-hover:rounded-br-xl"
                         >
-                            <Image
+                            <img
                                 src={data?.image_url || ''}
                                 height="1000"
                                 width="1000"
@@ -106,7 +105,7 @@ export const PublicationDialog = ({
                                     className="flex items-center rounded-xl py-2 text-xs font-normal dark:text-white"
                                 >
                                     {data?.avatar && (
-                                        <Image
+                                        <img
                                             src={data?.avatar || ''}
                                             height={20}
                                             width={20}

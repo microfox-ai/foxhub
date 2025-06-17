@@ -2,17 +2,19 @@ import { prisma } from "@/prisma/prisma";
 import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIP, isIPWhitelisted } from "@/utils/services/ipWhitelist";
 
 export async function GET(req: NextRequest) {
   try {
-    // Check for the microfox-api-key in the request headers
-    const apiKey = req.headers.get("microfox-api-key");
-    const origin = req.nextUrl.origin;
-
-    if (apiKey !== process.env.MICROFOX_API_KEY) {
-      console.log("apiKey", apiKey);
-      console.log("MICROFOX_API_KEY", process.env.MICROFOX_API_KEY);
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Check IP restriction first
+    const clientIP = getClientIP(req);
+    
+    if (!isIPWhitelisted(clientIP)) {
+      console.warn(`Access denied for IP: ${clientIP}`);
+      return NextResponse.json(
+        { error: "Access denied: IP not whitelisted" },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

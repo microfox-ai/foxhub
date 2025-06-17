@@ -2,14 +2,12 @@ import { prisma } from "@/prisma/prisma";
 import { fetchTemplateDir } from "@/server/buildfox/tool/writeToFile";
 import { TaskStructure } from "@/server/convertfox/types";
 import { triggerDeployment } from "@/server/deployfox/deployGit";
-import { DEPLOY_STAGE, REQUESTSTATUS } from "@prisma/client";
 import { readFile } from "fs/promises";
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "path";
 import { Redis } from "@upstash/redis";
 import { ClientSecretPackageType } from "@/server/types";
-import { removeClientSecretFromClientRequest } from "@/utils/services/db_functions/secrets_helper";
 import { closePullRequest } from "@/utils/services/github_functions/deleteRepo";
 import { deleteEmbedding } from "@/utils/services/embeddings/embedFunctions";
 
@@ -57,17 +55,25 @@ export async function DELETE(req: NextRequest) {
     // 1. delete the deployment
     try {
       if (clientFunction && clientFunction.stage) {
-        const { sha } = await triggerDeployment(
-          clientRequest,
-          clientFunction.stage,
-          true,
-          undefined
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?clientRequestId=${clientFunction.originClientRequestId}${clientFunction.stage ? `&stage=${clientFunction.stage}` : ""}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
+        if (response.ok) {
+          console.log("lambda deployments deletion triggered");
+        } else {
+          console.log("lambda deployments deletion failed");
+        }
         const embeddingDeleteResponse = await deleteEmbedding(
           clientFunction.originClientRequestId
         );
         deleteResponse.deployment = {
-          deletingCommitSha: sha,
+          isDeletionTriggered: response.ok,
           embeddingsDeleted: embeddingDeleteResponse.success,
         };
       }

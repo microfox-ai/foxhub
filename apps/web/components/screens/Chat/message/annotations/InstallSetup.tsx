@@ -42,10 +42,16 @@ export const InstallSetup = ({
                         key: "stage",
                         value: DEPLOY_STAGE.PROD,
                     },
+                    {
+                        type: "attachment",
+                        key: "is_local",
+                        value: false,
+                    },
                 ]
             ),
             constructAppendBody("deployfox", {
                 stage: DEPLOY_STAGE.PROD,
+                is_local: false,
             })
         );
     };

@@ -27,6 +27,7 @@ import {
     Code2,
     Wrench,
     Edit,
+    Shield,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
@@ -54,6 +55,8 @@ import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProv
 import isEqual from "lodash/isEqual";
 import { EnvVariablesDialog } from "../configuration/EnvVariablesDialog";
 import { ExtraEnvVariable } from "@/server/convertfox/types";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { APP_BASE_URL, APP_BASE_URL_PROD, IN_STAGING } from "@/utils/constants/appInfo";
 
 const STATUS_OPTIONS = [
     { value: "UNPUBLISHED", label: "Unpublished" },
@@ -70,6 +73,25 @@ const formSchema = z.object({
     versionNumber: z.string().min(1, "Version number is required"),
     thumbnail_url: z.string().nullable(),
     banner_url: z.string().nullable(),
+    slug: z.string()
+        .min(3, "Slug must be at least 3 characters")
+        .max(50, "Slug must be less than 50 characters")
+        .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens")
+        .refine(
+            async (slug) => {
+                if (!slug) return true;
+                try {
+                    const res = await fetch(`/api/shard-page/check-slug?slug=${slug}`);
+                    const data = await res.json();
+                    return !data.exists;
+                } catch {
+                    return false;
+                }
+            },
+            {
+                message: "This slug is already taken",
+            }
+        ),
     video_url: z
         .string()
         .nullable()
@@ -91,6 +113,57 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const SlugField = ({ form, isCheckingSlug, setIsCheckingSlug }: {
+    form: any;
+    isCheckingSlug: boolean;
+    setIsCheckingSlug: (value: boolean) => void;
+}) => (
+    <FormField
+        control={form.control}
+        name="slug"
+        render={({ field }) => (
+            <FormItem>
+                <FormControl>
+                    <div className="flex items-center gap-2">
+                        <Input
+                            {...field}
+                            placeholder="Enter slug (e.g., my-awesome-shard)"
+                            onChange={async (e) => {
+                                const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                                field.onChange(value);
+                                if (value.length >= 3) {
+                                    setIsCheckingSlug(true);
+                                    try {
+                                        const res = await fetch(`/api/shard-page/check-slug?slug=${value}`);
+                                        const data = await res.json();
+                                        if (data.exists) {
+                                            form.setError("slug", {
+                                                type: "manual",
+                                                message: "This slug is already taken",
+                                            });
+                                        }
+                                    } catch (error) {
+                                        console.error("Error checking slug:", error);
+                                    } finally {
+                                        setIsCheckingSlug(false);
+                                    }
+                                }
+                            }}
+                        />
+                        {isCheckingSlug && (
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        )}
+                    </div>
+                </FormControl>
+                <p className="text-xs text-gray-500 mt-1 text-left">
+                    A unique identifier for your shard (e.g., my-awesome-shard)
+                </p>
+                <FormMessage />
+            </FormItem>
+        )}
+    />
+);
+
 const PublishTab = () => {
     const params = useParams();
     const { selectedRequest } = useClientProject();
@@ -102,6 +175,19 @@ const PublishTab = () => {
     const [initialValues, setInitialValues] = React.useState<FormValues | null>(null);
     const [showEnvDialog, setShowEnvDialog] = React.useState(false);
     const [isPublishing, setIsPublishing] = React.useState(false);
+    const [isCheckingSlug, setIsCheckingSlug] = React.useState(false);
+    const { user } = useAuth();
+
+    const { data: userPermission } = useSWR(
+        selectedRequest ? `/api/permissions?projectId=${selectedRequest?.botProjectId}&userId=${user?.id}` : null,
+        async (url) => {
+            const res = await fetch(url);
+            const data = await res.json();
+            return data[0];
+        }
+    );
+
+    const isAdmin = (userPermission?.role === "OWNER" || userPermission?.role === "ADMIN") && user?.isAdmin;
 
     const publishTabs = [
         {
@@ -124,6 +210,11 @@ const PublishTab = () => {
             value: "configuration",
             icon: <Wrench className="h-4 w-4 mr-2" />,
         },
+        ...(isAdmin ? [{
+            label: "Admin",
+            value: "admin",
+            icon: <Shield className="h-4 w-4 mr-2" />,
+        }] : []),
     ];
 
     const { data: shardPage, error, isLoading, mutate } = useSWR(
@@ -159,6 +250,7 @@ const PublishTab = () => {
             thumbnail_url: null,
             banner_url: null,
             video_url: null,
+            slug: "",
         },
     });
 
@@ -182,6 +274,7 @@ const PublishTab = () => {
                 thumbnail_url: shardPage.thumbnail_url,
                 banner_url: shardPage.banner_url,
                 video_url: shardPage.video_url,
+                slug: shardPage.slug,
             };
             form.reset(values);
             setInitialValues(values);
@@ -202,6 +295,7 @@ const PublishTab = () => {
                 thumbnail_url: null,
                 banner_url: null,
                 video_url: null,
+                slug: form.getValues("slug"),
                 clientRequestId: selectedRequest?.id,
             };
 
@@ -359,10 +453,21 @@ const PublishTab = () => {
                     <p className="text-gray-500 mb-8">
                         Share your workflow with the community by publishing it to the store.
                     </p>
+                    <div className="max-w-md mx-auto mb-8">
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleStartPublishing)} className="space-y-4">
+                                <SlugField
+                                    form={form}
+                                    isCheckingSlug={isCheckingSlug}
+                                    setIsCheckingSlug={setIsCheckingSlug}
+                                />
+                            </form>
+                        </Form>
+                    </div>
                     <Button
                         onClick={handleStartPublishing}
                         className="px-8 py-2 text-base font-semibold"
-                        disabled={isPublishing}
+                        disabled={isPublishing || !form.getValues("slug")}
                     >
                         {isPublishing ? (
                             <div className="flex items-center gap-2">
@@ -666,6 +771,22 @@ const PublishTab = () => {
                                                 </FormItem>
                                             )}
                                         />
+
+                                        {/* Slug */}
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Code2 className="h-4 w-4 text-gray-500" />
+                                                <FormLabel className="font-medium">Slug</FormLabel>
+                                            </div>
+                                            <span className="text-xs text-gray-500 mt-1 mb-2">
+                                                A unique identifier for your shard (e.g., my-awesome-shard)
+                                            </span>
+                                        </div>
+                                        <SlugField
+                                            form={form}
+                                            isCheckingSlug={isCheckingSlug}
+                                            setIsCheckingSlug={setIsCheckingSlug}
+                                        />
                                     </div>
                                 </TabsContent>
 
@@ -857,13 +978,6 @@ const PublishTab = () => {
                                                                 </Button>
                                                             )}
                                                         </div>
-                                                        {field.value && (
-                                                            <div className="text-xs text-gray-500">
-                                                                {field.value.startsWith("http")
-                                                                    ? "Video URL is set"
-                                                                    : "Please enter a valid URL starting with http:// or https://"}
-                                                            </div>
-                                                        )}
                                                         {field.value && field.value.includes("youtube.com/watch?v=") && (
                                                             <div className="relative aspect-video w-full mt-2 rounded-lg overflow-hidden border">
                                                                 <iframe
@@ -996,6 +1110,110 @@ const PublishTab = () => {
                                             </div>
                                         </div>
                                     </div>
+                                </TabsContent>
+
+                                <TabsContent value="admin">
+                                    {!IN_STAGING && <div className="p-4 text-center text-gray-500">
+                                        This feature is only available on the production environment.
+                                    </div>}
+                                    {IN_STAGING && <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-x-8 gap-y-6 items-start">
+                                        {/* Transfer Action */}
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Shield className="h-4 w-4 text-gray-500" />
+                                                <FormLabel className="font-medium">Transfer Ownership</FormLabel>
+                                            </div>
+                                            <span className="text-xs text-gray-500 mt-1 mb-2">
+                                                Transfer ownership of this shard to another user by email.
+                                            </span>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="transfer-email"
+                                                    placeholder="Enter email address"
+                                                    className="flex-1"
+                                                />
+                                                <Button
+                                                    onClick={async () => {
+                                                        const email = (document.getElementById('transfer-email') as HTMLInputElement).value;
+                                                        if (!email) {
+                                                            toast.error("Please enter an email address");
+                                                            return;
+                                                        }
+                                                        try {
+                                                            const res = await fetch(APP_BASE_URL_PROD + "/api/shard-page/transfer", {
+                                                                method: "POST",
+                                                                headers: {
+                                                                    "Content-Type": "application/json",
+                                                                },
+                                                                body: JSON.stringify({
+                                                                    email,
+                                                                    clientRequestId: "",
+                                                                    ...form.getValues()
+                                                                }),
+                                                            });
+                                                            if (!res.ok) throw new Error("Failed to transfer ownership");
+                                                            toast.success("Ownership transferred successfully");
+                                                        } catch (error) {
+                                                            console.error("Error transferring ownership:", error);
+                                                            toast.error("Failed to transfer ownership");
+                                                        }
+                                                    }}
+                                                >
+                                                    Transfer
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Assign Client Request Action */}
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Shield className="h-4 w-4 text-gray-500" />
+                                                <FormLabel className="font-medium">Assign Client Request</FormLabel>
+                                            </div>
+                                            <span className="text-xs text-gray-500 mt-1 mb-2">
+                                                Assign a client request to this shard.
+                                            </span>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    id="client-request-id"
+                                                    placeholder="Enter client request ID"
+                                                    className="flex-1"
+                                                />
+                                                <Button
+                                                    onClick={async () => {
+                                                        const _clientRequestId = (document.getElementById('client-request-id') as HTMLInputElement).value;
+                                                        if (!_clientRequestId) {
+                                                            toast.error("Please enter a client request ID");
+                                                            return;
+                                                        }
+                                                        try {
+                                                            const res = await fetch(APP_BASE_URL_PROD + "/api/shard-page/transfer", {
+                                                                method: "PUT",
+                                                                headers: {
+                                                                    "Content-Type": "application/json",
+                                                                },
+                                                                body: JSON.stringify({
+                                                                    clientRequestId: _clientRequestId,
+                                                                    slug: form.getValues("slug")
+                                                                }),
+                                                            });
+                                                            if (!res.ok) throw new Error("Failed to assign client request");
+                                                            toast.success("Client request assigned successfully");
+                                                        } catch (error) {
+                                                            console.error("Error assigning client request:", error);
+                                                            toast.error("Failed to assign client request");
+                                                        }
+                                                    }}
+                                                >
+                                                    Assign
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>}
                                 </TabsContent>
                             </form>
                         </Form>

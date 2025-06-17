@@ -21,7 +21,10 @@
     "prisma:migrate-resolve-deploy": "dotenv -- prisma migrate resolve --applied $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-rollback-deploy": "dotenv -- prisma migrate resolve --rolled-back $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
     "prepare": "husky",
-    "postinstall": "npm run prisma:generate"
+    "postinstall": "npm run prisma:generate",
+    "delete-all-lambdas": "node scripts/delete-all-lambda-functions.js",
+    "delete-all-github-repos": "node scripts/delete-all-github-repos.js",
+    "cleanup-lambda": "node scripts/cleanup-lambda.js"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
@@ -61,8 +64,15 @@
     "packages/*"
   ],
   "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.800.0",
+    "@aws-sdk/client-cloudformation": "^3.828.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.828.0",
+    "@aws-sdk/client-ec2": "^3.828.0",
+    "@aws-sdk/client-iam": "^3.828.0",
+    "@aws-sdk/client-lambda": "^3.828.0",
+    "@aws-sdk/client-s3": "^3.828.0",
     "@radix-ui/react-alert-dialog": "^1.1.14",
+    "@tiptap/extension-color": "^2.14.0",
+    "@tiptap/extension-text-style": "^2.14.0",
     "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0",

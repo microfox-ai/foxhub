@@ -37,17 +37,42 @@ export async function POST(req: NextRequest) {
         const stageMatch = commitMessage.match(/^(.*?): deployfox:/);
         let stage = stageMatch ? stageMatch[1] : null;
         console.log(`Detected stage from commit message: ${stage}`);
+
+        // const deleteSls = commitMessage.includes("DELETE");
+        // console.log(`Detected deleteSls from commit message: ${deleteSls}`);
+
+        // if (deleteSls) {
+        //   const response = await fetch(
+        //     `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/delete?clientRequestId=${clientRequest.id}${sha ? `&sha=${sha}` : ""}${stage ? `&stage=${stage}` : ""}`,
+        //   {
+        //     method: "DELETE",
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //     },
+        //   }
+        //   );
+        //   if (response.ok) {
+        //     console.log("lambda deployments deletion triggered");
+        //   } else {
+        //     console.log("lambda deployments deletion failed");
+        //   }
+        //   return;
+        // }
+
         if (!stage) {
           stage = "STAGING";
         }
 
-        const deleteSls = commitMessage.includes("DELETE");
+        const isLocal = commitMessage.includes("LOCAL");
+        console.log(`Detected isLocal from commit message: ${isLocal}`);
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&sha=${sha}&stage=${stage}&delete=${deleteSls}`
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new?clientRequestId=${clientRequest.id}&sha=${sha}&stage=${stage}&isLocal=${isLocal}`
         );
         if (response.ok) {
-          console.log(deleteSls ? "removing deployment" : "deployment triggered");
+          console.log(
+            isLocal ? "local deployment triggered" : "deployment triggered"
+          );
         } else {
           console.log("deployment failed");
         }

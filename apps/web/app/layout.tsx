@@ -82,6 +82,10 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&display=block"
         ></link>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        />
       </head>
       <body>
         <Suspense
@@ -93,7 +97,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             <AnalyticsProvider>
-              <div className="flex-1 overflow-hidden">{children}</div>
+              <div className="flex-1">{children}</div>
             </AnalyticsProvider>
           </AuthProvider>
         </Suspense>

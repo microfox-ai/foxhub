@@ -32,6 +32,7 @@ export const deployFoxRouter: ServerStreamingFunction<
   }
 
   const stage = requestBody.stage;
+  const isLocal = requestBody.is_local;
 
   dataStream.writeMessageAnnotation({
     type: "minion",
@@ -40,7 +41,7 @@ export const deployFoxRouter: ServerStreamingFunction<
 
   dataStream.writeMessageAnnotation({
     type: "loading",
-    content: `Deploying Automation to ${stage ?? DEPLOY_STAGE.STAGING}`,
+    content: `Deploying Automation to ${stage ?? DEPLOY_STAGE.STAGING} ${isLocal ? "locally" : ""}`,
   });
 
   //clone template in dev mode
@@ -51,7 +52,8 @@ export const deployFoxRouter: ServerStreamingFunction<
     props,
     clientRequest,
     taskInstanceMeta,
-    stage
+    stage,
+    isLocal
   );
   console.log("sha", sha);
   if (!sha) {

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import useSWRSubscription from "swr/subscription";
-import { ClientDeployment } from "@prisma/client";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useParams } from "next/navigation";
 import { useClientProject } from "./ClientProjectProvider";
@@ -14,7 +13,6 @@ interface IDeployment {
   stage: "PROD" | "STAGING" | "DEV" | "PREVIEW";
   status:
     | "starting"
-    | "validating"
     | "downloading"
     | "installing"
     | "configuring"
@@ -32,13 +30,12 @@ interface IDeployment {
   pid?: number;
   port?: number;
   version?: string;
-  serverlessState?:
+  localState?:
     | "active"
     | "stopped"
     | "errored"
-    | "unknown"
-    | "deploying"
-    | "production";
+    | "starting"
+    | "awsLambda";
   lastActive?: string;
   timeoutAt?: string;
   error?: {
@@ -60,7 +57,6 @@ interface IDeployment {
       totalDuration?: number;
       stepDurations?: {
         starting?: number;
-        validating?: number;
         downloading?: number;
         installing?: number;
         configuring?: number;
@@ -122,10 +118,13 @@ interface DeploymentApiResponse {
   data: BackendDeploymentData;
 }
 
-export const useDeployStatus = (
-  initialSha?: string
-): {
-  clientDeployment: ClientDeployment | null;
+export const useDeployStatus = ({
+  clientRequestId,
+  sha,
+}: {
+  clientRequestId: string;
+  sha: string;
+}): {
   deployment: IDeployment | null;
   deploymentLogs: string | null;
   statusData: any | null;
@@ -135,15 +134,6 @@ export const useDeployStatus = (
   shouldBreak: boolean;
   progress: number;
 } => {
-  const params = useParams<{
-    project_id?: string;
-    request_id?: string;
-  }>();
-  const requestParamId = params?.request_id;
-  const [clientDeployment, setClientDeployment] =
-    useState<ClientDeployment | null>(null);
-  const [sha, setSha] = useState<string | undefined>(initialSha);
-  
   const { updateClientDeploymentById } = useClientProject();
 
   // Get deployment data via REST API - only if we have a SHA
@@ -285,8 +275,8 @@ export const useDeployStatus = (
         try {
           hasReceivedData = true;
           const completeData = JSON.parse(event.data);
-          if (completeData.status === "deployed" && requestParamId) {
-            updateClientDeploymentById(requestParamId);
+          if (completeData.status === "deployed" && clientRequestId) {
+            updateClientDeploymentById(clientRequestId);
           }
           console.log("✅ Deployment completed:", completeData);
           next(null, { shouldBreak: true, finalStatus: completeData.status });
@@ -369,7 +359,6 @@ export const useDeployStatus = (
   // });
 
   return {
-    clientDeployment,
     deployment: finalData?.deployment || {
       _id: "",
       clientRequestId: "",
@@ -377,7 +366,7 @@ export const useDeployStatus = (
       statusDescription: "Initializing deployment...",
       startTime: new Date().toISOString(),
       endTime: undefined,
-      stage: clientDeployment?.stage || "STAGING",
+      stage: "STAGING",
       sha: sha || "",
       sourceDirectory: "",
       lastUpdated: new Date().toISOString(),
@@ -397,9 +386,8 @@ export const getDeploymentProgress = (deployment: Partial<IDeployment>) => {
   if (!deployment || !deployment.status) return 0;
 
   const statusProgressMap: Record<string, number> = {
-    starting: 5,
-    validating: 10,
-    downloading: 15,
+    starting: 10,
+    downloading: 20,
     installing: 30,
     configuring: 55,
     deploying: 60,

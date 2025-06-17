@@ -30,7 +30,6 @@ model User {
   isAdmin            Boolean?
   isBetaAccess       Boolean?
   isBillingVerified  Boolean?
-  shardPages         ShardPage[]
 }
 
 model FoxTemplate {
@@ -328,13 +327,12 @@ model ShardPage {
   banner_url     String?
   version        String
   versionNumber  String
-  creatorId      String
-  clientRequestId String
+  creatorId      String?
+  clientRequestId String?
   viewCount      Int      @default(0)
   likeCount      Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  creator        User     @relation(fields: [creatorId], references: [id])
 }
 
 enum SHARD_PAGE_STATUS {

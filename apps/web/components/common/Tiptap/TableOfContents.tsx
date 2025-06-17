@@ -50,7 +50,7 @@ const TableOfContents: FC<TableOfContentsProps> = ({ editor }) => {
                 editor.off('update', handleUpdate);
             };
         }
-    }, [editor]);
+    }, [editor, editor?.state.doc.content.size]);
 
     const nestHeadings = (list: Heading[]): NestedHeading[] => {
         const tree: NestedHeading[] = [];

@@ -36,11 +36,8 @@ export async function POST(request: Request) {
         where: { slug },
         data: {
           ...updateData,
-          clientRequestId: clientRequestId?.length > 0 ? clientRequestId : "",
+          ...(clientRequestId && { clientRequestId }),
           creatorId: creator.id,
-        },
-        include: {
-          creator: true,
         },
       });
 
@@ -64,7 +61,7 @@ export async function POST(request: Request) {
           versionNumber: updateData.versionNumber || "1",
           category: updateData.category || [],
           status: updateData.status || "UNPUBLISHED",
-          clientRequestId: clientRequestId?.length > 0 ? clientRequestId : "",
+          ...(clientRequestId && { clientRequestId }),
         },
       });
 

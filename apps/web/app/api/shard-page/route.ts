@@ -25,9 +25,6 @@ export async function GET(request: NextRequest) {
         ...(clientRequestId ? { clientRequestId } : {}),
         ...(slug ? { slug } : {}),
       },
-      include: {
-        creator: true,
-      },
     });
 
     return NextResponse.json(shardPages);
@@ -92,6 +89,13 @@ export async function PUT(request: Request) {
     if (!inShardPage) {
       return NextResponse.json(
         { error: "Shard page not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!inShardPage.clientRequestId) {
+      return NextResponse.json(
+        { error: "Linked client request not found" },
         { status: 404 }
       );
     }

@@ -177,7 +177,7 @@ function blockToTiptap(block: NotionBlock): TiptapNode | null {
         : block.image.external?.url;
     const caption =
       block.image.caption
-        ?.map((c) => ("text" in c ? c.text.content : ""))
+        ?.map((c: any) => ("text" in c ? c.text.content : ""))
         .join("") || "";
     if (imageUrl) {
       return {
@@ -188,6 +188,143 @@ function blockToTiptap(block: NotionBlock): TiptapNode | null {
         },
       };
     }
+  }
+
+  if (isBlockType(block, "video") && block.video) {
+    let videoUrl = "";
+
+    if (block.video.type === "external" && block.video.external?.url) {
+      videoUrl = block.video.external.url;
+    } else if (block.video.type === "file" && block.video.file?.url) {
+      videoUrl = block.video.file.url;
+    }
+
+    if (videoUrl) {
+      const caption =
+        block.video.caption
+          ?.map((c: any) => ("text" in c ? c.text.content : ""))
+          .join("") || "";
+
+      // Use different node types based on video source
+      const isYouTube =
+        videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be");
+
+      return {
+        type: isYouTube ? "youtube" : "video",
+        attrs: {
+          src: videoUrl,
+          alt: caption,
+        },
+      };
+    }
+  }
+
+  if (isBlockType(block, "audio") && block.audio) {
+    let audioUrl = "";
+    if (block.audio.type === "external" && block.audio.external?.url) {
+      audioUrl = block.audio.external.url;
+    } else if (block.audio.type === "file" && block.audio.file?.url) {
+      audioUrl = block.audio.file.url;
+    }
+
+    if (audioUrl) {
+      return {
+        type: "audio",
+        attrs: {
+          src: audioUrl,
+        },
+      };
+    } else {
+      return null;
+    }
+  }
+
+  if (isBlockType(block, "table_of_contents") && block.table_of_contents) {
+    return {
+      type: "tableOfContents",
+    };
+  }
+
+  if (isBlockType(block, "column_list") && block.column_list) {
+    return {
+      type: "columns",
+      content: block.children
+        ? notionToTiptap(block.children).content || []
+        : [],
+    };
+  }
+
+  if (isBlockType(block, "column") && block.column) {
+    return {
+      type: "column",
+      attrs: {
+        width: block.column.width_ratio || 0.5,
+      },
+      content: block.children
+        ? notionToTiptap(block.children).content || []
+        : [],
+    };
+  }
+
+  if (isBlockType(block, "file") && block.file) {
+    const url =
+      block.file.type === "file"
+        ? block.file.file?.url
+        : block.file.external?.url;
+    const title = block.file.name || "Untitled File";
+
+    if (url) {
+      return {
+        type: "file",
+        attrs: { src: url, title },
+      };
+    }
+  }
+
+  if (isBlockType(block, "bookmark") && block.bookmark) {
+    if (block.bookmark.url) {
+      const captionNodes = richTextToTiptap(block.bookmark.caption);
+      return {
+        type: "bookmark",
+        attrs: { url: block.bookmark.url },
+        content: captionNodes.length
+          ? [
+              {
+                type: "paragraph",
+                content: captionNodes,
+              },
+            ]
+          : undefined,
+      };
+    }
+  }
+
+  if (isBlockType(block, "breadcrumb") && block.breadcrumb) {
+    // return {
+    //   type: "breadcrumb",
+    // };
+    return null;
+  }
+
+  if (isBlockType(block, "equation") && block.equation) {
+    return {
+      type: "codeBlock",
+      attrs: { language: "latex" },
+      content: [{ type: "text", text: block.equation.expression }],
+    };
+  }
+
+  if (isBlockType(block, "child_database") && block.child_database) {
+    return {
+      type: "codeBlock",
+      attrs: { language: "json" },
+      content: [
+        {
+          type: "text",
+          text: `// Unsupported block type: ${block.type} - ${block.child_database.title}`,
+        },
+      ],
+    };
   }
 
   if (IN_DEV) {

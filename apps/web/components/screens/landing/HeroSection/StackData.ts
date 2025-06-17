@@ -163,12 +163,6 @@ export const stacks: StackConfig[] = [
     type: "software",
   },
   {
-    id: "trello",
-    name: "Trello",
-    img_url: "https://cdn.svgporn.com/logos/trello.svg",
-    type: "software",
-  },
-  {
     id: "puppeteer",
     name: "Puppeteer",
     img_url: "https://cdn.svgporn.com/logos/puppeteer.svg",

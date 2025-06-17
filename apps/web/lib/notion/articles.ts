@@ -2,7 +2,7 @@ import { NotionClient } from "@microfox/notion";
 import { cache } from "react";
 
 const client = new NotionClient({
-  auth: process.env.NEXT_PUBLIC_NOTION_BOT_TOKEN || "",
+  auth: process.env.NOTION_BOT_TOKEN || "",
 });
 
 // Cache the blocks fetching function

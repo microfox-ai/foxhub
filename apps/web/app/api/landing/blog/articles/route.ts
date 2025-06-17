@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { NotionClient } from "@microfox/notion";
 
-const client = new NotionClient({
-  auth: process.env.NEXT_PUBLIC_NOTION_BOT_TOKEN || "",
-});
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -19,6 +15,10 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
+
+    const client = new NotionClient({
+      auth: process.env.NOTION_BOT_TOKEN || "",
+    });
 
     const pages = await client.databases.query({
       database_id: databaseId,

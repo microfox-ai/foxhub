@@ -151,17 +151,23 @@ const DeployTrigger = () => {
       label: "Deploy to Staging",
       shortLabel: "Staging",
       color: "border-blue-600 text-blue-600",
-    }
-  ];
-
-  if (IN_DEV) {
-    deploymentOptions.push({
+    },
+    {
       value: "local",
       label: "Deploy to Local",
       shortLabel: "Local",
       color: "border-yellow-600 text-yellow-600",
-    });
-  }
+    }, // TODO: remove this from prod
+  ];
+
+  // if (IN_DEV) {
+  //   deploymentOptions.push({
+  //     value: "local",
+  //     label: "Deploy to Local",
+  //     shortLabel: "Local",
+  //     color: "border-yellow-600 text-yellow-600",
+  //   });
+  // }
 
   return (
     <DropdownMenu>

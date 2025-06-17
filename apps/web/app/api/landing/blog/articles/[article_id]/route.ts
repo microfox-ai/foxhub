@@ -1,29 +1,8 @@
 import { NextResponse } from "next/server";
-import { NotionClient } from "@microfox/notion";
+import { getArticleData } from "@/lib/notion/articles";
 
-const client = new NotionClient({
-  auth: process.env.NEXT_PUBLIC_NOTION_BOT_TOKEN || "",
-});
-
-async function getBlocksWithChildren(blockId: string): Promise<any[]> {
-  const blocksResponse = await client.blocks.children.list({
-    block_id: blockId,
-    page_size: 100,
-  });
-  const blocks = blocksResponse.results;
-
-  const blocksWithChildren = await Promise.all(
-    blocks.map(async (block: any) => {
-      if (block.has_children) {
-        const children = await getBlocksWithChildren(block.id);
-        return { ...block, children };
-      }
-      return block;
-    })
-  );
-
-  return blocksWithChildren;
-}
+// Revalidate every 24 hours (86400 seconds)
+export const revalidate = 5 * 60; //* 60 //* 24;
 
 export async function GET(
   request: Request,
@@ -39,16 +18,20 @@ export async function GET(
       );
     }
 
-    const page = await client.pages.retrieve({
-      page_id: article_id,
-    });
+    const { page, content } = await getArticleData(article_id);
 
-    const content = await getBlocksWithChildren(article_id);
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       page,
       content,
     });
+
+    // Add cache headers
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=3600, stale-while-revalidate=86400"
+    );
+
+    return response;
   } catch (error) {
     console.error("Error fetching Notion page:", error);
     return NextResponse.json(

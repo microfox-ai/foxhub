@@ -132,3 +132,31 @@
 .ProseMirror div[data-type="details-content"] {
   margin-left: 1.5rem;
 }
+
+.ProseMirror .columns {
+  display: flex;
+  gap: 1rem;
+}
+
+.ProseMirror .column {
+  flex: 1;
+  padding: 0.5rem;
+}
+
+.ProseMirror [data-type="file"] {
+  background: #f3f3f3;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  margin: 0.5rem 0;
+  display: block;
+}
+
+.ProseMirror [data-type="file"] a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.ProseMirror audio {
+  width: 100%;
+  margin: 1rem 0;
+}

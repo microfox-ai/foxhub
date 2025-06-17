@@ -16,6 +16,14 @@ import { Color } from "@tiptap/extension-color";
 import { Details } from "@/components/common/Tiptap/extensions/Details";
 import { DetailsSummary } from "@/components/common/Tiptap/extensions/DetailsSummary";
 import { DetailsContent } from "@/components/common/Tiptap/extensions/DetailsContent";
+import { TableOfContents } from "@/components/common/Tiptap/extensions/TableOfContents";
+import { Youtube } from "@/components/common/Tiptap/extensions/Youtube";
+import { VideoNode } from "@/components/common/Tiptap/extensions/VideoNode";
+import { Columns } from "@/components/common/Tiptap/extensions/Columns";
+import { Column } from "@/components/common/Tiptap/extensions/Column";
+import { File } from "@/components/common/Tiptap/extensions/File";
+import { Audio } from "@/components/common/Tiptap/extensions/Audio";
+import { Bookmark } from "@/components/common/Tiptap/extensions/Bookmark";
 
 export function useNotionTiptap(blocks: NotionBlock[]) {
   const editor = useEditor({
@@ -51,6 +59,14 @@ export function useNotionTiptap(blocks: NotionBlock[]) {
       Details,
       DetailsSummary,
       DetailsContent,
+      TableOfContents,
+      Youtube,
+      VideoNode,
+      Columns,
+      Column,
+      File,
+      Audio,
+      Bookmark,
       UniqueId.configure({
         types: ["heading"],
         generateID: (node: any) => {

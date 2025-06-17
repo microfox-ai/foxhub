@@ -1,15 +1,12 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import PageHero from '../../../components/screens/policies/PageHero';
-import PromoImageSection from '../../../components/screens/policies/PromoImageSection';
-import { LandingLayout } from '@/components/screens/landing/LandingLayout';
+import PageHero from '@/components/screens/policies/PageHero';
 import FooterCtaSection from '@/components/screens/landing/FooterCTASection/FooterCtaSection';
 
 const TermsAndConditions = () => {
   return (
-    <LandingLayout>
+    <>
       <div className="min-h-screen mt-20 bg-[#FAFAFA]">
         <PageHero
           title="Terms and Conditions"
@@ -257,7 +254,7 @@ const TermsAndConditions = () => {
 
         <FooterCtaSection />
       </div>
-    </LandingLayout>
+    </>
   );
 };
 

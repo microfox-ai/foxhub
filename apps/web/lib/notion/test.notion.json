@@ -1,0 +1,4769 @@
+[
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80dd-83ad-e7f6e36a2d1d",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:05:00.000Z",
+    "last_edited_time": "2025-06-16T23:05:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "table_of_contents",
+    "table_of_contents": {
+      "color": "gray"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8059-bd8f-ef27faa8c7df",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:05:00.000Z",
+    "last_edited_time": "2025-06-16T23:05:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-800a-8081-f16d3e2ad285",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_3",
+    "heading_3": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "What is Microfox?",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "What is Microfox?",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-806f-b839-e44bb3e44c51",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-16T22:21:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox is a ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox is a ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "startup assistant designed to save founders time and improve startup productivity",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "startup assistant designed to save founders time and improve startup productivity",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". It is built to ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". It is built to ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "automate and execute tasks across platforms, AI agents, and AI tools",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "automate and execute tasks across platforms, AI agents, and AI tools",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". Unlike traditional automation tools, Microfox can ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". Unlike traditional automation tools, Microfox can ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "build custom automations through dynamic code generation with just a single prompt",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "build custom automations through dynamic code generation with just a single prompt",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". Our entire product is built by our two senior tech founders: Subhakar, the tech lead on the full stack front, and Pramod, the AI lead with research expertise.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". Our entire product is built by our two senior tech founders: Subhakar, the tech lead on the full stack front, and Pramod, the AI lead with research expertise.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8029-8b0e-f0caa9fda27e",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:38:00.000Z",
+    "last_edited_time": "2025-06-16T22:38:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "divider",
+    "divider": {}
+  },
+  {
+    "object": "block",
+    "id": "ed0fa297-bc9d-4ffc-a355-77f876b8fefd",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:21:00.000Z",
+    "last_edited_time": "2025-06-16T22:24:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_2",
+    "heading_2": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "What Microfox Does For You",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "What Microfox Does For You",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "62f5c832-6710-4d46-ac5b-4ed918a3aa5f",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:21:00.000Z",
+    "last_edited_time": "2025-06-16T22:38:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox focuses on helping fast-moving startups by addressing the ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox focuses on helping fast-moving startups by addressing the ",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-804f-8198-ce2c418888b3",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:39:00.000Z",
+    "last_edited_time": "2025-06-16T22:39:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "quote",
+    "quote": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "“massive need for a faster, simpler way to automate routine digital work\"",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "“massive need for a faster, simpler way to automate routine digital work\"",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80c7-8b3c-dc060ee88dd6",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:21:00.000Z",
+    "last_edited_time": "2025-06-16T22:21:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-806d-8417-c2854da0abf4",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:21:00.000Z",
+    "last_edited_time": "2025-06-16T22:22:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": true,
+    "archived": false,
+    "in_trash": false,
+    "type": "callout",
+    "callout": {
+      "rich_text": [],
+      "icon": {
+        "type": "emoji",
+        "emoji": "💡"
+      },
+      "color": "gray_background"
+    },
+    "children": [
+      {
+        "object": "block",
+        "id": "c678f9cd-45a6-4884-add5-078d48a6e235",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-806d-8417-c2854da0abf4"
+        },
+        "created_time": "2025-06-16T22:22:00.000Z",
+        "last_edited_time": "2025-06-16T22:22:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "bulleted_list_item",
+        "bulleted_list_item": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "Saves Time:",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "Saves Time:",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": " Automates repetitive micro-tasks and workflows.",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": " Automates repetitive micro-tasks and workflows.",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      },
+      {
+        "object": "block",
+        "id": "d6bcdef3-1b60-464b-989e-82f3dec7f46a",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-806d-8417-c2854da0abf4"
+        },
+        "created_time": "2025-06-16T22:22:00.000Z",
+        "last_edited_time": "2025-06-16T22:22:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "bulleted_list_item",
+        "bulleted_list_item": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "Boosts Productivity:",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "Boosts Productivity:",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": " Streamlines daily digital operations",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": " Streamlines daily digital operations",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": "12",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "12",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": ".",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": ".",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      },
+      {
+        "object": "block",
+        "id": "d0a7b0ac-1cbb-445a-8a53-ed797552f3f5",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-806d-8417-c2854da0abf4"
+        },
+        "created_time": "2025-06-16T22:22:00.000Z",
+        "last_edited_time": "2025-06-16T22:22:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "bulleted_list_item",
+        "bulleted_list_item": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "Simplifies Automation:",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "Simplifies Automation:",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": " Builds custom code from natural language prompts, no manual coding required",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": " Builds custom code from natural language prompts, no manual coding required",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      },
+      {
+        "object": "block",
+        "id": "10a648cf-d1cb-46f9-9d49-a8da84017021",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-806d-8417-c2854da0abf4"
+        },
+        "created_time": "2025-06-16T22:22:00.000Z",
+        "last_edited_time": "2025-06-16T22:22:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "bulleted_list_item",
+        "bulleted_list_item": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "Adapts and Learns:",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "Adapts and Learns:",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": " Workflows self-evolve and self-heal.",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": " Workflows self-evolve and self-heal.",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      },
+      {
+        "object": "block",
+        "id": "3b6a1937-9097-435a-9a8e-c33ccff8b2a6",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-806d-8417-c2854da0abf4"
+        },
+        "created_time": "2025-06-16T22:22:00.000Z",
+        "last_edited_time": "2025-06-16T22:22:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "bulleted_list_item",
+        "bulleted_list_item": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "Cost-Effective:",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "Cost-Effective:",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": " Highly efficient AI compute due to serverless architecture.",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": " Highly efficient AI compute due to serverless architecture.",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      }
+    ]
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80cb-ad48-e8f807b7f60c",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:24:00.000Z",
+    "last_edited_time": "2025-06-16T22:39:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8007-b7eb-e129ba4492ab",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:24:00.000Z",
+    "last_edited_time": "2025-06-16T22:24:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_3",
+    "heading_3": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "How Microfox Works: Automating Your Ideal Customer Profiles (ICPs)",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "How Microfox Works: Automating Your Ideal Customer Profiles (ICPs)",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8037-8686-ef20e10e17b5",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:25:00.000Z",
+    "last_edited_time": "2025-06-16T22:25:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "9055d393-80ad-4457-b334-b9d062e0d3b8",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:25:00.000Z",
+    "last_edited_time": "2025-06-16T22:25:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox is currently in a beta testing phase, focusing on refining its product for public launch on June 15, 2025. One of its core initial applications is automating the identification and generation of Ideal Customer Profiles (ICPs).",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox is currently in a beta testing phase, focusing on refining its product for public launch on June 15, 2025. One of its core initial applications is automating the identification and generation of Ideal Customer Profiles (ICPs).",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8039-8d4c-d83b7ed1a377",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:43:00.000Z",
+    "last_edited_time": "2025-06-16T22:43:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": true,
+    "archived": false,
+    "in_trash": false,
+    "type": "toggle",
+    "toggle": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Understanding Your Workflow",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Understanding Your Workflow",
+          "href": null
+        }
+      ],
+      "color": "default"
+    },
+    "children": [
+      {
+        "object": "block",
+        "id": "214fa11b-8894-80b2-988e-f1d7ed9ec18b",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-8039-8d4c-d83b7ed1a377"
+        },
+        "created_time": "2025-06-16T22:43:00.000Z",
+        "last_edited_time": "2025-06-16T22:43:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "paragraph",
+        "paragraph": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "You provide Microfox with a detailed description of your desired workflow for identifying and generating ICPs. This gathers insights into your current operations and crucial data points for target customers.",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "You provide Microfox with a detailed description of your desired workflow for identifying and generating ICPs. This gathers insights into your current operations and crucial data points for target customers.",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      }
+    ]
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-800f-92a9-eaf11b09e112",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:43:00.000Z",
+    "last_edited_time": "2025-06-16T22:43:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": true,
+    "archived": false,
+    "in_trash": false,
+    "type": "toggle",
+    "toggle": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "AI-Powered Automation",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "AI-Powered Automation",
+          "href": null
+        }
+      ],
+      "color": "default"
+    },
+    "children": [
+      {
+        "object": "block",
+        "id": "214fa11b-8894-8023-9095-ef7a025aa0f1",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-800f-92a9-eaf11b09e112"
+        },
+        "created_time": "2025-06-16T22:43:00.000Z",
+        "last_edited_time": "2025-06-16T22:43:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "paragraph",
+        "paragraph": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "Microfox uses your workflow description as a prompt. Its platform, powered by a ",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "Microfox uses your workflow description as a prompt. Its platform, powered by a ",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": "mix of models from OpenAI, Gemini, and Claude across multi-agentic workflows",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "mix of models from OpenAI, Gemini, and Claude across multi-agentic workflows",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": ", then ",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": ", then ",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": "generates custom code to automate this process",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "generates custom code to automate this process",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": ".",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": ".",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      }
+    ]
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8085-99f0-cc49c62e1b8b",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:43:00.000Z",
+    "last_edited_time": "2025-06-16T22:44:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": true,
+    "archived": false,
+    "in_trash": false,
+    "type": "toggle",
+    "toggle": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Collaborative Fine-Tuning",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Collaborative Fine-Tuning",
+          "href": null
+        }
+      ],
+      "color": "default"
+    },
+    "children": [
+      {
+        "object": "block",
+        "id": "250db7f3-d03f-431c-9dc3-d09661393946",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-8085-99f0-cc49c62e1b8b"
+        },
+        "created_time": "2025-06-16T22:44:00.000Z",
+        "last_edited_time": "2025-06-16T22:44:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "paragraph",
+        "paragraph": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "During beta, Microfox actively works with users to \"play around with the generated code to fine-tune the result\". This hands-on approach ensures the output precisely matches your unique definition of an ICP and delivers optimal accuracy.",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "During beta, Microfox actively works with users to \"play around with the generated code to fine-tune the result\". This hands-on approach ensures the output precisely matches your unique definition of an ICP and delivers optimal accuracy.",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      }
+    ]
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8001-adb6-fdc7cae21247",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:43:00.000Z",
+    "last_edited_time": "2025-06-16T22:44:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": true,
+    "archived": false,
+    "in_trash": false,
+    "type": "toggle",
+    "toggle": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Daily ICP Delivery",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Daily ICP Delivery",
+          "href": null
+        }
+      ],
+      "color": "default"
+    },
+    "children": [
+      {
+        "object": "block",
+        "id": "855bc7c4-aa34-42d9-9f73-a717689203a4",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-8001-adb6-fdc7cae21247"
+        },
+        "created_time": "2025-06-16T22:44:00.000Z",
+        "last_edited_time": "2025-06-16T22:44:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "paragraph",
+        "paragraph": {
+          "rich_text": [
+            {
+              "type": "text",
+              "text": {
+                "content": "Once fine-tuned, Microfox automates lead generation, ",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "Once fine-tuned, Microfox automates lead generation, ",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": "delivering a list of up to 100 ICPs per day",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "delivering a list of up to 100 ICPs per day",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": " directly to you. This is supported by its ",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": " directly to you. This is supported by its ",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": "serverless cloud architecture, utilizing AWS Lambda and Cloudflare Workers",
+                "link": null
+              },
+              "annotations": {
+                "bold": true,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": "serverless cloud architecture, utilizing AWS Lambda and Cloudflare Workers",
+              "href": null
+            },
+            {
+              "type": "text",
+              "text": {
+                "content": ", making it highly cost-effective for AI compute use.",
+                "link": null
+              },
+              "annotations": {
+                "bold": false,
+                "italic": false,
+                "strikethrough": false,
+                "underline": false,
+                "code": false,
+                "color": "default"
+              },
+              "plain_text": ", making it highly cost-effective for AI compute use.",
+              "href": null
+            }
+          ],
+          "color": "default"
+        }
+      },
+      {
+        "object": "block",
+        "id": "214fa11b-8894-808a-a314-eb082e40aace",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-8001-adb6-fdc7cae21247"
+        },
+        "created_time": "2025-06-16T22:44:00.000Z",
+        "last_edited_time": "2025-06-16T22:45:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": false,
+        "archived": false,
+        "in_trash": false,
+        "type": "paragraph",
+        "paragraph": {
+          "rich_text": [],
+          "color": "default"
+        }
+      }
+    ]
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8063-b06b-c07431ebffae",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:24:00.000Z",
+    "last_edited_time": "2025-06-16T22:44:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_2",
+    "heading_2": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox: A True Self-Evolving Assistant",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox: A True Self-Evolving Assistant",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8066-839c-cfa3a864cc4a",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:44:00.000Z",
+    "last_edited_time": "2025-06-16T22:44:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "975b71cc-4836-4945-8e3a-0cd3378a35cd",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:41:00.000Z",
+    "last_edited_time": "2025-06-16T22:59:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "child_database",
+    "child_database": {
+      "title": "Why Microfox? "
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80e3-b753-edf2c7c44f1b",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:02:00.000Z",
+    "last_edited_time": "2025-06-16T23:02:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "child_database",
+    "child_database": {
+      "title": ""
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-801b-a0e3-cc25e31332af",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_3",
+    "heading_3": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Our Approach: Automating Your Workflow for Daily ICPs",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Our Approach: Automating Your Workflow for Daily ICPs",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-8023-ad85-c1d6a198d00b",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "We are currently in a beta testing phase to refine our product for public launch on June 15, 2025. This collaborative process allows us to fine-tune Microfox for your specific needs. Here's how it works:",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "We are currently in a beta testing phase to refine our product for public launch on June 15, 2025. This collaborative process allows us to fine-tune Microfox for your specific needs. Here's how it works:",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-80f7-8793-d3dd1e2ba48d",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "numbered_list_item",
+    "numbered_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Understanding Your Workflow",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Understanding Your Workflow",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": You provide us with a detailed description of your desired workflow for identifying and generating Ideal Customer Profiles (ICPs). We'll gather insights into how you currently operate and what data points are crucial for your target customers [User Query].",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": You provide us with a detailed description of your desired workflow for identifying and generating Ideal Customer Profiles (ICPs). We'll gather insights into how you currently operate and what data points are crucial for your target customers [User Query].",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-80c9-a90e-faa6721195c2",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "numbered_list_item",
+    "numbered_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "AI-Powered Automation",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "AI-Powered Automation",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": We then use your workflow description as a prompt for Microfox. Our platform, powered by a mix of models from OpenAI, Gemini, and Claude across multi-agentic workflows, will ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": We then use your workflow description as a prompt for Microfox. Our platform, powered by a mix of models from OpenAI, Gemini, and Claude across multi-agentic workflows, will ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "generate custom code to automate this process",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "generate custom code to automate this process",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". This means you don't need to understand technical workflows or logic; you just ask, and Microfox builds it.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". This means you don't need to understand technical workflows or logic; you just ask, and Microfox builds it.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-80dd-9e8c-d55c149c451e",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "numbered_list_item",
+    "numbered_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Collaborative Fine-Tuning",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Collaborative Fine-Tuning",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": As a base-level prototype, we are actively working with beta users to test and refine the product. We will ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": As a base-level prototype, we are actively working with beta users to test and refine the product. We will ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "\"play around with the generated code to fine-tune the result\"",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "\"play around with the generated code to fine-tune the result\"",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " [User Query] to ensure the automation precisely matches your requirements and delivers optimal accuracy. This hands-on approach ensures that the output is tailored to your unique definition of an ICP.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": " [User Query] to ensure the automation precisely matches your requirements and delivers optimal accuracy. This hands-on approach ensures that the output is tailored to your unique definition of an ICP.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-80c8-b029-ce4d2ff44220",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "numbered_list_item",
+    "numbered_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Daily ICP Delivery",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Daily ICP Delivery",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": Once fine-tuned, Microfox will ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": Once fine-tuned, Microfox will ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "automate the lead generation process, delivering a list of up to 100 ICPs per day",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "automate the lead generation process, delivering a list of up to 100 ICPs per day",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " directly to you [User Query]. Our serverless cloud architecture, utilizing AWS Lambda and Cloudflare Workers, makes our solution ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": " directly to you [User Query]. Our serverless cloud architecture, utilizing AWS Lambda and Cloudflare Workers, makes our solution ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "highly cost-effective for ai computer use and compute efficiency",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "highly cost-effective for ai computer use and compute efficiency",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ".",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ".",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8008-9468-d160a3337f41",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:04:00.000Z",
+    "last_edited_time": "2025-06-16T23:05:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "child_database",
+    "child_database": {
+      "title": "New form"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-803d-a728-df89d43b91c3",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_3",
+    "heading_3": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Why Microfox is Different: A True Assistant that Evolves",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Why Microfox is Different: A True Assistant that Evolves",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-8005-a6a9-f2325a8af8dc",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "While competitors like Zapier, n8n, Pipedream, and even human virtual assistants offer automation, Microfox stands out with its unique capabilities and vision:",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "While competitors like Zapier, n8n, Pipedream, and even human virtual assistants offer automation, Microfox stands out with its unique capabilities and vision:",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-80ee-a860-c837dde11c9a",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "bulleted_list_item",
+    "bulleted_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Dynamic Code Generation",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Dynamic Code Generation",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": Unlike platforms that rely on pre-built integrations or require manual coding, Microfox's AI can ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": Unlike platforms that rely on pre-built integrations or require manual coding, Microfox's AI can ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "write custom code in real-time based on natural language prompts",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "write custom code in real-time based on natural language prompts",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". This is powered by agents like \"BuildFox,\" which generates automation code, and \"PackageFox,\" which can write integration packages by reading documentation, rapidly expanding platform support real-time.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". This is powered by agents like \"BuildFox,\" which generates automation code, and \"PackageFox,\" which can write integration packages by reading documentation, rapidly expanding platform support real-time.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-803e-bf83-c01015996235",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "bulleted_list_item",
+    "bulleted_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Self-Evolving Workflows",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Self-Evolving Workflows",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": The real breakthrough with Microfox is that our ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": The real breakthrough with Microfox is that our ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "workflows self-evolve using data and usage patterns",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "workflows self-evolve using data and usage patterns",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". For instance, if a workflow breaks due to an API change, ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". For instance, if a workflow breaks due to an API change, ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox can self-heal by rewriting the code",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox can self-heal by rewriting the code",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " using PackageFox’s dynamic documentation parsing. This makes Microfox less of a \"tool\" and more of a ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": " using PackageFox’s dynamic documentation parsing. This makes Microfox less of a \"tool\" and more of a ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "true assistant that learns, adapts, and grows with your business",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "true assistant that learns, adapts, and grows with your business",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ", aiming to become smarter and more capable over time, just like a human employee, but without the cost or constraints.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ", aiming to become smarter and more capable over time, just like a human employee, but without the cost or constraints.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-80e6-a461-caf779712e86",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "bulleted_list_item",
+    "bulleted_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Domain Expertise",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Domain Expertise",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": Our founders possess deep domain expertise, with Subhakar having over a decade of experience building and advising tech for edge-tech companies, and Pramod with a decade of applied AI research experience, including work with agent workflows and large language models. We chose this idea because we saw firsthand how much time founders lose to repetitive micro-tasks and tool learning, identifying a ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": Our founders possess deep domain expertise, with Subhakar having over a decade of experience building and advising tech for edge-tech companies, and Pramod with a decade of applied AI research experience, including work with agent workflows and large language models. We chose this idea because we saw firsthand how much time founders lose to repetitive micro-tasks and tool learning, identifying a ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "\"massive need for a faster, simpler way to automate routine digital work—especially for fast-moving startups\"",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "\"massive need for a faster, simpler way to automate routine digital work—especially for fast-moving startups\"",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ".",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ".",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "212fa11b-8894-80d2-b693-f7fe100ebc97",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-14T21:42:00.000Z",
+    "last_edited_time": "2025-06-14T21:42:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "bulleted_list_item",
+    "bulleted_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Future Vision",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Future Vision",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ": Our ultimate vision is to ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ": Our ultimate vision is to ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "replace low-level operations workforce in startup teams across the world by December 2025",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "replace low-level operations workforce in startup teams across the world by December 2025",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". We believe our usage-based pricing model, where customers pay for active workflow minutes, offers ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". We believe our usage-based pricing model, where customers pay for active workflow minutes, offers ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "transparent and scalable automation",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "transparent and scalable automation",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " that is far more affordable than competitors for similar task volumes.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": " that is far more affordable than competitors for similar task volumes.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8025-ac61-cab295f36d00",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:36:00.000Z",
+    "last_edited_time": "2025-06-16T22:36:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8009-b391-e9e055daa1bc",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:36:00.000Z",
+    "last_edited_time": "2025-06-16T22:36:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80a2-920b-ed18b5500eea",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:36:00.000Z",
+    "last_edited_time": "2025-06-16T22:36:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_3",
+    "heading_3": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "See Microfox in Action!",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "See Microfox in Action!",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8065-ac96-f6af836f7647",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:36:00.000Z",
+    "last_edited_time": "2025-06-16T22:37:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "video",
+    "video": {
+      "caption": [],
+      "type": "external",
+      "external": {
+        "url": "https://www.youtube.com/watch?v=IbETPF_Ojcs&t=324s"
+      }
+    }
+  },
+  {
+    "object": "block",
+    "id": "6bec3319-cbac-4784-8f72-dbdff772eb6e",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:37:00.000Z",
+    "last_edited_time": "2025-06-16T22:37:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Want to see Microfox in action?",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Want to see Microfox in action?",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "05c9dea9-4612-4716-bd21-a5f02d3581cc",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:37:00.000Z",
+    "last_edited_time": "2025-06-16T22:37:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "bulleted_list_item",
+    "bulleted_list_item": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Demo Video:",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Demo Video:",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " https://microfox.app",
+            "link": {
+              "url": "https://microfox.app/"
+            }
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": " https://microfox.app",
+          "href": "https://microfox.app/"
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " (This is the company URL, but typically a demo video would be linked here as well).",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": " (This is the company URL, but typically a demo video would be linked here as well).",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "b8cbd423-fd50-43ba-8ee9-899eed4f0585",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:37:00.000Z",
+    "last_edited_time": "2025-06-16T22:37:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Product Link (Beta): ",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Product Link (Beta): ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "https://staging.microfox.app",
+            "link": {
+              "url": "https://staging.microfox.app/"
+            }
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "https://staging.microfox.app",
+          "href": "https://staging.microfox.app/"
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "25bbd423-ce92-4304-a382-2eafb2a00c0f",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:37:00.000Z",
+    "last_edited_time": "2025-06-16T22:37:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-802a-b640-eba21a4512f1",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:45:00.000Z",
+    "last_edited_time": "2025-06-16T22:45:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_3",
+    "heading_3": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Meet The Founders",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Meet The Founders",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-804f-ab17-fee98eb0c247",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:45:00.000Z",
+    "last_edited_time": "2025-06-16T22:45:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": true,
+    "archived": false,
+    "in_trash": false,
+    "type": "column_list",
+    "column_list": {},
+    "children": [
+      {
+        "object": "block",
+        "id": "214fa11b-8894-80f4-8ac4-d4421a67929c",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-804f-ab17-fee98eb0c247"
+        },
+        "created_time": "2025-06-16T22:45:00.000Z",
+        "last_edited_time": "2025-06-16T22:46:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": true,
+        "archived": false,
+        "in_trash": false,
+        "type": "column",
+        "column": {
+          "width_ratio": 0.5
+        },
+        "children": [
+          {
+            "object": "block",
+            "id": "214fa11b-8894-8007-92fe-cf7298023aa9",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-80f4-8ac4-d4421a67929c"
+            },
+            "created_time": "2025-06-16T22:45:00.000Z",
+            "last_edited_time": "2025-06-16T22:47:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "image",
+            "image": {
+              "caption": [],
+              "type": "file",
+              "file": {
+                "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/e732079e-2bdc-4833-b634-53cbaa43ea24/b6da4fc2-2b8e-456e-8108-9ff2f0fa4ad3/subhakar-profile-pic.jpeg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB4667P3CGRQ7%2F20250617%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250617T012727Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEID%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJHMEUCIFUkzacamtyGvjDlD5BMZgeyzoodDECdWGDeugjiym68AiEAm%2ByWGH0w%2BY8z3%2FiPedxqbAwScEhWZVzpE50fqihAY6Qq%2FwMIaRAAGgw2Mzc0MjMxODM4MDUiDFQdXmjJ4D3n4FGDSyrcA%2FeUzEGKvByMUzAzeiuSMVbrb%2BGoZz4m%2B9EBXRz6D1QZ31nlPPc9BvGJBR7Kkb%2Fwy2rA5w0Uc7OUA%2Bu48ekaJSKOYbDR68a74aM%2FklVDvpFeMf%2F4iThAJfXTT25L3O4xSh%2F7dXJWKp9SWGApMApzufRSGiQFStk2DRdBt102%2FHmKVOktIwhSILVrG%2FT1xqBnXqUT4X0jz7gWjYKbNmIUQTenpUZY0qCRW0do9%2FpFPb%2FUF8%2BNNdQjLtiIFXNlD7tx20nJmlEasE%2BESXVNrGb6WzuLCotNZzYp%2FJLBzhiWfk4%2FA%2Fblv%2BvsLVlESM%2F%2BIRfBbUuhEihqf6CXuc%2Fxn1KAwdJ3%2Bznf9kx97BN%2F1L4NgFqhOAua0MG0XlIspC6je4IavfJZPz8CN3lrepdm4NekjScRiiFgb4KqUUjbURdMySVCKisAzhMkxPlvjoJ6ATviggh3VHz1vtzobbi4kmVnj%2BB8rDOekWAOFv817Lu%2F4FwqUw3%2F9pRk50fX3o%2BnJaILm%2FTz%2BqjrlyHlWJs%2FKX2xvrd1apdOmjIW7AGDRdi3PWWlUZ7NbHntrU%2B0PZHAJ5gq%2FR%2BQntozSUpSkHhELmOUqXtgeVSscJaPZ0Y6u7kjZAzidwU04Oh%2BEMKmWrfqMNrewsIGOqUBN0ghchmM%2F5rVxkbD%2B7BHaCkORhLoUP6DJbpr%2F9X9moXTBGykMZO2HAVNch6c6WGHRV%2FUK1%2BF4TgnXXKHlldbePyLGrdayFKF6RTzFdejL1VjXKZ6QVt1TFF8smBfAP8UgQW0vx7VP0CuBLmVLf%2BUgCt5vopwSVhxVFiAJeeBZWY8%2B6gGLi6RRokhT6U65jy%2FruQSj3zo4GbM1yZD0XgSyDkxph3o&X-Amz-Signature=49719e3352ef19e6a2bc71c326c6d77760e686ce9ceb5576f0f269c78de9bcad&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                "expiry_time": "2025-06-17T02:27:27.057Z"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "object": "block",
+        "id": "214fa11b-8894-80f8-96be-ebe0d25c4312",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-804f-ab17-fee98eb0c247"
+        },
+        "created_time": "2025-06-16T22:45:00.000Z",
+        "last_edited_time": "2025-06-16T22:46:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": true,
+        "archived": false,
+        "in_trash": false,
+        "type": "column",
+        "column": {
+          "width_ratio": 0.5
+        },
+        "children": [
+          {
+            "object": "block",
+            "id": "214fa11b-8894-803d-b906-d42d265aa1de",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-80f8-96be-ebe0d25c4312"
+            },
+            "created_time": "2025-06-16T22:45:00.000Z",
+            "last_edited_time": "2025-06-16T22:47:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "image",
+            "image": {
+              "caption": [],
+              "type": "file",
+              "file": {
+                "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/e732079e-2bdc-4833-b634-53cbaa43ea24/7e702860-3c5a-411f-9890-b74ff7e34ca2/pramod-profile.jpeg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB4665KUIKREV%2F20250617%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250617T012722Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEID%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJIMEYCIQCN9AVzC1FeA93jkoPTpkM2AyvLd3nv3kliEWovVlNZ%2BgIhANdxj7CEmMedJS6YaAzHqkTTAnf3gTJJztmYbQac60zyKv8DCGkQABoMNjM3NDIzMTgzODA1IgyR4RvxuIETz%2BJcLPEq3AMJCHNf4RggbPUFfNdHU75zuecp2ESfg0L6zlnvU9aVMq2DmF%2FVIQyhyBamxOhDAiVMrGrhO4wd%2FfZcl3S2noTAlVquGQw9bOPM7uKyJs0qWPTU%2BV2Zm27MyOnmywoqnpvzRrccrSRD0kxBfBeBDjTnfS3t74rE%2FfAxJCLXZQyKZee3v4Mwe3oc1VPR4Zn%2BMrTpICe1sNh%2BlSjrfMMd87rWlaeIjXWlK7TIPvweb2vhDmCQzbz1arC35Za9C4LXe8DWXLnRKO%2Bo6PIQUQcakVWoptR3UjcjB8gMP%2FdiBbYyiwcIshKy4Ny%2FKWaX2BWuXPNjOsXQLQxyCuz3feD3Yt1wdT4cOPfKotveFKKGINtyZzIxaNF2uXsZF%2F1GZBLTvL5EIViqBY6MCyuLbcVAwnsHcNzlueafE1bJAkLqZ5Gwza5fSmGzNk53hyzFYSIKRJV9bQpzPC9vGxuZhxLJz1bXIV5lS5tjOch4lM7S%2Bcjmiurzk%2FZ2WARKIWqePvNhBcea7%2BZV4sdKZgdXrVJn1YqKJxzBSO62bE7M7jnwTSw8d2KL7%2B2A1Uwcz2rrzqj3i4me3pD%2Fn8MVVBrMh6mXkUJ9vb9w%2BwMK8kCdSdZbWrCrGXWjXzLl%2FNMqZfYelzCo3sLCBjqkAaoiXaJrTalklLyqHzDevpth1lSqABfxJcHXl%2Bc%2BIksHWFf7FTWrRoTcn8xyrEvjp17KBrybXErtGoC3AOMq4ITyVtQspZTOM4bzADijHEgWiUB0LHGLZs%2FRmH7Ci4txAw3o7RHIxiwpbAxtDGtoAqWYVJQnzposbLZbAgxrH%2F2w2gNBgzfWZQ48fnRqUoUc7YWw2nGkgs1NYntaE7ERzS97oxpx&X-Amz-Signature=763c37fd84c6561dec0a2d47b881a78735f3c78bdcb19e3064fed3f332295864&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                "expiry_time": "2025-06-17T02:27:22.829Z"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-804e-a5a1-c7582f13fc1e",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:47:00.000Z",
+    "last_edited_time": "2025-06-16T22:47:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": true,
+    "archived": false,
+    "in_trash": false,
+    "type": "column_list",
+    "column_list": {},
+    "children": [
+      {
+        "object": "block",
+        "id": "214fa11b-8894-80d5-b030-f5774824a0ff",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-804e-a5a1-c7582f13fc1e"
+        },
+        "created_time": "2025-06-16T22:47:00.000Z",
+        "last_edited_time": "2025-06-16T22:57:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": true,
+        "archived": false,
+        "in_trash": false,
+        "type": "column",
+        "column": {
+          "width_ratio": 0.5
+        },
+        "children": [
+          {
+            "object": "block",
+            "id": "214fa11b-8894-8013-ac91-d7a8ddcb82d4",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-80d5-b030-f5774824a0ff"
+            },
+            "created_time": "2025-06-16T22:47:00.000Z",
+            "last_edited_time": "2025-06-16T22:49:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "paragraph",
+            "paragraph": {
+              "rich_text": [
+                {
+                  "type": "text",
+                  "text": {
+                    "content": "Subhakar Tikkireddy (CEO, Tech & Design Lead)",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": true,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "blue"
+                  },
+                  "plain_text": "Subhakar Tikkireddy (CEO, Tech & Design Lead)",
+                  "href": null
+                }
+              ],
+              "color": "default"
+            }
+          },
+          {
+            "object": "block",
+            "id": "d5804c9e-566d-4eb9-9005-59e57830fe22",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-80d5-b030-f5774824a0ff"
+            },
+            "created_time": "2025-06-16T22:48:00.000Z",
+            "last_edited_time": "2025-06-16T22:48:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "paragraph",
+            "paragraph": {
+              "rich_text": [
+                {
+                  "type": "text",
+                  "text": {
+                    "content": "He focuses on the full stack, infrastructure, and design side. Subhakar has ",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": false,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "default"
+                  },
+                  "plain_text": "He focuses on the full stack, infrastructure, and design side. Subhakar has ",
+                  "href": null
+                },
+                {
+                  "type": "text",
+                  "text": {
+                    "content": "over a decade of experience building and advising tech for edge-tech, web, AI, and blockchain companies",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": true,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "default"
+                  },
+                  "plain_text": "over a decade of experience building and advising tech for edge-tech, web, AI, and blockchain companies",
+                  "href": null
+                },
+                {
+                  "type": "text",
+                  "text": {
+                    "content": ", and has handled complex integrations across dozens of platforms. He identified the need for Microfox firsthand from working with startups.",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": false,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "default"
+                  },
+                  "plain_text": ", and has handled complex integrations across dozens of platforms. He identified the need for Microfox firsthand from working with startups.",
+                  "href": null
+                }
+              ],
+              "color": "default"
+            }
+          },
+          {
+            "object": "block",
+            "id": "214fa11b-8894-804c-9a64-db40909dbdf1",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-80d5-b030-f5774824a0ff"
+            },
+            "created_time": "2025-06-16T22:57:00.000Z",
+            "last_edited_time": "2025-06-16T22:58:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "bookmark",
+            "bookmark": {
+              "caption": [],
+              "url": "https://www.linkedin.com/in/s-t-r/"
+            }
+          }
+        ]
+      },
+      {
+        "object": "block",
+        "id": "214fa11b-8894-8092-b5c9-e8427a96b8e3",
+        "parent": {
+          "type": "block_id",
+          "block_id": "214fa11b-8894-804e-a5a1-c7582f13fc1e"
+        },
+        "created_time": "2025-06-16T22:47:00.000Z",
+        "last_edited_time": "2025-06-16T22:58:00.000Z",
+        "created_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "last_edited_by": {
+          "object": "user",
+          "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+        },
+        "has_children": true,
+        "archived": false,
+        "in_trash": false,
+        "type": "column",
+        "column": {
+          "width_ratio": 0.5
+        },
+        "children": [
+          {
+            "object": "block",
+            "id": "214fa11b-8894-8086-aca2-f755fb3dbb06",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-8092-b5c9-e8427a96b8e3"
+            },
+            "created_time": "2025-06-16T22:47:00.000Z",
+            "last_edited_time": "2025-06-16T22:50:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "paragraph",
+            "paragraph": {
+              "rich_text": [
+                {
+                  "type": "text",
+                  "text": {
+                    "content": "Pramod Geddam (AI Engineer, AI & Research Lead)",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": true,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "blue"
+                  },
+                  "plain_text": "Pramod Geddam (AI Engineer, AI & Research Lead)",
+                  "href": null
+                }
+              ],
+              "color": "default"
+            }
+          },
+          {
+            "object": "block",
+            "id": "59edb89f-870e-4e0e-a29e-e7fc77508fd3",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-8092-b5c9-e8427a96b8e3"
+            },
+            "created_time": "2025-06-16T22:48:00.000Z",
+            "last_edited_time": "2025-06-16T22:48:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "paragraph",
+            "paragraph": {
+              "rich_text": [
+                {
+                  "type": "text",
+                  "text": {
+                    "content": "He focuses on AI and coding agents. Pramod has a ",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": false,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "default"
+                  },
+                  "plain_text": "He focuses on AI and coding agents. Pramod has a ",
+                  "href": null
+                },
+                {
+                  "type": "text",
+                  "text": {
+                    "content": "decade of applied AI research experience",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": true,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "default"
+                  },
+                  "plain_text": "decade of applied AI research experience",
+                  "href": null
+                },
+                {
+                  "type": "text",
+                  "text": {
+                    "content": ", including work with agent workflows and large language models (LLMs), bringing the latest research to product applications. He has experience from companies like Sony India Software Center and Reflective AI.",
+                    "link": null
+                  },
+                  "annotations": {
+                    "bold": false,
+                    "italic": false,
+                    "strikethrough": false,
+                    "underline": false,
+                    "code": false,
+                    "color": "default"
+                  },
+                  "plain_text": ", including work with agent workflows and large language models (LLMs), bringing the latest research to product applications. He has experience from companies like Sony India Software Center and Reflective AI.",
+                  "href": null
+                }
+              ],
+              "color": "default"
+            }
+          },
+          {
+            "object": "block",
+            "id": "214fa11b-8894-8053-a01d-eed12f8025e6",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-8092-b5c9-e8427a96b8e3"
+            },
+            "created_time": "2025-06-16T22:58:00.000Z",
+            "last_edited_time": "2025-06-16T22:58:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "paragraph",
+            "paragraph": {
+              "rich_text": [],
+              "color": "default"
+            }
+          },
+          {
+            "object": "block",
+            "id": "214fa11b-8894-8027-965d-ea00b3d6dd29",
+            "parent": {
+              "type": "block_id",
+              "block_id": "214fa11b-8894-8092-b5c9-e8427a96b8e3"
+            },
+            "created_time": "2025-06-16T22:58:00.000Z",
+            "last_edited_time": "2025-06-16T22:58:00.000Z",
+            "created_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "last_edited_by": {
+              "object": "user",
+              "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+            },
+            "has_children": false,
+            "archived": false,
+            "in_trash": false,
+            "type": "bookmark",
+            "bookmark": {
+              "caption": [],
+              "url": "https://www.linkedin.com/in/pramod-g/"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8040-a94e-c4e019d09d9c",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:28:00.000Z",
+    "last_edited_time": "2025-06-16T22:48:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Subhakar and Pramod studied at the ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Subhakar and Pramod studied at the ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "same college (IIT)",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "same college (IIT)",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " and their ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": " and their ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "friendship goes back 10 years",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "friendship goes back 10 years",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ", during which they have built many things together. The entire product is primarily built by these two founders.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ", during which they have built many things together. The entire product is primarily built by these two founders.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-807d-887b-ec5f562d3891",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:48:00.000Z",
+    "last_edited_time": "2025-06-16T22:48:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "d3880e63-dbc7-47ae-9802-ba16d49bea63",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:48:00.000Z",
+    "last_edited_time": "2025-06-16T22:48:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_2",
+    "heading_2": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "📈 Future Vision & Traction",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "📈 Future Vision & Traction",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "86780604-1820-4f0e-b0b5-81f3c11b8a89",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:48:00.000Z",
+    "last_edited_time": "2025-06-16T22:57:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox has been in development for 2 months, with a base-level prototype completed. The public launch of the Microfox app is planned for ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox has been in development for 2 months, with a base-level prototype completed. The public launch of the Microfox app is planned for ",
+          "href": null
+        },
+        {
+          "type": "mention",
+          "mention": {
+            "type": "date",
+            "date": {
+              "start": "2025-06-15",
+              "end": null,
+              "time_zone": null
+            }
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "2025-06-15",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ".",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ".",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "bb5d89dc-3941-4234-9a9e-67e8c1692a20",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:48:00.000Z",
+    "last_edited_time": "2025-06-16T22:49:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "The ultimate vision for Microfox is to",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "The ultimate vision for Microfox is to",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": " ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "brown_background"
+          },
+          "plain_text": " ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "r",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "brown_background"
+          },
+          "plain_text": "r",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "eplace the low-level operations workforce in startup teams across the world by December 2025",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "orange_background"
+          },
+          "plain_text": "eplace the low-level operations workforce in startup teams across the world by December 2025",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". The company also aims to target enterprises once the product is fine-tuned. Microfox plans to be based in",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". The company also aims to target enterprises once the product is fine-tuned. Microfox plans to be based in",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "cd824387-61f6-45d2-b9d9-16d7196ba6ea",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:48:00.000Z",
+    "last_edited_time": "2025-06-16T22:49:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "San Francisco, USA",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "San Francisco, USA",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ", to directly connect with its target customers and iterate on the product more effectively.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ", to directly connect with its target customers and iterate on the product more effectively.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8005-b70f-e7417d9f7f03",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:28:00.000Z",
+    "last_edited_time": "2025-06-16T22:28:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "heading_3",
+    "heading_3": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox Development Timeline & Public Launch",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox Development Timeline & Public Launch",
+          "href": null
+        }
+      ],
+      "is_toggleable": false,
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8095-b5db-f2572d9c3f22",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:29:00.000Z",
+    "last_edited_time": "2025-06-16T22:29:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "1d1b836c-af79-432d-b1e4-7ee461cf288b",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:29:00.000Z",
+    "last_edited_time": "2025-06-16T22:29:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Microfox has been in active development for two months, with a ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Microfox has been in active development for two months, with a ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "base-level prototype already completed",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "base-level prototype already completed",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ". The product is currently undergoing beta testing to refine it for public use.",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ". The product is currently undergoing beta testing to refine it for public use.",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "788a797f-9508-4fcf-affc-20706085e8ab",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:29:00.000Z",
+    "last_edited_time": "2025-06-16T22:29:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "While you suggested a final launch around August 1st, the sources consistently state that the ",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "While you suggested a final launch around August 1st, the sources consistently state that the ",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": "public launch of the Microfox app is planned for June 15, 2025",
+            "link": null
+          },
+          "annotations": {
+            "bold": true,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "public launch of the Microfox app is planned for June 15, 2025",
+          "href": null
+        },
+        {
+          "type": "text",
+          "text": {
+            "content": ".",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": ".",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "df8e5dbc-0ca2-48fc-929f-c04fd5fc5005",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:29:00.000Z",
+    "last_edited_time": "2025-06-16T22:29:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Here's a breakdown of the development journey so far and future milestones:",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Here's a breakdown of the development journey so far and future milestones:",
+          "href": null
+        }
+      ],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-802f-a9de-d10d2438fb17",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:29:00.000Z",
+    "last_edited_time": "2025-06-16T22:29:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-801c-8b23-f9d561bd3546",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:29:00.000Z",
+    "last_edited_time": "2025-06-17T01:17:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "child_database",
+    "child_database": {
+      "title": "The Development Timeline"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-802b-b91e-cf519ebd1552",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:52:00.000Z",
+    "last_edited_time": "2025-06-16T23:00:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8063-843c-f48aaf69fcce",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:52:00.000Z",
+    "last_edited_time": "2025-06-16T22:52:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80a9-92e0-dd4eacd282c0",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:53:00.000Z",
+    "last_edited_time": "2025-06-16T22:53:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-800b-bd02-e792c71c1d3b",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:53:00.000Z",
+    "last_edited_time": "2025-06-16T22:53:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "bookmark",
+    "bookmark": {
+      "caption": [],
+      "url": "https://discord.com/invite/ha3wjN44dS"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80c8-aaf6-c1303672794a",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:53:00.000Z",
+    "last_edited_time": "2025-06-16T22:53:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-805f-8e94-da2c3f54fa9e",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:52:00.000Z",
+    "last_edited_time": "2025-06-16T22:55:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80c3-b75c-c85d13b703bf",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:52:00.000Z",
+    "last_edited_time": "2025-06-16T22:52:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "divider",
+    "divider": {}
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8042-9cff-c1357cbcea2a",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:53:00.000Z",
+    "last_edited_time": "2025-06-16T22:53:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "audio",
+    "audio": {
+      "caption": [],
+      "type": "external",
+      "external": {
+        "url": ""
+      }
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8027-bfff-f4f5cd80f144",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T22:53:00.000Z",
+    "last_edited_time": "2025-06-16T22:53:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "0920c907-ded9-40f3-a5df-aee19bc3a829"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "audio",
+    "audio": {
+      "caption": [],
+      "type": "external",
+      "external": {
+        "url": ""
+      }
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8073-8216-cc847d893a70",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:00:00.000Z",
+    "last_edited_time": "2025-06-16T23:00:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80cc-8802-f657cfbc7ac2",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:00:00.000Z",
+    "last_edited_time": "2025-06-16T23:00:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "code",
+    "code": {
+      "caption": [],
+      "rich_text": [
+        {
+          "type": "text",
+          "text": {
+            "content": "This is a code box",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "This is a code box",
+          "href": null
+        }
+      ],
+      "language": "latex"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-804b-a6ea-ec0d802a3685",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:01:00.000Z",
+    "last_edited_time": "2025-06-16T23:01:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-802b-b727-f6b017c16eee",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:00:00.000Z",
+    "last_edited_time": "2025-06-16T23:01:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "file",
+    "file": {
+      "caption": [],
+      "type": "file",
+      "file": {
+        "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/e732079e-2bdc-4833-b634-53cbaa43ea24/af51492d-7f0b-47cb-a34b-623084945b32/temp-nickTaylor.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB4665KDD6SGZ%2F20250617%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250617T012721Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEID%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJHMEUCIQC34paj%2BDrzYeVn%2BPYQnrsrvNQDwptPS2fm57JbcJs%2FCQIgU%2B5PrYOY5ZIhyleA5TUaGnT%2BkJGlor2X96kNpPEOCwUq%2FwMIaRAAGgw2Mzc0MjMxODM4MDUiDMo1O611kb1Vz1OAFSrcA6CmEAKS%2FqGcZs%2FeMu3Ddky0CTYp8QjG9ncSnrGIwLTyGLiYBVN1rkdD2iQOYawfJu2lMW1YbzT8vdaqizLzhmB8qVnqwKCIyVgT2TX%2B4KscWlC%2FgwCvWLoUxPmg9qL8SsdMyVBdlGypmiUrMsEdyNgYQRFn2Ak5%2B4pkZpxyDhdZ39sOq58aeFf9UXlJpAQP0IfbfTCodJ8rVb4GfpCbNMOR3%2F7puGgTGf0ABZYjFzI0kUtvGF0iKDkUnrC7WOazL6aFHfz1kSkujUd5HcgQdlG1oRpcw9zY%2BpXDJir4rMMzPhWqqKWgFbPUvstmy9Ljt6rliDhSzvI1TJ8wpEOhRblnIvvnzwInHSPlg9dPr0s9l%2BQXADnDz2MrNAc%2BOLi8hmzflYbYrtuJvdCDVBM4dyvs0g3Ykky1SMASYx78lqirvZ9TWTZ01Z1OaG8%2Fj9ELqAyDQOvJuADyK9AHn%2BerdwH6WESA1yUr4MJYq%2BRJUXA3PffNl1X98oLJsn88jua43mzXvaXOpknXktnFlnEeuX0nf8lzCHWzC01sODxfbU70krx5UvgxLBHv7rGMgOhTlcebraIv0ecVgWGPPbVRDBvwGfwI2KCfoW9b%2FkhONS0uFYe0KiSfssQQpGa5MPXewsIGOqUBJ6N5UOPJE5GW8yNEVLCpSZ7%2B6EqWx%2F2Fj3Xw%2BFK5nOffMOSoQpKE78k7miEXCIRdNwLsmahB63dPZIK9kSmN0p29mjJ9SuU6X4PO%2FTOVWXd%2BTcEnMBrOI6xxfXbHunxCx1irB7DUgbGbxEoEmiL%2BF2GsRVqyeAFpOoCaGSFTaBWJSx4iEi1tyJr01qdlE9V2t0oMVN%2FRsfxPef4XXxw7U3E0DP1G&X-Amz-Signature=f4dec449431973ea813c784117e635c8be115bcb0f37fc05642fc0d09931d899&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+        "expiry_time": "2025-06-17T02:27:21.799Z"
+      },
+      "name": "temp-nickTaylor.pdf"
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-80d8-ac3c-f7f6800bc009",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:02:00.000Z",
+    "last_edited_time": "2025-06-16T23:02:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "breadcrumb",
+    "breadcrumb": {}
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-808a-a259-ef1987b8c832",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:05:00.000Z",
+    "last_edited_time": "2025-06-16T23:06:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "equation",
+    "equation": {
+      "expression": " "
+    }
+  },
+  {
+    "object": "block",
+    "id": "214fa11b-8894-8016-be23-fecf332e1025",
+    "parent": {
+      "type": "page_id",
+      "page_id": "212fa11b-8894-8032-bec8-c187248b106f"
+    },
+    "created_time": "2025-06-16T23:06:00.000Z",
+    "last_edited_time": "2025-06-16T23:06:00.000Z",
+    "created_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "last_edited_by": {
+      "object": "user",
+      "id": "6eb52dc0-ee44-4ce3-8588-076f476bb538"
+    },
+    "has_children": false,
+    "archived": false,
+    "in_trash": false,
+    "type": "paragraph",
+    "paragraph": {
+      "rich_text": [],
+      "color": "default"
+    }
+  }
+]

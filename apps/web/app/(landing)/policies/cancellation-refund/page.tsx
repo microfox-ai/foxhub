@@ -1,11 +1,11 @@
 'use client';
 
 import { LandingLayout } from '@/components/screens/landing/LandingLayout';
-import PromoImageSection from '../../../components/screens/policies/PromoImageSection';
+import PromoImageSection from '@/components/screens/policies/PromoImageSection';
 
 const CancellationRefund = () => {
   return (
-    <LandingLayout>
+    <>
       <div className="max-w-3xl mt-20 mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-4xl font-bold mb-8">Cancellation and Refund Policy</h1>
         <div className="prose prose-lg">
@@ -56,7 +56,7 @@ const CancellationRefund = () => {
         </div>
       </div>
       <PromoImageSection />
-    </LandingLayout>
+    </>
   );
 }
 

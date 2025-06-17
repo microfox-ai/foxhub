@@ -24,6 +24,8 @@ import {
   Box,
   Plus,
   Loader2,
+  Filter,
+  X,
 } from "lucide-react";
 import {
   Tooltip,
@@ -46,6 +48,9 @@ import { Label } from "@/components/ui/label";
 import { PackageStatus } from "@/server/types";
 import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
 import { toast } from "sonner";
+import FooterCtaSection from "../landing/FooterCTASection/FooterCtaSection";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Interface for package data
 interface PackageData {
@@ -61,6 +66,17 @@ interface PackageData {
   documentation: string;
 }
 
+// Available package statuses for filtering
+const ALL_STATUSES: PackageStatus[] = [
+  PackageStatus.STABLE,
+  PackageStatus.SEMISTABLE,
+  PackageStatus.EXTERNAL,
+  PackageStatus.PARTIAL,
+  PackageStatus.INTERNAL,
+  PackageStatus.OAUTHCONNECTOR,
+  PackageStatus.WEBHOOKCONNECTOR,
+];
+
 // Fetcher function for SWR
 const fetcher = async (url: string) => {
   const response = await fetch(url);
@@ -72,14 +88,35 @@ const fetcher = async (url: string) => {
 
 const Status = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<PackageStatus[]>([]);
   const [requestForm, setRequestForm] = useState({
     platform: "",
     description: "",
   });
 
+  const handleStatusChange = (status: PackageStatus) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedStatuses([]);
+  };
+
+  const apiUrl = useMemo(() => {
+    const baseUrl = "/api/packages?rawContent=true";
+    if (selectedStatuses.length > 0) {
+      return `${baseUrl}&statuses=${selectedStatuses.join(",")}`;
+    }
+    return baseUrl;
+  }, [selectedStatuses]);
+
   // Use SWR for data fetching
   const { data, error, isLoading } = useSWR<{ packages: PackageData[], count: number }>(
-    "/api/packages?rawContent=true",
+    apiUrl,
     fetcher,
     {
       // Refresh data every 5 minutes
@@ -171,9 +208,9 @@ const Status = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full justify-center items-center">
-      <div className="w-full">
-        <div className="mx-auto w-full flex items-center justify-tart gap-8 mb-2 sticky top-0 bg-white/20 backdrop-blur-sm z-10 p-6">
+    <div>
+      <div className="w-full flex flex-row items-start mt-20">
+        <div className="flex flex-col items-start justify-start gap-8 mb-20 sticky top-20 bg-white/20 backdrop-blur-sm z-10 p-6 min-w-[300px]">
           <div className="flex items-center gap-2">
             <div className="relative w-6 h-6">
               <Box className="w-6 h-6" />
@@ -227,183 +264,232 @@ const Status = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <p className="text-lg">Loading package data...</p>
+          <div className="w-full">
+            <div className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Filter className="w-4 h-4" />
+                Filter by Status
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Show packages with specific statuses
+              </CardDescription>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-1">
+                {ALL_STATUSES.map((status) => (
+                  <div key={status} className="flex items-center space-x-3 p-1 rounded-md hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      id={status}
+                      checked={selectedStatuses.includes(status)}
+                      onCheckedChange={() => handleStatusChange(status)}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <label
+                      htmlFor={status}
+                      className="text-sm font-medium leading-none cursor-pointer flex-1 capitalize"
+                    >
+                      {status.toLowerCase().replace(/([A-Z])/g, ' $1').trim()}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {selectedStatuses.length > 0 && (
+                <div className="pt-2 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-2 h-8 text-muted-foreground hover:text-foreground"
+                    onClick={clearFilters}
+                  >
+                    <X className="w-3 h-3" />
+                    Clear all filters ({selectedStatuses.length})
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
-            <Info className="w-5 h-5" />
-            <p>Failed to load package data. Please try again later.</p>
-          </div>
-        ) : (
-          <>
-            <div className="rounded-md border max-w-screen-lg mx-auto overflow-y-auto max-h-[80vh]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-6">Supported Package Name</TableHead>
-                    <TableHead className="">Stats</TableHead>
-                    <TableHead>Description</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentData.map((item, index) => (
-                    <TableRow key={index} className="cursor-pointer">
-                      <TableCell>
-                        <div className="flex items-start gap-3 p-3">
-                          <img
-                            src={item.icon}
-                            alt=""
-                            className="w-10 h-10 rounded-lg"
-                          />
-                          <div className="space-y-1">
-                            <div className="font-medium">{item.title}</div>
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant={
-                                  item.status === "stable"
-                                    ? "success"
-                                    : item.status === "external"
-                                      ? "default"
-                                      : item.status === "partial"
-                                        ? "secondary"
-                                        : item.status === "oauthConnector"
-                                          ? "destructive"
-                                          : "secondary"
-                                }
-                                className={item.status === "stable" ? "text-xs px-1.5 py-0" : ""}
-                              >
-                                {item.status}
-                              </Badge>
-                              <span className="text-sm text-muted-foreground">
-                                v{item.version}
-                              </span>
-                              <a
-                                href={item.documentation}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm cursor-pointer hover:opacity-50 flex items-center gap-1"
-                              >
-                                <Package className="w-3 h-3" />
-                                NPM
-                              </a>
+        </div>
+
+        <div className="w-full mt-5 mb-20">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <p className="text-lg">Loading package data...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
+              <Info className="w-5 h-5" />
+              <p>Failed to load package data. Please try again later.</p>
+            </div>
+          ) : (
+            <div className="w-full">
+              <div className="rounded-md border ">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="pl-6">Supported Package Name</TableHead>
+                      <TableHead className="">Stats</TableHead>
+                      <TableHead>Description</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="max-w-screen-lg mx-auto">
+                    {currentData.map((item, index) => (
+                      <TableRow key={index} className="cursor-pointer">
+                        <TableCell>
+                          <div className="flex items-start gap-3 p-3">
+                            <img
+                              src={item.icon}
+                              alt=""
+                              className="w-10 h-10 rounded-lg"
+                            />
+                            <div className="space-y-1">
+                              <div className="font-medium">{item.title}</div>
+                              <div className="flex items-center gap-2">
+                                <Badge
+                                  variant={
+                                    item.status === "stable"
+                                      ? "success"
+                                      : item.status === "external"
+                                        ? "default"
+                                        : item.status === "partial"
+                                          ? "secondary"
+                                          : item.status === "oauthConnector"
+                                            ? "destructive"
+                                            : "secondary"
+                                  }
+                                  className={item.status === "stable" ? "text-xs px-1.5 py-0" : ""}
+                                >
+                                  {item.status}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">
+                                  v{item.version}
+                                </span>
+                                <a
+                                  href={item.documentation}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm cursor-pointer hover:opacity-50 flex items-center gap-1"
+                                >
+                                  <Package className="w-3 h-3" />
+                                  NPM
+                                </a>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="">
-                        <div className="flex items-center justify-start gap-4">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1 cursor-pointer">
-                                  <FunctionSquare className="w-5 h-5 text-muted-foreground" />
-                                  <span className="font-medium text-lg">
-                                    {item.readme_map?.functionalities?.length}
-                                  </span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Available functionalities</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          {item.inUse != "-" && (
+                        </TableCell>
+                        <TableCell className="">
+                          <div className="flex items-center justify-start gap-4">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <div className="flex items-center gap-1 cursor-pointer">
-                                    <PlayCircle className="w-5 h-5 text-green-500" />
-                                    <span className="font-medium text-lg">{item.inUse}</span>
+                                    <FunctionSquare className="w-5 h-5 text-muted-foreground" />
+                                    <span className="font-medium text-lg">
+                                      {item.readme_map?.functionalities?.length}
+                                    </span>
                                   </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Active instances</p>
+                                  <p>Available functionalities</p>
                                 </TooltipContent>
                               </Tooltip>
-                            </TooltipProvider>)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-md">
-                        <div className="space-y-2 flex flex-col gap-2">
-                          <p className="text-sm text-muted-foreground gap-2 line-clamp-3 whitespace-normal">
-                            {item.description}
-                          </p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                            </TooltipProvider>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 max-w-screen-lg mx-auto">
-                <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1}-{endIndex} of {totalItems} items
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousPage}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" />
-                    Previous
-                  </Button>
-
-                  {/* Page numbers */}
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <Button
-                          key={pageNumber}
-                          variant={currentPage === pageNumber ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => goToPage(pageNumber)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {pageNumber}
-                        </Button>
-                      );
-                    })}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextPage}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
+                            {item.inUse != "-" && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-1 cursor-pointer">
+                                      <PlayCircle className="w-5 h-5 text-green-500" />
+                                      <span className="font-medium text-lg">{item.inUse}</span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Active instances</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-md">
+                          <div className="space-y-2 flex flex-col gap-2">
+                            <p className="text-sm text-muted-foreground gap-2 line-clamp-3 whitespace-normal">
+                              {item.description}
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            )}
-          </>
-        )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 max-w-screen-lg mx-auto">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {startIndex + 1}-{endIndex} of {totalItems} items
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Previous
+                    </Button>
+
+                    {/* Page numbers */}
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNumber}
+                            variant={currentPage === pageNumber ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => goToPage(pageNumber)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {pageNumber}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
+      <FooterCtaSection />
     </div>
   );
 };

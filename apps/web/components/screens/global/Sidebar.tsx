@@ -129,14 +129,6 @@ const navigationConfig: NavigationConfig[] = [
     hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/settings`,
   },
   {
-    icon: <CircleCheck strokeWidth={2.5} className={cn("h-4 w-4")} />,
-    collapsedIcon: (
-      <CircleCheck strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
-    ),
-    label: "Supported",
-    href: "/status",
-  },
-  {
     icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
     collapsedIcon: (
       <Flag strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />

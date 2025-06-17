@@ -71,6 +71,8 @@
     "@aws-sdk/client-lambda": "^3.828.0",
     "@aws-sdk/client-s3": "^3.828.0",
     "@radix-ui/react-alert-dialog": "^1.1.14",
+    "@tiptap/extension-color": "^2.14.0",
+    "@tiptap/extension-text-style": "^2.14.0",
     "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",
     "dotenv-cli": "^8.0.0",

@@ -3,6 +3,9 @@ import { getArticleData } from '@/lib/notion/articles';
 import { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
 
+// Revalidate every 5 minutes (300 seconds)
+export const revalidate = 300;
+
 type Props = {
     params: Promise<{ article_id: string }>;
 };

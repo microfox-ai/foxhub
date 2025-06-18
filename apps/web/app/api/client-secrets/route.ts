@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       updateDeployments,
       isHidden,
       templateId,
+      tokenResponse,
     } = body;
 
     if (!botProjectId || !userId || !variables) {
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       botConfig,
       isHidden: isHidden ?? false,
       templateId,
+      tokenResponse: tokenResponse ?? undefined,
     });
 
     if (addToClientRequest) {

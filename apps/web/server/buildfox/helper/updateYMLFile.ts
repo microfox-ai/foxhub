@@ -15,13 +15,13 @@ export const updateYMLFile = async (
 ) => {
   const fileFullPath = path.join(process.cwd(), rootDir, filePath);
   const fileContent = await fs.readFile(fileFullPath, "utf8");
-  const fileContentParsed = YAML.parse(fileContent);
+  //const fileContentParsed = YAML.parse(fileContent);
   await writeToFileSystemAndUpdateSteps(
     {
       fileName: filePath,
       filePath: "",
       fileType: "yml",
-      content: YAML.stringify(mutate(fileContentParsed)),
+      content: await mutate(fileContent),
     },
     clientRequest
   );

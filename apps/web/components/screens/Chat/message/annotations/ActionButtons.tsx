@@ -24,9 +24,6 @@ export const ActionButtons = (props: ActionButtonsProps) => {
         return null;
     }
 
-    console.log("props.areKeysRequired", props.areKeysRequired);
-    console.log("props.areKeysFilled", props.areKeysFilled);
-
     return (
         <div className={cn("flex flex-col gap-2 mt-4", props.className)}>
             {props?.buttonHeaderText && (
@@ -51,8 +48,7 @@ export const ActionButtons = (props: ActionButtonsProps) => {
                         )}
                         disabled={
                             props.disabled ||
-                            (!IN_DEV &&
-                                props.areKeysRequired &&
+                            (props.areKeysRequired &&
                                 !props.areKeysFilled &&
                                 button.type === "confirm")
                         }

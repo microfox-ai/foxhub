@@ -23,62 +23,10 @@ import YAML from "yaml";
 import path from "path";
 import fs from "fs/promises";
 import { updateYMLFile } from "../../helper/updateYMLFile";
-
-// Validation function to check serverless.yml configuration
-const validateServerlessYML = (
-  yamlContent: string
-): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-  let isValid = true;
-
-  try {
-    const config = YAML.parse(yamlContent);
-
-    // Check if functions section exists
-    if (!config.functions) {
-      errors.push("No functions section found in serverless.yml");
-      isValid = false;
-      return { isValid, errors };
-    }
-
-    // Check each function
-    Object.entries(config.functions).forEach(
-      ([functionName, functionConfig]: [string, any]) => {
-        // Skip getDocs function as it's a special case
-        if (functionName === "getDocs") return;
-
-        // Check if events exist
-        if (!functionConfig.events || !Array.isArray(functionConfig.events)) {
-          errors.push(`Function ${functionName} has no events defined`);
-          isValid = false;
-          return;
-        }
-
-        // Check if there's at least one HTTP event
-        const hasHttpEvent = functionConfig.events.some(
-          (event: any) => event.http
-        );
-        if (!hasHttpEvent) {
-          errors.push(`Function ${functionName} has no HTTP event defined`);
-          isValid = false;
-        }
-
-        // Check if handler exists
-        if (!functionConfig.handler) {
-          errors.push(`Function ${functionName} has no handler defined`);
-          isValid = false;
-        }
-      }
-    );
-  } catch (error) {
-    errors.push(
-      `Failed to parse serverless.yml: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
-    isValid = false;
-  }
-
-  return { isValid, errors };
-};
+import {
+  validateServerlessYML,
+  mutateServerlessYML,
+} from "@microfox/serverless-yml";
 
 const processImportsFromFiles = (allGenFilesList: any[]) => {
   return allGenFilesList
@@ -116,14 +64,6 @@ export const genServerlessYML = async (
   const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");
 
   const imports = processImportsFromFiles(allGenFilesList);
-
-  console.log("imports", imports);
-
-  // The following functions are generated for the task:
-  // ${allGenFilesList
-  //   ?.filter((file: any) => file.filePath.includes("/functions"))
-  //   .map((file: any) => file.fileName + "Function")
-  //   .join("\n - ")}
 
   const result = await generateText({
     model: models.claude35Sonnet,
@@ -188,7 +128,7 @@ export const genServerlessYML = async (
       console.log("step", step.usage);
     },
   });
-  console.log("result", result.usage);
+  // console.log("result", result.usage);
 
   const fileArgs = result.steps[0]?.toolCalls[0]?.args;
   if (!fileArgs) {
@@ -216,53 +156,12 @@ export const genServerlessYML = async (
       .replace("/serverless.yml", "")
       .replace("\\serverless.yml", ""),
     "serverless.yml",
-    (config) => {
-      let newConfig = { ...config };
-      newConfig.provider.timeout = 60;
-      if (
-        taskInstanceMeta.taskStructure?.templateAddons?.includes(
-          codeTemplateAddon.enum.sls_puppeteer_chrome
-        )
-      ) {
-        newConfig.provider.timeout = 600;
-        newConfig.package = {
-          ...newConfig.package,
-          exclude: [
-            ...(newConfig.package?.exclude ?? []),
-            "node_modules/@sparticuz/chromium/**",
-          ],
-        };
-        //newConfig.provider.memorySize = 1024;
-        newConfig.functions = Object.entries(newConfig.functions).reduce(
-          (acc, [functionName, functionConfig]) => {
-            if (functionName === "getDocs") {
-              return {
-                ...acc,
-                [functionName]: functionConfig,
-              };
-            }
-            const thisFile = imports.find(
-              (imp: any) => imp.fileName === functionName
-            );
-            return {
-              ...acc,
-              [functionName]: {
-                ...(functionConfig as any),
-                ...(thisFile?.isPuppet
-                  ? {
-                      layers: [
-                        "arn:aws:lambda:us-east-1:211125656699:layer:chromium-x86-135:1",
-                        //"arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
-                      ],
-                    }
-                  : {}),
-              },
-            };
-          },
-          {}
-        );
-      }
-      return newConfig;
+    async (config) => {
+      let oldConfig = YAML.parse(config);
+      oldConfig.provider.timeout = 60;
+      let newConfigString = await mutateServerlessYML(oldConfig, imports);
+      let newConfig = YAML.parse(newConfigString);
+      return YAML.stringify(newConfig);
     },
     clientRequest
   );

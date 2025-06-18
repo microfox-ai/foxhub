@@ -13,6 +13,7 @@ import { envsPrompt } from "./prompts/envsPrompt";
 import { helperFilesContext } from "./prompts/helperFilesContext";
 import { packagesPrompt } from "./prompts/packagesPrompt";
 import { fetchTemplateDir, readAllGenFilesList } from "./tool/writeToFile";
+import { IN_STAGING } from "@/utils/constants/appInfo";
 export const codingSystemPrompt = (
   step: "backend" | "frontend",
   writingCoreFunctions: boolean = false
@@ -77,6 +78,14 @@ export const codingSystemPrompt = (
         : ""
     }
 
+    ${
+      writingCoreFunctions && IN_STAGING
+        ? `
+     At each step, you must write proper logs, to properly debug the code later on.
+     When writing dont change the prime functionality of code, just write logs as an add on.
+    `
+        : ""
+    }
     ----
 
     A few things about your workflow:

@@ -189,6 +189,7 @@ model ClientSecret {
   packageType         String?
   isHidden            Boolean?
   templateId          String?
+  tokenResponse       Json?
   botProject          BotProject         @relation(fields: [botProjectId], references: [id])
 }
 

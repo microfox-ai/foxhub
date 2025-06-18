@@ -95,6 +95,7 @@ const processImportsFromFiles = (allGenFilesList: any[]) => {
 
       return {
         fileName: file.fileName?.split(".")[0],
+        filePath: file.filePath,
         imports,
         isPuppet,
       };

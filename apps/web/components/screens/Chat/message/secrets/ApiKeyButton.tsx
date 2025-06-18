@@ -23,7 +23,8 @@ import { getBotImage } from "@/components/screens/mybots/providers/types";
 export const ApiKeyButton = ({
     packageInfo,
     mutateSecrets,
-    secretsData
+    secretsData,
+    disabled
 }: {
     packageInfo: any,
     secretsData?: {
@@ -32,7 +33,7 @@ export const ApiKeyButton = ({
     mutateSecrets: KeyedMutator<{
         clientSecrets: ClientSecret[];
     }>
-
+    disabled?: boolean;
 }) => {
     const params = useParams<{
         project_id?: string;
@@ -251,61 +252,65 @@ export const ApiKeyButton = ({
 
 
     return (
-        <>
-            <div className="relative flex items-center gap-1">
-
-                <Select value={selectedBotSecret || ""} onValueChange={handleBotSelectionChange}>
-                    <SelectTrigger className="h-8 max-w-[150px] border-none shadow-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0">
-                        {isLoading ? (
-                            <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-xs text-gray-500">
-                                    {connecting[packageInfo.name] ? "Connecting..." : "Processing..."}</span>
-                            </div>
-                        ) : (
-                            <SelectValue placeholder={apiType === ClientSecretApiType.BOT_TOKEN ? "Bot" : "API Key"} />
-                        )}
-                    </SelectTrigger>
-                    <SelectContent className="">
-                        {botSecrets?.map((secret) => (
-                            <SelectItem key={secret.id} value={secret.id}
-                                className="flex items-center justify-between gap-2 py-3 cursor-pointer"
-                            >
-                                <div className="flex flex-row items-center gap-2">
-                                    <img src={getBotImage(secret)} className="h-6 w-6 rounded-full" />
-                                    <span className="leading-none w-full">{secret.name || "Unnamed Bot"}</span>
-                                    {/* <span className="text-xs text-gray-500">
-                                        key: {secret.id ? `${secret.id.substring(0, 4)}...${secret.id.substring(secret.id.length - 4)}` : ''}
-                                    </span> */}
+        <div className="flex flex-col gap-2">
+            <Select
+                value={selectedBotSecret || ""}
+                onValueChange={handleBotSelectionChange}
+                disabled={disabled}
+            >
+                <SelectTrigger
+                    className="w-full"
+                    disabled={isLoading || disabled}
+                >
+                    {isLoading ? <Loader2 className="animate-spin w-4 h-4" /> :
+                        <SelectValue
+                            placeholder={
+                                <div className="flex items-center gap-2">
+                                    {apiType === ClientSecretApiType.BOT_TOKEN ? "Bot" : "API Key"}
                                 </div>
+                            }
+                        />
+                    }
+                </SelectTrigger>
+                <SelectContent className="">
+                    {botSecrets?.map((secret) => (
+                        <SelectItem key={secret.id} value={secret.id}
+                            className="flex items-center justify-between gap-2 py-3 cursor-pointer"
+                        >
+                            <div className="flex flex-row items-center gap-2">
+                                <img src={getBotImage(secret)} className="h-6 w-6 rounded-full" />
+                                <span className="leading-none w-full">{secret.name || "Unnamed Bot"}</span>
+                                {/* <span className="text-xs text-gray-500">
+                                    key: {secret.id ? `${secret.id.substring(0, 4)}...${secret.id.substring(secret.id.length - 4)}` : ''}
+                                </span> */}
+                            </div>
+                        </SelectItem>
+                    ))}
+                    {oauthConstructor && (
+                        <SelectItem value="connect" className="flex items-center gap-2 cursor-pointer">
+                            <img src={"/images/default-bot-avatar.png"} className="h-6 w-6 rounded-full" />
+                            {hasAllAuthRelatedKeys ? "Connected Microfox" : "Connect Microfox"}
+                        </SelectItem>
+                    )}
+                    {botTemplates?.filter((template) => !botSecrets?.some((secret) => secret.templateId === template.id))
+                        .map((template) => (
+                            <SelectItem key={template.id} value={"template_" + template.id} className="flex items-center gap-2 cursor-pointer">
+                                <img src={"/images/default-bot-avatar.png"} className="h-4 w-4 rounded-full" />
+                                <span className="leading-none w-full">use {template.name || "Unnamed Bot"}</span>
                             </SelectItem>
                         ))}
-                        {oauthConstructor && (
-                            <SelectItem value="connect" className="flex items-center gap-2 cursor-pointer">
-                                <img src={"/images/default-bot-avatar.png"} className="h-6 w-6 rounded-full" />
-                                {hasAllAuthRelatedKeys ? "Connected Microfox" : "Connect Microfox"}
-                            </SelectItem>
-                        )}
-                        {botTemplates?.filter((template) => !botSecrets?.some((secret) => secret.templateId === template.id))
-                            .map((template) => (
-                                <SelectItem key={template.id} value={"template_" + template.id} className="flex items-center gap-2 cursor-pointer">
-                                    <img src={"/images/default-bot-avatar.png"} className="h-4 w-4 rounded-full" />
-                                    <span className="leading-none w-full">use {template.name || "Unnamed Bot"}</span>
-                                </SelectItem>
-                            ))}
-                        <SelectItem value="add_new" className="flex items-center gap-2 cursor-pointer">
-                            <Plus className="h-4 w-4" />
-                            {apiType === ClientSecretApiType.BOT_TOKEN ? "Create New Bot" : "Create New API Key"}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
+                    <SelectItem value="add_new" className="flex items-center gap-2 cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                        {apiType === ClientSecretApiType.BOT_TOKEN ? "Create New Bot" : "Create New API Key"}
+                    </SelectItem>
+                </SelectContent>
+            </Select>
 
-                {!isAllKeysFilled ? (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400" />
-                ) : (
-                    <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-4 w-4 rounded-full text-green-500" />
-                )}
-            </div>
+            {!isAllKeysFilled ? (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400" />
+            ) : (
+                <CheckCircle2 className="absolute bg-green-50 -top-1 -right-1 h-4 w-4 rounded-full text-green-500" />
+            )}
 
             {selectedPlatform && (
                 <SecretProvider>
@@ -349,6 +354,6 @@ export const ApiKeyButton = ({
                     mutateBotSecrets={mutateBotSecrets}
                 />
             )}
-        </>
+        </div>
     )
 }

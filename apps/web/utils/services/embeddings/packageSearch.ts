@@ -220,11 +220,13 @@ async function getAllPackages({
   status,
   select,
   statuses,
+  packageNames,
 }: {
   platformType?: string;
   status?: string;
   select?: string;
   statuses?: PackageStatus[];
+  packageNames?: string[];
 }): Promise<Partial<PackageDbInfo>[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log(`🔍 Getting all packages...`);
@@ -249,6 +251,10 @@ async function getAllPackages({
 
   if (statuses) {
     query.in("status", statuses);
+  }
+
+  if (packageNames) {
+    query.in("package_name", packageNames);
   }
 
   const { data, error } = await query.order("package_name");

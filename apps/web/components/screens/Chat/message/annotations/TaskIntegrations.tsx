@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import useSWR from "swr";
 import { ActionButtons } from "./ActionButtons";
 import { ApiKeyButton } from "../secrets/ApiKeyButton";
@@ -18,6 +18,7 @@ import { ClientSecretApiType, ClientSecretPackageType, ClientSecretVariable, Pac
 import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
 import { EditTaskIntegrationsDialog } from "./EditTaskIntegrationsDialog";
 import { Button } from "@/components/ui/button";
+import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 
 interface UIAnnotation {
     objectType: string;
@@ -31,15 +32,24 @@ interface TaskIntegrationsProps {
     uiAnnotation: UIAnnotation;
     idx: number;
     hideMetaInfo?: boolean;
+    isLastInQueue?: boolean;
 }
 
 export const TaskIntegrations = ({
     uiAnnotation,
     idx,
     hideMetaInfo = false,
+    isLastInQueue = true,
 }: TaskIntegrationsProps) => {
-    const { taskInstanceMeta, updateTaskInstanceMeta } = useTaskInstanceMetaContext();
-    const platforms = (taskInstanceMeta?.taskIntegrations?.platforms ?? uiAnnotation.object.platforms) as TaskIntegrationPlatform[];
+    const { taskInstanceMeta, updateTaskInstanceMeta, mutate: mutateTaskInstanceMeta } = useTaskInstanceMetaContext();
+    const [isExpanded, setIsExpanded] = useState(false);
+    const { status } = useMicrofoxChat();
+    const platforms = useMemo(() => {
+        if (isLastInQueue && status !== "streaming") {
+            return (taskInstanceMeta?.taskIntegrations?.platforms ?? uiAnnotation.object.platforms) as TaskIntegrationPlatform[];
+        }
+        return uiAnnotation.object.platforms as TaskIntegrationPlatform[];
+    }, [isLastInQueue, taskInstanceMeta, uiAnnotation.object.platforms, status]);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const params = useParams<{
         project_id?: string;
@@ -47,6 +57,12 @@ export const TaskIntegrations = ({
     }>();
     const projectParamId = params?.project_id;
     const requestParamId = params?.request_id;
+
+    useEffect(() => {
+        if (isLastInQueue && requestParamId) {
+            mutateTaskInstanceMeta();
+        }
+    }, [isLastInQueue, requestParamId, mutateTaskInstanceMeta]);
 
     const { data: packagesData, mutate: mutatePackages } = useSWR<{
         packages: Package[];
@@ -200,6 +216,30 @@ export const TaskIntegrations = ({
         return null;
     }
 
+    if (!isLastInQueue && !isExpanded) {
+        return (
+            <motion.div
+                key={uiAnnotation.objectType + idx}
+                className={`flex flex-col gap-2 p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+            >
+                <p className="text-sm text-gray-500">
+                    This integration is deprecated & modified. Please refer to the latest message to check or modify.
+                </p>
+                <Button
+                    variant="link"
+                    onClick={() => setIsExpanded(true)}
+                    className="text-sm p-0 h-auto self-start"
+                >
+                    Show Previous
+                </Button>
+            </motion.div>
+        );
+    }
+
     return (
         <motion.div
             key={uiAnnotation.objectType + idx}
@@ -213,19 +253,19 @@ export const TaskIntegrations = ({
                 <div className="flex justify-between items-center">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                            Configure Integration Settings
+                            Make the connections
                         </h3>
                         <p className="text-sm text-gray-500">
                             Please configure the required integrations to continue
                         </p>
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={() => setIsEditDialogOpen(true)}
-                        className="flex items-center gap-2"
-                    >
-                        Edit Integrations
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {!isLastInQueue && (
+                            <Button variant="link" onClick={() => setIsExpanded(false)}>
+                                Hide
+                            </Button>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -242,7 +282,7 @@ export const TaskIntegrations = ({
                         return (
                             <div
                                 key={platform.name}
-                                className="flex rounded-lg border p-4 flex-col gap-2"
+                                className={`flex border-b border-gray-200 p-4 flex-col gap-2 ${index === platforms.length - 1 ? "border-b-0" : ""}`}
                             >
                                 <div className="flex items-start gap-3">
                                     <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />
@@ -256,12 +296,13 @@ export const TaskIntegrations = ({
                                                     {packageInfo?.name ?? "Not Supported yet"}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2 rounded-lg border border-gray-200">
+                                            <div className="flex items-center gap-2 rounded-lg border border-gray-200 relative">
                                                 {isOAuthRequired && !isApiKeyRequired && (
                                                     <OAuthButton
                                                         packageInfo={packageInfo}
                                                         secretsData={secretsData}
                                                         mutateSecrets={mutateSecrets}
+                                                        disabled={!isLastInQueue}
                                                     />
                                                 )}
                                                 {isApiKeyRequired && (
@@ -269,6 +310,7 @@ export const TaskIntegrations = ({
                                                         packageInfo={packageInfo}
                                                         secretsData={secretsData}
                                                         mutateSecrets={mutateSecrets}
+                                                        disabled={!isLastInQueue}
                                                     />
                                                 )}
                                                 {!packageInfo}
@@ -284,22 +326,35 @@ export const TaskIntegrations = ({
                     })}
             </div>
 
-            {uiAnnotation.buttons && uiAnnotation.buttons.length > 0 &&
-                (<ActionButtons
-                    buttons={uiAnnotation.buttons}
-                    areKeysRequired={platforms.some(
-                        (p) => {
-                            const packageInfo = packagesData?.packages.find((pkg) => pkg.name === p.package);
-                            !p.optional &&
-                                (packageInfo?.constructors.some(
-                                    (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
-                                ) ||
-                                    packageInfo?.constructors.some(
-                                        (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
-                                    ))
-                        })}
-                    areKeysFilled={areKeysFilled}
-                />)}
+            <div className="flex justify-start items-center gap-2">
+
+                <Button
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(true)}
+                    className="flex items-center gap-2"
+                    disabled={!isLastInQueue}
+                >
+                    Edit Integrations
+                </Button>
+                {uiAnnotation.buttons && uiAnnotation.buttons.length > 0 &&
+                    (<ActionButtons
+                        className="mt-0"
+                        buttons={uiAnnotation.buttons}
+                        areKeysRequired={platforms.some(
+                            (p) => {
+                                const packageInfo = packagesData?.packages.find((pkg) => pkg.name === p.package);
+                                return !p.optional &&
+                                    (packageInfo?.constructors.some(
+                                        (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
+                                    ) ||
+                                        packageInfo?.constructors.some(
+                                            (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
+                                        ));
+                            })}
+                        areKeysFilled={areKeysFilled}
+                        disabled={!isLastInQueue}
+                    />)}
+            </div>
 
             <EditTaskIntegrationsDialog
                 isOpen={isEditDialogOpen}

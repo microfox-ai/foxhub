@@ -14,6 +14,7 @@ export const OAuthButton = ({
   packageInfo,
   secretsData,
   mutateSecrets,
+  disabled,
 }: {
   packageInfo: any;
   secretsData?: {
@@ -22,6 +23,7 @@ export const OAuthButton = ({
   mutateSecrets: KeyedMutator<{
     clientSecrets: ClientSecret[];
   }>;
+  disabled?: boolean;
 }) => {
   const params = useParams<{
     project_id?: string;
@@ -102,13 +104,13 @@ export const OAuthButton = ({
 
   const hasAllAuthRelatedKeys = oauthSecret
     ? (oauthSecret?.variables as any[]).every(
-        (variable: ClientSecretVariable) =>
-          variable.value?.trim() !== "" &&
-          oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
-            if (variable.key === "SCOPES") return true;
-            return key.key === variable.key;
-          })
-      )
+      (variable: ClientSecretVariable) =>
+        variable.value?.trim() !== "" &&
+        oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
+          if (variable.key === "SCOPES") return true;
+          return key.key === variable.key;
+        })
+    )
     : false;
 
   return (
@@ -128,7 +130,7 @@ export const OAuthButton = ({
           size="sm"
           className="h-8 px-3 text-xs font-medium"
           onClick={() => handleConnect(packageInfo, authEndpoint)}
-          disabled={connecting[packageInfo.name]}
+          disabled={connecting[packageInfo.name] || disabled}
         >
           {connecting[packageInfo.name] ? "Connecting..." : "Connect"}
         </Button>

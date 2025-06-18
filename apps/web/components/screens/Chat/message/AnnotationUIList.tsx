@@ -23,11 +23,17 @@ interface UIAnnotation {
 export const AnnotationUIList = ({
   uiAnnotations,
   lastMessage,
+  lastAnnotationIndices,
+  messageIndex,
 }: {
   uiAnnotations: UIAnnotation[];
   lastMessage: boolean;
+  lastAnnotationIndices: Map<string, number>;
+  messageIndex: number;
 }) => {
   return uiAnnotations.map((uiAnnotation: UIAnnotation, idx: number) => {
+    const isLastInQueue = lastAnnotationIndices.get(uiAnnotation.objectType) === messageIndex;
+
     if (uiAnnotation.objectType === "taskInfo") {
       return (
         <TaskInfo
@@ -43,6 +49,7 @@ export const AnnotationUIList = ({
           key={uiAnnotation.objectType + idx}
           uiAnnotation={uiAnnotation}
           idx={idx}
+          isLastInQueue={isLastInQueue}
         />
       );
     }

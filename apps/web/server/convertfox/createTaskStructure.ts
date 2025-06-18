@@ -163,12 +163,12 @@ export const createTaskStructure = async (
       persona: "taskManager",
       text: `Ready to Build ?`,
       buttons: [
-        {
-          action: "highlightInput",
-          text: "Not Yet",
-          type: "deny",
-          className: "bg-neutral-200 text-black hover:bg-neutral-300",
-        },
+        // {
+        //   action: "highlightInput",
+        //   text: "Not Yet",
+        //   type: "deny",
+        //   className: "bg-neutral-200 text-black hover:bg-neutral-300",
+        // },
         {
           action: "shiftMinion",
           actionText: "Start Building !",

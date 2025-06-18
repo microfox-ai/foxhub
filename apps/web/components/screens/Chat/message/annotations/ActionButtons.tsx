@@ -14,6 +14,7 @@ interface ActionButtonsProps {
     areKeysRequired?: boolean;
     areKeysFilled?: boolean;
     className?: string;
+    disabled?: boolean;
 }
 
 export const ActionButtons = (props: ActionButtonsProps) => {
@@ -45,10 +46,11 @@ export const ActionButtons = (props: ActionButtonsProps) => {
                             "bg-black text-white hover:bg-black/80 hover:text-white"
                         )}
                         disabled={
-                            !IN_DEV &&
-                            props.areKeysRequired &&
-                            !props.areKeysFilled &&
-                            button.type === "confirm"
+                            props.disabled ||
+                            (!IN_DEV &&
+                                props.areKeysRequired &&
+                                !props.areKeysFilled &&
+                                button.type === "confirm")
                         }
                         onClick={() => {
                             console.log("button", button);

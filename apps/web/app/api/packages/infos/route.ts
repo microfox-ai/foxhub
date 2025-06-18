@@ -11,11 +11,18 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const packageTypes = url.searchParams.get("packageTypes");
     const packageTypesArray = packageTypes ? packageTypes.split(",") : [];
+    const packageNames = url.searchParams.get("packageNames");
+    const packageNamesArray = packageNames ? packageNames.split(",") : [];
 
     const validPackageInfos = await PackageInfoHelper.getAllPackages({
-      statuses: packageTypesArray.map((type) => type as PackageStatus),
+      ...(packageTypesArray.length > 0 && {
+        statuses: packageTypesArray.map((type) => type as PackageStatus),
+      }),
+      ...(packageNamesArray.length > 0 && { packageNames: packageNamesArray }),
       select: "*",
     });
+
+    console.log(packageNamesArray);
 
     return NextResponse.json(validPackageInfos.map((pkg) => pkg.raw_content));
   } catch (error) {

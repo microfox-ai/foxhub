@@ -25,7 +25,7 @@ export const MessageMarkdown: FC<MessageThoughtWrapperProps> = ({ children, isSt
 
     if (isThought) {
         return (
-            <div className="rounded-md p-3 relative">
+            <div className={`rounded-md p-3 relative ${isStreaming ? '' : ''} ${isCollapsed ? 'max-h-[0px] p-0!' : ''}`}>
                 <div className='absolute bottom-0 left-0 right-0 w-full h-[50%] bg-gradient-to-t from-white to-transparent' />
                 <div className='absolute top-0 left-0 right-0 w-full h-[50%] bg-gradient-to-b from-white to-transparent' />
                 <div

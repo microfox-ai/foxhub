@@ -35,6 +35,7 @@ interface MessageWrapperProps {
   renderDateSeperator: (currentDate: string) => React.ReactNode;
   length: number;
   isStreaming: boolean;
+  lastAnnotationIndices: Map<string, number>;
 }
 
 type MessagePartType = UIMessage["parts"][number];
@@ -68,6 +69,7 @@ export const MessageWrapper = ({
   renderDateSeperator,
   length,
   isStreaming,
+  lastAnnotationIndices,
 }: MessageWrapperProps) => {
   const { handleRefresh, status } = useMicrofoxChat();
   const annotations = message.annotations;
@@ -207,6 +209,8 @@ export const MessageWrapper = ({
               <AnnotationUIList
                 uiAnnotations={uiAnnotations as any[]}
                 lastMessage={index === length - 1}
+                lastAnnotationIndices={lastAnnotationIndices}
+                messageIndex={index}
               />
             )}
             {lastToolInvocation && (

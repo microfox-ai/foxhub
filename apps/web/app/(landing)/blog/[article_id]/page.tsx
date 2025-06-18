@@ -4,15 +4,13 @@ import { Metadata, ResolvingMetadata } from 'next';
 import { notFound } from 'next/navigation';
 
 type Props = {
-    params: { article_id: string };
-    searchParams: { [key: string]: string | string[] | undefined };
+    params: Promise<{ article_id: string }>;
 };
 
 export async function generateMetadata(
-    { params, searchParams }: Props,
-    parent: ResolvingMetadata,
+    { params }: Props
 ): Promise<Metadata> {
-    const { article_id } = params;
+    const { article_id } = await params;
     const articleData = await getArticleData(article_id);
 
     if (!articleData.page) {
@@ -97,9 +95,9 @@ export async function generateMetadata(
 export default async function BlogPage({
     params,
 }: {
-    params: { article_id: string };
+    params: Promise<{ article_id: string }>;
 }) {
-    const { article_id } = params;
+    const { article_id } = await params;
     try {
         const articleData = await getArticleData(article_id);
 

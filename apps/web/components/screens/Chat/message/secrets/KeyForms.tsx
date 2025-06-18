@@ -73,7 +73,16 @@ export const KeyForms = ({
                     }
                 });
             } else {
-                setCurrentStep(2);
+                const botConfig =
+                    mode === "create"
+                        ? selectedConstructor?.botConfig
+                        : botToEdit?.packageInfo?.constructors[0]?.botConfig;
+
+                if (!botConfig || botConfig.length === 0) {
+                    setCurrentStep(3);
+                } else {
+                    setCurrentStep(2);
+                }
             }
         } else if (currentStep === 2) {
             setCurrentStep(3);

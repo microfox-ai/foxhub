@@ -1,6 +1,7 @@
 import { Skeleton } from "@mui/material";
 import { UIMessage } from "ai";
 import dayjs from "dayjs";
+import { useMemo } from "react";
 import { MessageWrapper } from "./message/MessageWrapper";
 import { useChatUI } from "./ChatUiProvider";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
@@ -28,6 +29,20 @@ export default function MessageList({
     return null;
   };
 
+  const lastAnnotationIndices = useMemo(() => {
+    const indices = new Map<string, number>();
+    messages.forEach((message, index) => {
+      if (message && message.annotations) {
+        (message.annotations as any[]).forEach((annotation) => {
+          if (annotation.type === "ui" && annotation.objectType) {
+            indices.set(annotation.objectType, index);
+          }
+        });
+      }
+    });
+    return indices;
+  }, [messages]);
+
   return (
     <>
       {isLoading ? (
@@ -44,6 +59,7 @@ export default function MessageList({
                 index={index}
                 length={messages.length}
                 isStreaming={isStreaming}
+                lastAnnotationIndices={lastAnnotationIndices}
                 renderDateSeperator={(currDate) =>
                   renderDateSeparator(
                     currDate,

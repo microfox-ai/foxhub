@@ -38,6 +38,10 @@ export const createTaskIntegrations = async (
       : [PackageStatus.STABLE, PackageStatus.EXTERNAL],
   });
 
+  console.log(
+    "packageList",
+    packageList.map((pkg) => pkg.package_name)
+  );
   // first, get a text of all the platforms we need to integrate with for this task
   const textPlatformsStream = streamText({
     model: models.googleGeminiPro,
@@ -61,12 +65,13 @@ export const createTaskIntegrations = async (
           alternatives: <alternative platforms/internal packages for this platform/internal package>
         ----
         IN BUILT PACKAGES SUPPORT:
-        ${packageList.map((pkg) => pkg.package_name).join(", ")}
+        ${packageList.map((pkg, idx) => `${idx + 1}. ${pkg.package_name}`).join(", ")}
         ---
         Exclude the following platforms from the list:
         - Any Deployment service (as it is in-house supported by us for hosting user's servcie) - Ex: AWS Lambda, Azure Functions, etc.
         - Any Database (as it is in-house supported by us for hosting user's servcie) - Ex: Postgres, MySQL, etc.
         - Avoid meaningless platforms like "Webhooks", "HTTP Server" etc.
+        ---
     `,
     prompt: `
 Name: ${taskInfo.name}
@@ -115,6 +120,10 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
     
     Be thorough and include packages even if they have only a tangential relationship.
     If a package appears in both lists, include it in both output arrays.
+
+    Priority:
+    - STABLE > SEMISTABLE > EXTERNAL
+    Unless the stable or unstable packages dont have the related functionality, then include the external packages.
     `,
     schema: z.object({
       internalPackages: z
@@ -132,11 +141,17 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
           pkg.status === PackageStatus.STABLE ||
           pkg.status === PackageStatus.SEMISTABLE
       )
-      .map((pkg) => pkg.package_name)
+      .map(
+        (pkg) =>
+          `${pkg.package_name} - ${pkg.status} - ${pkg.readme_map?.functionalities.join(", ")}`
+      )
       .join(", ")}
     external packages: ${packageList
       .filter((pkg) => pkg.status === PackageStatus.EXTERNAL)
-      .map((pkg) => pkg.package_name)
+      .map(
+        (pkg) =>
+          `${pkg.package_name} - ${pkg.status} - ${pkg.readme_map?.functionalities.join(", ")}`
+      )
       .join(", ")}
     `,
   });
@@ -293,12 +308,12 @@ ${modification ? `The user specifically mentioned: ${modification}` : ""}
         ? `Finalise the integrations.`
         : `Finalised the integrations.`,
       buttons: [
-        {
-          action: "highlightInput",
-          text: "Not Yet",
-          type: "deny",
-          className: "bg-neutral-200 text-black hover:bg-neutral-300",
-        },
+        // {
+        //   action: "highlightInput",
+        //   text: "Not Yet",
+        //   type: "deny",
+        //   className: "bg-neutral-200 text-black hover:bg-neutral-300",
+        // },
         {
           action: "appendMessage",
           text: "Confirm",

@@ -268,7 +268,8 @@ export const TaskIntegrations = ({
 
             <div className="grid gap-4">
                 {platforms
-                    .map((platform, index) => {
+                    .filter((platform) => !platform.reason?.includes("used by @microfox"))
+                    .map((platform, index, arr) => {
                         const packageInfo = packagesData?.find((pkg) => pkg.name === platform.package);
                         const isApiKeyRequired = packageInfo?.constructors.some(
                             (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
@@ -279,7 +280,7 @@ export const TaskIntegrations = ({
                         return (
                             <div
                                 key={platform.name}
-                                className={`flex border-b border-gray-200 p-4 flex-col gap-2 ${index === platforms.length - 1 ? "border-b-0" : ""}`}
+                                className={`flex border-b border-gray-200 p-4 flex-col gap-2 ${index === arr.length - 1 ? "border-b-0" : ""}`}
                             >
                                 <div className="flex items-start gap-3">
                                     <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />

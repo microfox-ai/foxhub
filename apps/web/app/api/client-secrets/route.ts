@@ -63,8 +63,12 @@ export async function POST(req: NextRequest) {
       await addClientSecretToClientRequest(clientSecret.id, clientRequestId);
     }
 
-    if (updateDeployments) {
-      await updateDeploymentsOfClientSecret(clientSecret);
+    try {
+      if (updateDeployments) {
+        await updateDeploymentsOfClientSecret(clientSecret);
+      }
+    } catch (error) {
+      console.error("Error Trying to update Deployments:", error);
     }
 
     return NextResponse.json(clientSecret, { status: 200 });

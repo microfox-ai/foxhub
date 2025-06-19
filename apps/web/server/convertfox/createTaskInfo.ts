@@ -56,6 +56,9 @@ export const createTaskInfo = async (
         ${getMicrofoxCapabilities()}
                 Packages/Platforms we support:
         ${packageList.map((pkg) => pkg.package_name).join(", ")}
+        ----
+        webhooks, api calls, ai tools, etcs are all done via lambda functions.
+        schedueld tasks, background jobs, etcs are all done via cron jobs.
     `,
     schema: taskInfo,
     prompt: modification

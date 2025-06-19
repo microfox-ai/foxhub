@@ -89,14 +89,9 @@ export const ApiKeyButton = ({
     const oauthConstructor = packageInfo?.constructors.find(
         (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
     );
-    const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
+    const currentOauthSecret = secretsData?.clientSecrets?.find((secret) =>
         secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
     );
-    const currentOauthSecret = useMemo(() => {
-        return secretsData?.clientSecrets?.find((secret) =>
-            secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
-        );
-    }, [secretsData, packageInfo, oauthConstructor]);
 
     const isAllKeysFilled = useMemo(() => {
         if (currentApiKeySecret) {
@@ -108,8 +103,8 @@ export const ApiKeyButton = ({
                     )
             )
         }
-        else if (oauthSecret) {
-            return (oauthSecret?.variables as any[]).every(
+        else if (currentOauthSecret) {
+            return (currentOauthSecret?.variables as any[]).every(
                 (variable: ClientSecretVariable) =>
                     variable.value?.trim() !== "" &&
                     oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
@@ -119,12 +114,12 @@ export const ApiKeyButton = ({
             )
         }
         return false;
-    }, [packageInfo, currentApiKeySecret, apiKeyConstructor, oauthSecret]);
+    }, [packageInfo, currentApiKeySecret, apiKeyConstructor, currentOauthSecret]);
 
     //--------------FOR OAUTH-------------------
     //console.log("apiKeySecret", packageInfo, secretsData);]
-    const hasAllAuthRelatedKeys = oauthSecret
-        ? (oauthSecret?.variables as any[]).every(
+    const hasAllAuthRelatedKeys = currentOauthSecret
+        ? (currentOauthSecret?.variables as any[]).every(
             (variable: ClientSecretVariable) =>
                 variable.value?.trim() !== "" &&
                 oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
@@ -150,16 +145,26 @@ export const ApiKeyButton = ({
                 clientRequestIdToRemove: requestParamId,
             });
         }
-        if (oauthSecret) {
+        if (currentOauthSecret && value !== "connect") {
             await PortalSdk.postData("/api/client-secrets/link", {
-                id: oauthSecret.id,
+                id: currentOauthSecret.id,
                 clientRequestIdToRemove: requestParamId,
             });
         }
         if (value === "connect") {
             setIsLoading(false);
             setSelectedPlatform(packageInfo);
+            // if (currentOauthSecret) {
+            //     await PortalSdk.postData("/api/client-secrets/link", {
+            //         id: currentOauthSecret.id,
+            //         clientRequestIdToAdd: requestParamId,
+            //     });
+            //     await mutateBotSecrets();
+            //     await mutateSecrets();
+            // }
+            // else {
             await handleConnect(packageInfo, oauthConstructor?.authEndpoint);
+            //}
             setIsLoading(false);
         }
         else if (value === "add_new") {
@@ -229,6 +234,7 @@ export const ApiKeyButton = ({
                     })),
                 ] as ClientSecretVariable[],
                 addToClientRequest: true,
+                updateDeployments: true,
             });
 
             document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;

@@ -12,9 +12,10 @@ interface OAuthConnectCallbackProps {
     isOptional: boolean;
   }>;
   tokenResponse: any;
+  identityMetadata: any;
 }
 
-const OAuthConnectCallback = ({ docId, keys, tokenResponse }: OAuthConnectCallbackProps) => {
+const OAuthConnectCallback = ({ docId, keys, tokenResponse, identityMetadata }: OAuthConnectCallbackProps) => {
 
   useEffect(() => {
     const updateClientSecret = async () => {
@@ -29,6 +30,7 @@ const OAuthConnectCallback = ({ docId, keys, tokenResponse }: OAuthConnectCallba
             variables: keys,
             status: CLIENTSECRETSTATUS.FILLED,
             tokenResponse: tokenResponse,
+            identityMetadata: identityMetadata,
           }),
         });
 

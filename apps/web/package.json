@@ -31,7 +31,7 @@
     "@hookform/resolvers": "^4.1.3",
     "@microfox/aws-ses": "^1.0.4",
     "@microfox/crypto-sdk": "^1.0.3",
-    "@microfox/google-oauth": "^1.0.3",
+    "@microfox/google-oauth": "*",
     "@microfox/google-sdk": "^1.0.2",
     "@microfox/linkedin-oauth": "^1.0.4",
     "@microfox/notion": "*",
@@ -125,7 +125,8 @@
     "turndown": "^7.2.0",
     "use-debounce": "^10.0.4",
     "zod": "^3.24.2",
-    "@microfox/serverless-yml": "*"
+    "@microfox/serverless-yml": "*",
+    "@microfox/oauth-kit": "*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

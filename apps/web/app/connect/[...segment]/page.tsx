@@ -6,6 +6,7 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { ClientSecretVariable } from "@/server/types";
 import { prisma } from "@/prisma/prisma";
+import { OauthKit } from "@microfox/oauth-kit";
 
 const AuthPopupWindow = async ({
   params,
@@ -126,7 +127,13 @@ const AuthPopupWindow = async ({
       };
     });
 
-    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} tokenResponse={tokenResponse} />;
+    try {
+      const identityMetadata = await OauthKit.exchangeTokenResponseForIdentity(packageName.replace("-oauth", ""), tokenResponse);
+      return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} tokenResponse={tokenResponse} identityMetadata={identityMetadata} />;
+    } catch (error) {
+      console.error("Error exchanging token response for identity:", error);
+      return <div>Error exchanging token response for identity</div>;
+    }
   }
   else if (segment.length === 1) {
 

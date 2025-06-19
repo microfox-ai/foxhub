@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       isHidden,
       templateId,
       tokenResponse,
+      identityMetadata,
     } = body;
 
     if (!botProjectId || !userId || !variables) {
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
       isHidden: isHidden ?? false,
       templateId,
       tokenResponse: tokenResponse ?? undefined,
+      identityMetadata: identityMetadata ?? undefined,
       awsRegion: "",
     });
 

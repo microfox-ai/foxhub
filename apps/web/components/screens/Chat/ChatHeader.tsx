@@ -108,7 +108,7 @@ const ChatHeader = ({
             </p>
             <p className="text-xs text-gray-500">
               Minion: {lastKnownMinionType}; Flow: {lastKnownMinionFlow} Status:{" "}
-              {clientRequest?.archiveStatus}
+              {clientRequest?.archiveStatus} Region: {clientRequest?.awsRegion}
             </p>
           </>
         )}

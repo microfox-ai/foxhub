@@ -39,6 +39,8 @@ export async function updateLambdaEnvironmentVariables({
   region,
 }: UpdateLambdaEnvVarsParams): Promise<void> {
   try {
+    console.log("region", region);
+    console.log("functionName", functionName);
     const lambdaClient = new LambdaClient({
       region: region ?? process.env.AWS_REGION ?? AWS_REGION.US_EAST_1,
       credentials: {

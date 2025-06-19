@@ -8,6 +8,7 @@ import {
   updateDeploymentsOfClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
 import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
+import { AWS_REGION } from "@/utils/services/aws/aws_helper";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 // Create ClientSecret
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
       isHidden: isHidden ?? false,
       templateId,
       tokenResponse: tokenResponse ?? undefined,
+      awsRegion: botConfig.awsRegion ?? AWS_REGION.US_EAST_1,
     });
 
     if (addToClientRequest) {

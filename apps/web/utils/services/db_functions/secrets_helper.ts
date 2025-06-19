@@ -1,7 +1,10 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata, ClientSecretVariable } from "@/server/types";
 import { ClientSecret } from "@prisma/client";
-import { updateLambdaEnvironmentVariables } from "../aws/aws_helper";
+import {
+  AWS_REGION,
+  updateLambdaEnvironmentVariables,
+} from "../aws/aws_helper";
 
 // RULE 1 - CLIENT SECRETS ARE SCOPED TO BOT PROJECTS
 // RULE 2 - 1 CLIENT SECRET CAN BE USED IN MULTIPLE CLIENT REQUESTS & VICE VERCA (Many-to-Many)
@@ -406,7 +409,7 @@ export const updateClientSecretVariablesInDeployments = async (
       await updateLambdaEnvironmentVariables({
         functionName: clientDeployment.name,
         environmentVariables: envVars,
-        region: "us-east-1",
+        region: clientDeployment.awsRegion ?? AWS_REGION.US_EAST_1,
       });
     }
   }
@@ -456,7 +459,7 @@ export const updateDeploymentsOfClientSecret = async (
               serverlessMetadata?.functionBase?.toLowerCase() +
               "-" +
               functionInfo.functionName,
-            region: "us-east-1",
+            region: deployment?.awsRegion ?? AWS_REGION.US_EAST_1,
             environmentVariables: envVarsmap,
           });
         } catch (error) {

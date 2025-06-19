@@ -9,6 +9,10 @@ import {
   DescribeLogStreamsCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
 
+export enum AWS_REGION {
+  US_EAST_1 = "us-east-1",
+}
+
 interface UpdateLambdaEnvVarsParams {
   functionName: string;
   environmentVariables: Record<string, string>;
@@ -36,7 +40,7 @@ export async function updateLambdaEnvironmentVariables({
 }: UpdateLambdaEnvVarsParams): Promise<void> {
   try {
     const lambdaClient = new LambdaClient({
-      region: region ?? process.env.AWS_REGION ?? "us-east-1",
+      region: region ?? process.env.AWS_REGION ?? AWS_REGION.US_EAST_1,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
@@ -75,7 +79,7 @@ export async function updateLambdaEnvironmentVariables({
 
 export const AWS_LAMBDA_LOG_GROUP_PREFIX = "/aws/lambda/";
 
-export const AWS_LAMBDA_DEFAULT_REGION = "us-east-1";
+export const AWS_LAMBDA_DEFAULT_REGION = AWS_REGION.US_EAST_1;
 /**
  * Fetches logs from a Lambda function
  * @param params GetLambdaLogsParams object containing function details and log parameters
@@ -91,7 +95,7 @@ export async function getLambdaLogs({
 }: GetLambdaLogsParams): Promise<any[]> {
   try {
     const logsClient = new CloudWatchLogsClient({
-      region: region ?? process.env.AWS_REGION ?? "us-east-1",
+      region: region ?? process.env.AWS_REGION ?? AWS_REGION.US_EAST_1,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",

@@ -81,7 +81,7 @@ export const codingSystemPrompt = (
     ${
       writingCoreFunctions && IN_STAGING
         ? `
-     At each step, you must write proper logs, to properly debug the code later on.
+     At each step, you must write proper logs using console.log, to properly debug the code later on.
      When writing dont change the prime functionality of code, just write logs as an add on.
     `
         : ""

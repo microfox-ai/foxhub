@@ -1,9 +1,10 @@
 import { createSESSdk } from "@microfox/aws-ses";
+import { AWS_REGION } from "./aws/aws_helper";
 
 export const sesSdk = createSESSdk({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "sladivjkvnkjb",
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "sladivjkvnkjb",
-  region: "us-east-1",
+  region: AWS_REGION.US_EAST_1,
 });
 
 interface EmailTemplateOptions {

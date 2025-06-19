@@ -8,12 +8,13 @@ import {
   S3,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { AWS_REGION } from "./aws/aws_helper";
 
 const config = {
   s3Client: new S3({
     forcePathStyle: false,
     endpoint: process.env.SPACES_ENDPOINT,
-    region: "us-east-1",
+    region: AWS_REGION.US_EAST_1,
     credentials: {
       accessKeyId: process.env.SPACES_ACCESS_KEY_ID || "",
       secretAccessKey: process.env.SPACES_SECRET_KEY || "",
@@ -52,13 +53,11 @@ export const s3FileUploadSdk = {
     console.log(file);
 
     if (!userId)
-      key = `${folder || config.folder}/${
-        file ? file.name : fileInfoWithFileBuffer?.fileName
-      }`;
+      key = `${folder || config.folder}/${file ? file.name : fileInfoWithFileBuffer?.fileName
+        }`;
     else
-      key = `${folder || config.folder}/${userId}/${
-        file ? file.name : fileInfoWithFileBuffer?.fileName
-      }`;
+      key = `${folder || config.folder}/${userId}/${file ? file.name : fileInfoWithFileBuffer?.fileName
+        }`;
 
     try {
       const Body = file
@@ -136,12 +135,10 @@ export const s3FileUploadSdk = {
     folder?: string;
   }): string => {
     return userId
-      ? ` https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
-          folder || config.folder
-        }/${userId}/${encodeURI(file.name || file.fileName)}`
-      : `https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${
-          folder || config.folder
-        }/${encodeURI(file.name || file.fileName)}`;
+      ? ` https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${folder || config.folder
+      }/${userId}/${encodeURI(file.name || file.fileName)}`
+      : `https://${process.env.SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${folder || config.folder
+      }/${encodeURI(file.name || file.fileName)}`;
   },
   /**
    * Retrieves the private signed URL good for 24 hrs of the file associated with the provided key.

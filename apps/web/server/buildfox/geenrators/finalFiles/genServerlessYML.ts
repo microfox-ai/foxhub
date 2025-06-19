@@ -27,6 +27,7 @@ import {
   validateServerlessYML,
   mutateServerlessYML,
 } from "@microfox/serverless-yml";
+import { AWS_REGION } from "@/utils/services/aws/aws_helper";
 
 const processImportsFromFiles = (allGenFilesList: any[]) => {
   return allGenFilesList
@@ -102,6 +103,9 @@ export const genServerlessYML = async (
           The service name should be:
           service: ${getServiceName(clientRequest, taskInstanceMeta)}
 
+          The region should be:
+          region: ${clientRequest.awsRegion ?? AWS_REGION.US_EAST_1}
+
           your workflow should be as follows:
           1. read the serverless.yml file
           2. remove all the old functions & cron jobs from the serverless.yml file.
@@ -160,8 +164,8 @@ export const genServerlessYML = async (
       async (config) => {
         let oldConfig = YAML.parse(config);
         oldConfig.provider.timeout = 60;
-        console.log("oldConfig", oldConfig);
-        console.log("imports", imports);
+        oldConfig.provider.region =
+          clientRequest.awsRegion ?? AWS_REGION.US_EAST_1;
         let newConfigString = await mutateServerlessYML(
           YAML.stringify(oldConfig),
           imports

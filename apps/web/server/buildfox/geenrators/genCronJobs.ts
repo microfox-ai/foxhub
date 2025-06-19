@@ -33,7 +33,7 @@ export const genCronJobs = async (
       console.log("generating cron job", cronJob.name);
       const result = await generateText({
         model: models.claude35Sonnet,
-        system: codingSystemPrompt("backend"),
+        system: codingSystemPrompt("backend", true),
         prompt,
         toolChoice: "auto",
         maxSteps: 2,

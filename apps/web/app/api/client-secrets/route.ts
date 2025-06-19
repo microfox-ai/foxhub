@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       isHidden: isHidden ?? false,
       templateId,
       tokenResponse: tokenResponse ?? undefined,
-      awsRegion: botConfig.awsRegion ?? AWS_REGION.US_EAST_1,
+      awsRegion: "",
     });
 
     if (addToClientRequest) {
@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(clientSecret, { status: 200 });
   } catch (error) {
+    console.error("Error creating ClientSecret:", error);
     return NextResponse.json(
       { error: "Error creating ClientSecret" },
       { status: 500 }

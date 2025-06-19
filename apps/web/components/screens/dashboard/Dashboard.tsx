@@ -8,6 +8,7 @@ import useSWR from "swr";
 import { HomeTab } from "./HomeTab";
 import { TasksTab } from "./TasksTab";
 import { ShardPagesTab } from "./ShardPagesTab";
+import { NoProjects } from "./NoProjects";
 
 const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
   const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, setSubmitAnnotations, createNewEmptyRequest } = useClientProject();
@@ -44,6 +45,10 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
         </div>
       </div>
     );
+  }
+
+  if (projects.length === 0) {
+    return <NoProjects user={user} />;
   }
 
   if (!selectedProject)

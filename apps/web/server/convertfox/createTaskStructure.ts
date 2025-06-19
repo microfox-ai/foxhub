@@ -55,6 +55,8 @@ export const createTaskStructure = async (
     content: "Thinking on how to structure your task",
   });
 
+  console.log("modification", modification);
+
   try {
     const result = generateObject({
       model: models.claude4Sonnet,
@@ -65,7 +67,7 @@ export const createTaskStructure = async (
         Task Goal: ${taskInstanceMeta.taskInfo.goal}
         Task Summary: ${taskInstanceMeta.taskInfo.summary}
         Platforms: ${generatePlatformsPrompt(taskInstanceMeta)}
-        ${modification ? `Modifications Requested: ${modification}` : ""}
+        ${modification ? `Modifications Requested: ${modification}, PUT A HIGH EMPHASIS ON THESE MODIFICATIONS` : ""}
         ---
         while designing & planning the task, keep our capabilities & limitations in mind.
         ${getMicrofoxCapabilities()}
@@ -94,6 +96,9 @@ export const createTaskStructure = async (
         ---
         name should always be in camel case, without any extension.
         brief: should be as detailed as possible of the code step by step
+        ----
+        webhooks, api calls, ai tools, etcs are all done via lambda functions.
+        schedueld tasks, background jobs, etcs are all done via cron jobs.
         `,
       schema: taskStructure,
       maxRetries: 3,
@@ -114,13 +119,13 @@ export const createTaskStructure = async (
 
     const object = { ...response.object };
     let templateAddons: CodeTemplateAddon[] = [];
-    if (
-      taskInstanceMeta.taskIntegrations?.platforms.some((p) =>
-        p.package?.includes("puppeteer")
-      )
-    ) {
-      templateAddons.push(codeTemplateAddon.enum.sls_puppeteer_chrome);
-    }
+    // if (
+    //   taskInstanceMeta.taskIntegrations?.platforms.some((p) =>
+    //     p.package?.includes("puppeteer")
+    //   )
+    // ) {
+    //   templateAddons.push(codeTemplateAddon.enum.sls_puppeteer_chrome);
+    // }
     if (object?.templateType === codeTemplateType.enum.upstash_sls) {
       templateAddons.push(codeTemplateAddon.enum.sls_upstash_redis);
     }

@@ -6,12 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "./AuthProvider";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const { handleSigninWithGoogle } = useAuth();
+  const { handleSigninWithGoogle, user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
+    }
+  }, [user]);
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden py-0">

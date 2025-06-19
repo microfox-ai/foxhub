@@ -31,15 +31,18 @@ interface UIAnnotation {
 interface TaskStructureProps {
     uiAnnotation: UIAnnotation;
     idx: number;
+    isLastInQueue?: boolean;
 }
 
 export const TaskStructure = ({
     uiAnnotation,
     idx,
+    isLastInQueue = true,
 }: TaskStructureProps) => {
     const { taskInstanceMeta, updateTaskInstanceMeta } = useTaskInstanceMetaContext();
-    const object = taskInstanceMeta?.taskStructure ? taskInstanceMeta.taskStructure : uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
+    const object = uiAnnotation.object as TaskInstanceMetaType["taskStructure"];
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const handleSaveTaskStructure = async (updatedStructure: TaskInstanceMetaType["taskStructure"]) => {
         if (taskInstanceMeta) {
@@ -51,6 +54,30 @@ export const TaskStructure = ({
     };
 
     const { taskIntegrations } = taskInstanceMeta || {};
+
+    if (!isLastInQueue && !isExpanded) {
+        return (
+            <motion.div
+                key={uiAnnotation.objectType + idx}
+                className="flex flex-col gap-2 p-4 bg-white my-4 rounded-xl border border-gray-100 shadow-lg"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+            >
+                <p className="text-sm text-gray-500">
+                    This task structure is deprecated & modified. Please refer to the latest message to check or modify.
+                </p>
+                <Button
+                    variant="link"
+                    onClick={() => setIsExpanded(true)}
+                    className="text-sm p-0 h-auto self-start"
+                >
+                    Show Previous
+                </Button>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
@@ -70,9 +97,17 @@ export const TaskStructure = ({
                         Review and manage your Task
                     </p>
                 </div>
+                <div className="flex items-center gap-2">
+                    {!isLastInQueue && (
+                        <Button variant="link" onClick={() => setIsExpanded(false)}>
+                            Hide
+                        </Button>
+                    )}
+                </div>
             </div>
 
-            {IN_STAGING ? <TaskStructureProd object={object} taskIntegrations={taskIntegrations} /> : <TaskStructureDev object={object} />}
+            <TaskStructureProd object={object} taskIntegrations={taskIntegrations} />
+            {/* {IN_STAGING ? <TaskStructureProd object={object} taskIntegrations={taskIntegrations} /> : <TaskStructureDev object={object} />} */}
 
             <EditTaskStructureDialog
                 isOpen={isEditDialogOpen}
@@ -87,11 +122,12 @@ export const TaskStructure = ({
                     size="sm"
                     onClick={() => setIsEditDialogOpen(true)}
                     className="flex items-center gap-2"
+                    disabled={!isLastInQueue}
                 >
                     <Edit className="w-4 h-4" />
                     Edit Structure
                 </Button>
-                <ActionButtons className="mt-0" buttons={uiAnnotation.buttons} />
+                <ActionButtons className="mt-0" buttons={uiAnnotation.buttons} disabled={!isLastInQueue} />
             </div>
         </motion.div>
     );

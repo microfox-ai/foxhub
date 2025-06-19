@@ -5,6 +5,47 @@ import { serverAnalytics } from "@/utils/services/analytics/server";
 import { Prisma } from "@prisma/client";
 import { detectOptimalAwsRegionFromRequest } from "@/utils/services/aws/region-detector";
 
+export async function POST(request: Request) {
+  const body = await request.json();
+  const {
+    userId,
+    projectName,
+    projectDescription,
+    slug = null,
+    imageUrl = null,
+    homepageUrl = null,
+    // Add any other fields you want to support
+  } = body;
+
+  if (!userId) {
+    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+  }
+
+  const regionInfo = await detectOptimalAwsRegionFromRequest(request);
+  console.log(
+    `Client region detection for Personal Space: ${regionInfo.reasoning}`
+  );
+
+  const newBotProject = await createNewBotProject({
+    userId,
+    projectName,
+    projectDescription,
+    slug,
+    imageUrl,
+    homepageUrl,
+    awsRegion: regionInfo.region,
+    regionInfo,
+  });
+  // Track personal space creation
+  await serverAnalytics.track("Personal Space Created", {
+    distinct_id: userId,
+    projectId: newBotProject.id,
+    projectName: newBotProject.name,
+    timestamp: new Date().toISOString(),
+  });
+  return NextResponse.json(newBotProject);
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
@@ -32,24 +73,7 @@ export async function GET(request: Request) {
 
     if (!botProjects || botProjects.length === 0) {
       // Detect optimal AWS region based on client's location
-      const regionInfo = await detectOptimalAwsRegionFromRequest(request);
-      console.log(`Client region detection for Personal Space: ${regionInfo.reasoning}`);
-      
-      const newBotProject = await createNewBotProject({
-        userId,
-        projectName: "Personal Space",
-        projectDescription: "This is a personal space for the user",
-        awsRegion: regionInfo.region,
-        regionInfo,
-      });
-      botProjects = [newBotProject];
-      // Track personal space creation
-      await serverAnalytics.track("Personal Space Created", {
-        distinct_id: userId,
-        projectId: newBotProject.id,
-        projectName: newBotProject.name,
-        timestamp: new Date().toISOString(),
-      });
+      return NextResponse.json([]);
     }
 
     let finalBotProjects = botProjects.filter(

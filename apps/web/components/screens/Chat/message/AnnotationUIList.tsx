@@ -59,6 +59,7 @@ export const AnnotationUIList = ({
           key={uiAnnotation.objectType + idx}
           uiAnnotation={uiAnnotation}
           idx={idx}
+          isLastInQueue={isLastInQueue}
         />
       );
     }

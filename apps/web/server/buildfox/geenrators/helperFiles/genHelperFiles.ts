@@ -29,19 +29,19 @@ export const genHelperFiles = async (
       );
     } else if (addon === codeTemplateAddon.enum.sls_puppeteer_chrome) {
       // TODO: Add related helper code files for this
-      const chromeHelper = await fs.readFile(
-        path.join(process.cwd(), fetchAddonDir(addon), "chromeBigScript.txt"),
-        "utf8"
-      );
-      writeToFileSystemAndUpdateSteps(
-        {
-          fileName: "chromeScript.ts",
-          filePath: "src/helpers",
-          fileType: "ts",
-          content: chromeHelper,
-        },
-        clientRequest
-      );
+      // const chromeHelper = await fs.readFile(
+      //   path.join(process.cwd(), fetchAddonDir(addon), "chromeBigScript.txt"),
+      //   "utf8"
+      // );
+      // writeToFileSystemAndUpdateSteps(
+      //   {
+      //     fileName: "chromeScript.ts",
+      //     filePath: "src/helpers",
+      //     fileType: "ts",
+      //     content: chromeHelper,
+      //   },
+      //   clientRequest
+      // );
     }
   }
   return _taskInstanceMeta;

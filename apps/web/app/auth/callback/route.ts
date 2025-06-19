@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     }
   }
   if (!dbUser?.isOnboarded) {
-    return NextResponse.redirect(`${origin}/onboarding`);
+    return NextResponse.redirect(`${origin}/dashboard`);
   }
 
   if (redirectTo && redirectTo?.length > 0) {

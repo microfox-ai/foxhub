@@ -161,16 +161,16 @@ const RoleSelector = ({
       <div
         key={roleValue}
         className={`cursor-pointer transition-all rounded-lg border-2 ${value === roleValue
-            ? "border-[1.5px] border-primary bg-primary/5"
-            : "hover:border-gray-300"
+          ? "border-[1.5px] border-primary bg-primary/5"
+          : "hover:border-gray-300"
           }`}
         onClick={() => onChange(roleValue)}
       >
         <div className="flex items-center p-3">
           <div
             className={`rounded-lg p-1.5 ${value === roleValue
-                ? "bg-primary text-white"
-                : "bg-gray-100 text-gray-500"
+              ? "bg-primary text-white"
+              : "bg-gray-100 text-gray-500"
               }`}
           >
             {icon}
@@ -236,7 +236,7 @@ const UserOnboarding = () => {
         "Thanks for completing the onboarding! 🎉 We'll use this information to personalize your experience."
       );
       setTimeout(() => {
-        router.push("/new-project");
+        router.push("/dashboard");
       }, 3000);
     } catch (error) {
       setOnboardingStatus("error");

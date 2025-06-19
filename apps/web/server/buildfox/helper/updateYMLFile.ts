@@ -10,18 +10,19 @@ import YAML from "yaml";
 export const updateYMLFile = async (
   rootDir: string,
   filePath: string,
-  mutate: (jsonContent: any) => any,
+  mutate: (ymlContent: string) => Promise<string>,
   clientRequest: ClientRequest
 ) => {
   const fileFullPath = path.join(process.cwd(), rootDir, filePath);
   const fileContent = await fs.readFile(fileFullPath, "utf8");
   //const fileContentParsed = YAML.parse(fileContent);
+  const newContent = await mutate(fileContent);
   await writeToFileSystemAndUpdateSteps(
     {
       fileName: filePath,
       filePath: "",
       fileType: "yml",
-      content: await mutate(fileContent),
+      content: newContent,
     },
     clientRequest
   );

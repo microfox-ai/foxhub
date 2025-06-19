@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const useAppButton = () => {
-  const { user, initializingUser } = useAuth();
+  const { user, initializingUser, authUser } = useAuth();
   const router = useRouter();
 
   const handleButtonClick = () => {
-    if (user && (user as any)?.isOnboarded) {
+    if (user || authUser) {
       router.push("/dashboard");
-    } else if (user && !(user as any)?.isOnboarded) {
-      router.push("/onboarding");
-    } else {
+    }
+    // else if (user && !(user as any)?.isOnboarded) {
+    //   router.push("/onboarding");
+    // } 
+    else {
       router.push("/login");
     }
   };
@@ -23,16 +25,18 @@ export const useAppButton = () => {
 };
 
 export const AppButton = () => {
-  const { user, initializingUser } = useAuth();
+  const { user, initializingUser, authUser } = useAuth();
   const router = useRouter();
 
   const handleButtonClick = () => {
-    if (user && (user as any)?.isOnboarded) {
+    if (user || authUser) {
       router.push("/dashboard");
-    } else if (user && !(user as any)?.isOnboarded) {
-      router.push("/onboarding");
-    } else {
-      router.push("/login");
+    }
+    // else if (user && !(user as any)?.isOnboarded) {
+    //   router.push("/dashboard");
+    // }
+    else {
+      router.push("/dashboard");
     }
   };
 

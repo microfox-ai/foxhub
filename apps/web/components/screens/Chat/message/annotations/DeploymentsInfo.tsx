@@ -26,6 +26,10 @@ import {
   PackageIcon,
   Rocket,
   XIcon,
+  Bot,
+  Database,
+  CheckCircleIcon,
+  MessageCircleWarningIcon,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -49,6 +53,7 @@ import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AWS_LAMBDA_DEFAULT_REGION, AWS_LAMBDA_LOG_GROUP_PREFIX } from "@/utils/services/aws/aws_helper";
+import { TabType } from "@/components/screens/providers/TabUiProvider";
 
 interface UIAnnotation {
   objectType: string;
@@ -80,39 +85,19 @@ export const DeploymentsInfo = ({
   const { setActiveTab } = useTabUi();
   const { setSubmitAnnotations, selectedRequest, selectedClientDeployment: clientDeployment } =
     useClientProject();
+  const { taskInstanceMeta } = useTaskInstanceMetaContext();
 
   const { deployment, logs, shouldBreak, progress } = useDeployStatus({
     clientRequestId: selectedRequest?.id || "",
     sha: sha || "",
   });
 
-  const deployToProduction = () => {
-    console.log("deployToProduction");
-    append(
-      constructMessageFromButton(
-        {
-          text: "Deploy to Production !",
-          minionType: "deployfox",
-        },
-        [
-          {
-            type: "attachment",
-            key: "stage",
-            value: DEPLOY_STAGE.PROD,
-          },
-          {
-            type: "attachment",
-            key: "is_local",
-            value: false,
-          },
-        ]
-      ),
-      constructAppendBody("deployfox", {
-        stage: DEPLOY_STAGE.PROD,
-        is_local: false,
-      })
-    );
-  };
+  let statusPart = "is in progress";
+  if (deployment?.status === 'deployed') {
+    statusPart = "is deployed successfully";
+  } else if (deployment?.status === 'failed') {
+    statusPart = "deployment failed";
+  }
 
   const [serverlessLogs, setServerlessLogs] = useState<any>(null);
   const [checkForErrors, setCheckForErrors] = useState<boolean>(false);
@@ -219,280 +204,34 @@ export const DeploymentsInfo = ({
     return null;
   }
 
-  if (!shouldBreak) {
-    return (
-      <motion.div
-        className="flex flex-col gap-4 p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Cube size={16} color="#2b7fff" />
-            <h3 className="text-base font-medium text-gray-800">
-              Deploying to{" "}
-              <span className="font-semibold text-blue-600">
-                {deployment?.stage?.toUpperCase()}
-              </span>{" "}
-              environment
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock size={14} className="text-gray-500" />
-            <span className="text-sm font-medium text-gray-600">
-              {prettyPrintDuration(
-                deployment?.metrics?.timing?.startTime as string,
-                new Date().toISOString()
-              )}
-            </span>
-          </div>
-        </div>
-
-        {/* Estimated time message */}
-        <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex items-center gap-2">
-          <Info size={14} />
-          <span>
-            This deployment typically takes about 2 minutes to complete.
-          </span>
-        </div>
-
-        {/* Progress bar with percentage */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Progress</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-            <motion.div
-              className="h-full bg-blue-500 rounded-full"
-              initial={{ width: "0%" }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <PackageIcon size={14} color="#2b7fff" />
-              <span className="text-gray-500">Environment</span>
-            </div>
-            <div className="font-medium text-gray-800">
-              {deployment?.stage?.toUpperCase()}
-            </div>
-          </div>
-
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <CodeIcon size={14} color="#2b7fff" />
-              <span className="text-gray-500">Logs</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={fetchLogs}
-                className="flex-1 text-left font-medium text-gray-800 truncate hover:text-blue-600 transition-colors"
-              >
-                {logs?.length || 0}
-              </button>
-              {clientDeployment && (
-                <a
-                  href={`https://${AWS_LAMBDA_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_LAMBDA_DEFAULT_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`${AWS_LAMBDA_LOG_GROUP_PREFIX}${clientDeployment.name}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
-                >
-                  <ExternalLink className="h-3 w-3 text-neutral-500" />
-                </a>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <Rocket size={14} color="#2b7fff" />
-              <span className="text-gray-500">Status</span>
-            </div>
-            <div className="font-medium text-yellow-600">
-              {deployment?.status}
-            </div>
-          </div>
-        </div>
-
-        <div className="text-xs text-gray-500 flex items-center gap-2">
-          <Loader2 size={12} className="animate-spin" />
-          <span>
-            {deployment?.statusDescription}
-          </span>
-        </div>
-        <LogsDialog
-          isOpen={showLogsDialog}
-          onClose={() => setShowLogsDialog(false)}
-          logs={logs || ""}
-          serverlessLogs={serverlessLogs}
-        />
-      </motion.div>
-    );
-  }
+  const titleNode = <DeploymentTitle
+    taskInstanceMeta={taskInstanceMeta}
+    deployment={deployment}
+    statusPart={statusPart}
+    fetchLogs={fetchLogs}
+    isInProgress={!shouldBreak}
+  />
 
   return (
     <>
-      <div className="flex flex-col gap-4 p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
-        {/* Header with Status */}
-        <div className="flex items-center justify-between border-b pb-4">
-          <div className="flex items-center space-x-3">
-            <div
-              className={cn(
-                "w-2 h-2 rounded-full",
-                deployment?.status === "failed"
-                  ? "bg-red-500 animate-pulse"
-                  : deployment?.status === "deployed"
-                    ? "bg-green-500"
-                    : "bg-yellow-500 animate-pulse"
-              )}
-            />
-            <h2 className="text-xl font-medium text-gray-900">
-              Deployment Status
-            </h2>
-          </div>
-          <span
-            className={cn(
-              "text-xs font-medium px-2.5 py-1 rounded-full",
-              deployment?.status === "failed"
-                ? "bg-red-50 text-red-700"
-                : deployment?.status === "deployed"
-                  ? "bg-green-50 text-green-700"
-                  : "bg-yellow-50 text-yellow-700"
-            )}
-          >
-            {deployment?.status?.toUpperCase()}
-          </span>
-        </div>
-
-        {/* Title and PR Info */}
-        <div className="p-3 bg-gray-50 rounded-lg text-sm flex items-start gap-2">
-          <GitPullRequest className="w-4 h-4 text-gray-500 mt-px" />
-          <div className="flex flex-col gap-1">
-            <div className="font-medium text-gray-900">
-              {(selectedRequest?.metadata as any)?.pr?.title as string}
-            </div>
-            <div className="text-gray-500 mt-1 flex items-center gap-2">
-              PR #{selectedRequest?.prNumber}
-              {selectedRequest?.prUrl && (
-                <Link
-                  href="#"
-                  onClick={fetchLogs}
-                  className="text-blue-500 hover:text-blue-600"
-                >
-                  {" "}
-                  View Logs
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="flex items-center gap-2">
-              <PackageIcon size={14} color="#2b7fff" />
-              <div className="text-gray-500">Environment</div>
-            </div>
-            <div className="font-medium text-gray-900 mt-1">
-              {deployment?.stage || stage}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <Clock size={14} color="#2b7fff" />
-              <div className="text-gray-500">Duration</div>
-            </div>
-            <div className="font-medium text-gray-900 mt-1">
-              {deployment?.metrics?.timing?.totalDuration
-                ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds`
-                : "N/A"}
-            </div>
-          </div>
-        </div>
-
-        {deployment?.status === "failed" && (
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-              onClick={debugIssue}
-            >
-              <Rocket className="w-4 h-4" />
-              Debug The Issue & Fix it.
-            </Button>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-              onClick={fetchLogs}
-            >
-              <FileText className="w-4 h-4" />
-              View Logs
-            </Button>
-          </div>
-        )}
-
-        {deployment?.status === "deployed" && (
-          <>
-            {deployment?.stage === DEPLOY_STAGE.STAGING ? (
-              <div className="text-xs text-gray-500">
-                <span className="font-medium text-gray-900">Staging </span>
-                environment is ready to be promoted to{" "}
-                <span className="font-medium text-gray-900">Production</span>
-              </div>
-            ) : (
-              <div className="text-md text-gray-500">
-                <span className="font-medium text-gray-900">
-                  Automation Published !
-                </span>
-              </div>
-            )}
-            <div className="flex gap-2 mt-4">
-              {deployment?.stage === DEPLOY_STAGE.STAGING && (
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-                  onClick={deployToProduction}
-                >
-                  <Rocket className="w-4 h-4" />
-                  Deploy to Production
-                </Button>
-              )}
-              {deployment?.stage === DEPLOY_STAGE.PROD && (
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-                  onClick={() => {
-                    setActiveTab("dashboard");
-                  }}
-                >
-                  <CatIcon className="w-4 h-4" />
-                  Open Dashboard
-                </Button>
-              )}
-              <Button
-                onClick={() => {
-                  handleRightCollapse(false);
-                }}
-                variant="default"
-                className="group/button flex items-center gap-2"
-              >
-                Test Endpoints
-                <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-
+      {!shouldBreak ? (
+        <DeployingView
+          title={titleNode}
+          deployment={deployment}
+          progress={progress}
+          logs={logs}
+          fetchLogs={fetchLogs}
+          clientDeployment={clientDeployment}
+        />
+      ) : (
+        <DeploymentResultView
+          title={titleNode}
+          deployment={deployment}
+          stage={stage}
+          debugIssue={debugIssue}
+          fetchLogs={fetchLogs}
+        />
+      )}
       <LogsDialog
         isOpen={showLogsDialog}
         onClose={() => setShowLogsDialog(false)}
@@ -502,6 +241,369 @@ export const DeploymentsInfo = ({
     </>
   );
 };
+
+interface DeploymentTitleProps {
+  taskInstanceMeta: any;
+  deployment: any;
+  statusPart: string;
+  fetchLogs: () => void;
+  isInProgress: boolean;
+}
+
+const DeploymentTitle = ({ taskInstanceMeta, deployment, statusPart, fetchLogs, isInProgress }: DeploymentTitleProps) => {
+  const taskInfo = taskInstanceMeta?.taskInfo;
+  const taskStructure = taskInstanceMeta?.taskStructure;
+  const taskIntegrations = taskInstanceMeta?.taskIntegrations;
+
+  if (!taskInfo) {
+    return null;
+  }
+
+  return (
+    <div className="p-4 bg-neutral-50 border border-neutral-100">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-base font-medium text-neutral-900">
+            {taskInfo?.name}
+          </p>
+          <p className="text-sm text-neutral-600 mt-1 max-w-[250px]">
+            A <span className="font-semibold text-neutral-800">{deployment?.stage?.toLowerCase()}</span> version {statusPart}. <span className="text-xs text-neutral-600">({deployment?.metrics?.timing?.totalDuration ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds` : "N/A"})</span> <span className="text-sm"></span>
+          </p>
+          <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 text-sm text-neutral-600">
+            {taskStructure?.lambdaFunctions?.length > 0 && (
+              <span className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1">
+                {taskStructure.lambdaFunctions.length} Ai tool{taskStructure.lambdaFunctions.length > 1 ? 's' : ''}
+              </span>
+            )}
+            {taskStructure?.cronJobs > 0 && (
+              <span className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1">
+                {taskStructure.cronJobs} background job{taskStructure.cronJobs > 1 ? 's' : ''}
+              </span>
+            )}
+            {taskIntegrations?.platforms?.length > 0 && (
+              <span className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1">
+                {taskIntegrations.platforms.length} platform{taskIntegrations.platforms.length > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        </div>
+        {isInProgress && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchLogs}
+            className="text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 shrink-0"
+          >
+            <FileText className="w-3 h-3 mr-1.5" />
+            View Logs
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface DeployingViewProps {
+  title: React.ReactNode;
+  deployment: any;
+  progress: number;
+  logs: string | null;
+  fetchLogs: () => void;
+  clientDeployment: any;
+}
+
+const DeployingView = ({ title, deployment, progress, logs, fetchLogs, clientDeployment }: DeployingViewProps) => {
+  return (
+    <motion.div
+      className="flex flex-col gap-4 p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+    >
+      {title}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Cube size={16} color="#2b7fff" />
+          <h3 className="text-base font-medium text-gray-800">
+            Deploying...
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock size={14} className="text-gray-500" />
+          <span className="text-sm font-medium text-gray-600">
+            {prettyPrintDuration(
+              deployment?.metrics?.timing?.startTime as string,
+              new Date().toISOString()
+            )}
+          </span>
+        </div>
+      </div>
+
+      {/* Estimated time message */}
+      <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex items-center gap-2">
+        <Info size={14} />
+        <span>
+          This deployment typically takes about 2 minutes to complete.
+        </span>
+      </div>
+
+      {/* Progress bar with percentage */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>Progress</span>
+          <span>{progress}%</span>
+        </div>
+        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+          <motion.div
+            className="h-full bg-blue-500 rounded-full"
+            initial={{ width: "0%" }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 text-sm">
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="flex items-center gap-2 mb-1">
+            <PackageIcon size={14} color="#2b7fff" />
+            <span className="text-gray-500">Environment</span>
+          </div>
+          <div className="font-medium text-gray-800">
+            {deployment?.stage?.toUpperCase()}
+          </div>
+        </div>
+
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="flex items-center gap-2 mb-1">
+            <CodeIcon size={14} color="#2b7fff" />
+            <span className="text-gray-500">Logs</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchLogs}
+              className="flex-1 text-left font-medium text-gray-800 truncate hover:text-blue-600 transition-colors"
+            >
+              {logs?.length || 0}
+            </button>
+            {clientDeployment && (
+              <a
+                href={`https://${AWS_LAMBDA_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_LAMBDA_DEFAULT_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`${AWS_LAMBDA_LOG_GROUP_PREFIX}${clientDeployment.name}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+              >
+                <ExternalLink className="h-3 w-3 text-neutral-500" />
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="flex items-center gap-2 mb-1">
+            <Rocket size={14} color="#2b7fff" />
+            <span className="text-gray-500">Status</span>
+          </div>
+          <div className="font-medium text-yellow-600">
+            {deployment?.status}
+          </div>
+        </div>
+      </div>
+
+      <div className="text-xs text-gray-500 flex items-center gap-2">
+        <Loader2 size={12} className="animate-spin" />
+        <span>
+          {deployment?.statusDescription}
+        </span>
+      </div>
+    </motion.div>
+  );
+};
+
+interface DeploymentResultViewProps {
+  deployment: any;
+  stage: string;
+  title: React.ReactNode;
+  debugIssue: () => void;
+  fetchLogs: () => void;
+}
+
+const DeploymentResultView = ({
+  deployment,
+  stage,
+  title,
+  debugIssue,
+  fetchLogs,
+}: DeploymentResultViewProps) => {
+
+  const { append } = useMicrofoxChat();
+  const { setActiveTab } = useTabUi();
+  const { handleRightCollapse } = useLayout();
+
+  const deployToProduction = () => {
+    console.log("deployToProduction");
+    append(
+      constructMessageFromButton(
+        {
+          text: "Deploy to Production !",
+          minionType: "deployfox",
+        },
+        [
+          {
+            type: "attachment",
+            key: "stage",
+            value: DEPLOY_STAGE.PROD,
+          },
+          {
+            type: "attachment",
+            key: "is_local",
+            value: false,
+          },
+        ]
+      ),
+      constructAppendBody("deployfox", {
+        stage: DEPLOY_STAGE.PROD,
+        is_local: false,
+      })
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-0 bg-white rounded-xl border border-gray-100 shadow-sm min-w-[400px]">
+      {/* Header with Status */}
+      <div className="flex items-center justify-between border-b p-4">
+        <div className="flex items-center space-x-3">
+          <div
+            className={cn(
+              "w-2 h-2 rounded-full",
+              deployment?.status === "failed"
+                ? "bg-red-500 animate-pulse"
+                : deployment?.status === "deployed"
+                  ? "bg-green-500"
+                  : "bg-yellow-500 animate-pulse"
+            )}
+          />
+          <h2 className="text-xl font-medium text-gray-900">
+            Uh oh! Deployment Failed
+          </h2>
+        </div>
+        <span
+          className={cn(
+            "text-xs font-medium px-1 py-1 rounded-full ml-4",
+            deployment?.status === "failed"
+              ? "bg-red-50 text-red-700"
+              : deployment?.status === "deployed"
+                ? "bg-green-50 text-green-700"
+                : "bg-yellow-50 text-yellow-700"
+          )}
+        >
+          {deployment?.status == "failed" ? <MessageCircleWarningIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
+        </span>
+      </div>
+
+      {title}
+
+      {/* Info Grid */}
+      {/* <div className="grid grid-cols-2 gap-4 text-sm px-4 ">
+        <div>
+          <div className="flex items-center gap-2">
+            <PackageIcon size={14} color="#2b7fff" />
+            <div className="text-gray-500 text-xs">Environment</div>
+          </div>
+          <div className="font-medium text-gray-900 mt-1">
+            {(deployment?.stage || stage)?.toLowerCase()}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2">
+            <Clock size={14} color="#2b7fff" />
+            <div className="text-gray-500 text-xs">Duration</div>
+          </div>
+          <div className="font-medium text-gray-900 mt-1">
+            {deployment?.metrics?.timing?.totalDuration
+              ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds`
+              : "N/A"}
+          </div>
+        </div>
+      </div> */}
+
+      {deployment?.status === "failed" && (
+        <div className="flex gap-2 p-4">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 bg-white hover:text-neutral-700 hover:bg-neutral-50 text-neutral-600 border-neutral-200 hover:border-neutral-300"
+            onClick={fetchLogs}
+          >
+            <FileText className="w-4 h-4" />
+            Logs
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+            onClick={debugIssue}
+          >
+            <Rocket className="w-4 h-4" />
+            Debug & Fix.
+          </Button>
+        </div>
+      )}
+
+      {deployment?.status === "deployed" && (
+        <>
+          {deployment?.stage === DEPLOY_STAGE.STAGING ? (
+            <div className="text-xs text-gray-500">
+              <span className="font-medium text-gray-900">Staging </span>
+              environment is ready to be promoted to{" "}
+              <span className="font-medium text-gray-900">Production</span>
+            </div>
+          ) : (
+            <div className="text-md text-gray-500">
+              <span className="font-medium text-gray-900">
+                Automation Published !
+              </span>
+            </div>
+          )}
+          <div className="flex gap-2 mt-4 p-4">
+            {deployment?.stage === DEPLOY_STAGE.STAGING && (
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+                onClick={deployToProduction}
+              >
+                <Rocket className="w-4 h-4" />
+                Deploy to Production
+              </Button>
+            )}
+            {deployment?.stage === DEPLOY_STAGE.PROD && (
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+                onClick={() => {
+                  setActiveTab("dashboard");
+                }}
+              >
+                <CatIcon className="w-4 h-4" />
+                Open Dashboard
+              </Button>
+            )}
+            <Button
+              onClick={() => {
+                handleRightCollapse(false);
+              }}
+              variant="default"
+              className="group/button flex items-center gap-2"
+            >
+              Test Endpoints
+              <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 const LogsDialog = ({
   isOpen,

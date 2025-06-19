@@ -56,6 +56,7 @@ function useClientProjectContext() {
     data: projects = [],
     error,
     isLoading,
+    mutate: mutateBotProjects,
   } = useSWR<BotProjectWithRequests[]>(
     user?.id ? `/api/bot-project?userId=${user?.id}` : null,
     async (url: string) => await fetch(url).then((res) => res.json())
@@ -191,6 +192,54 @@ function useClientProjectContext() {
     );
   };
 
+  /**
+   * Creates a new bot project.
+   * @param details - Object containing projectName, projectDescription, and optional slug, imageUrl, homepageUrl.
+   * @returns The created project or null if failed.
+   */
+  const createNewProject = async (details: {
+    projectName: string;
+    projectDescription: string;
+    slug?: string;
+    imageUrl?: string;
+    homepageUrl?: string;
+  }) => {
+    if (!user) {
+      toast.error("User not found");
+      return null;
+    }
+    if (!details.projectName?.trim() || !details.projectDescription?.trim()) {
+      toast.error("Please provide both a project name and description.");
+      return null;
+    }
+    try {
+      const newProject = await PortalSdk.postData("/api/bot-project/create", {
+        userId: user.id,
+        projectName: details.projectName.trim(),
+        projectDescription: details.projectDescription.trim(),
+        slug: details.slug || null,
+        imageUrl: details.imageUrl || null,
+        homepageUrl: details.homepageUrl || null,
+      });
+      analytics.track("Project Created", {
+        userId: user.id,
+        projectId: newProject.id,
+        projectName: newProject.name,
+        timestamp: new Date().toISOString(),
+      });
+      toast.success("Project created successfully!");
+      // Optionally, refetch projects or update state here if needed
+      // Optionally, redirect to the new project page:
+      // router.push(`/project/${newProject.id}`);
+      return newProject;
+      // return null;
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to create project.");
+      console.error("Error creating project:", error);
+      return null;
+    }
+  };
+
   return {
     clientRequestId: requestParamId ?? null,
     projectId: projectParamId ?? null,
@@ -210,6 +259,8 @@ function useClientProjectContext() {
     setSubmitAnnotations,
     autoSubmit,
     setAutoSubmit,
+    createNewProject,
+    mutateBotProjects,
   };
 }
 

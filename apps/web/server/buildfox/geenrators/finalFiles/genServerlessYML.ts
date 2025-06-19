@@ -76,22 +76,28 @@ export const genServerlessYML = async (
           ${taskInstanceMeta?.taskStructure?.lambdaFunctions
             ?.map(
               (lambda) =>
-                ` name: ${lambda.name} \n
-              path: ${lambda.path}\n
-              method: ${lambda.method}\n
-              handler: dist/functions/${getFunctionNameFromKebabCase(lambda.name)}.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
+                `${getFunctionNameFromKebabCase(lambda.name)}:
+  handler: dist/functions/${getFunctionNameFromKebabCase(
+    lambda.name
+  )}.${getFunctionNameFromKebabCase(lambda.name)}Function.js
+  events:
+    - http:
+        path: ${lambda.path}
+        method: ${lambda.method}`
             )
-            .join("\n\n - ")}
+            .join("\n\n")}
           ${taskInstanceMeta?.taskStructure?.cronJobs
             ?.map(
-              (cron) => `
-              name: ${cron.name} \n
-              method: post\n 
-              handler: dist/functions/${getFunctionNameFromKebabCase(cron.name)}.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
-              - schedule:\n
-                rate: ${cron.cronExpression}`
+              (cron) =>
+                `${getFunctionNameFromKebabCase(cron.name)}:
+  handler: dist/functions/${getFunctionNameFromKebabCase(
+    cron.name
+  )}.${getFunctionNameFromKebabCase(cron.name)}Function.js
+  events:
+    - schedule:
+        rate: ${cron.cronExpression}`
             )
-            .join("\n\n - ")}
+            .join("\n\n")}
 
 
           The input serverless.yml file is as follows:
@@ -162,7 +168,9 @@ export const genServerlessYML = async (
         .replace("\\serverless.yml", ""),
       "serverless.yml",
       async (config) => {
+        console.log("serverless.yml", config);
         let oldConfig = YAML.parse(config);
+        console.log("oldConfig", oldConfig);
         oldConfig.provider.timeout = 60;
         oldConfig.provider.region =
           clientRequest.awsRegion ?? AWS_REGION.US_EAST_1;

@@ -3,7 +3,8 @@ import { ClientDeploymentMetadata, ClientSecretVariable } from "@/server/types";
 import { ClientSecret } from "@prisma/client";
 import {
   AWS_REGION,
-  updateLambdaEnvironmentVariables,
+  addLambdaEnvironmentVariables,
+  removeLambdaEnvironmentVariables,
 } from "../aws/aws_helper";
 
 // RULE 1 - CLIENT SECRETS ARE SCOPED TO BOT PROJECTS
@@ -406,7 +407,7 @@ export const updateClientSecretVariablesInDeployments = async (
           envVars[v.key] = v.value;
         })
       );
-      await updateLambdaEnvironmentVariables({
+      await addLambdaEnvironmentVariables({
         functionName: clientDeployment.name,
         environmentVariables: envVars,
         region: clientDeployment.awsRegion ?? AWS_REGION.US_EAST_1,
@@ -454,7 +455,7 @@ export const updateDeploymentsOfClientSecret = async (
           );
         }
         try {
-          await updateLambdaEnvironmentVariables({
+          await addLambdaEnvironmentVariables({
             functionName:
               serverlessMetadata?.functionBase +
               "-" +
@@ -465,6 +466,113 @@ export const updateDeploymentsOfClientSecret = async (
         } catch (error) {
           console.error("Error updating lambda environment variables", error);
         }
+      }
+    }
+  }
+};
+
+export const removeDeploymentsOfClientSecret = async (
+  clientSecret?: ClientSecret | null,
+  onlyRequestIds?: string[]
+) => {
+  if (clientSecret && clientSecret?.variables?.length > 0) {
+    const clientDeployments = await prisma.clientDeployment.findMany({
+      where: {
+        originClientRequestId: {
+          in: onlyRequestIds ?? clientSecret?.clientRequestIds,
+        },
+      },
+    });
+
+    for (const deployment of clientDeployments) {
+      const serverlessMetadata = (
+        deployment?.metadata as unknown as ClientDeploymentMetadata
+      )?.serverless;
+      if (!serverlessMetadata) {
+        continue;
+      }
+      for (const functionInfo of serverlessMetadata?.functions ?? []) {
+        const variableKeys = (clientSecret?.variables as any[])?.map(
+          (v) => v.key
+        );
+        const botConfigKeys = (clientSecret?.botConfig as any[])?.map(
+          (c) => c.key
+        );
+        const allKeys = [...variableKeys, ...botConfigKeys];
+
+        try {
+          await removeLambdaEnvironmentVariables({
+            functionName:
+              serverlessMetadata?.functionBase +
+              "-" +
+              functionInfo.functionName,
+            region: deployment?.awsRegion ?? AWS_REGION.US_EAST_1,
+            variableKeys: allKeys,
+          });
+        } catch (error) {
+          console.error("Error removing lambda environment variables", error);
+        }
+      }
+    }
+  }
+};
+
+export const updateDeploymentsOfClientRequest = async (
+  clientRequestId: string
+) => {
+  // 1. Find all deployments for this client request
+  const clientDeployments = await prisma.clientDeployment.findMany({
+    where: { originClientRequestId: clientRequestId },
+  });
+
+  // 2. Find all secrets for this client request
+  const clientRequest = await prisma.clientRequest.findUnique({
+    where: { id: clientRequestId },
+  });
+
+  if (!clientRequest) return;
+
+  const allSecretsForRequest = await prisma.clientSecret.findMany({
+    where: { id: { in: clientRequest.mentionedClientSecretIds } },
+  });
+
+  // 3. Consolidate all environment variables from all secrets
+  const consolidatedEnvVars: Record<string, string> = {};
+  for (const secret of allSecretsForRequest) {
+    if (secret.variables && Array.isArray(secret.variables)) {
+      secret.variables.forEach((v: any) => {
+        if (v.key && v.value) {
+          consolidatedEnvVars[v.key] = v.value;
+        }
+      });
+    }
+
+    if (secret.botConfig && Array.isArray(secret.botConfig)) {
+      secret.botConfig.forEach((config: any) => {
+        if (config.key && config.value) {
+          consolidatedEnvVars[config.key] = config.value;
+        }
+      });
+    }
+  }
+
+  // 4. Iterate through deployments and update lambda
+  for (const deployment of clientDeployments) {
+    const serverlessMetadata = (
+      deployment?.metadata as unknown as ClientDeploymentMetadata
+    )?.serverless;
+    if (!serverlessMetadata) continue;
+
+    for (const functionInfo of serverlessMetadata?.functions ?? []) {
+      try {
+        await addLambdaEnvironmentVariables({
+          functionName:
+            serverlessMetadata.functionBase + "-" + functionInfo.functionName,
+          region: deployment.awsRegion ?? AWS_REGION.US_EAST_1,
+          environmentVariables: consolidatedEnvVars,
+        });
+      } catch (error) {
+        console.error("Error updating lambda environment variables", error);
       }
     }
   }

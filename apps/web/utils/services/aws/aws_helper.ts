@@ -19,6 +19,12 @@ interface UpdateLambdaEnvVarsParams {
   region?: string;
 }
 
+interface RemoveLambdaEnvVarsParams {
+  functionName: string;
+  variableKeys: string[];
+  region?: string;
+}
+
 interface GetLambdaLogsParams {
   functionName: string;
   region?: string;
@@ -33,7 +39,7 @@ interface GetLambdaLogsParams {
  * @param params UpdateLambdaEnvVarsParams object containing function details
  * @returns Promise that resolves when the update is complete
  */
-export async function updateLambdaEnvironmentVariables({
+export async function addLambdaEnvironmentVariables({
   functionName,
   environmentVariables,
   region,
@@ -75,6 +81,49 @@ export async function updateLambdaEnvironmentVariables({
     );
   } catch (error) {
     console.error("Error updating Lambda environment variables:", error);
+    throw error;
+  }
+}
+
+export async function removeLambdaEnvironmentVariables({
+  functionName,
+  variableKeys,
+  region,
+}: RemoveLambdaEnvVarsParams): Promise<void> {
+  try {
+    console.log("region", region);
+    console.log("functionName", functionName);
+    const lambdaClient = new LambdaClient({
+      region: region ?? process.env.AWS_REGION ?? AWS_REGION.US_EAST_1,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+      },
+    });
+
+    // Get current configuration
+    const getConfigCommand = new GetFunctionConfigurationCommand({
+      FunctionName: functionName,
+    });
+    const currentConfig = await lambdaClient.send(getConfigCommand);
+    const currentVariables = currentConfig.Environment?.Variables ?? {};
+
+    // Remove specified keys
+    variableKeys.forEach((key) => delete currentVariables[key]);
+
+    const command = new UpdateFunctionConfigurationCommand({
+      FunctionName: functionName,
+      Environment: {
+        Variables: currentVariables,
+      },
+    });
+
+    await lambdaClient.send(command);
+    console.log(
+      `Successfully removed environment variables from Lambda function: ${functionName}`
+    );
+  } catch (error) {
+    console.error("Error removing Lambda environment variables:", error);
     throw error;
   }
 }

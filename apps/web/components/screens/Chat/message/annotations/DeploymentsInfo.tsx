@@ -341,17 +341,17 @@ const DeployingView = ({ title, deployment, progress, logs, fetchLogs, clientDep
       </div>
 
       {/* Estimated time message */}
-      <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex items-center gap-2">
+      {/* <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex items-center gap-2">
         <Info size={14} />
         <span>
           This deployment typically takes about 2 minutes to complete.
         </span>
-      </div>
+      </div> */}
 
       {/* Progress bar with percentage */}
       <div className="space-y-2">
         <div className="flex justify-between text-xs text-gray-500">
-          <span>Progress</span>
+          <span>Progress - {deployment?.status} :</span>
           <span>{progress}%</span>
         </div>
         <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
@@ -364,14 +364,14 @@ const DeployingView = ({ title, deployment, progress, logs, fetchLogs, clientDep
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 text-sm">
+      {/* <div className="grid grid-cols-3 gap-4 text-sm">
         <div className="bg-gray-50 p-3 rounded-lg">
           <div className="flex items-center gap-2 mb-1">
             <PackageIcon size={14} color="#2b7fff" />
-            <span className="text-gray-500">Environment</span>
+            <span className="text-gray-500">Estimated Time</span>
           </div>
           <div className="font-medium text-gray-800">
-            {deployment?.stage?.toUpperCase()}
+            2 Minutes
           </div>
         </div>
 
@@ -409,7 +409,7 @@ const DeployingView = ({ title, deployment, progress, logs, fetchLogs, clientDep
             {deployment?.status}
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="text-xs text-gray-500 flex items-center gap-2">
         <Loader2 size={12} className="animate-spin" />
@@ -529,6 +529,11 @@ const DeploymentResultView = ({
         </div>
       </div> */}
 
+      {/* <div className="text-xs text-gray-500 p-3">
+              Test your app before pushing to
+              <span className="font-medium text-gray-900">Production</span>
+            </div> */}
+
       {deployment?.status === "failed" && (
         <div className="flex gap-2 p-4">
           <Button
@@ -551,54 +556,40 @@ const DeploymentResultView = ({
       )}
 
       {deployment?.status === "deployed" && (
-        <>
-          {deployment?.stage === DEPLOY_STAGE.STAGING ? (
-            <div className="text-xs text-gray-500 p-3">
-              Test your app before pushing to
-              <span className="font-medium text-gray-900">Production</span>
-            </div>
-          ) : (
-            <div className="text-md text-gray-500 p-3">
-              <span className="font-medium text-gray-900">
-                Automation Published !
-              </span>
-            </div>
-          )}
-          <div className="flex gap-2 mt-4 p-4">
-            {deployment?.stage === DEPLOY_STAGE.STAGING && (
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-                onClick={deployToProduction}
-              >
-                <Rocket className="w-4 h-4" />
-                Deploy to Production
-              </Button>
-            )}
-            {deployment?.stage === DEPLOY_STAGE.PROD && (
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
-                onClick={() => {
-                  setActiveTab("dashboard");
-                }}
-              >
-                <CatIcon className="w-4 h-4" />
-                Open Dashboard
-              </Button>
-            )}
+        <div className="flex gap-2 p-4">
+          {deployment?.stage === DEPLOY_STAGE.STAGING && (
             <Button
-              onClick={() => {
-                handleRightCollapse(false);
-              }}
-              variant="default"
-              className="group/button flex items-center gap-2"
+              variant="outline"
+              className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+              onClick={deployToProduction}
             >
-              Test Endpoints
-              <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
+              <Rocket className="w-4 h-4" />
+              Deploy to Production
             </Button>
-          </div>
-        </>
+          )}
+          {deployment?.stage === DEPLOY_STAGE.PROD && (
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 bg-white hover:text-blue-700 hover:bg-blue-50 text-blue-600 border-blue-200 hover:border-blue-300"
+              onClick={() => {
+                setActiveTab("dashboard");
+              }}
+            >
+              <CatIcon className="w-4 h-4" />
+              Open Dashboard
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              handleRightCollapse(false);
+            }}
+            variant="default"
+            className="group/button flex items-center gap-2"
+          >
+            Test Endpoints
+            <ArrowRight className="w-4 h-4 group-hover/button:translate-x-1 transition-transform" />
+          </Button>
+        </div>
       )}
     </div>
   )

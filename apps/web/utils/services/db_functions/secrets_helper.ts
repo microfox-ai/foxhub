@@ -456,7 +456,7 @@ export const updateDeploymentsOfClientSecret = async (
         try {
           await updateLambdaEnvironmentVariables({
             functionName:
-              serverlessMetadata?.functionBase?.toLowerCase() +
+              serverlessMetadata?.functionBase +
               "-" +
               functionInfo.functionName,
             region: deployment?.awsRegion ?? AWS_REGION.US_EAST_1,

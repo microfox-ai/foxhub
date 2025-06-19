@@ -1,11 +1,7 @@
-import { prisma } from "@/prisma/prisma";
-import { ClientDeploymentMetadata } from "@/server/types";
-import { updateLambdaEnvironmentVariables } from "@/utils/services/aws/aws_helper";
 import {
   updateClientSecret,
   updateDeploymentsOfClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
-import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 // Get ClientSecret

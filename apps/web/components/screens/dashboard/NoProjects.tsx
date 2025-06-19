@@ -81,7 +81,7 @@ export const NoProjects = ({ user }: NoProjectsProps) => {
                                         {steps.map((step, idx) => (
                                             <motion.div
                                                 key={step}
-                                                className={`flex items-center gap-3 text-sm ${idx === currentStep ? "font-bold text-gray-900" : idx < currentStep ? "text-gray-600" : "text-gray-400"}`}
+                                                className={`flex items-center gap-3 text-sm ${idx === currentStep ? "text-gray-900" : idx < currentStep ? "text-gray-600" : "text-gray-400"}`}
                                                 initial={{ opacity: 0, x: 20 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: idx * 0.1 }}

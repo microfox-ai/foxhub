@@ -162,7 +162,10 @@ export const genServerlessYML = async (
         oldConfig.provider.timeout = 60;
         console.log("oldConfig", oldConfig);
         console.log("imports", imports);
-        let newConfigString = await mutateServerlessYML(oldConfig, imports);
+        let newConfigString = await mutateServerlessYML(
+          YAML.stringify(oldConfig),
+          imports
+        );
         let newConfig = YAML.parse(newConfigString);
         return YAML.stringify(newConfig);
       },

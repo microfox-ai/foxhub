@@ -485,7 +485,7 @@ const DeploymentResultView = ({
             )}
           />
           <h2 className="text-xl font-medium text-gray-900">
-            Uh oh! Deployment Failed
+            {deployment?.status == "failed" ? "Uh oh! Deployment Failed" : "Deployment Success !"}
           </h2>
         </div>
         <span
@@ -553,13 +553,12 @@ const DeploymentResultView = ({
       {deployment?.status === "deployed" && (
         <>
           {deployment?.stage === DEPLOY_STAGE.STAGING ? (
-            <div className="text-xs text-gray-500">
-              <span className="font-medium text-gray-900">Staging </span>
-              environment is ready to be promoted to{" "}
+            <div className="text-xs text-gray-500 p-3">
+              Test your app before pushing to
               <span className="font-medium text-gray-900">Production</span>
             </div>
           ) : (
-            <div className="text-md text-gray-500">
+            <div className="text-md text-gray-500 p-3">
               <span className="font-medium text-gray-900">
                 Automation Published !
               </span>

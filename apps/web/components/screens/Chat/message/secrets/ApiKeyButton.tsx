@@ -148,6 +148,8 @@ export const ApiKeyButton = ({
     // Handle bot selection change
     const handleBotSelectionChange = async (value: string) => {
         setIsLoading(true);
+        console.log("apiKeySecret", apiKeySecret);
+        console.log("requestParamId", requestParamId);
         // if added another client secret already in this client request, remove it from the client request
         if (apiKeySecret) {
             await PortalSdk.postData("/api/client-secrets/link", {

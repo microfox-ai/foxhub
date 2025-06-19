@@ -11,6 +11,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { id, clientRequestIdToAdd, clientRequestIdToRemove, ...rest } = body;
 
+  console.log("body", body);
+  console.log("clientRequestIdToAdd", clientRequestIdToAdd);
+  console.log("clientRequestIdToRemove", clientRequestIdToRemove);
+  console.log("id", id);
+
   try {
     if (clientRequestIdToAdd) {
       const response = await addClientSecretToClientRequest(

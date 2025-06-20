@@ -35,8 +35,10 @@ jobs:
             ${{ runner.os }}-agent-prod-deps-
 
       - name: Install agent dependencies
-        run: npm install
-        working-directory: apps/agent
+        run: |
+          rm -f package.json package-lock.json
+          cd apps/agent
+          npm install
       
       - name: Configure AWS Credentials and Environment
         working-directory: apps/agent

@@ -22,23 +22,17 @@ try {
     );
     process.exit(1);
   }
+  const envConfigPath = path.resolve(process.cwd(), 'env.config.json');
+  const envConfigArray = JSON.parse(fs.readFileSync(envConfigPath, 'utf8'));
 
   const jsonConfigPath = path.resolve(process.cwd(), 'env.json');
   const envConfig = {};
-  const excludeKeys = [
-    'AGENT_AWS_ACCESS_KEY_ID',
-    'AGENT_AWS_SECRET_ACCESS_KEY',
-    'AGENT_AWS_REGION',
-    'AWS_ACCESS_KEY_ID',
-    'AWS_SECRET_ACCESS_KEY',
-    'AWS_REGION',
-    'AWS_DEFAULT_REGION',
-    '_'
-  ];
 
-  for (const key in vaultVars) {
-    if (!excludeKeys.includes(key)) {
-      envConfig[key] = vaultVars[key];
+  for (const key1 of envConfigArray) {
+    for (const key2 in vaultVars) {
+      if (key2.includes(key1) || key2 === key1) {
+        envConfig[key2] = vaultVars[key2];
+      }
     }
   }
 

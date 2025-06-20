@@ -19,6 +19,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import { ClientRequest } from "@prisma/client";
 import { MinionFlow, MinionFlowType } from "../hooks/convertors";
+import useLocalState from "../hooks/useLocalState";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -32,7 +33,7 @@ const ClientProjectContext = createContext<
 
 function useClientProjectContext() {
   const [selectedProject, setSelectedProject] =
-    useState<BotProjectWithRequests | null>(null);
+    useLocalState<BotProjectWithRequests | null>("selectedProject", null);
   const [selectedClientDeployment, setSelectedClientDeployment] =
     useState<ClientDeployment | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(

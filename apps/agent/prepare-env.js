@@ -4,8 +4,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 try {
-  console.log("process.env", process.env);
-
   const awsAccessKeyId = process.env.AGENT_AWS_ACCESS_KEY_ID;
   const awsSecretAccessKey = process.env.AGENT_AWS_SECRET_ACCESS_KEY;
   const awsRegion = process.env.AGENT_AWS_REGION;
@@ -17,7 +15,7 @@ try {
 
   const jsonConfigPath = path.resolve(process.cwd(), 'env.json');
   const envConfig = {};
-  const excludeKeys = ['AGENT_AWS_ACCESS_KEY_ID', 'AGENT_AWS_SECRET_ACCESS_KEY', 'AGENT_AWS_REGION'];
+  const excludeKeys = ['AGENT_AWS_ACCESS_KEY_ID', 'AGENT_AWS_SECRET_ACCESS_KEY', 'AGENT_AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_DEFAULT_REGION'];
 
   for (const key in process.env) {
     if (!excludeKeys.includes(key)) {

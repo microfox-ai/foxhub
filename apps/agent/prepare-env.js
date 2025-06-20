@@ -27,10 +27,17 @@ try {
 
   const jsonConfigPath = path.resolve(process.cwd(), 'env.json');
   const envConfig = {};
+  const excludeKeys = [
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_REGION',
+    'AWS_DEFAULT_REGION',
+    '_'
+  ];
 
   for (const key1 of envConfigArray) {
     for (const key2 in vaultVars) {
-      if (key2.includes(key1) || key2 === key1) {
+      if ((key2.includes(key1) || key2 === key1) && !excludeKeys.includes(key2)) {
         envConfig[key2] = vaultVars[key2];
       }
     }

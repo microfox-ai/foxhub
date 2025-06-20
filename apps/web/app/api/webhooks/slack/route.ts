@@ -1,6 +1,6 @@
 import { ApiGatewayAdapter } from "@/lib/adapters/api-gateway";
 import { WebhookKit, WebhookResponse } from "@microfox/webhook-kit";
-import { SlackWebhook } from "@microfox/webhook-slack";
+import { SlackWebhook, AppMentionEvent } from "@microfox/webhook-slack";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -14,6 +14,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No body" }, { status: 400 });
   }
   const webhookKit = new WebhookKit();
+  slackWebhookSdk.onEvent("app_mention", async (event) => {
+    console.log("app_mention event", event);
+  });
+  slackWebhookSdk.onMessage(async (args) => {
+    console.log("slack message", args);
+  });
   webhookKit.addWebhook("slack", slackWebhookSdk);
   const response: WebhookResponse | void = await webhookKit.receive("slack", {
     headers: event.headers,
@@ -23,6 +29,6 @@ export async function POST(req: NextRequest) {
   if (response && "statusCode" in response) {
     return ApiGatewayAdapter.toNextResponse(response);
   } else {
-    return NextResponse.json({ error: "No response" }, { status: 500 });
+    return NextResponse.json({ ok: true }, { status: 200 });
   }
 }

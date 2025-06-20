@@ -21,6 +21,8 @@ import { hotfixFoxRouter } from "../hotfixfox/_hotfixRouter";
 import { publishFoxRouter } from "../publishfox/_publishFoxRouter";
 import { installFoxRouter } from "../installfox/_installFoxRouter";
 import { taskQueryRouter } from "../taskqueryfox/_taskQueryRouter";
+import { prisma } from "@/prisma/prisma";
+import { TaskStructure } from "../convertfox/types";
 
 const getMinionRouter = (minionType: MinionTypeType, props: any) => {
   switch (minionType) {
@@ -144,6 +146,12 @@ export const buildFlow: ServerStreamingFunction<
       content: "Thinking about the user's intent",
     });
 
+    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+      where: {
+        originClientRequestId: requestBody.clientRequestId,
+      },
+    });
+
     const result = await generateObject({
       model: models.googleGeminiPro,
       schema: z.object({
@@ -163,6 +171,9 @@ export const buildFlow: ServerStreamingFunction<
             We are building an automation for the user.
             In the middle of the conversation, user has sent the following message,
             we need to detect the exact intent of the user to understand what they want to do.
+
+            Task Tool Calls available:
+            ${(taskInstanceMeta?.taskStructure as any as TaskStructure)?.lambdaFunctions?.map((toolCall) => toolCall.name).join(", ")}
 
             CRITICAL:
             If the user is asking for even a tiny change/modification of the built task/automation, then always pass the intent as "Modify-App"

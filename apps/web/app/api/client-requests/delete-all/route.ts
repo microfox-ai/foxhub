@@ -278,7 +278,7 @@ export async function DELETE(req: NextRequest) {
       // }
     }
 
-    // 5. delete the github repo.
+    // 5. close github pull request.
     try {
       if (clientRequest.prNumber && clientRequest.repoName) {
         const closedPr = await closePullRequest(

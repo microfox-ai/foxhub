@@ -48,34 +48,7 @@ jobs:
         env:
           DOTENV_KEY: ${{ secrets.PROD_DOTENV_KEY }}
         run: |
-          npx dotenv-vault@latest pull production
-          node <<'EOF'
-          const fs = require('fs');
-          const dotenv = require('dotenv');
-
-          const envFileContent = fs.readFileSync('.env.production');
-          const envConfig = dotenv.parse(envFileContent);
-
-          const awsAccessKeyId = envConfig.AGENT_AWS_ACCESS_KEY_ID;
-          const awsSecretAccessKey = envConfig.AGENT_AWS_SECRET_ACCESS_KEY;
-          const awsRegion = envConfig.AGENT_AWS_REGION;
-
-          if (!awsAccessKeyId || !awsSecretAccessKey || !awsRegion) {
-            console.error('AWS credentials not found in vault for production');
-            process.exit(1);
-          }
-
-          fs.appendFileSync(process.env.GITHUB_ENV, `AWS_ACCESS_KEY_ID=${awsAccessKeyId}\n`);
-          fs.appendFileSync(process.env.GITHUB_ENV, `AWS_SECRET_ACCESS_KEY=${awsSecretAccessKey}\n`);
-          fs.appendFileSync(process.env.GITHUB_ENV, `AWS_REGION=${awsRegion}\n`);
-
-          delete envConfig.AGENT_AWS_ACCESS_KEY_ID;
-          delete envConfig.AGENT_AWS_SECRET_ACCESS_KEY;
-          delete envConfig.AGENT_AWS_REGION;
-
-          fs.writeFileSync('env.json', JSON.stringify(envConfig, null, 2));
-          console.log('Created env.json for production.');
-          EOF
+          node -r dotenv/config ./prepare-env.js production
 
       - name: Deploy to Production
         working-directory: apps/agent

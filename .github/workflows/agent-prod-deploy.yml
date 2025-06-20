@@ -48,7 +48,6 @@ jobs:
         env:
           DOTENV_KEY: ${{ secrets.PROD_DOTENV_KEY }}
         run: |
-          npx dotenv-vault pull production
           node ./prepare-env.js
 
       - name: Deploy to Production

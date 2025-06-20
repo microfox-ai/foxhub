@@ -12,6 +12,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "install-microfox": "node scripts/install-microfox.js",
+    "update-microfox": "node scripts/update-microfox.js",
     "prisma:generate": "prisma generate --schema=./apps/web/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-dev-reset": "prisma migrate reset --schema=./apps/web/prisma/schema.prisma",

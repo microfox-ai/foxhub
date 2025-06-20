@@ -23,62 +23,11 @@ import YAML from "yaml";
 import path from "path";
 import fs from "fs/promises";
 import { updateYMLFile } from "../../helper/updateYMLFile";
-
-// Validation function to check serverless.yml configuration
-const validateServerlessYML = (
-  yamlContent: string
-): { isValid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-  let isValid = true;
-
-  try {
-    const config = YAML.parse(yamlContent);
-
-    // Check if functions section exists
-    if (!config.functions) {
-      errors.push("No functions section found in serverless.yml");
-      isValid = false;
-      return { isValid, errors };
-    }
-
-    // Check each function
-    Object.entries(config.functions).forEach(
-      ([functionName, functionConfig]: [string, any]) => {
-        // Skip getDocs function as it's a special case
-        if (functionName === "getDocs") return;
-
-        // Check if events exist
-        if (!functionConfig.events || !Array.isArray(functionConfig.events)) {
-          errors.push(`Function ${functionName} has no events defined`);
-          isValid = false;
-          return;
-        }
-
-        // Check if there's at least one HTTP event
-        const hasHttpEvent = functionConfig.events.some(
-          (event: any) => event.http
-        );
-        if (!hasHttpEvent) {
-          errors.push(`Function ${functionName} has no HTTP event defined`);
-          isValid = false;
-        }
-
-        // Check if handler exists
-        if (!functionConfig.handler) {
-          errors.push(`Function ${functionName} has no handler defined`);
-          isValid = false;
-        }
-      }
-    );
-  } catch (error) {
-    errors.push(
-      `Failed to parse serverless.yml: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
-    isValid = false;
-  }
-
-  return { isValid, errors };
-};
+import {
+  validateServerlessYML,
+  mutateServerlessYML,
+} from "@microfox/serverless-yml";
+import { AWS_REGION } from "@/utils/services/aws/aws_helper";
 
 const processImportsFromFiles = (allGenFilesList: any[]) => {
   return allGenFilesList
@@ -95,6 +44,7 @@ const processImportsFromFiles = (allGenFilesList: any[]) => {
 
       return {
         fileName: file.fileName?.split(".")[0],
+        filePath: file.filePath,
         imports,
         isPuppet,
       };
@@ -107,48 +57,47 @@ export const genServerlessYML = async (
   clientRequest: ClientRequest,
   allGenFilesList: any[] // Consider defining a more specific type
 ) => {
-  const serverlessYmlPath = path.join(
-    process.cwd(),
-    fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
-    "serverless.yml"
-  );
-  const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");
+  try {
+    const serverlessYmlPath = path.join(
+      process.cwd(),
+      fetchTemplateDir(taskInstanceMeta?.taskStructure?.templateType),
+      "serverless.yml"
+    );
+    const serverlessYml = await fs.readFile(serverlessYmlPath, "utf8");
 
-  const imports = processImportsFromFiles(allGenFilesList);
+    const imports = processImportsFromFiles(allGenFilesList);
 
-  console.log("imports", imports);
-
-  // The following functions are generated for the task:
-  // ${allGenFilesList
-  //   ?.filter((file: any) => file.filePath.includes("/functions"))
-  //   .map((file: any) => file.fileName + "Function")
-  //   .join("\n - ")}
-
-  const result = await generateText({
-    model: models.claude35Sonnet,
-    system: codingSystemPrompt("backend"),
-    prompt: dedent`You are requested to modify a serverless.yml file for the following requirement:
+    const result = await generateText({
+      model: models.claude35Sonnet,
+      system: codingSystemPrompt("backend"),
+      prompt: dedent`You are requested to modify a serverless.yml file for the following requirement:
 
           The following functions are generated for the task:
           ${taskInstanceMeta?.taskStructure?.lambdaFunctions
             ?.map(
               (lambda) =>
-                ` name: ${lambda.name} \n
-              path: ${lambda.path}\n
-              method: ${lambda.method}\n
-              handler: dist/functions/${getFunctionNameFromKebabCase(lambda.name)}.${getFunctionNameFromKebabCase(lambda.name)}Function.js`
+                `${getFunctionNameFromKebabCase(lambda.name)}:
+  handler: dist/functions/${getFunctionNameFromKebabCase(
+    lambda.name
+  )}.${getFunctionNameFromKebabCase(lambda.name)}Function.js
+  events:
+    - http:
+        path: ${lambda.path}
+        method: ${lambda.method}`
             )
-            .join("\n\n - ")}
+            .join("\n\n")}
           ${taskInstanceMeta?.taskStructure?.cronJobs
             ?.map(
-              (cron) => `
-              name: ${cron.name} \n
-              method: post\n 
-              handler: dist/functions/${getFunctionNameFromKebabCase(cron.name)}.${getFunctionNameFromKebabCase(cron.name)}Function.js\n 
-              - schedule:\n
-                rate: ${cron.cronExpression}`
+              (cron) =>
+                `${getFunctionNameFromKebabCase(cron.name)}:
+  handler: dist/functions/${getFunctionNameFromKebabCase(
+    cron.name
+  )}.${getFunctionNameFromKebabCase(cron.name)}Function.js
+  events:
+    - schedule:
+        rate: ${cron.cronExpression}`
             )
-            .join("\n\n - ")}
+            .join("\n\n")}
 
 
           The input serverless.yml file is as follows:
@@ -159,6 +108,9 @@ export const genServerlessYML = async (
 
           The service name should be:
           service: ${getServiceName(clientRequest, taskInstanceMeta)}
+
+          The region should be:
+          region: ${clientRequest.awsRegion ?? AWS_REGION.US_EAST_1}
 
           your workflow should be as follows:
           1. read the serverless.yml file
@@ -172,110 +124,80 @@ export const genServerlessYML = async (
           make sure you skip the packagesUsed field in the tool call.
           make sure you must include the getDocs function, it is very important - it is available at dist/index.getDocs
           `,
-    tools: {
-      write_code: writeToFile(
-        props,
-        clientRequest,
-        taskInstanceMeta?.taskStructure?.templateType
-      ),
-    },
-    toolChoice: "required",
-    maxSteps: 1,
-    maxTokens: 3000,
-    maxRetries: 1,
-    onStepFinish: (step) => {
-      console.log("step", step.usage);
-    },
-  });
-  console.log("result", result.usage);
+      tools: {
+        write_code: writeToFile(
+          props,
+          clientRequest,
+          taskInstanceMeta?.taskStructure?.templateType
+        ),
+      },
+      toolChoice: "required",
+      maxSteps: 1,
+      maxTokens: 3000,
+      maxRetries: 1,
+      onStepFinish: (step) => {
+        console.log("step", step.usage);
+      },
+    });
+    // console.log("result", result.usage);
 
-  const fileArgs = result.steps[0]?.toolCalls[0]?.args;
-  if (!fileArgs) {
-    throw new Error("Failed to get file args from result");
-  }
-  const { fileWritePath: generatedFilePath } = await getFilePath(
-    clientRequest,
-    {
-      fileName: fileArgs?.fileName,
-      filePath: fileArgs?.filePath,
-      fileType: fileArgs?.fileType,
+    const fileArgs = result.steps[0]?.toolCalls[0]?.args;
+    if (!fileArgs) {
+      throw new Error("Failed to get file args from result");
     }
-  );
-  if (!generatedFilePath) {
-    throw new Error("Failed to get generated file path from result");
-  }
-
-  // Read and validate the generated serverless.yml content
-  const generatedContent = await fs.readFile(generatedFilePath, "utf8");
-  const validation = validateServerlessYML(generatedContent);
-
-  // MSUT BE SHIFTED TO FIRST AI GENERATION oF YML FILE ONLY, with the correct context being passed,and rules given from packagages instead of the current way
-  await updateYMLFile(
-    generatedFilePath
-      .replace("/serverless.yml", "")
-      .replace("\\serverless.yml", ""),
-    "serverless.yml",
-    (config) => {
-      let newConfig = { ...config };
-      newConfig.provider.timeout = 60;
-      if (
-        taskInstanceMeta.taskStructure?.templateAddons?.includes(
-          codeTemplateAddon.enum.sls_puppeteer_chrome
-        )
-      ) {
-        newConfig.provider.timeout = 600;
-        newConfig.package = {
-          ...newConfig.package,
-          exclude: [
-            ...(newConfig.package?.exclude ?? []),
-            "node_modules/@sparticuz/chromium/**",
-          ],
-        };
-        //newConfig.provider.memorySize = 1024;
-        newConfig.functions = Object.entries(newConfig.functions).reduce(
-          (acc, [functionName, functionConfig]) => {
-            if (functionName === "getDocs") {
-              return {
-                ...acc,
-                [functionName]: functionConfig,
-              };
-            }
-            const thisFile = imports.find(
-              (imp: any) => imp.fileName === functionName
-            );
-            return {
-              ...acc,
-              [functionName]: {
-                ...(functionConfig as any),
-                ...(thisFile?.isPuppet
-                  ? {
-                      layers: [
-                        "arn:aws:lambda:us-east-1:211125656699:layer:chromium-x86-135:1",
-                        //"arn:aws:lambda:us-east-1:211125656699:layer:chromiumx86:1",
-                      ],
-                    }
-                  : {}),
-              },
-            };
-          },
-          {}
-        );
+    const { fileWritePath: generatedFilePath } = await getFilePath(
+      clientRequest,
+      {
+        fileName: fileArgs?.fileName,
+        filePath: fileArgs?.filePath,
+        fileType: fileArgs?.fileType,
       }
-      return newConfig;
-    },
-    clientRequest
-  );
-
-  if (!validation.isValid) {
-    console.error("Serverless.yml validation errors:", validation.errors);
-    throw new Error(
-      `Serverless.yml validation failed: ${validation.errors.join(", ")}`
     );
-  }
+    if (!generatedFilePath) {
+      throw new Error("Failed to get generated file path from result");
+    }
 
-  TokenUsageAnalyticsTracker.trackUsage({
-    ...props.requestBody,
-    model: models.claude35Sonnet.modelId,
-    usage: result.usage,
-  });
+    // Read and validate the generated serverless.yml content
+    const generatedContent = await fs.readFile(generatedFilePath, "utf8");
+    const validation = validateServerlessYML(generatedContent);
+
+    // MSUT BE SHIFTED TO FIRST AI GENERATION oF YML FILE ONLY, with the correct context being passed,and rules given from packagages instead of the current way
+    await updateYMLFile(
+      generatedFilePath
+        .replace("/serverless.yml", "")
+        .replace("\\serverless.yml", ""),
+      "serverless.yml",
+      async (config) => {
+        console.log("serverless.yml", config);
+        let oldConfig = YAML.parse(config);
+        console.log("oldConfig", oldConfig);
+        oldConfig.provider.timeout = 60;
+        oldConfig.provider.region =
+          clientRequest.awsRegion ?? AWS_REGION.US_EAST_1;
+        let newConfigString = await mutateServerlessYML(
+          YAML.stringify(oldConfig),
+          imports
+        );
+        let newConfig = YAML.parse(newConfigString);
+        return YAML.stringify(newConfig);
+      },
+      clientRequest
+    );
+
+    if (!validation.isValid) {
+      console.error("Serverless.yml validation errors:", validation.errors);
+      throw new Error(
+        `Serverless.yml validation failed: ${validation.errors.join(", ")}`
+      );
+    }
+
+    TokenUsageAnalyticsTracker.trackUsage({
+      ...props.requestBody,
+      model: models.claude35Sonnet.modelId,
+      usage: result.usage,
+    });
+  } catch (error) {
+    console.error("Error generating serverless.yml:", error);
+    throw error;
+  }
 };

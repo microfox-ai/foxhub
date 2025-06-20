@@ -29,10 +29,12 @@ const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
 export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLeftCollapsed, setIsLeftCollapsed] = useLocalState(
-    "isLeftCollapsed", true
+    "isLeftCollapsed",
+    true
   );
   const [isRightCollapsed, setIsRightCollapsed] = useLocalState(
-    "isRightCollapsed", true
+    "isRightCollapsed",
+    false
   );
   const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
   const [isRightTransitioning, setIsRightTransitioning] = useState(false);

@@ -170,6 +170,7 @@ export const addTemplateSecretsToClientRequest = async (
         clientDeploymentIds: [],
         botConfig: secret.botConfig ?? [],
         isHidden: true,
+        tokenResponse: {},
       });
     }
   }

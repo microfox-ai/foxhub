@@ -212,6 +212,7 @@ CREATE TABLE "ClientSecret" (
     "packageType" TEXT,
     "isHidden" BOOLEAN,
     "templateId" TEXT,
+    "tokenResponse" JSONB,
 
     CONSTRAINT "ClientSecret_pkey" PRIMARY KEY ("id")
 );
@@ -311,8 +312,8 @@ CREATE TABLE "ShardPage" (
     "banner_url" TEXT,
     "version" TEXT NOT NULL,
     "versionNumber" TEXT NOT NULL,
-    "creatorId" TEXT NOT NULL,
-    "clientRequestId" TEXT NOT NULL,
+    "creatorId" TEXT,
+    "clientRequestId" TEXT,
     "viewCount" INTEGER NOT NULL DEFAULT 0,
     "likeCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -427,6 +428,3 @@ ALTER TABLE "ClientDeployment" ADD CONSTRAINT "ClientDeployment_originClientRequ
 
 -- AddForeignKey
 ALTER TABLE "RequestUpdate" ADD CONSTRAINT "RequestUpdate_originClientRequestId_fkey" FOREIGN KEY ("originClientRequestId") REFERENCES "ClientRequest"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ShardPage" ADD CONSTRAINT "ShardPage_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -1,6 +1,7 @@
 "use client"; // NextJS 13 requires this. Remove if you are using NextJS 12 or lower
 import { useEffect } from "react";
 import Script from "next/script";
+import { useClientProject } from "../screens/providers/ClientProjectProvider";
 
 export const openFeedbackWidget = () => {
     return window.postMessage({
@@ -13,7 +14,11 @@ export const openFeedbackWidget = () => {
 }
 
 const FeaturebaseFeedback = () => {
+
+    const { selectedProject } = useClientProject();
+
     useEffect(() => {
+        if (!selectedProject) return;
         const win = window as any;
 
         if (typeof win.Featurebase !== "function") {
@@ -31,7 +36,7 @@ const FeaturebaseFeedback = () => {
             locale: "en", // Change the language, view all available languages from https://help.featurebase.app/en/articles/8879098-using-featurebase-in-my-language 
             //metadata: null // Attach session-specific metadata to feedback. Refer to the advanced section for the details: https://help.featurebase.app/en/articles/3774671-advanced#7k8iriyap66
         });
-    }, []);
+    }, [selectedProject]);
 
     return (
         <>

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLambdaLogs } from "../aws/aws_helper";
+import { AWS_REGION, getLambdaLogs } from "../aws/aws_helper";
 import { ClientDeployment } from "@prisma/client";
 import { ClientDeploymentMetadata } from "@/server/types";
 import {
@@ -61,7 +61,7 @@ export async function fetchLambdaUsage(
   for (const [fullFunctionName] of functionMap) {
     const logs = await getLambdaLogs({
       functionName: fullFunctionName,
-      region: "us-east-1",
+      region: clientDeployment.awsRegion ?? AWS_REGION.US_EAST_1,
       limit: (options.pageSize ?? 100) * 3,
       streamLimit: options.streamLimit ?? 5,
       startTime: options.startTime,

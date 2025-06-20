@@ -37,7 +37,7 @@ export const genLambdaCode = async (
       console.log("generating lambda function", _function.name);
       const result = await generateText({
         model: models.claude35Sonnet,
-        system: codingSystemPrompt("backend"),
+        system: codingSystemPrompt("backend", true),
         prompt,
         toolChoice: "auto",
         maxSteps: 2,

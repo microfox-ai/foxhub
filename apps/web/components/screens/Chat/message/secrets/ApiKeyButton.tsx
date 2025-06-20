@@ -75,15 +75,10 @@ export const ApiKeyButton = ({
 
     // Find the current API key secret from secretsData
     const apiKeyConstructor = packageInfo?.constructors.find((c: Constructor) => c.auth === ClientSecretPackageType.APIKEY);
-    const apiKeySecret = secretsData?.clientSecrets?.find((secret) =>
+    const currentApiKeySecret = secretsData?.clientSecrets?.find((secret) =>
         secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === apiKeyConstructor?.name
     );
     const apiType = apiKeyConstructor?.apiType as ClientSecretApiType;
-    const currentApiKeySecret = useMemo(() => {
-        return secretsData?.clientSecrets?.find((secret) =>
-            secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === apiKeyConstructor?.name
-        );
-    }, [secretsData, packageInfo, apiKeyConstructor]);
     // Set the selected bot secret to the current API key secret when it changes
     useMemo(() => {
         if (currentApiKeySecret) {
@@ -92,29 +87,24 @@ export const ApiKeyButton = ({
     }, [currentApiKeySecret]);
 
     const oauthConstructor = packageInfo?.constructors.find(
-        (c: Constructor) => c.auth === "oauth2"
+        (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
     );
-    const oauthSecret = secretsData?.clientSecrets?.find((secret) =>
+    const currentOauthSecret = secretsData?.clientSecrets?.find((secret) =>
         secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
     );
-    const currentOauthSecret = useMemo(() => {
-        return secretsData?.clientSecrets?.find((secret) =>
-            secret !== undefined && secret.packageName === packageInfo?.name && secret.packageConstructor === oauthConstructor?.name
-        );
-    }, [secretsData, packageInfo, oauthConstructor]);
 
     const isAllKeysFilled = useMemo(() => {
-        if (apiKeySecret) {
+        if (currentApiKeySecret) {
             return apiKeyConstructor?.requiredKeys.every(
                 (keyInfo: KeyVariableConfig) =>
-                    (apiKeySecret.variables as any[]).some(
+                    (currentApiKeySecret.variables as any[]).some(
                         (variable: ClientSecretVariable) =>
                             variable.key === keyInfo.key && variable.value?.trim()
                     )
             )
         }
-        else if (oauthSecret) {
-            return (oauthSecret?.variables as any[]).every(
+        else if (currentOauthSecret) {
+            return (currentOauthSecret?.variables as any[]).every(
                 (variable: ClientSecretVariable) =>
                     variable.value?.trim() !== "" &&
                     oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
@@ -124,12 +114,12 @@ export const ApiKeyButton = ({
             )
         }
         return false;
-    }, [packageInfo, apiKeySecret, apiKeyConstructor, oauthSecret]);
+    }, [packageInfo, currentApiKeySecret, apiKeyConstructor, currentOauthSecret]);
 
     //--------------FOR OAUTH-------------------
     //console.log("apiKeySecret", packageInfo, secretsData);]
-    const hasAllAuthRelatedKeys = oauthSecret
-        ? (oauthSecret?.variables as any[]).every(
+    const hasAllAuthRelatedKeys = currentOauthSecret
+        ? (currentOauthSecret?.variables as any[]).every(
             (variable: ClientSecretVariable) =>
                 variable.value?.trim() !== "" &&
                 oauthConstructor?.internalKeys.some((key: KeyVariableConfig) => {
@@ -149,20 +139,36 @@ export const ApiKeyButton = ({
     const handleBotSelectionChange = async (value: string) => {
         setIsLoading(true);
         // if added another client secret already in this client request, remove it from the client request
-        if (apiKeySecret) {
+        if (currentApiKeySecret) {
             await PortalSdk.postData("/api/client-secrets/link", {
-                id: apiKeySecret.id,
+                id: currentApiKeySecret.id,
+                clientRequestIdToRemove: requestParamId,
+            });
+        }
+        if (currentOauthSecret && value !== "connect") {
+            await PortalSdk.postData("/api/client-secrets/link", {
+                id: currentOauthSecret.id,
                 clientRequestIdToRemove: requestParamId,
             });
         }
         if (value === "connect") {
             setIsLoading(false);
             setSelectedPlatform(packageInfo);
+            // if (currentOauthSecret) {
+            //     await PortalSdk.postData("/api/client-secrets/link", {
+            //         id: currentOauthSecret.id,
+            //         clientRequestIdToAdd: requestParamId,
+            //     });
+            //     await mutateBotSecrets();
+            //     await mutateSecrets();
+            // }
+            // else {
             await handleConnect(packageInfo, oauthConstructor?.authEndpoint);
+            //}
             setIsLoading(false);
         }
         else if (value === "add_new") {
-            if (apiKeySecret) {
+            if (currentApiKeySecret) {
                 setSelectedBotSecret(null);
             }
             await mutateSecrets();
@@ -171,7 +177,7 @@ export const ApiKeyButton = ({
             setIsDialogOpen(true);
         }
         else if (value.startsWith("template_")) {
-            if (apiKeySecret) {
+            if (currentApiKeySecret) {
                 setSelectedBotSecret(null);
             }
             await mutateSecrets();
@@ -228,6 +234,7 @@ export const ApiKeyButton = ({
                     })),
                 ] as ClientSecretVariable[],
                 addToClientRequest: true,
+                updateDeployments: true,
             });
 
             document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;
@@ -331,7 +338,7 @@ export const ApiKeyButton = ({
                             }}
                             platformName={selectedPlatform.name}
                             pkg={selectedPlatform}
-                            apiKeySecret={apiKeySecret}
+                            apiKeySecret={currentApiKeySecret}
                         />
                     </SecretFormProvider>
                 </SecretProvider>

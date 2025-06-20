@@ -24,6 +24,12 @@ export async function GET(request: Request) {
       database_id: databaseId,
       page_size: pageSize,
       start_cursor: startCursor,
+      filter: {
+        property: "Status",
+        select: {
+          equals: "Published",
+        },
+      },
     });
 
     return NextResponse.json({

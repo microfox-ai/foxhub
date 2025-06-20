@@ -8,6 +8,8 @@ import useSWR from "swr";
 import { HomeTab } from "./HomeTab";
 import { TasksTab } from "./TasksTab";
 import { ShardPagesTab } from "./ShardPagesTab";
+import { NoProjects } from "./NoProjects";
+import Link from "next/link";
 
 const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
   const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, setSubmitAnnotations, createNewEmptyRequest } = useClientProject();
@@ -46,6 +48,10 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
     );
   }
 
+  if (projects.length === 0) {
+    return <NoProjects user={user} />;
+  }
+
   if (!selectedProject)
     return (
       <div className="container mx-auto w-full min-h-screen p-8 flex flex-col justify-center items-center">
@@ -78,6 +84,22 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
                 </div>
               </div>
             ))}
+            <div className="col-span-4">
+              <Link href="/new-project">
+                <div
+                  className="bg-white shadow-md flex cursor-pointer flex-row rounded-xl shadow-md hover:shadow-lg hover:translate-y-[-4px] hover:bg-gray-100 transition-all duration-300 h-full">
+                  <div className="w-32 h-32 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+                    </svg>
+                  </div>
+                  <div className="flex flex-col justify-center p-4">
+                    <h3 className="text-xl font-semibold">Create New Microfox</h3>
+                    <p className="text-sm text-gray-400">You can create a microfox for your business or other purposes.</p>
+                  </div>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

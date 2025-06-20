@@ -23,6 +23,7 @@ export const ActionButtons = (props: ActionButtonsProps) => {
     if (status === "streaming") {
         return null;
     }
+
     return (
         <div className={cn("flex flex-col gap-2 mt-4", props.className)}>
             {props?.buttonHeaderText && (
@@ -47,8 +48,7 @@ export const ActionButtons = (props: ActionButtonsProps) => {
                         )}
                         disabled={
                             props.disabled ||
-                            (!IN_DEV &&
-                                props.areKeysRequired &&
+                            (props.areKeysRequired &&
                                 !props.areKeysFilled &&
                                 button.type === "confirm")
                         }

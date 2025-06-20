@@ -1,6 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientDeploymentMetadata } from "@/server/types";
-import { getLambdaLogs } from "@/utils/services/aws/aws_helper";
+import { AWS_REGION, getLambdaLogs } from "@/utils/services/aws/aws_helper";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     //console.log(functionName, "functionName");
     const logs = await getLambdaLogs({
       functionName: functionName,
-      region: "us-east-1",
+      region: clientDeployment.awsRegion ?? AWS_REGION.US_EAST_1,
       streamLimit: 1,
       limit: 20,
     });

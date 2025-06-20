@@ -5,11 +5,14 @@ import {
   addClientSecretToClientRequest,
   removeClientSecretFromClientRequest,
   updateDeploymentsOfClientSecret,
+  removeDeploymentsOfClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const { id, clientRequestIdToAdd, clientRequestIdToRemove, ...rest } = body;
+
+  console.log("body", body);
 
   try {
     if (clientRequestIdToAdd) {
@@ -17,7 +20,6 @@ export async function POST(request: NextRequest) {
         id,
         clientRequestIdToAdd
       );
-      // MAYBE only update deployments of clientRequestIdtoAdd (not needed to update all deployments)
       await updateDeploymentsOfClientSecret(response.clientSecret, [
         clientRequestIdToAdd,
       ]);
@@ -27,6 +29,9 @@ export async function POST(request: NextRequest) {
         id,
         clientRequestIdToRemove
       );
+      await removeDeploymentsOfClientSecret(response.clientSecret, [
+        clientRequestIdToRemove,
+      ]);
       return NextResponse.json(response);
     } else {
       return NextResponse.json(

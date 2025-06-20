@@ -9,9 +9,19 @@ import {
   DescribeLogStreamsCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
 
+export enum AWS_REGION {
+  US_EAST_1 = "us-east-1",
+}
+
 interface UpdateLambdaEnvVarsParams {
   functionName: string;
   environmentVariables: Record<string, string>;
+  region?: string;
+}
+
+interface RemoveLambdaEnvVarsParams {
+  functionName: string;
+  variableKeys: string[];
   region?: string;
 }
 
@@ -29,14 +39,16 @@ interface GetLambdaLogsParams {
  * @param params UpdateLambdaEnvVarsParams object containing function details
  * @returns Promise that resolves when the update is complete
  */
-export async function updateLambdaEnvironmentVariables({
+export async function addLambdaEnvironmentVariables({
   functionName,
   environmentVariables,
   region,
 }: UpdateLambdaEnvVarsParams): Promise<void> {
   try {
+    console.log("region", region);
+    console.log("functionName", functionName);
     const lambdaClient = new LambdaClient({
-      region: region ?? process.env.AWS_REGION ?? "us-east-1",
+      region: region ?? process.env.AWS_REGION ?? AWS_REGION.US_EAST_1,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
@@ -73,9 +85,52 @@ export async function updateLambdaEnvironmentVariables({
   }
 }
 
+export async function removeLambdaEnvironmentVariables({
+  functionName,
+  variableKeys,
+  region,
+}: RemoveLambdaEnvVarsParams): Promise<void> {
+  try {
+    console.log("region", region);
+    console.log("functionName", functionName);
+    const lambdaClient = new LambdaClient({
+      region: region ?? process.env.AWS_REGION ?? AWS_REGION.US_EAST_1,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+      },
+    });
+
+    // Get current configuration
+    const getConfigCommand = new GetFunctionConfigurationCommand({
+      FunctionName: functionName,
+    });
+    const currentConfig = await lambdaClient.send(getConfigCommand);
+    const currentVariables = currentConfig.Environment?.Variables ?? {};
+
+    // Remove specified keys
+    variableKeys.forEach((key) => delete currentVariables[key]);
+
+    const command = new UpdateFunctionConfigurationCommand({
+      FunctionName: functionName,
+      Environment: {
+        Variables: currentVariables,
+      },
+    });
+
+    await lambdaClient.send(command);
+    console.log(
+      `Successfully removed environment variables from Lambda function: ${functionName}`
+    );
+  } catch (error) {
+    console.error("Error removing Lambda environment variables:", error);
+    throw error;
+  }
+}
+
 export const AWS_LAMBDA_LOG_GROUP_PREFIX = "/aws/lambda/";
 
-export const AWS_LAMBDA_DEFAULT_REGION = "us-east-1";
+export const AWS_LAMBDA_DEFAULT_REGION = AWS_REGION.US_EAST_1;
 /**
  * Fetches logs from a Lambda function
  * @param params GetLambdaLogsParams object containing function details and log parameters
@@ -91,7 +146,7 @@ export async function getLambdaLogs({
 }: GetLambdaLogsParams): Promise<any[]> {
   try {
     const logsClient = new CloudWatchLogsClient({
-      region: region ?? process.env.AWS_REGION ?? "us-east-1",
+      region: region ?? process.env.AWS_REGION ?? AWS_REGION.US_EAST_1,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",

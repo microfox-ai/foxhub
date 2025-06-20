@@ -189,6 +189,8 @@ model ClientSecret {
   packageType         String?
   isHidden            Boolean?
   templateId          String?
+  tokenResponse       Json?
+  awsRegion           String?
   botProject          BotProject         @relation(fields: [botProjectId], references: [id])
 }
 

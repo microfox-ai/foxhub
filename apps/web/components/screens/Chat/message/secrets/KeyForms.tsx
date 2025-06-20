@@ -133,11 +133,13 @@ export const KeyForms = ({
                             <span>View How to get API keys</span>
                             <ArrowUpRight className="h-4 w-4" />
                         </Link>
-                        <Button variant="outline" onClick={handleBack}
+                        {/* <Button variant="outline" onClick={handleBack}
                             className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:text-white border border-blue-200 hover:border-blue-300">
                             Auto-Setup
-                        </Button>
-                        <Button type="button" onClick={(e) => handleNext(e)}>
+                        </Button> */}
+                        <Button
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 hover:text-white border border-blue-200 hover:border-blue-300"
+                            type="button" onClick={(e) => handleNext(e)}>
                             Next
                         </Button>
                     </div>

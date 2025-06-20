@@ -64,10 +64,8 @@ export const TaskIntegrations = ({
         }
     }, [isLastInQueue, requestParamId, mutateTaskInstanceMeta]);
 
-    const { data: packagesData, mutate: mutatePackages } = useSWR<{
-        packages: Package[];
-    }>(
-        `/api/packages?status=${PackageStatus.STABLE},${PackageStatus.SEMISTABLE},${PackageStatus.EXTERNAL}&rawContent=true`,
+    const { data: packagesData, mutate: mutatePackages } = useSWR<Package[]>(
+        `/api/packages/infos?packageNames=${platforms.map((p) => p.package).join(",")}&rawContent=true`,
         async (url: string) => {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Failed to fetch packages");
@@ -102,7 +100,7 @@ export const TaskIntegrations = ({
         const authStatus: Record<string, boolean> = {};
 
         platforms.forEach((platform) => {
-            let packageInfo = packagesData?.packages.find((pkg) => pkg.name === platform.package);
+            let packageInfo = packagesData?.find((pkg) => pkg.name === platform.package);
             // Set default status for non-optional platforms
             if (!platform.optional) {
                 keyStatus[platform.name] = false;
@@ -145,7 +143,7 @@ export const TaskIntegrations = ({
         });
 
         return { platformKeyStatus: keyStatus, oauthStatus: authStatus };
-    }, [platforms, secretsData?.clientSecrets, oauthSecrets, packagesData?.packages]);
+    }, [platforms, secretsData?.clientSecrets, oauthSecrets, packagesData]);
 
     // Memoize the areKeysFilled check
     const areKeysFilled = useMemo(() => {
@@ -153,7 +151,7 @@ export const TaskIntegrations = ({
             // If platform is optional, skip the check
             if (platform.optional) return true;
 
-            let packageInfo = packagesData?.packages.find((pkg) => pkg.name === platform.package);
+            let packageInfo = packagesData?.find((pkg) => pkg.name === platform.package);
 
             const requiresApiKey = packageInfo?.constructors.some(
                 (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
@@ -161,10 +159,9 @@ export const TaskIntegrations = ({
             const requiresOauth = packageInfo?.constructors.some(
                 (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
             );
-
             // Check both API key and OAuth status if required
             if (requiresApiKey && requiresOauth) {
-                return platformKeyStatus[platform.name] && oauthStatus[platform.name];
+                return platformKeyStatus[platform.name] || oauthStatus[platform.name];
             }
             // Check only API key status if required
             if (requiresApiKey) {
@@ -197,7 +194,7 @@ export const TaskIntegrations = ({
             }
             return true;
         });
-    }, [platforms, platformKeyStatus, oauthStatus, oauthSecrets, packagesData?.packages]);
+    }, [platforms, platformKeyStatus, oauthStatus, oauthSecrets, packagesData]);
 
     const handleSaveTaskIntegrations = async (updatedPlatforms: TaskIntegrationPlatform[]) => {
         if (taskInstanceMeta) {
@@ -271,8 +268,9 @@ export const TaskIntegrations = ({
 
             <div className="grid gap-4">
                 {platforms
-                    .map((platform, index) => {
-                        const packageInfo = packagesData?.packages.find((pkg) => pkg.name === platform.package);
+                    .filter((platform) => !platform.reason?.includes("used by @microfox"))
+                    .map((platform, index, arr) => {
+                        const packageInfo = packagesData?.find((pkg) => pkg.name === platform.package);
                         const isApiKeyRequired = packageInfo?.constructors.some(
                             (constructor: Constructor) => constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
                         );
@@ -282,7 +280,7 @@ export const TaskIntegrations = ({
                         return (
                             <div
                                 key={platform.name}
-                                className={`flex border-b border-gray-200 p-4 flex-col gap-2 ${index === platforms.length - 1 ? "border-b-0" : ""}`}
+                                className={`flex border-b border-gray-200 p-4 flex-col gap-2 ${index === arr.length - 1 ? "border-b-0" : ""}`}
                             >
                                 <div className="flex items-start gap-3">
                                     <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-5 h-5 mt-2" />
@@ -342,7 +340,7 @@ export const TaskIntegrations = ({
                         buttons={uiAnnotation.buttons}
                         areKeysRequired={platforms.some(
                             (p) => {
-                                const packageInfo = packagesData?.packages.find((pkg) => pkg.name === p.package);
+                                const packageInfo = packagesData?.find((pkg) => pkg.name === p.package);
                                 return !p.optional &&
                                     (packageInfo?.constructors.some(
                                         (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
@@ -360,7 +358,7 @@ export const TaskIntegrations = ({
                 isOpen={isEditDialogOpen}
                 onClose={() => setIsEditDialogOpen(false)}
                 platforms={platforms}
-                packages={packagesData?.packages || []}
+                packages={packagesData || []}
                 onSave={handleSaveTaskIntegrations}
             />
         </motion.div>

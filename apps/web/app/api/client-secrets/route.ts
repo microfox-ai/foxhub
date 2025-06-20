@@ -8,6 +8,7 @@ import {
   updateDeploymentsOfClientSecret,
 } from "@/utils/services/db_functions/secrets_helper";
 import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
+import { AWS_REGION } from "@/utils/services/aws/aws_helper";
 import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 // Create ClientSecret
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
       updateDeployments,
       isHidden,
       templateId,
+      tokenResponse,
     } = body;
 
     if (!botProjectId || !userId || !variables) {
@@ -53,18 +55,25 @@ export async function POST(req: NextRequest) {
       botConfig,
       isHidden: isHidden ?? false,
       templateId,
+      tokenResponse: tokenResponse ?? undefined,
+      awsRegion: "",
     });
 
     if (addToClientRequest) {
       await addClientSecretToClientRequest(clientSecret.id, clientRequestId);
     }
 
-    if (updateDeployments) {
-      await updateDeploymentsOfClientSecret(clientSecret);
+    try {
+      if (updateDeployments) {
+        await updateDeploymentsOfClientSecret(clientSecret);
+      }
+    } catch (error) {
+      console.error("Error Trying to update Deployments:", error);
     }
 
     return NextResponse.json(clientSecret, { status: 200 });
   } catch (error) {
+    console.error("Error creating ClientSecret:", error);
     return NextResponse.json(
       { error: "Error creating ClientSecret" },
       { status: 500 }

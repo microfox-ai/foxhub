@@ -453,7 +453,7 @@ class SingleOpenAPIToolsClient {
     this.onError = options.onError;
     this.operationMap = new Map();
     this.name = options.name || "openapi-tools-client";
-    this.mcp_version = options.schema.info.mcp_version || "1.0.0";
+    this.mcp_version = options?.schema?.info?.mcp_version || "1.0.0";
   }
 
   /**
@@ -505,7 +505,7 @@ class SingleOpenAPIToolsClient {
 
   private cleanUpMethodSchema(methodSchema: OpenAPIOperation) {
     let cleanedMethodSchema = methodSchema;
-    if (this.mcp_version === "1.0.1") {
+    if (this?.mcp_version === "1.0.1") {
       if (
         cleanedMethodSchema?.requestBody?.content["application/json"]?.schema
           ?.properties?.body?.properties?.arguments
@@ -1204,33 +1204,35 @@ class SingleOpenAPIToolsClient {
           `🔍 Calling tool ${id} with args:`,
           JSON.stringify(args, null, 2)
         );
+        console.log(`🔍 Preset body fields:`, this.presetBodyFields);
+        console.log(`🔍 Options:`, options);
 
         // Throw if aborted
         options?.abortSignal?.throwIfAborted();
 
         // If validation is enabled, validate the arguments against Zod schema
-        if (validateParameters) {
-          try {
-            // Parse and validate arguments against the schema
-            const validatedArgs = zodSchema.parse(args);
-            args = validatedArgs;
-          } catch (error) {
-            // Format validation errors in a user-friendly way
-            if (error instanceof z.ZodError) {
-              const formattedError = new Error(
-                `Parameter validation failed: ${error.errors
-                  .map((e) => `${e.path.join(".")}: ${e.message}`)
-                  .join(", ")}`
-              );
-              formattedError.name = "ValidationError";
-              throw formattedError;
-            }
-            throw error;
-          }
-        }
+        // if (validateParameters) {
+        //   try {
+        //     // Parse and validate arguments against the schema
+        //     const validatedArgs = zodSchema.parse(args);
+        //     args = validatedArgs;
+        //   } catch (error) {
+        //     // Format validation errors in a user-friendly way
+        //     if (error instanceof z.ZodError) {
+        //       const formattedError = new Error(
+        //         `Parameter validation failed: ${error.errors
+        //           .map((e) => `${e.path.join(".")}: ${e.message}`)
+        //           .join(", ")}`
+        //       );
+        //       formattedError.name = "ValidationError";
+        //       throw formattedError;
+        //     }
+        //     throw error;
+        //   }
+        // }
 
         // MCP 1.0.1 specific arguments structure
-        if (this.mcp_version === "1.0.1") {
+        if (this?.mcp_version === "1.0.1") {
           args = {
             body: {
               body: {
@@ -1244,6 +1246,10 @@ class SingleOpenAPIToolsClient {
             `🔍 Restructured args for MCP 1.0.1:`,
             JSON.stringify(args, null, 2)
           );
+        } else {
+          args = {
+            body: args
+          };
         }
 
         // Call the operation without validation

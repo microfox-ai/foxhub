@@ -35,6 +35,25 @@ export async function DELETE(req: NextRequest) {
       where: { id: id },
     });
 
+    if (clientRequest?.minionFlow === "unknown") {
+      // delete the client request.
+      const deletedClientRequest = await prisma.clientRequest.delete({
+        where: { id: id },
+      });
+      deleteResponse.clientRequest = {
+        clientRequest: deletedClientRequest,
+      };
+      return NextResponse.json(
+        {
+          success: true,
+          message:
+            "Empty client request deleted",
+          stats: deleteResponse,
+        },
+        { status: 200 }
+      );
+    }
+
     const clientFunction = await prisma.clientDeployment.findFirst({
       where: { originClientRequestId: id },
     });
@@ -259,7 +278,7 @@ export async function DELETE(req: NextRequest) {
       // }
     }
 
-    // 5. delete the github repo.
+    // 5. close github pull request.
     try {
       if (clientRequest.prNumber && clientRequest.repoName) {
         const closedPr = await closePullRequest(

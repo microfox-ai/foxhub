@@ -47,7 +47,7 @@ export async function closePullRequest(repoName: string, pullNumber: number) {
 
 export async function deleteRepository(repoName: string) {
   const octokit = new Octokit({
-    auth: GITHUB_ACTION_POLICIES,
+    auth: GITHUB_TOKEN_ADMIN,
   });
 
   try {

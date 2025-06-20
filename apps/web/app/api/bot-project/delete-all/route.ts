@@ -1,7 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { deleteRepository } from "@/utils/services/github_functions/deleteRepo";
-import { DEPLOY_STAGE } from "@prisma/client";
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -32,20 +31,31 @@ export async function DELETE(req: NextRequest) {
       });
 
       const requestDeletes = clientRequests.map(async (request) => {
-        await fetch(
-          `${APP_BASE_URL}/api/client-requests/delete-all?id=${request.id}`,
-          {
-            method: "DELETE",
-          }
-        );
+        try {
+          const response = await fetch(
+            `${APP_BASE_URL}/api/client-requests/delete-all?id=${request.id}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                "microfox-api-key": process.env.MICROFOX_API_KEY ?? "",
+              },
+            }
+          );
+          console.log("deleted client request", response);
+          return response;
+        } catch (error) {
+          console.error("Error deleting ClientRequest:", error);
+          return null;
+        }
       });
 
       const allDeleted = await Promise.all(requestDeletes);
       deleteResponse.clientRequests = allDeleted;
     } catch (error) {
-      console.error("Error deleting ClientDeployment:", error);
+      console.error("Error deleting ClientRequests:", error);
       return NextResponse.json(
-        { error: "Error deleting ClientDeployment" },
+        { error: "Error deleting ClientRequests" },
         { status: 500 }
       );
     }

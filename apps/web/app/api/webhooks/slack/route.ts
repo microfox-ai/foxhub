@@ -1,23 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
-import { APIGatewayProxyResult } from "aws-lambda";
 import { ApiGatewayAdapter } from "@/lib/adapters/api-gateway";
-import { SlackWebhookSdk } from "@microfox/webhook-slack";
+import { WebhookKit, WebhookResponse } from "@microfox/webhook-kit";
+import { SlackWebhook, AppMentionEvent } from "@microfox/webhook-slack";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   //const body = await req.json();
-  const slackWebhookSdk = new SlackWebhookSdk(
-    process.env.SLACK_SIGNING_SECRET ?? ""
-  );
+  const slackWebhookSdk = new SlackWebhook({
+    secret: process.env.SLACK_SIGNING_SECRET ?? "",
+    botToken: process.env.SLACK_BOT_TOKEN ?? "",
+  });
   const event = await ApiGatewayAdapter.toApiGatewayEvent(req);
   if (!event.body) {
     return NextResponse.json({ error: "No body" }, { status: 400 });
   }
-  const response = await slackWebhookSdk.verifyAndParseRequest(
-    event.body,
-    event.headers
-  );
-  const payload = response.payload;
-  //console.log("payload", payload.event.type, "team_id", payload.team_id);
-  // get botToken from db based on team_id.
-  return ApiGatewayAdapter.toNextResponse(response.response);
+  const webhookKit = new WebhookKit();
+  slackWebhookSdk.onEvent("app_mention", async (event) => {
+    console.log("app_mention event", event);
+  });
+  slackWebhookSdk.onMessage(async (args) => {
+    console.log("slack message", args);
+  });
+  webhookKit.addWebhook("slack", slackWebhookSdk);
+  const response: WebhookResponse | void = await webhookKit.receive("slack", {
+    headers: event.headers,
+    body: event.body,
+  });
+  console.log("response", response);
+  if (response && "statusCode" in response) {
+    return ApiGatewayAdapter.toNextResponse(response);
+  } else {
+    return NextResponse.json({ ok: true }, { status: 200 });
+  }
 }

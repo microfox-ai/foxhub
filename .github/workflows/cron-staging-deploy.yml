@@ -1,18 +1,18 @@
-name: Cron Service Deployment
+name: Cron Service Staging Deployment
 
 on:
   push:
-    branches: [main]
+    branches: [staging/shards]
     paths:
       - "apps/cron/**"
-      - "cron.json"
-      - ".github/workflows/cron-deploy.yml"
+      - "cron.staging.json"
+      - ".github/workflows/cron-staging-deploy.yml"
 
 permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.repository }}-cron
+  group: ${{ github.repository }}-cron-staging
   cancel-in-progress: true
 
 jobs:
@@ -72,19 +72,19 @@ jobs:
       - name: Prepare cron deployment files
         if: ${{steps.build.outputs.build-status == 1 }}
         run: |
-          mkdir -p build/cron/main-copy
-          cp -r apps/cron/dist build/cron/main-copy/
-          cp -r apps/cron/package*.json build/cron/main-copy/
-          cp -r apps/cron/node_modules build/cron/main-copy/
-          cp cron.json build/cron/main-copy/
+          mkdir -p build/cron-staging/main-copy
+          cp -r apps/cron/dist build/cron-staging/main-copy/
+          cp -r apps/cron/package*.json build/cron-staging/main-copy/
+          cp -r apps/cron/node_modules build/cron-staging/main-copy/
+          cp cron.staging.json build/cron-staging/main-copy/cron.json
 
       - name: Upload cron service using rsync
         if: ${{steps.build.outputs.build-status == 1 }}
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: "-av --delete --partial --bwlimit=5000"
-          path: "build/cron/main-copy/"
-          remote_path: "/home/${{ secrets.DROPLET_USER }}/foxhub/builds/cron/main-copy"
+          path: "build/cron-staging/main-copy/"
+          remote_path: "/home/${{ secrets.DROPLET_USER }}/foxhub/builds/cron-staging/main-copy"
           remote_host: ${{ secrets.DROPLET_IP }}
           remote_user: ${{ secrets.DROPLET_USER }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -105,7 +105,7 @@ jobs:
             source ~/.nvm/nvm.sh
             nvm use 23
             
-            BASE_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/cron"
+            BASE_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/cron-staging"
             MAIN_PATH="$BASE_PATH/main"
             COPY_PATH="$BASE_PATH/main-copy"
             BACKUP_PATH="$BASE_PATH/main-backup"
@@ -123,24 +123,24 @@ jobs:
             cd "$MAIN_PATH"
             
             export NODE_ENV=production
-            export PORT=8003
+            export PORT=8004
 
             # Check if the cron process exists
-            if pm2 list | grep -q "foxhub-cron" ; then
+            if pm2 list | grep -q "foxhub-cron-staging" ; then
               # Restart the existing process
-              if ! pm2 restart "foxhub-cron" --update-env ; then
+              if ! pm2 restart "foxhub-cron-staging" --update-env ; then
                 echo "Failed to restart PM2 cron process"
                 exit 1
               fi
             else
               # First time deployment
-              if ! pm2 start npm --name "foxhub-cron" -- start ; then
+              if ! pm2 start npm --name "foxhub-cron-staging" -- start ; then
                 echo "Failed to start PM2 cron process"
                 exit 1
               fi
             fi
             
-            if ! pm2 show "foxhub-cron" > /dev/null 2>&1; then
+            if ! pm2 show "foxhub-cron-staging" > /dev/null 2>&1; then
               echo "Failed to start/restart PM2 cron process"
               exit 1
             fi
@@ -149,4 +149,4 @@ jobs:
           if [ $? -ne 0 ]; then
             echo "Cron deployment step failed"
             exit 1
-          fi
+          fi 

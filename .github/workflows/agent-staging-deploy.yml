@@ -49,7 +49,7 @@ jobs:
         env:
           DOTENV_KEY: ${{ secrets.STAGING_DOTENV_KEY }}
         run: |
-          node -r dotenv/config ./prepare-env.js staging
+          node ./prepare-env.js
 
       - name: Deploy to Staging
         working-directory: apps/agent

@@ -191,7 +191,12 @@ export function prepareApiRequest(
             if (schema.type === "array" || schema.type === "object") {
               // Handle arrays and objects
               if (typeof value === "string") {
-                bodyData[key] = JSON.parse(value);
+                bodyData[key] =
+                  value?.startsWith("[") || value.startsWith("{")
+                    ? JSON.parse(value)
+                    : value?.includes(",")
+                      ? value.split(",")
+                      : value;
               } else {
                 bodyData[key] = value;
               }

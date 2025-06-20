@@ -188,15 +188,23 @@ export function prepareApiRequest(
         const value = getNestedValue(data, `body_${key}`);
         if (value !== undefined) {
           try {
-            if (schema.type === "array" || schema.type === "object") {
-              // Handle arrays and objects
+            if (schema.type === "array") {
               if (typeof value === "string") {
-                bodyData[key] =
-                  value?.startsWith("[") || value.startsWith("{")
-                    ? JSON.parse(value)
-                    : value?.includes(",")
-                      ? value.split(",")
-                      : value;
+                if (value.startsWith("[")) {
+                  bodyData[key] = JSON.parse(value);
+                } else {
+                  bodyData[key] = value.split(",").map((item) => item.trim());
+                }
+              } else {
+                bodyData[key] = value;
+              }
+            } else if (schema.type === "object") {
+              if (typeof value === "string") {
+                if (value.startsWith("{")) {
+                  bodyData[key] = JSON.parse(value);
+                } else {
+                  bodyData[key] = value;
+                }
               } else {
                 bodyData[key] = value;
               }

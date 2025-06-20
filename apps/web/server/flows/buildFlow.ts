@@ -176,8 +176,8 @@ export const buildFlow: ServerStreamingFunction<
             ${(taskInstanceMeta?.taskStructure as any as TaskStructure)?.lambdaFunctions?.map((toolCall) => toolCall.name).join(", ")}
 
             CRITICAL:
-            If the user is asking for even a tiny change/modification of the built task/automation, then always pass the intent as "Modify-App"
-            if the user is asking something related to the current task or looking to trigger something inside the task, then pass the intent as "In-Task-Query"
+            If the user is asking for a change/modification of the built task/automation/app, then always pass the intent as "Modify-App"
+            if the user is asking something related to the current task or looking to trigger something inside the task like the task tool calls, then pass the intent as "In-Task-Query"
             If the user is asking for a new feature, then pass the intent as "Add-Features"
             If the user is asking to rebuild the task, then pass the intent as "Rebuild-App"
             If the user is asking to redeploy the task, then pass the intent as "Redeploy-App"

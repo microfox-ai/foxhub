@@ -1,0 +1,77 @@
+name: Agent Production Deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/agent/**"
+      - ".github/workflows/agent-prod-deploy.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.repository }}-agent-prod
+  cancel-in-progress: true
+
+jobs:
+  agent-prod-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache agent dependencies
+        uses: actions/cache@v4
+        with:
+          path: apps/agent/node_modules
+          key: ${{ runner.os }}-agent-prod-deps-${{ hashFiles('apps/agent/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-agent-prod-deps-
+
+      - name: Install agent dependencies
+        run: npm install
+        working-directory: apps/agent
+      
+      - name: Configure AWS Credentials and Environment
+        working-directory: apps/agent
+        env:
+          DOTENV_KEY: ${{ secrets.PROD_DOTENV_KEY }}
+        run: |
+          npx dotenv-vault@latest pull production
+          node <<'EOF'
+          const fs = require('fs');
+          const dotenv = require('dotenv');
+
+          const envFileContent = fs.readFileSync('.env.production');
+          const envConfig = dotenv.parse(envFileContent);
+
+          const awsAccessKeyId = envConfig.AGENT_AWS_ACCESS_KEY_ID;
+          const awsSecretAccessKey = envConfig.AGENT_AWS_SECRET_ACCESS_KEY;
+          const awsRegion = envConfig.AGENT_AWS_REGION;
+
+          if (!awsAccessKeyId || !awsSecretAccessKey || !awsRegion) {
+            console.error('AWS credentials not found in vault for production');
+            process.exit(1);
+          }
+
+          fs.appendFileSync(process.env.GITHUB_ENV, `AWS_ACCESS_KEY_ID=${awsAccessKeyId}\n`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `AWS_SECRET_ACCESS_KEY=${awsSecretAccessKey}\n`);
+          fs.appendFileSync(process.env.GITHUB_ENV, `AWS_REGION=${awsRegion}\n`);
+
+          delete envConfig.AGENT_AWS_ACCESS_KEY_ID;
+          delete envConfig.AGENT_AWS_SECRET_ACCESS_KEY;
+          delete envConfig.AGENT_AWS_REGION;
+
+          fs.writeFileSync('apps/agent/env.json', JSON.stringify(envConfig, null, 2));
+          console.log('Created env.json for production.');
+          EOF
+
+      - name: Deploy to Production
+        working-directory: apps/agent
+        run: npm run deploy:prod 

@@ -1,25 +1,44 @@
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config();
+const dotenvResult = dotenv.config();
+
+if (dotenvResult.error) {
+  // a .env file is required
+  console.error(`Error: failed to load .env file.`);
+  process.exit(1);
+}
+
+const vaultVars = dotenvResult.parsed;
 
 try {
-  const awsAccessKeyId = process.env.AGENT_AWS_ACCESS_KEY_ID;
-  const awsSecretAccessKey = process.env.AGENT_AWS_SECRET_ACCESS_KEY;
-  const awsRegion = process.env.AGENT_AWS_REGION;
+  const awsAccessKeyId = vaultVars.AGENT_AWS_ACCESS_KEY_ID;
+  const awsSecretAccessKey = vaultVars.AGENT_AWS_SECRET_ACCESS_KEY;
+  const awsRegion = vaultVars.AGENT_AWS_REGION;
 
   if (!awsAccessKeyId || !awsSecretAccessKey || !awsRegion) {
-    console.error(`Error: AWS credentials (AGENT_AWS_ACCESS_KEY_ID, AGENT_AWS_SECRET_ACCESS_KEY, AGENT_AWS_REGION) not found in vault for ${environment}.`);
+    console.error(
+      `Error: AWS credentials (AGENT_AWS_ACCESS_KEY_ID, AGENT_AWS_SECRET_ACCESS_KEY, AGENT_AWS_REGION) not found in vault.`
+    );
     process.exit(1);
   }
 
   const jsonConfigPath = path.resolve(process.cwd(), 'env.json');
   const envConfig = {};
-  const excludeKeys = ['AGENT_AWS_ACCESS_KEY_ID', 'AGENT_AWS_SECRET_ACCESS_KEY', 'AGENT_AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_DEFAULT_REGION', '_'];
+  const excludeKeys = [
+    'AGENT_AWS_ACCESS_KEY_ID',
+    'AGENT_AWS_SECRET_ACCESS_KEY',
+    'AGENT_AWS_REGION',
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_REGION',
+    'AWS_DEFAULT_REGION',
+    '_'
+  ];
 
-  for (const key in process.env) {
+  for (const key in vaultVars) {
     if (!excludeKeys.includes(key)) {
-      envConfig[key] = process.env[key];
+      envConfig[key] = vaultVars[key];
     }
   }
 

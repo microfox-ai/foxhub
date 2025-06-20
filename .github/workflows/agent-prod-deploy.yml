@@ -39,7 +39,10 @@ jobs:
           rm -f package.json package-lock.json
           cd apps/agent
           npm install
-      
+
+      - name: Copy .env.vault to agent directory
+        run: cp .env.vault apps/agent/
+
       - name: Configure AWS Credentials and Environment
         working-directory: apps/agent
         env:

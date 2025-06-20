@@ -14,6 +14,7 @@ import {
   ServerStreamingFunction,
 } from "@repo/ai-utils/router";
 import { deployViaGit } from "./deployGit";
+import { IN_STAGING } from "@/utils/constants/appInfo";
 export const deployFoxRouter: ServerStreamingFunction<
   any,
   defaultCallbackResultBody
@@ -30,9 +31,13 @@ export const deployFoxRouter: ServerStreamingFunction<
       appendRequestBody: { ...requestBody },
     };
   }
+  console.log("requestBody deployfox", requestBody);
 
   const stage = requestBody.stage;
-  const isLocal = requestBody.is_local;
+  const isLocal =
+    (requestBody.is_local === undefined || requestBody.is_local === null)
+      ? IN_STAGING ? true : false
+      : requestBody.is_local;
 
   dataStream.writeMessageAnnotation({
     type: "minion",
@@ -69,9 +74,8 @@ export const deployFoxRouter: ServerStreamingFunction<
   await slackBotSdk.sendMessage({
     icon_url: MICROFOX_LOGO,
     channel: MySlackChannels.microfox_updates,
-    text: `Deployfox triggered ${(stage ?? DEPLOY_STAGE.STAGING).toLowerCase()} deployment for ${clientRequest.title} ${
-      sha ? `with sha ${sha}` : ""
-    }`,
+    text: `Deployfox triggered ${(stage ?? DEPLOY_STAGE.STAGING).toLowerCase()} deployment for ${clientRequest.title} ${sha ? `with sha ${sha}` : ""
+      }`,
   });
 
   dataStream.writeMessageAnnotation({

@@ -1,0 +1,56 @@
+name: Agent Staging Deployment
+
+on:
+  push:
+    branches:
+      - staging/shards
+    paths:
+      - "apps/agent/**"
+      - ".github/workflows/agent-staging-deploy.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.repository }}-agent-staging
+  cancel-in-progress: true
+
+jobs:
+  agent-staging-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache agent dependencies
+        uses: actions/cache@v4
+        with:
+          path: apps/agent/node_modules
+          key: ${{ runner.os }}-agent-staging-deps-${{ hashFiles('apps/agent/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-agent-staging-deps-
+
+      - name: Install agent dependencies
+        run: |
+          rm -f package.json package-lock.json
+          cd apps/agent
+          npm install
+
+      - name: Copy .env.vault to agent directory
+        run: cp .env.vault apps/agent/
+
+      - name: Configure AWS Credentials and Environment
+        working-directory: apps/agent
+        env:
+          DOTENV_KEY: ${{ secrets.STAGING_DOTENV_KEY }}
+        run: |
+          node -r dotenv/config ./prepare-env.js staging
+
+      - name: Deploy to Staging
+        working-directory: apps/agent
+        run: npm run deploy:staging 

@@ -38,6 +38,10 @@ const nextConfig: NextConfig = {
       );
     }
 
+    if (isServer) {
+      config.externals = [...config.externals, "express"];
+    }
+
     return config;
   },
 };

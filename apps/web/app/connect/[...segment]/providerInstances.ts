@@ -18,6 +18,7 @@ export const mapProviderToAuthFunction = (
 ) => {
   switch (packageName) {
     case "google-oauth":
+    case "oauth-google":
       return new GoogleOAuthSdk({
         clientId: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -27,6 +28,7 @@ export const mapProviderToAuthFunction = (
         ...(scopes && { scopes: scopes }),
       });
     case "linkedin-oauth":
+    case "oauth-linkedin":
       return new LinkedInOAuthSdk({
         clientId: process.env.LINKEDIN_CLIENT_ID!,
         clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
@@ -36,6 +38,7 @@ export const mapProviderToAuthFunction = (
         ...(scopes && { scopes: scopes }),
       });
     case "slack-oauth":
+    case "oauth-slack":
       return new SlackOAuthSdk({
         clientId: process.env.SLACK_CLIENT_ID!,
         clientSecret: process.env.SLACK_CLIENT_SECRET!,
@@ -45,6 +48,7 @@ export const mapProviderToAuthFunction = (
         ...(scopes && { scopes: scopes }),
       });
     case "reddit-oauth":
+    case "oauth-reddit":
       return new RedditOAuthSdk({
         clientId: process.env.REDDIT_CLIENT_ID!,
         clientSecret: process.env.REDDIT_CLIENT_SECRET!,
@@ -54,6 +58,7 @@ export const mapProviderToAuthFunction = (
         ...(scopes && { scopes: scopes }),
       });
     case "notion-oauth":
+    case "oauth-notion":
       return new NotionOAuthSdk({
         clientId: process.env.NOTION_CLIENT_ID!,
         clientSecret: process.env.NOTION_CLIENT_SECRET!,

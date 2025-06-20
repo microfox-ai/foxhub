@@ -41,8 +41,8 @@
     "@microfox/slack-web-tiny": "^1.0.3",
     "@microfox/usage-pricing": "^0.0.11",
     "@microfox/usage-tracker": "^0.0.5",
-    "@microfox/webhook-octokit": "^1.0.3",
-    "@microfox/webhook-slack": "^1.0.7",
+    "@microfox/webhook-octokit": "*",
+    "@microfox/webhook-slack": "*",
     "@microfox/whatsapp-business": "^1.0.2",
     "@monaco-editor/react": "^4.7.0",
     "@mui/material": "^6.4.7",
@@ -126,7 +126,8 @@
     "use-debounce": "^10.0.4",
     "zod": "^3.24.2",
     "@microfox/serverless-yml": "*",
-    "@microfox/oauth-kit": "*"
+    "@microfox/oauth-kit": "*",
+    "@microfox/webhook-kit": "*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

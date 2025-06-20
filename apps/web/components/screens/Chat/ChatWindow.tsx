@@ -174,7 +174,6 @@ function ChatWindow({
                       stiffness: 300,
                       damping: 30,
                       duration: 0.1,
-                      exit: { duration: 0 },
                     }}
                     style={{
                       WebkitMaskImage:
@@ -203,7 +202,6 @@ function ChatWindow({
                       stiffness: 300,
                       damping: 30,
                       duration: 0.1,
-                      exit: { duration: 0 },
                     }}
                     className=" w-full h-full overflow-y-auto thin-scrollbar"
                   >

@@ -1,4 +1,5 @@
 import { ApiGatewayAdapter } from "@/lib/adapters/api-gateway";
+import { prisma } from "@/prisma/prisma";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { WebhookKit, WebhookResponse } from "@microfox/webhook-kit";
 import { OctokitWebhook } from "@microfox/webhook-octokit";
@@ -34,20 +35,64 @@ export async function POST(
 
     console.log("webhookEvent", response.webhookEvent);
 
-    // const sqsClient = new SQSClient({
-    //   region: process.env.AGENT_AWS_REGION!,
-    //   credentials: {
-    //     accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
-    //     secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
-    //   },
-    // });
+    const clientSecrets = await prisma.clientSecret.findMany({
+      where: {
+        AND: [
+          {
+            packageName: {
+              contains: providerId,
+              mode: "insensitive",
+            },
+          },
+        ],
+        OR: [
+          {
+            identityUserId: response.webhookEvent?.sender?.id,
+          },
+          {
+            identityOrgId: response.webhookEvent?.org?.id,
+          },
+          {
+            indentityTeamId: response.webhookEvent?.team?.id,
+          },
+        ],
+      },
+      include: {
+        botProject: true,
+      },
+    });
 
-    // const command = new SendMessageCommand({
-    //   QueueUrl: process.env.AGENT_SQS_QUEUE_URL!,
-    //   MessageBody: JSON.stringify(eventPayload),
-    // });
+    const uniqueBotProjects = [
+      ...new Set(
+        clientSecrets.map((clientSecret) => clientSecret.botProjectId)
+      ),
+    ];
 
-    // await sqsClient.send(command);
+    const botProjects = uniqueBotProjects.map((botProjectId) => {
+      return clientSecrets.find(
+        (clientSecret) => clientSecret.botProjectId === botProjectId
+      )?.botProject;
+    });
+
+    const sqsClient = new SQSClient({
+      region: process.env.AGENT_AWS_REGION!,
+      credentials: {
+        accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+
+    const command = new SendMessageCommand({
+      QueueUrl: process.env.AGENT_SQS_QUEUE_URL!,
+      MessageBody: JSON.stringify({
+        webhookEvent: response.webhookEvent,
+        clientSecrets,
+        botProjectIds: uniqueBotProjects,
+        botProjects,
+      }),
+    });
+
+    await sqsClient.send(command);
 
     return ApiGatewayAdapter.toNextResponse(response);
   }

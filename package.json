@@ -30,7 +30,7 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@types/aws-lambda": "^8.10.142",
+    "@types/aws-lambda": "^8.10.150",
     "@types/body-parser": "^1.19.5",
     "@types/caseless": "^0.12.3",
     "@types/istanbul-lib-report": "^3.0.3",

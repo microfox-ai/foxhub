@@ -44,7 +44,7 @@
     "@microfox/slack-web-tiny": "^1.0.3",
     "@microfox/usage-pricing": "^0.0.11",
     "@microfox/usage-tracker": "^0.0.5",
-    "@microfox/webhook-kit": "^1.0.3",
+    "@microfox/webhook-kit": "*",
     "@microfox/webhook-octokit": "^1.1.2",
     "@microfox/webhook-slack": "^1.1.4",
     "@microfox/whatsapp-business": "^1.0.2",
@@ -128,7 +128,8 @@
     "tiptap-unique-id": "^2.10.3",
     "turndown": "^7.2.0",
     "use-debounce": "^10.0.4",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "@microfox/webhook-core": "*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

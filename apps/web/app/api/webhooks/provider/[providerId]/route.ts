@@ -1,14 +1,25 @@
 import { ApiGatewayAdapter } from "@/lib/adapters/api-gateway";
 import { prisma } from "@/prisma/prisma";
+import { ClientSecretVariable } from "@/server/types";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
+import { Identity } from "@microfox/oauth-kit";
 import { WebhookKit, WebhookResponse } from "@microfox/webhook-kit";
 import { OctokitWebhook } from "@microfox/webhook-octokit";
 import { SlackWebhook } from "@microfox/webhook-slack";
+import { ClientSecret } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 const mapWebhookSecret = {
-  slack: process.env.WEBHOOK_SLACK_SIGNING_SECRET ?? "",
-  octokit: process.env.WEBHOOK_OCTOKIT_SIGNING_SECRET ?? "",
+  slack: {
+    secret: process.env.WEBHOOK_SLACK_SIGNING_SECRET ?? "",
+    teamId: process.env.WEBHOOK_SLACK_TEAM_ID ?? "",
+    appName: "Microfox",
+  },
+  octokit: {
+    secret: process.env.WEBHOOK_OCTOKIT_SIGNING_SECRET ?? "",
+    orgId: process.env.WEBHOOK_OCTOKIT_ORG_ID ?? "",
+    appName: "Microfox",
+  },
 };
 export async function POST(
   req: NextRequest,
@@ -29,7 +40,6 @@ export async function POST(
       body: event.body ?? "",
     }
   );
-
   if (response && response.isTracked) {
     const eventPayload = response.payload;
 
@@ -50,17 +60,24 @@ export async function POST(
             identityUserId: response.webhookEvent?.sender?.id,
           },
           {
-            identityOrgId: response.webhookEvent?.org?.id,
+            identityOrgId: response.webhookEvent?.provider_info?.org?.id,
           },
           {
-            indentityTeamId: response.webhookEvent?.team?.id,
+            indentityTeamId: response.webhookEvent?.provider_info?.team?.id,
           },
         ],
       },
-      include: {
-        botProject: true,
-      },
     });
+
+    const microfoxConnections: {
+      microfox_bot_id: string;
+      related_users: {
+        microfox_user_id: string;
+        provider: string;
+        [key: string]: any;
+      }[];
+      related_secrets: ClientSecret[];
+    }[] = [];
 
     const uniqueBotProjects = [
       ...new Set(
@@ -68,11 +85,45 @@ export async function POST(
       ),
     ];
 
-    const botProjects = uniqueBotProjects.map((botProjectId) => {
-      return clientSecrets.find(
+    for (const botProjectId of uniqueBotProjects) {
+      const _linkedSecrets = clientSecrets.filter(
         (clientSecret) => clientSecret.botProjectId === botProjectId
-      )?.botProject;
-    });
+      );
+      const _users = clientSecrets
+        .filter((clientSecret) => clientSecret.botProjectId === botProjectId)
+        .map((clientSecret) => ({
+          microfox_user_id: clientSecret.userId,
+          provider: providerId,
+          [providerId + "_metadata"]: (
+            clientSecret.identityMetadata as Identity
+          )?.userInfo,
+        }));
+
+      microfoxConnections.push({
+        microfox_bot_id: botProjectId,
+        related_users: _users,
+        related_secrets: _linkedSecrets,
+      });
+    }
+
+    let reactAccess = {
+      access_token: "",
+    };
+
+    const accessClientSecret = clientSecrets.find(
+      (clientSecret) =>
+        clientSecret.indentityTeamId ===
+        response.webhookEvent?.provider_info?.team?.id
+    );
+    if (accessClientSecret) {
+      reactAccess.access_token = (
+        accessClientSecret.variables as unknown as ClientSecretVariable[]
+      ).filter((variable) => variable.key.includes("ACCESS_TOKEN"))?.[0]?.value;
+    }
+
+    const uniqueUsers = [
+      ...new Set(clientSecrets.map((clientSecret) => clientSecret?.userId)),
+    ];
 
     const sqsClient = new SQSClient({
       region: process.env.AGENT_AWS_REGION!,
@@ -85,10 +136,11 @@ export async function POST(
     const command = new SendMessageCommand({
       QueueUrl: process.env.AGENT_SQS_QUEUE_URL!,
       MessageBody: JSON.stringify({
-        webhookEvent: response.webhookEvent,
-        clientSecrets,
-        botProjectIds: uniqueBotProjects,
-        botProjects,
+        task_type: "direct",
+        channel: response.webhookEvent?.channel,
+        webhook_event: response.webhookEvent,
+        microfox_connections: microfoxConnections,
+        react_access: reactAccess,
       }),
     });
 

@@ -33,37 +33,13 @@ function logSection(title) {
   console.log('='.repeat(60));
 }
 
-function setPackageVersionToStar(packageName) {
-    try {
-        log(`Setting version of ${packageName} back to "*" in package.json...`);
-        const packageJson = JSON.parse(fs.readFileSync(APPS_WEB_PACKAGE_JSON, 'utf8'));
-
-        if (packageJson.dependencies && packageJson.dependencies[packageName]) {
-            packageJson.dependencies[packageName] = '*';
-        } else if (packageJson.devDependencies && packageJson.devDependencies[packageName]) {
-            packageJson.devDependencies[packageName] = '*';
-        } else {
-            log(`Package ${packageName} not found in dependencies or devDependencies after update. Cannot set version to "*".`, false, true);
-            return true;
-        }
-
-        fs.writeFileSync(APPS_WEB_PACKAGE_JSON, JSON.stringify(packageJson, null, 2) + '\n');
-        logSuccess(`Set ${packageName} version to "*" in package.json.`);
-        return true;
-    } catch (error) {
-        log(`Failed to set version for ${packageName} back to "*" in package.json: ${error.message}`, true);
-        return false;
-    }
-}
-
 function updatePackage(packageName, isDev = false) {
   log(`Updating package to latest: ${packageName}`);
   const saveFlag = isDev ? '--save-dev' : '--save';
   try {
     execSync(`npm install ${packageName}@latest ${saveFlag}`, { cwd: APPS_WEB_DIR, stdio: 'pipe' });
     logSuccess(`Successfully updated ${packageName} to the latest version from npm.`);
-    
-    return setPackageVersionToStar(packageName);
+    return true;
   } catch (error) {
     log(`Failed to update ${packageName}: ${error.message}`, true);
     log(`Stderr: ${error.stderr?.toString()}`, true);
@@ -103,7 +79,7 @@ function updateSpecificPackage(packageName) {
 }
 
 function updateAllPackages() {
-  logSection('Updating all @microfox/* packages with "*" version');
+  logSection('Updating all @microfox/* packages to latest');
   
   const packageJson = JSON.parse(fs.readFileSync(APPS_WEB_PACKAGE_JSON, 'utf8'));
   const dependencies = packageJson.dependencies || {};
@@ -111,11 +87,11 @@ function updateAllPackages() {
   const allDependencies = { ...dependencies, ...devDependencies };
 
   const microfoxPackages = Object.entries(allDependencies)
-    .filter(([name, version]) => name.startsWith('@microfox/') && version === '*')
+    .filter(([name]) => name.startsWith('@microfox/'))
     .map(([name]) => name);
 
   if (microfoxPackages.length === 0) {
-    log('ℹ️  No @microfox/* packages with "*" version found to update.');
+    log('ℹ️  No @microfox/* packages found in package.json.');
     return;
   }
 

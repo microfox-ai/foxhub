@@ -192,7 +192,7 @@ model ClientSecret {
   tokenResponse       Json?
   identityMetadata    Json?
   identityUserId      String?
-  indentityTeamId     String?
+  identityTeamId     String?
   identityOrgId       String?
   awsRegion           String?
   botProject          BotProject         @relation(fields: [botProjectId], references: [id])

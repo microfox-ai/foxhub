@@ -46,7 +46,7 @@ export async function processToolCalls<
     messages,
   }: {
     tools: Tools; // used for type inference
-    dataStream: DataStreamWriter;
+    dataStream?: DataStreamWriter;
     messages: Message[];
   },
   executeFunctions: {
@@ -103,12 +103,14 @@ export async function processToolCalls<
 
       console.log("result", result);
       // Forward updated tool result to the client.
-      dataStream.write(
-        formatDataStreamPart("tool_result", {
-          toolCallId: toolInvocation.toolCallId,
-          result,
-        })
-      );
+      if (dataStream) {
+        dataStream.write(
+          formatDataStreamPart("tool_result", {
+            toolCallId: toolInvocation.toolCallId,
+            result,
+          })
+        );
+      }
 
       // Return updated toolInvocation with the actual result.
       return {

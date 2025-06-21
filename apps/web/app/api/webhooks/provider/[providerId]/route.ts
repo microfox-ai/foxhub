@@ -12,13 +12,12 @@ import { NextRequest, NextResponse } from "next/server";
 const mapWebhookSecret = {
   slack: {
     secret: process.env.WEBHOOK_SLACK_SIGNING_SECRET ?? "",
-    teamId: process.env.WEBHOOK_SLACK_TEAM_ID ?? "",
     appName: "Microfox",
   },
   octokit: {
-    secret: process.env.WEBHOOK_OCTOKIT_SIGNING_SECRET ?? "",
-    orgId: process.env.WEBHOOK_OCTOKIT_ORG_ID ?? "",
+    secret: process.env.GITHUB_WEBHOOK_SECRET ?? "",
     appName: "Microfox",
+    appMentionId: "microfox-read-only-staging",
   },
 };
 export async function POST(
@@ -63,7 +62,7 @@ export async function POST(
             identityOrgId: response.webhookEvent?.provider_info?.org?.id,
           },
           {
-            indentityTeamId: response.webhookEvent?.provider_info?.team?.id,
+            identityTeamId: response.webhookEvent?.provider_info?.team?.id,
           },
         ],
       },
@@ -110,11 +109,21 @@ export async function POST(
       access_token: "",
     };
 
-    const accessClientSecret = clientSecrets.find(
-      (clientSecret) =>
-        clientSecret.indentityTeamId ===
-        response.webhookEvent?.provider_info?.team?.id
-    );
+    const accessClientSecret =
+      clientSecrets.find(
+        (clientSecret) =>
+          clientSecret.identityTeamId ===
+          response.webhookEvent?.provider_info?.team?.id
+      ) ||
+      clientSecrets.find(
+        (clientSecret) =>
+          clientSecret.identityOrgId ===
+          response.webhookEvent?.provider_info?.org?.id
+      ) ||
+      clientSecrets.find(
+        (clientSecret) =>
+          clientSecret.identityUserId === response.webhookEvent?.sender?.id
+      );
     if (accessClientSecret) {
       reactAccess.access_token = (
         accessClientSecret.variables as unknown as ClientSecretVariable[]
@@ -149,5 +158,5 @@ export async function POST(
     return ApiGatewayAdapter.toNextResponse(response);
   }
 
-  return NextResponse.json({ ok: true }, { status: 200 });
+  if (response) return NextResponse.json({ ok: true }, { status: 200 });
 }

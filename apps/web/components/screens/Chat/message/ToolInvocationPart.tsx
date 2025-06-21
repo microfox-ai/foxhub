@@ -4,11 +4,10 @@ import {
   constructShiftMinionMessage
 } from "@/components/screens/Chat/message/messageHelpers";
 import { Button } from "@/components/ui/button";
+import { APPROVAL } from "@/utils/services/ToolHumanLayer";
 import { UIMessage } from "ai";
 import { useMicrofoxChat } from "../MicrofoxChatProvider";
 import { PrintCode } from "./PrintCode";
-import { APPROVAL } from "@/utils/services/ToolHumanLayer";
-import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
 
 type MessagePartType = UIMessage["parts"][number];
 

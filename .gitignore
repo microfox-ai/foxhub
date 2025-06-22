@@ -45,3 +45,4 @@ env.json
 
 # cron logs
 apps/cron/logs/*
+.serverless

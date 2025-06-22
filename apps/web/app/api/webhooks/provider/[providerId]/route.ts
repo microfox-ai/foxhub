@@ -155,7 +155,9 @@ export async function POST(
     await sqsClient.send(command);
 
     return ApiGatewayAdapter.toNextResponse(response);
+  } else if (response && "statusCode" in response) {
+    return ApiGatewayAdapter.toNextResponse(response);
+  } else {
+    return NextResponse.json({ ok: true }, { status: 200 });
   }
-
-  if (response) return NextResponse.json({ ok: true }, { status: 200 });
 }

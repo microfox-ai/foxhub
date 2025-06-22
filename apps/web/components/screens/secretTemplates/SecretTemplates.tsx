@@ -303,7 +303,7 @@ export const SecretTemplates = () => {
 
     const [newPermission, setNewPermission] = useState("");
 
-    if (!user?.email?.includes("@themoondevs.com") && !IN_DEV) {
+    if (!user?.isAdmin && !IN_DEV) {
         return (
             <div className="p-6">
                 <h1 className="text-2xl font-bold">Secret Templates</h1>

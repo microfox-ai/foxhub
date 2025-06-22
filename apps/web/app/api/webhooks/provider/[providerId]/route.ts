@@ -31,7 +31,6 @@ export async function POST(
   const webhookKit = new WebhookKit({
     [providerId]: mapWebhookSecret[providerId as keyof typeof mapWebhookSecret],
   });
-  console.log("webhookKit", JSON.parse(event.body ?? "{}"));
   const response: WebhookResponse | void = await webhookKit.receive(
     providerId,
     {

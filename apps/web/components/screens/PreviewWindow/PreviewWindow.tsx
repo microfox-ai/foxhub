@@ -28,7 +28,7 @@ import {
   OpenAPISchema
 } from "@/utils/services/OpenAPIToolsClient";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeftIcon, ChevronDown, Clock, Copy, ExternalLink, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
+import { ArrowLeftIcon, Check, ChevronDown, Clock, Copy, ExternalLink, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -1544,6 +1544,20 @@ const PreviewWindow = () => {
                                   disabled={isRefreshingLogs}
                                 >
                                   <RefreshCw className={`h-3 w-3 text-neutral-500 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyText(JSON.stringify(serverlessLogs, null, 2));
+                                    setLastCopiedId("serverless-logs-copy");
+                                  }}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                                >
+                                  {copied && lastCopiedId === "serverless-logs-copy" ? (
+                                    <Check className="h-3 w-3 text-green-500" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 text-neutral-500" />
+                                  )}
                                 </button>
                                 <a
                                   href={`https://${AWS_LAMBDA_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_LAMBDA_DEFAULT_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`${AWS_LAMBDA_LOG_GROUP_PREFIX}${selectedFunctionName}`)}`}

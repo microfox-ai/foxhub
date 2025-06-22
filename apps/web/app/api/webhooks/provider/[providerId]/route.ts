@@ -27,7 +27,6 @@ export async function POST(
   const params = await segmentData.params;
   const { providerId } = params;
   console.log("providerId", providerId);
-  const body = await req.json();
   const event = await ApiGatewayAdapter.toApiGatewayEvent(req);
   const webhookKit = new WebhookKit({
     [providerId]: mapWebhookSecret[providerId as keyof typeof mapWebhookSecret],

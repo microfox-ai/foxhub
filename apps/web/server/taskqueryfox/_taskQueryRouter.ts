@@ -8,50 +8,56 @@ import {
 import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
 import { createToolkit } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
-import { streamText } from "ai";
+import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext, AiHandler } from "@repo/ai-utils/router";
+import { StreamWriter } from "@repo/ai-utils/helper";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
 // it also has to update the taskInstanceMeta
-export const taskQueryRouter = async (props: AiContext) => {
+export const taskQueryRouter: AiHandler = async (props) => {
   const { request, state, writer } = props;
   const { clientRequestId } = request;
 
   if (!request.minionContinue) {
-    writer.writeMessageAnnotation({
-      type: "minion",
-      value: MinionType.TaskQueryFox,
-    });
+    writer.write(
+      StreamWriter.writeMessageAnnotation({
+        type: "minion",
+        value: MinionType.TaskQueryFox,
+      })
+    );
   }
 
   // get all taskQuery messages + this 1 last message in the queue (hopefully the user message)
-  requestBody.messages = requestBody.messages.filter(
-    (m: any, index: number) => {
-      const minion = m.annotations?.find((a: any) => a.type === "minion");
-      return (
-        minion?.value === MinionType.TaskQueryFox ||
-        index === requestBody.messages.length - 1
-      );
-    }
-  );
+  request.messages = request.messages.filter((m, index: number) => {
+    const minion = (m.metadata as any)?.minion;
+    return (
+      minion?.value === MinionType.TaskQueryFox ||
+      index === request.messages.length - 1
+    );
+  });
 
-  requestBody.messages = requestBody.messages.map((m: any, index: number) => ({
+  request.messages = request.messages.map((m, index: number) => ({
     ...m,
     parts:
-      index === requestBody.messages.length - 1
+      index === request.messages.length - 1
         ? m.parts
-        : [findLastElementWith(m.parts, (p: any) => p.type === "text")],
-    annotations: [],
-    toolInvocations: [],
+        : [
+            findLastElementWith(m.parts, (p: any) => p.type === "text") ?? {
+              type: "text",
+              text: "",
+            },
+          ],
   }));
 
   try {
-    dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Fetching tools for this task",
-    });
+    writer.write(
+      StreamWriter.writeMessageAnnotation({
+        type: "thinking",
+        content: "Fetching tools for this task",
+      })
+    );
 
     let clientRequest = await getClientRequest(clientRequestId);
     let taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
@@ -63,10 +69,7 @@ export const taskQueryRouter = async (props: AiContext) => {
     });
 
     if (!clientDeployment || !clientRequest || !taskInstanceMeta) {
-      return {
-        responseBody: { ...responseBody },
-        appendRequestBody: { ...requestBody },
-      };
+      return;
     }
 
     const docData = (clientDeployment.metadata as any).docData;
@@ -90,13 +93,15 @@ export const taskQueryRouter = async (props: AiContext) => {
     console.log(Object.keys(toolSet.executions).length, "toolSet.executions");
     console.log(Object.keys(toolSet.tools).length, "toolSet.tools");
 
-    dataStream.writeMessageAnnotation({
-      type: "toolsRequiringConfirmation",
-      list: getToolsRequiringConfirmation(toolSet.tools),
-      allMetadata: toolSet.metadata,
-    });
+    writer.write(
+      StreamWriter.writeMessageAnnotation({
+        type: "toolsRequiringConfirmation",
+        list: getToolsRequiringConfirmation(toolSet.tools),
+        allMetadata: toolSet.metadata,
+      })
+    );
 
-    const processedMessages = await client.parse(requestBody.messages);
+    const processedMessages = await client.parse(request.messages);
 
     // const processedMessages = await processToolCalls(
     //   {
@@ -121,31 +126,15 @@ export const taskQueryRouter = async (props: AiContext) => {
 
       If the tool has a lot of information, output into a neat markdown format.
     `,
-      messages: processedMessages,
+      messages: convertToModelMessages(processedMessages),
       tools: toolSet.tools,
       toolChoice: "auto",
-      prepareStep: client.createPrepareStep(),
+      stopWhen: (s) => s.steps.length > 10,
+      prepareStep: client.createHitlPrepareStep(),
     });
 
-    //dataStream.
-
-    // result.pipeTextStreamToResponse(dataStream, {
-    //   experimental_sendFinish: true,
-    // });
-
-    // msg.stream(dataStream, {
-    //   experimental_sendFinish: true,
-    // });
-
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    writer.merge(result.toUIMessageStream());
   } catch (error) {
     console.error(error);
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
   }
 };

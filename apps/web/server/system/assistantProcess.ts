@@ -1,42 +1,39 @@
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-  StreamingFucntionProps,
-} from "@repo/ai-utils/router";
+import { AiHandler, AiMiddleware } from "@repo/ai-utils/router";
 
-export const assistantMessageProcessor: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
+export const assistantMessageProcessor: AiMiddleware = async (props, next) => {
+  const { request, state, writer } = props;
 
-  const { messages } = requestBody;
+  const { messages } = request;
   let returnRequestBody = {
-    ...requestBody,
+    ...request,
   };
 
   if (messages[messages.length - 1]?.role === "assistant") {
-    let annotations = messages[messages.length - 1]?.annotations;
+    let annotations = messages[messages.length - 1]?.metadata;
     let extraData: Record<string, any> = {};
-    annotations.forEach((annotation: any) => {
-      let keys = Object.keys(annotation);
-      if (keys.includes("type") && keys.includes("value")) {
-        extraData[annotation.type] = annotation.value;
-        if (annotation.type === "minion") {
-          extraData.minionType = annotation.value;
+    Object.entries(annotations as any).forEach(
+      ([key, annotation]: [string, any]) => {
+        if (typeof annotation === "object") {
+          if (key === "minion") {
+            returnRequestBody.minionType = annotation.value;
+          }
+        }
+        let keys = Object.keys(annotation);
+        if (keys.includes("type") && keys.includes("value")) {
+          extraData[annotation.type] = annotation.value;
+          if (annotation.type === "minion") {
+            extraData.minionType = annotation.value;
+          }
         }
       }
-    });
+    );
     console.log("extraData", extraData);
     returnRequestBody = {
       minionContinue: true,
-      ...requestBody,
+      ...request,
       ...extraData,
     };
   }
 
-  return {
-    responseBody: { ...responseBody },
-    appendRequestBody: { ...returnRequestBody },
-  };
+  return next();
 };

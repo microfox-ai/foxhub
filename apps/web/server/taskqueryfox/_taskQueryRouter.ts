@@ -5,34 +5,22 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import {
-  createOpenAPIToolsClient,
-  OpenAPIToolsClient,
-} from "@/utils/services/OpenAPIToolsClient";
+import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
+import { createToolkit } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
-import { generateText, streamText } from "ai";
+import { streamText } from "ai";
 import { models } from "../models";
-import {
-  getToolsRequiringConfirmation,
-  processToolCalls,
-} from "@/utils/services/ToolHumanLayer";
+import { AiContext } from "@repo/ai-utils/router";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
 // it also has to update the taskInstanceMeta
-export const taskQueryRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
-  const { clientRequestId } = requestBody;
+export const taskQueryRouter = async (props: AiContext) => {
+  const { request, state, writer } = props;
+  const { clientRequestId } = request;
 
-  if (!requestBody.minionContinue) {
-    dataStream.writeMessageAnnotation({
+  if (!request.minionContinue) {
+    writer.writeMessageAnnotation({
       type: "minion",
       value: MinionType.TaskQueryFox,
     });
@@ -87,13 +75,18 @@ export const taskQueryRouter: ServerStreamingFunction<
       "/" +
       (clientDeployment.stage === DEPLOY_STAGE.PROD ? "prod" : "staging");
 
-    const thisCLient = await createOpenAPIToolsClient({
+    // const thisCLient = await createOpenAPIToolsClient({
+    //   schema: docData,
+    //   baseUrl: baseUrl,
+    // });
+
+    // const toolSet = await thisCLient.tools({ disableAllExecutions: true });
+    const client = await createToolkit({
       schema: docData,
       baseUrl: baseUrl,
     });
 
-    const toolSet = await thisCLient.tools({ disableAllExecutions: true });
-
+    const toolSet = await client.tools({ disableAllExecutions: true });
     console.log(Object.keys(toolSet.executions).length, "toolSet.executions");
     console.log(Object.keys(toolSet.tools).length, "toolSet.tools");
 
@@ -103,17 +96,19 @@ export const taskQueryRouter: ServerStreamingFunction<
       allMetadata: toolSet.metadata,
     });
 
-    const processedMessages = await processToolCalls(
-      {
-        messages: requestBody.messages,
-        dataStream,
-        tools: toolSet.tools,
-      },
-      toolSet.executions
-    );
+    const processedMessages = await client.parse(requestBody.messages);
 
-    const msg = streamText({
-      model: models.googleGeminiPro,
+    // const processedMessages = await processToolCalls(
+    //   {
+    //     messages: requestBody.messages,
+    //     dataStream,
+    //     tools: toolSet.tools,
+    //   },
+    //   toolSet.executions
+    // );
+
+    const result = streamText({
+      model: models.claude35Sonnet,
       system: `
     You are a helpful assistant that can answer questions in regards to the current task.
 
@@ -129,15 +124,18 @@ export const taskQueryRouter: ServerStreamingFunction<
       messages: processedMessages,
       tools: toolSet.tools,
       toolChoice: "auto",
-      maxSteps: 10,
-      onError: (error) => {
-        console.error(error);
-      },
+      prepareStep: client.createPrepareStep(),
     });
 
-    msg.mergeIntoDataStream(dataStream, {
-      experimental_sendFinish: true,
-    });
+    //dataStream.
+
+    // result.pipeTextStreamToResponse(dataStream, {
+    //   experimental_sendFinish: true,
+    // });
+
+    // msg.stream(dataStream, {
+    //   experimental_sendFinish: true,
+    // });
 
     return {
       responseBody: { ...responseBody },

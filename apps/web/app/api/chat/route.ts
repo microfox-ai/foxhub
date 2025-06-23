@@ -5,11 +5,10 @@ export const maxDuration = 600;
 export async function POST(req: Request) {
   const body = await req.json();
   //console.log("body", body);
-  return microfoxRouter.execute(body, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+  const minionFlow = body.messages?.[body.messages.length - 1]?.metadata;
+  return microfoxRouter.handle(minionFlow, {
+    request: {
+      messages: body.messages,
     },
   });
 }

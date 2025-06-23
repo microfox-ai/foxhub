@@ -1,110 +1,159 @@
 import {
-  CoreMessage,
-  createDataStreamResponse,
-  DataStreamWriter,
-  Message,
+  UIMessage,
+  createUIMessageStream,
+  UIMessageStreamWriter,
+  createUIMessageStreamResponse,
 } from "ai";
 
-//RULES - omit finish on 1st merge
-// result1.mergeIntoDataStream(dataStream, {
-//     experimental_sendFinish: false, // omit the finish event
-//   });
+// --- Core Types ---
+// For clarity, these are defined here. They can be moved to a separate types.ts file.
 
-// RULES - omit start & finish on every other merge
-// result1.mergeIntoDataStream(dataStream, {
-//     experimental_sendStart: false, // omit the start event
-//     experimental_sendFinish: false, // omit the finish event
-//   });
-
-// RULES - send only finish on last merge
-// result1.mergeIntoDataStream(dataStream, {
-//     experimental_sendFinish: true, // send the finish event
-//   });
-
-// HOW?: how to end data stream? - when a particular tool call is triggered ?
-
-export interface defaultRequestBody {
-  messages: CoreMessage[] | Omit<Message, "id">[] | undefined;
-}
-
-export interface defaultCallbackResultBody {
-  isLast: boolean;
-  isFirst: boolean;
-  blockNextSteps: boolean;
-}
-
-export interface StreamingFucntionProps<T, W> {
-  dataStream: DataStreamWriter;
-  requestBody: T & defaultRequestBody;
-  responseBody: W & defaultCallbackResultBody;
-}
-
-export interface ServerStreamingFunction<T, W> {
-  (
-    stuff: StreamingFucntionProps<T, W>
-  ): Promise<ServerStreamingCallbackResult<T, W>>;
-}
-
-export type ServerStreamingCallbackResult<T, W> = {
-  responseBody: W & defaultCallbackResultBody;
-  appendRequestBody: T & defaultRequestBody;
+/**
+ * The context object passed through the middleware chain.
+ */
+export type AiContext = {
+  request: {
+    messages: UIMessage[];
+    [key: string]: any;
+  };
+  state: {
+    [key: string]: any;
+  };
+  /**
+   * The writer for the UI Message Stream. Middleware and agents
+   * use this to contribute to the final response by calling methods
+   * like `.write()` or `.merge()`.
+   */
+  writer: UIMessageStreamWriter;
 };
 
-export class ServerStreamingRouter<T, W> {
-  private paths: Record<string, ServerStreamingFunction<T, W>> = {};
-  private routing: (requestBody: T & defaultRequestBody) => string[] = () => [];
+export type NextFunction = () => Promise<void>;
+export type AiHandler = (ctx: AiContext) => Promise<void>;
+export type AiMiddleware = (
+  ctx: AiContext,
+  next: NextFunction
+) => Promise<void>;
 
-  private _onError: (_error: unknown) => string = () => "Unknown error";
+// --- Router Implementation ---
 
-  addPath(path: string, callback: ServerStreamingFunction<T, W>) {
-    this.paths[path] = callback;
+type Layer = {
+  path: string;
+  handler: AiMiddleware;
+  isAgent: boolean;
+};
+
+/**
+ * A composable router for AI agents, inspired by Express.js.
+ */
+export class AiAgentKit {
+  private stack: Layer[] = [];
+
+  /**
+   * Registers a middleware that runs for a specific path prefix.
+   * @param path The path prefix to match.
+   * @param middleware The middleware function(s).
+   */
+  use(path: string | AiMiddleware, ...middleware: AiMiddleware[]): this {
+    let prefix = "/";
+    if (typeof path === "string") {
+      prefix = path;
+    } else {
+      middleware.unshift(path);
+    }
+
+    for (const handler of middleware) {
+      if (typeof handler !== "function") continue;
+      this.stack.push({ path: prefix, handler, isAgent: false });
+      console.log(`[AiAgentKit] Middleware registered for path: ${prefix}`);
+    }
+
+    return this;
   }
 
-  setRouting(routing: (requestBody: T & defaultRequestBody) => string[]) {
-    this.routing = routing;
+  /**
+   * Registers a final agent handler for a specific path.
+   * @param path The path to match exactly.
+   * @param handler The agent handler function.
+   */
+  agent(path: string, handler: AiHandler): this {
+    if (this.stack.some((l) => l.isAgent && l.path === path)) {
+      throw new Error(`An agent is already registered for path: ${path}`);
+    }
+    // An agent is the final step, so its handler is wrapped in a middleware
+    // that doesn't call `next()`. This makes the types consistent.
+    const agentMiddleware: AiMiddleware = async (ctx, _next) => {
+      await handler(ctx);
+    };
+    this.stack.push({ path, handler: agentMiddleware, isAgent: true });
+    console.log(`[AiAgentKit] Agent registered for path: ${path}`);
+    return this;
   }
 
-  onError(error: (_error: unknown) => string) {
-    this._onError = error;
-  }
+  /**
+   * Executes the middleware chain and the appropriate agent handler,
+   * wrapping the entire process in a UI Message Stream.
+   *
+   * @param path The path of the agent to execute.
+   * @param initialContext The initial context for the execution.
+   * @returns A `Response` object containing the rich UI stream.
+   */
+  handle(
+    path: string,
+    initialContext: Omit<AiContext, "state" | "writer">
+  ): Response {
+    console.log(`[AiAgentKit] Handling request for path: ${path}`);
+    return createUIMessageStreamResponse({
+      stream: createUIMessageStream({
+        originalMessages: initialContext.request.messages,
+        execute: async ({ writer }) => {
+          const ctx: AiContext = { ...initialContext, state: {}, writer };
 
-  execute(requestBody: T & defaultRequestBody, response?: ResponseInit) {
-    return createDataStreamResponse({
-      ...(response && { ...response }),
-      execute: async (dataStream) => {
-        let responseBody: W & defaultCallbackResultBody = {
-          isLast: false,
-          isFirst: true,
-        } as W & defaultCallbackResultBody;
-        let appendRequestBody = requestBody;
-        const pathsInSequence = this.routing(requestBody);
-        for (let i = 0; i < pathsInSequence.length; i++) {
-          const path = pathsInSequence[i];
-          if (!path) continue;
-          const callback = this.paths[path];
-          if (callback) {
-            const responseBodyFull = await callback({
-              dataStream,
-              requestBody: { ...requestBody, ...appendRequestBody },
-              responseBody: {
-                ...responseBody,
-                isLast: i === pathsInSequence.length - 1,
-              },
-            });
-            if (responseBodyFull?.responseBody?.blockNextSteps) {
-              break;
-            }
-            if (responseBodyFull) {
-              responseBody = responseBodyFull?.responseBody;
-              appendRequestBody = responseBodyFull?.appendRequestBody;
-            }
+          const layersToRun = this.stack.filter(
+            (layer) =>
+              path.startsWith(layer.path) &&
+              (layer.isAgent ? path === layer.path : true)
+          );
+
+          console.log(
+            `[AiAgentKit] Found ${
+              layersToRun.length
+            } layers to run for path: ${path}: ${layersToRun
+              .map((l) => `${l.path} (${l.isAgent ? "agent" : "middleware"})`)
+              .join(", ")}`
+          );
+
+          if (!layersToRun.some((l) => l.isAgent)) {
+            const errorMsg = `Agent not found for path: ${path}`;
+            console.error(`[AiAgentKit] ${errorMsg}`);
+            throw new Error(errorMsg);
           }
-        }
-        return;
-      },
-      onError: (error) => {
-        return this._onError(error as unknown);
-      },
+
+          const runner = layersToRun.reduceRight(
+            (next: NextFunction, layer: Layer) => async () => {
+              console.log(
+                `[AiAgentKit] -> Running ${
+                  layer.isAgent ? "agent" : "middleware"
+                } for path: ${layer.path}`
+              );
+              await layer.handler(ctx, next);
+              console.log(
+                `[AiAgentKit] <- Finished ${
+                  layer.isAgent ? "agent" : "middleware"
+                } for path: ${layer.path}`
+              );
+            },
+            async () => {} // End of chain
+          );
+
+          console.log(
+            `[AiAgentKit] Starting execution chain for path: ${path}`
+          );
+          await runner();
+          console.log(
+            `[AiAgentKit] Finished execution chain for path: ${path}`
+          );
+        },
+      }),
     });
   }
 }

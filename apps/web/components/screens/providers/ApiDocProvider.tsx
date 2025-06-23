@@ -57,6 +57,9 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
+      console.log("forceBaseUrl", forceBaseUrl);
+      console.log("deploymentInfo", deploymentInfo);
+
       const baseUrl = forceBaseUrl || deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage?.toLowerCase();
       try {
         const response = await fetch(
@@ -69,7 +72,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         setApiDoc(data);
       } catch (error) {
         console.error("Failed to fetch API docs:", error);
-        setForceBaseUrl(null);
+        //setForceBaseUrl(null);
         setError(
           error instanceof Error ? error : new Error("Unknown error occurred")
         );

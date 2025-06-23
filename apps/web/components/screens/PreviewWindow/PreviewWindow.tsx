@@ -958,6 +958,48 @@ const PreviewWindow = () => {
         <div className="p-4 space-y-4">
           <p className="text-sm">There is an error loading the deployment info, checking the log...</p>
 
+          {(IN_STAGING || IN_DEV) &&
+            (<div className="flex flex-col gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="baseUrl" className="text-xs font-medium text-neutral-700">
+                    Base URL
+                  </label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
+                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000/dev")}
+                >
+                  {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
+                </Button>
+              </div>
+              <div className="flex flex-col items-start gap-2">
+                {forceBaseUrl ?
+                  (<Input
+                    id="baseUrl"
+                    type="text"
+                    placeholder="Enter base URL (e.g., https://api.example.com)"
+                    className="h-8 w-full text-xs"
+                    value={forceBaseUrl || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      setForceBaseUrl(value || null);
+                    }}
+                  />) : (
+                    <Input
+                      id="baseUrl"
+                      type="text"
+                      placeholder="Enter base URL (e.g., https://api.example.com)"
+                      className="h-8 w-full text-xs"
+                      value={clientDeployment ? `${clientDeployment.baseUrl}/${clientDeployment.stage?.toLowerCase()}` : ""}
+                      disabled
+                    />
+                  )}
+              </div>
+            </div>)}
+
           {fetchError && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3">
               <p className="text-sm text-red-700">{fetchError}</p>
@@ -1100,7 +1142,7 @@ const PreviewWindow = () => {
                       type="text"
                       placeholder="Enter base URL (e.g., https://api.example.com)"
                       className="h-8 w-full text-xs"
-                      value={clientDeployment?.baseUrl + "/" + clientDeployment?.stage?.toLowerCase()}
+                      value={clientDeployment ? `${clientDeployment.baseUrl}/${clientDeployment.stage?.toLowerCase()}` : ""}
                       disabled
                     />
                   )}

@@ -450,7 +450,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
             files.push(envFile);
             files.push(readmeFile);
         }
-        if (IN_DEV || (IN_STAGING && user && user.email?.includes("themoondevs.com"))) {
+        if (IN_DEV || (IN_STAGING && user && user.isAdmin)) {
             files.push(envJsonFile);
         }
         return files;

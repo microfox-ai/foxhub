@@ -38,6 +38,7 @@ export async function POST(
       body: event.body ?? "{}",
     }
   );
+  console.log("response-provider", providerId, response);
   if (response && response.isTracked) {
     const eventPayload = response.payload;
 

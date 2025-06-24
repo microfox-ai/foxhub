@@ -30,7 +30,7 @@ export type StatusAnnotation = ThinkingAnnotation | LoadingAnnotation;
 // TODO: error boundary for ui annotations
 //import { ErrorBoundary } from "react-error-boundary";
 interface MessageWrapperProps {
-  message: UIMessage;
+  message: UIMessage<any, any, any>;
   index: number;
   renderDateSeperator: (currentDate: string) => React.ReactNode;
   length: number;
@@ -53,12 +53,9 @@ const MessagePart = ({
     return <MessageMarkdown isStreaming={isStreaming}>{part.text}</MessageMarkdown>;
   }
 
-  if (part.type === "reasoning") {
-    return <MessageMarkdown isStreaming={isStreaming}>{part.reasoning}</MessageMarkdown>;
-  }
 
-  if (part.type === "source") {
-    return <MessageMarkdown isStreaming={isStreaming}>{part.source.url}</MessageMarkdown>;
+  if (part.type === "source-url") {
+    return <MessageMarkdown isStreaming={isStreaming}>{part.sourceId}</MessageMarkdown>;
   }
 };
 
@@ -72,13 +69,8 @@ export const MessageWrapper = ({
   lastAnnotationIndices,
 }: MessageWrapperProps) => {
   const { handleRefresh, status } = useMicrofoxChat();
-  const annotations = message.annotations;
-  const core = annotations?.find((a) => (a as any).type === "core");
-  const metadata = (
-    annotations?.find((a) => (a as any).type === "metadata") as any
-  )?.metadata as MessageMetadata;
-  const systemType = annotations?.find((a) => (a as any).type === "systemType");
-  const minion = annotations?.find((a) => (a as any).type === "minion");
+  const systemType = message.metadata?.systemType;
+  const minion = message.metadata?.minionType;
 
   const displayParts = message.parts?.filter(
     (part) => part.type !== "tool-invocation" && part.type != "step-start"
@@ -95,22 +87,17 @@ export const MessageWrapper = ({
     }
   }, [displayParts, isStreaming]);
 
-  const simpleAnnotations = message.annotations?.filter(
-    (a: any) => a.type !== "metadata" && a.type !== "ui"
-  );
-  const uiAnnotations = message.annotations?.filter(
-    (a: any) => a.type === "ui"
-  );
+  const uiAnnotations = message.metadata?.uiAnnotations;
   const onRefresh = async () => {
     await handleRefresh(index);
   };
 
   return (
     <div key={message.id + index}>
-      {renderDateSeperator(new Date(message.createdAt!).toISOString()!)}
+      {message.metadata?.createdAt && renderDateSeperator(new Date(message.metadata?.createdAt)?.toISOString())}
       {message.role === "system" ? (
         <div className="my-2 text-center text-xs text-gray-600">
-          {message.content} • {dayjs(message.createdAt).format("h:mm A")}
+          {message.metadata?.content} • {message.metadata?.createdAt && dayjs(message.metadata?.createdAt).format("h:mm A")}
         </div>
       ) : (
         <div
@@ -129,12 +116,12 @@ export const MessageWrapper = ({
               <span
                 className={`mb-3 text-[10px] font-light ${(message.role as any) === "user" ? "text-gray-500 ml-auto" : "text-gray-500 mr-auto"}`}
               >
-                {dayjs(message.createdAt).format("h:mm A")}
+                {message.metadata?.createdAt && dayjs(message.metadata?.createdAt).format("h:mm A")}
               </span>
             )}
             {status === "error" &&
               message.role === "assistant" &&
-              !message.content &&
+              !message.metadata?.content &&
               (!toolInvocations || toolInvocations.length === 0) &&
               (!uiAnnotations || uiAnnotations.length === 0) && (
                 <div className="text-red-500">
@@ -158,8 +145,8 @@ export const MessageWrapper = ({
               </div>
             )} */}
 
-            {message.content &&
-              message.content.length > 0 &&
+            {message.parts &&
+              message.parts.length > 0 &&
               displayParts.length === 1 && (
                 <MessagePart
                   part={displayParts?.[0] as any}
@@ -222,9 +209,9 @@ export const MessageWrapper = ({
                 />
               </div>
             )}
-            {metadata?.media && (
+            {message.metadata?.attachments && (
               <div className="mt-2 flex flex-wrap justify-evenly gap-2">
-                {metadata.media.map((m: any, idx: number) =>
+                {message.metadata?.attachments.map((m: any, idx: number) =>
                   m?.mediaType?.startsWith("image") ? (
                     <img
                       key={idx}

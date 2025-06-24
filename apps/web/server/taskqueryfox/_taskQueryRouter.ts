@@ -5,13 +5,13 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
+//import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
 import { createToolkit } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
+import { StreamWriter } from "@repo/ai-utils/helper";
+import { AiHandler } from "@repo/ai-utils/router";
 import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
-import { AiContext, AiHandler } from "@repo/ai-utils/router";
-import { StreamWriter } from "@repo/ai-utils/helper";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
@@ -96,7 +96,8 @@ export const taskQueryRouter: AiHandler = async (props) => {
     writer.write(
       StreamWriter.writeMessageAnnotation({
         type: "toolsRequiringConfirmation",
-        list: getToolsRequiringConfirmation(toolSet.tools),
+        //list: getToolsRequiringConfirmation(toolSet.tools),
+        list: [],
         allMetadata: toolSet.metadata,
       })
     );

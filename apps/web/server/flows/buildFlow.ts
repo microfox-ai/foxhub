@@ -1,9 +1,4 @@
 import { findLastElementWith } from "@/utils/helpers/array";
-import {
-  defaultCallbackResultBody,
-  defaultRequestBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { models } from "../models";
@@ -23,6 +18,7 @@ import { installFoxRouter } from "../installfox/_installFoxRouter";
 import { taskQueryRouter } from "../taskqueryfox/_taskQueryRouter";
 import { prisma } from "@/prisma/prisma";
 import { TaskStructure } from "../convertfox/types";
+import { AiHandler, AiMiddleware } from "@repo/ai-utils/router";
 
 const getMinionRouter = (minionType: MinionTypeType, props: any) => {
   switch (minionType) {
@@ -54,10 +50,7 @@ const getMinionRouter = (minionType: MinionTypeType, props: any) => {
   }
 };
 // hellofox, convertfox, buildfox, deployfox, testfox.
-export const buildFlow: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
+export const buildFlow: AiHandler = async (props) => {
   const { dataStream, requestBody, responseBody } = props;
 
   if (!requestBody.messages)

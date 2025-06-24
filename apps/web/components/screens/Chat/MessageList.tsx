@@ -29,19 +29,7 @@ export default function MessageList({
     return null;
   };
 
-  const lastAnnotationIndices = useMemo(() => {
-    const indices = new Map<string, number>();
-    messages.forEach((message, index) => {
-      if (message && message.annotations) {
-        (message.annotations as any[]).forEach((annotation) => {
-          if (annotation.type === "ui" && annotation.objectType) {
-            indices.set(annotation.objectType, index);
-          }
-        });
-      }
-    });
-    return indices;
-  }, [messages]);
+  const lastAnnotationIndices = new Map<string, number>();
 
   return (
     <>
@@ -64,9 +52,8 @@ export default function MessageList({
                   renderDateSeparator(
                     currDate,
                     index > 0
-                      ? new Date(
-                        messages?.[index - 1]?.createdAt!
-                      ).toISOString()!
+                      ?
+                      messages?.[index - 1]?.metadata?.createdAt
                       : ""
                   )
                 }

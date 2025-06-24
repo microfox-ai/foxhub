@@ -1,3 +1,4 @@
+import { StreamWriter } from "@repo/ai-utils/helper";
 import { AiHandler, AiMiddleware } from "@repo/ai-utils/router";
 
 export const assistantMessageProcessor: AiMiddleware = async (props, next) => {
@@ -8,32 +9,31 @@ export const assistantMessageProcessor: AiMiddleware = async (props, next) => {
     ...request,
   };
 
+  console.log("assistantMessageProcessor", request, state, messages);
   if (messages[messages.length - 1]?.role === "assistant") {
-    let annotations = messages[messages.length - 1]?.metadata;
     let extraData: Record<string, any> = {};
-    Object.entries(annotations as any).forEach(
-      ([key, annotation]: [string, any]) => {
-        if (typeof annotation === "object") {
-          if (key === "minion") {
-            returnRequestBody.minionType = annotation.value;
-          }
-        }
-        let keys = Object.keys(annotation);
-        if (keys.includes("type") && keys.includes("value")) {
-          extraData[annotation.type] = annotation.value;
-          if (annotation.type === "minion") {
-            extraData.minionType = annotation.value;
-          }
-        }
-      }
-    );
-    console.log("extraData", extraData);
     returnRequestBody = {
       minionContinue: true,
       ...request,
       ...extraData,
     };
   }
+
+  writer.write(
+    StreamWriter.writeMessageAnnotation({
+      type: "clientRequestId",
+      value: returnRequestBody.clientRequestId,
+    })
+  );
+
+  writer.write(
+    StreamWriter.writeMessageAnnotation({
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      minionType: returnRequestBody.minionType,
+      ...returnRequestBody,
+    })
+  );
 
   return next();
 };

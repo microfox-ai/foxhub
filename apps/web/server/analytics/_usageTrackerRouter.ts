@@ -1,60 +1,55 @@
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-  StreamingFucntionProps,
-} from "@repo/ai-utils/router";
 import { TokenUsageAnalyticsTracker } from "./helper";
 import { models } from "../models";
+import { AiMiddleware } from "@repo/ai-utils/router";
+import { StreamWriter } from "@repo/ai-utils/helper";
 
 // TODO: Shift to the frontend.
-export const usageTrackerRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
-  props.dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: "Thinking...",
-  });
-  props.dataStream.writeMessageAnnotation({
-    type: "clientRequestId",
-    value: requestBody.clientRequestId,
-  });
+export const usageTrackerRouter: AiMiddleware = async (props, next) => {
+  const { writer, request, state } = props;
+  writer.write(
+    StreamWriter.writeMessageAnnotation({
+      loader: "Thinking...",
+    })
+  );
+
+  console.log("request", request);
   const userUsagesGeminiPro =
     await TokenUsageAnalyticsTracker.getTokenUsagePerUser(
-      requestBody.userId,
+      request.userId,
       models.googleGeminiPro.modelId
     );
   const requestUsagesGeminiPro =
     await TokenUsageAnalyticsTracker.getTokenUsagePerRequest(
-      requestBody.clientRequestId,
+      request.clientRequestId,
       models.googleGeminiPro.modelId
     );
   const userUsagesClaude35Sonnet =
     await TokenUsageAnalyticsTracker.getTokenUsagePerUser(
-      requestBody.userId,
+      request.userId,
       models.claude35Sonnet.modelId
     );
   const requestUsagesClaude35Sonnet =
     await TokenUsageAnalyticsTracker.getTokenUsagePerRequest(
-      requestBody.clientRequestId,
+      request.clientRequestId,
       models.claude35Sonnet.modelId
     );
 
-  props.dataStream.writeMessageAnnotation({
-    type: "usage-metadata",
-    objectType: "metadata",
-    object: {
-      geminiPro: {
-        userUsage: userUsagesGeminiPro,
-        requestUsage: requestUsagesGeminiPro,
-      },
-      claude35Sonnet: {
-        userUsage: userUsagesClaude35Sonnet,
-        requestUsage: requestUsagesClaude35Sonnet,
-      },
-    } as any,
-  });
+  writer.write(
+    StreamWriter.writeMessageAnnotation({
+      type: "usage-metadata",
+      objectType: "metadata",
+      object: {
+        geminiPro: {
+          userUsage: userUsagesGeminiPro,
+          requestUsage: requestUsagesGeminiPro,
+        },
+        claude35Sonnet: {
+          userUsage: userUsagesClaude35Sonnet,
+          requestUsage: requestUsagesClaude35Sonnet,
+        },
+      } as any,
+    })
+  );
 
   let isBlock = false;
   if (requestUsagesGeminiPro.length > 0) {
@@ -100,14 +95,8 @@ export const usageTrackerRouter: ServerStreamingFunction<
   }
 
   if (isBlock) {
-    console.log("isBlock", isBlock);
+    return;
   }
 
-  return {
-    responseBody: {
-      ...props.responseBody,
-      blockNextSteps: false,
-    },
-    appendRequestBody: props.requestBody,
-  };
+  next();
 };

@@ -1,13 +1,7 @@
+import { MinionFlow } from "@/components/screens/hooks/convertors";
 import { AiAgentKit, AiContext } from "@repo/ai-utils/router";
 import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
-import { buildFoxRouter } from "./buildfox/_buildFoxRouter";
-import { convertfoxRouter } from "./convertfox/_convertFoxRouter";
-import { deployFoxRouter } from "./deployfox/_deployfoxRouter";
-import { hellofoxRouter } from "./hellofox/_hellofoxRouter";
-import { modifyFoxRouter } from "./system/modifier";
 import { buildFlow } from "./flows/buildFlow";
-import { MinionFlow } from "@/components/screens/hooks/convertors";
-import { unknown } from "zod";
 import { chatFlow } from "./flows/chatFlow";
 import { assistantMessageProcessor } from "./system/assistantProcess";
 export interface MicrofoxRequestBody {
@@ -51,7 +45,10 @@ const processAnyMinionFlow = async (props: AiContext) => {
   }
 };
 
-microfoxRouter.use("/", processAnyMinionFlow);
+microfoxRouter.use("*", assistantMessageProcessor);
+microfoxRouter.use("*", usageTrackerRouter);
+microfoxRouter.agent(MinionFlow.BuildFlow, buildFlow);
+microfoxRouter.agent(MinionFlow.ChatFlow, chatFlow);
 
 // TODO: remove this & bifract this into multiple small steps in both server & frontend
 //microfoxRouter.addPath("createMessage", createMessageRouter);

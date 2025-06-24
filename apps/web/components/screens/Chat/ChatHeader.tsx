@@ -32,7 +32,6 @@ import DeployTrigger from "./DeployTrigger";
 
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
-  mutate: () => void;
   isLoading: boolean;
   isValidating: boolean;
   activeTab: string;

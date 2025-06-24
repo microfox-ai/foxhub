@@ -62,6 +62,7 @@ model ChatUIMessage {
   originClientRequestId String
   revisionId            String?
   toolInvocations       Json[]
+  metadata              Json?
   minion                FoxTemplate?  @relation(fields: [minionId], references: [id])
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }

@@ -8,34 +8,30 @@ import {
   Send,
   XIcon
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFileUpload } from "../providers/FileUploadProvider";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { MinionFlow, MinionType, MinionTypeType } from "../hooks/convertors";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { constructAutoSubmitBody, constructAutoSubmitMessage } from "./message/messageHelpers";
 interface ChatInputBoxProps {
-  input: string;
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
   userId: string;
-  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   className?: string;
   lastMessage?: UIMessage;
 }
 
 export default function ChatInputBox({
-  input,
   messageStatus,
   userId,
   lastMessage,
-  handleInputChange,
   className,
 }: ChatInputBoxProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
   const { selectedRequest, submitAnnotations, setSubmitAnnotations, autoSubmit, setAutoSubmit } = useClientProject();
-  const { handleSubmit, setInput, messages, status, append } = useMicrofoxChat();
+  const { handleSubmit, messages, status, append, input, setInput } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     //console.log("textareaRef", textareaRef.current);
@@ -61,7 +57,7 @@ export default function ChatInputBox({
   const handleCustomInputChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
-    handleInputChange(e);
+    setInput(e.target.value);
   };
 
   const handleSend = (e?: any) => {
@@ -77,7 +73,7 @@ export default function ChatInputBox({
     }
     setSubmitAnnotations([]);
     setAutoSubmit(null);
-    handleSubmit(e, {
+    handleSubmit(input, e, {
       body: {
         minionFlow: minionFlow,
         minionType: minionType,

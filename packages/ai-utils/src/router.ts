@@ -37,7 +37,7 @@ export type AiMiddleware = (
 // --- Router Implementation ---
 
 type Layer = {
-  path: string;
+  path: string | RegExp;
   handler: AiMiddleware;
   isAgent: boolean;
 };
@@ -49,13 +49,16 @@ export class AiAgentKit {
   private stack: Layer[] = [];
 
   /**
-   * Registers a middleware that runs for a specific path prefix.
-   * @param path The path prefix to match.
+   * Registers a middleware that runs for a specific path prefix, regex pattern, or wildcard.
+   * @param path The path prefix, regex pattern, or "*" for wildcard matching.
    * @param middleware The middleware function(s).
    */
-  use(path: string | AiMiddleware, ...middleware: AiMiddleware[]): this {
-    let prefix = "/";
-    if (typeof path === "string") {
+  use(
+    path: string | RegExp | AiMiddleware,
+    ...middleware: AiMiddleware[]
+  ): this {
+    let prefix: string | RegExp = "/";
+    if (typeof path === "string" || path instanceof RegExp) {
       prefix = path;
     } else {
       middleware.unshift(path);
@@ -71,11 +74,11 @@ export class AiAgentKit {
   }
 
   /**
-   * Registers a final agent handler for a specific path.
-   * @param path The path to match exactly.
+   * Registers a final agent handler for a specific path or regex pattern.
+   * @param path The path or regex pattern to match exactly.
    * @param handler The agent handler function.
    */
-  agent(path: string, handler: AiHandler): this {
+  agent(path: string | RegExp, handler: AiHandler): this {
     if (this.stack.some((l) => l.isAgent && l.path === path)) {
       throw new Error(`An agent is already registered for path: ${path}`);
     }
@@ -108,11 +111,34 @@ export class AiAgentKit {
         execute: async ({ writer }) => {
           const ctx: AiContext = { ...initialContext, state: {}, writer };
 
-          const layersToRun = this.stack.filter(
-            (layer) =>
-              path.startsWith(layer.path) &&
-              (layer.isAgent ? path === layer.path : true)
-          );
+          const layersToRun = this.stack.filter((layer) => {
+            // Check if this layer should run for the given path
+            let shouldRun = false;
+
+            if (layer.path === "*") {
+              // Wildcard: always run
+              shouldRun = true;
+            } else if (layer.path instanceof RegExp) {
+              // Regex pattern: test against the path
+              shouldRun = layer.path.test(path);
+            } else {
+              // String: prefix matching
+              shouldRun = path.startsWith(layer.path);
+            }
+
+            // For agents, require exact path match (unless it's a regex)
+            if (layer.isAgent) {
+              if (layer.path === "*") {
+                shouldRun = false; // Agents can't use wildcard
+              } else if (layer.path instanceof RegExp) {
+                shouldRun = layer.path.test(path);
+              } else {
+                shouldRun = path === layer.path;
+              }
+            }
+
+            return shouldRun;
+          });
 
           console.log(
             `[AiAgentKit] Found ${
@@ -122,7 +148,11 @@ export class AiAgentKit {
               .join(", ")}`
           );
 
-          if (!layersToRun.some((l) => l.isAgent)) {
+          const hasAgent = layersToRun.some((l) => l.isAgent);
+          const hasMiddleware = layersToRun.some((l) => !l.isAgent);
+
+          // Allow execution if we have an agent, or if we have middleware and path is "*"
+          if (!hasAgent && !(hasMiddleware && path === "*")) {
             const errorMsg = `Agent not found for path: ${path}`;
             console.error(`[AiAgentKit] ${errorMsg}`);
             throw new Error(errorMsg);

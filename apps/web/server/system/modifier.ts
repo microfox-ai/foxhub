@@ -10,7 +10,7 @@ import { AiHandler } from "@repo/ai-utils/router";
 import { StreamWriter } from "@repo/ai-utils/helper";
 
 // Tight control required on this route as this burns MOOOOOOOONEEEEEEY
-export const modifyFoxRouter: AiHandler = async (props) => {
+export const modifyFoxRouter: AiHandler<any, any, any> = async (props) => {
   const { request, state, writer } = props;
   if (!request.messages) return;
 
@@ -49,12 +49,9 @@ export const modifyFoxRouter: AiHandler = async (props) => {
         `,
   });
 
-  writer.write(
-    StreamWriter.writeMessageAnnotation({
-      type: "thinking",
-      content: "Thinking about the user's intent: " + result.object.intent,
-    })
-  );
+  writer.writeMessageMetadata({
+    loader: "Thinking about the user's intent: " + result.object.intent,
+  });
 
   if (result.object.intent === "Modify-Task") {
     return convertfoxRouter(props);

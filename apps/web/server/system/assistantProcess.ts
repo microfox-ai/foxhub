@@ -1,7 +1,10 @@
 import { StreamWriter } from "@repo/ai-utils/helper";
 import { AiHandler, AiMiddleware } from "@repo/ai-utils/router";
 
-export const assistantMessageProcessor: AiMiddleware = async (props, next) => {
+export const assistantMessageProcessor: AiMiddleware<any, any, any> = async (
+  props,
+  next
+) => {
   const { request, state, writer } = props;
 
   const { messages } = request;
@@ -19,21 +22,13 @@ export const assistantMessageProcessor: AiMiddleware = async (props, next) => {
     };
   }
 
-  writer.write(
-    StreamWriter.writeMessageAnnotation({
-      type: "clientRequestId",
-      value: returnRequestBody.clientRequestId,
-    })
-  );
-
-  writer.write(
-    StreamWriter.writeMessageAnnotation({
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      minionType: returnRequestBody.minionType,
-      ...returnRequestBody,
-    })
-  );
+  writer.writeMessageMetadata({
+    clientRequestId: returnRequestBody.clientRequestId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    minionType: returnRequestBody.minionType,
+    ...returnRequestBody,
+  });
 
   return next();
 };

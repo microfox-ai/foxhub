@@ -11,39 +11,44 @@ export interface MicrofoxRequestBody {
   context?: string;
   metadata?: any;
 }
-const microfoxRouter = new AiAgentKit();
+
+export interface DefaultMessageMetadata {
+  loader: string;
+}
+
+const microfoxRouter = new AiAgentKit<DefaultMessageMetadata>();
 
 // ratelimit should be per time per model ().
 
-const processAnyMinionFlow = async (props: AiContext) => {
-  const { request, state, writer } = props;
+// const processAnyMinionFlow = async (props: AiContext) => {
+//   const { request, state, writer } = props;
 
-  console.log("request", request, state, writer);
+//   console.log("request", request, state, writer);
 
-  let _minionFlow = request.messages?.[request.messages.length - 1]?.metadata;
+//   let _minionFlow = request.messages?.[request.messages.length - 1]?.metadata;
 
-  if (request.messages.length < 2 && _minionFlow === MinionFlow.Unknown) {
-    _minionFlow = MinionFlow.BuildFlow;
-  }
+//   if (request.messages.length < 2 && _minionFlow === MinionFlow.Unknown) {
+//     _minionFlow = MinionFlow.BuildFlow;
+//   }
 
-  switch (_minionFlow) {
-    case MinionFlow.BuildFlow:
-      return buildFlow(props);
-    case MinionFlow.ChatFlow:
-      return chatFlow(props);
-    default:
-      console.log(
-        "WARNING: hitting old routes as minionFlow is not set",
-        request.minionFlow,
-        request.minionType,
-        request.messages[request.messages.length - 1]
-      );
-      return {
-        responseBody: { ...request },
-        appendRequestBody: { ...request },
-      };
-  }
-};
+//   switch (_minionFlow) {
+//     case MinionFlow.BuildFlow:
+//       return buildFlow(props);
+//     case MinionFlow.ChatFlow:
+//       return chatFlow(props);
+//     default:
+//       console.log(
+//         "WARNING: hitting old routes as minionFlow is not set",
+//         request.minionFlow,
+//         request.minionType,
+//         request.messages[request.messages.length - 1]
+//       );
+//       return {
+//         responseBody: { ...request },
+//         appendRequestBody: { ...request },
+//       };
+//   }
+// };
 
 microfoxRouter.use("*", assistantMessageProcessor);
 microfoxRouter.use("*", usageTrackerRouter);

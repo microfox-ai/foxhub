@@ -3,7 +3,11 @@ import {
   createUIMessageStream,
   UIMessageStreamWriter,
   createUIMessageStreamResponse,
+  UIDataTypes,
+  generateId,
 } from "ai";
+import { StreamWriter } from "./helper.js";
+import { UITools } from "./types.js";
 
 // --- Core Types ---
 // For clarity, these are defined here. They can be moved to a separate types.ts file.
@@ -11,85 +15,160 @@ import {
 /**
  * The context object passed through the middleware chain.
  */
-export type AiContext = {
+export type AiContext<
+  METADATA,
+  PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+  ContextState extends Record<string, any> = Record<string, any>,
+> = {
   request: {
-    messages: UIMessage[];
+    messages: UIMessage<METADATA, PARTS, TOOLS>[];
     [key: string]: any;
   };
-  state: {
-    [key: string]: any;
-  };
+  state: ContextState;
   /**
    * The writer for the UI Message Stream. Middleware and agents
    * use this to contribute to the final response by calling methods
    * like `.write()` or `.merge()`.
    */
-  writer: UIMessageStreamWriter;
+  writer: UIMessageStreamWriter<UIMessage<METADATA, PARTS, TOOLS>> &
+    Omit<StreamWriter<METADATA, TOOLS>, "writer"> & {
+      generateId: typeof generateId;
+    };
 };
 
 export type NextFunction = () => Promise<void>;
-export type AiHandler = (ctx: AiContext) => Promise<void>;
-export type AiMiddleware = (
-  ctx: AiContext,
+export type AiHandler<
+  METADATA,
+  PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+  ContextState extends Record<string, any> = Record<string, any>,
+> = (ctx: AiContext<METADATA, PARTS, TOOLS, ContextState>) => Promise<void>;
+export type AiMiddleware<
+  METADATA,
+  PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+  ContextState extends Record<string, any> = Record<string, any>,
+> = (
+  ctx: AiContext<METADATA, PARTS, TOOLS, ContextState>,
   next: NextFunction
 ) => Promise<void>;
 
 // --- Router Implementation ---
 
-type Layer = {
+type Layer<
+  METADATA,
+  PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+  ContextState extends Record<string, any> = Record<string, any>,
+> = {
   path: string | RegExp;
-  handler: AiMiddleware;
-  isAgent: boolean;
+  handler: AiMiddleware<METADATA, PARTS, TOOLS, ContextState>;
+  isTool: boolean;
 };
 
 /**
  * A composable router for AI agents, inspired by Express.js.
  */
-export class AiAgentKit {
-  private stack: Layer[] = [];
+export class AiAgentKit<
+  KIT_METADATA,
+  PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+  ContextState extends Record<string, any> = {},
+> {
+  private stack: Layer<KIT_METADATA, PARTS, TOOLS, any>[] = [];
+
+  constructor(stack?: Layer<KIT_METADATA, PARTS, TOOLS, any>[]) {
+    if (stack) {
+      this.stack = stack;
+    }
+  }
 
   /**
-   * Registers a middleware that runs for a specific path prefix, regex pattern, or wildcard.
+   * Registers an agent that runs for a specific path prefix, regex pattern, or wildcard.
    * @param path The path prefix, regex pattern, or "*" for wildcard matching.
-   * @param middleware The middleware function(s).
+   * @param agents The agent function(s).
    */
-  use(
-    path: string | RegExp | AiMiddleware,
-    ...middleware: AiMiddleware[]
-  ): this {
+  agent<
+    MW_METADATA,
+    MW_TOOLS extends UITools,
+    MW_STATE extends Record<string, any>,
+  >(
+    path:
+      | string
+      | RegExp
+      | AiMiddleware<MW_METADATA, PARTS, MW_TOOLS, ContextState & MW_STATE>,
+    ...agents: AiMiddleware<
+      MW_METADATA,
+      PARTS,
+      MW_TOOLS,
+      ContextState & MW_STATE
+    >[]
+  ): AiAgentKit<
+    KIT_METADATA | MW_METADATA,
+    PARTS,
+    TOOLS & MW_TOOLS,
+    ContextState & MW_STATE
+  > {
     let prefix: string | RegExp = "/";
     if (typeof path === "string" || path instanceof RegExp) {
       prefix = path;
     } else {
-      middleware.unshift(path);
+      agents.unshift(path);
     }
 
-    for (const handler of middleware) {
+    for (const handler of agents) {
       if (typeof handler !== "function") continue;
-      this.stack.push({ path: prefix, handler, isAgent: false });
-      console.log(`[AiAgentKit] Middleware registered for path: ${prefix}`);
+      this.stack.push({
+        path: prefix,
+        handler: handler as any,
+        isTool: false,
+      });
+      console.log(`[AiAgentKit] Agent registered for path: ${prefix}`);
     }
 
-    return this;
+    return this as any;
   }
 
   /**
-   * Registers a final agent handler for a specific path or regex pattern.
+   * Registers a final tool handler for a specific path or regex pattern.
    * @param path The path or regex pattern to match exactly.
-   * @param handler The agent handler function.
+   * @param handler The tool handler function.
    */
-  agent(path: string | RegExp, handler: AiHandler): this {
-    if (this.stack.some((l) => l.isAgent && l.path === path)) {
-      throw new Error(`An agent is already registered for path: ${path}`);
+  tool<
+    TOOL_METADATA,
+    TOOL_TOOLS extends UITools,
+    TOOL_STATE extends Record<string, any>,
+  >(
+    path: string | RegExp,
+    handler: AiHandler<
+      TOOL_METADATA,
+      PARTS,
+      TOOL_TOOLS,
+      ContextState & TOOL_STATE
+    >
+  ): AiAgentKit<
+    KIT_METADATA | TOOL_METADATA,
+    PARTS,
+    TOOLS & TOOL_TOOLS,
+    ContextState & TOOL_STATE
+  > {
+    if (this.stack.some((l) => l.isTool && l.path === path)) {
+      throw new Error(`A tool is already registered for path: ${path}`);
     }
-    // An agent is the final step, so its handler is wrapped in a middleware
+    // A tool is the final step, so its handler is wrapped in a middleware
     // that doesn't call `next()`. This makes the types consistent.
-    const agentMiddleware: AiMiddleware = async (ctx, _next) => {
+    const toolMiddleware: AiMiddleware<
+      TOOL_METADATA,
+      PARTS,
+      TOOL_TOOLS,
+      ContextState & TOOL_STATE
+    > = async (ctx, _next) => {
       await handler(ctx);
     };
-    this.stack.push({ path, handler: agentMiddleware, isAgent: true });
-    console.log(`[AiAgentKit] Agent registered for path: ${path}`);
-    return this;
+    this.stack.push({ path, handler: toolMiddleware as any, isTool: true });
+    console.log(`[AiAgentKit] Tool registered for path: ${path}`);
+    return this as any;
   }
 
   /**
@@ -102,14 +181,28 @@ export class AiAgentKit {
    */
   handle(
     path: string,
-    initialContext: Omit<AiContext, "state" | "writer">
+    initialContext: Omit<
+      AiContext<KIT_METADATA, PARTS, TOOLS, ContextState>,
+      "state" | "writer"
+    >
   ): Response {
     console.log(`[AiAgentKit] Handling request for path: ${path}`);
     return createUIMessageStreamResponse({
       stream: createUIMessageStream({
         originalMessages: initialContext.request.messages,
         execute: async ({ writer }) => {
-          const ctx: AiContext = { ...initialContext, state: {}, writer };
+          const streamWriter = new StreamWriter<KIT_METADATA, TOOLS>(writer);
+          const ctx: AiContext<KIT_METADATA, PARTS, TOOLS, ContextState> = {
+            ...initialContext,
+            state: {} as ContextState,
+            writer: {
+              ...writer,
+              writeMessageMetadata: streamWriter.writeMessageMetadata,
+              writeCustomTool: streamWriter.writeCustomTool,
+              writeObjectAsTool: streamWriter.writeObjectAsTool,
+              generateId: generateId,
+            },
+          };
 
           const layersToRun = this.stack.filter((layer) => {
             // Check if this layer should run for the given path
@@ -126,10 +219,10 @@ export class AiAgentKit {
               shouldRun = path.startsWith(layer.path);
             }
 
-            // For agents, require exact path match (unless it's a regex)
-            if (layer.isAgent) {
+            // For tools, require exact path match (unless it's a regex)
+            if (layer.isTool) {
               if (layer.path === "*") {
-                shouldRun = false; // Agents can't use wildcard
+                shouldRun = false; // Tools can't use wildcard
               } else if (layer.path instanceof RegExp) {
                 shouldRun = layer.path.test(path);
               } else {
@@ -144,34 +237,38 @@ export class AiAgentKit {
             `[AiAgentKit] Found ${
               layersToRun.length
             } layers to run for path: ${path}: ${layersToRun
-              .map((l) => `${l.path} (${l.isAgent ? "agent" : "middleware"})`)
+              .map((l) => `${l.path} (${l.isTool ? "tool" : "agent"})`)
               .join(", ")}`
           );
 
-          const hasAgent = layersToRun.some((l) => l.isAgent);
-          const hasMiddleware = layersToRun.some((l) => !l.isAgent);
+          const hasTool = layersToRun.some((l) => l.isTool);
+          const hasAgent = layersToRun.some((l) => !l.isTool);
 
-          // Allow execution if we have an agent, or if we have middleware and path is "*"
-          if (!hasAgent && !(hasMiddleware && path === "*")) {
-            const errorMsg = `Agent not found for path: ${path}`;
+          // Allow execution if we have an tool, or if we have agent and path is "*"
+          if (!hasTool && !(hasAgent && path === "*")) {
+            const errorMsg = `Tool not found for path: ${path}`;
             console.error(`[AiAgentKit] ${errorMsg}`);
             throw new Error(errorMsg);
           }
 
           const runner = layersToRun.reduceRight(
-            (next: NextFunction, layer: Layer) => async () => {
-              console.log(
-                `[AiAgentKit] -> Running ${
-                  layer.isAgent ? "agent" : "middleware"
-                } for path: ${layer.path}`
-              );
-              await layer.handler(ctx, next);
-              console.log(
-                `[AiAgentKit] <- Finished ${
-                  layer.isAgent ? "agent" : "middleware"
-                } for path: ${layer.path}`
-              );
-            },
+            (
+              next: NextFunction,
+              layer: Layer<KIT_METADATA, PARTS, TOOLS, ContextState>
+            ) =>
+              async () => {
+                console.log(
+                  `[AiAgentKit] -> Running ${
+                    layer.isTool ? "tool" : "agent"
+                  } for path: ${layer.path}`
+                );
+                await layer.handler(ctx, next);
+                console.log(
+                  `[AiAgentKit] <- Finished ${
+                    layer.isTool ? "tool" : "agent"
+                  } for path: ${layer.path}`
+                );
+              },
             async () => {} // End of chain
           );
 

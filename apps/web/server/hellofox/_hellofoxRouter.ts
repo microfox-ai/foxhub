@@ -1,9 +1,10 @@
 import { findLastElementWith } from "@/utils/helpers/array";
 import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
-import { generateObject, streamText } from "ai";
+  convertToModelMessages,
+  generateObject,
+  streamText,
+  stepCountIs,
+} from "ai";
 import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { models } from "../models";
@@ -14,6 +15,7 @@ import { getMicrofoxCapabilities } from "./getMicrofoxCapabilities";
 import { guideUserToDoableGoal } from "./guideUserToDoableGoal";
 import { isTaskBuildable } from "./isTaskBuildable";
 import { confirmSpecifics } from "./summarizeUserGoal";
+import { AiHandler } from "@repo/ai-utils/router";
 // 1. HELLO
 // 2. CONVERT -> GOAL -> reference
 // 3. BUILD ->
@@ -43,35 +45,28 @@ import { confirmSpecifics } from "./summarizeUserGoal";
 
 // TODO: SUBHAKAR - hellofox is asking too much if the user is lax.
 
-export const hellofoxRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
+export const hellofoxRouter: AiHandler<any, any, any> = async (props) => {
+  const { writer, request, state } = props;
   console.log("hellofoxRouter");
 
   // clean up al messages before starting the conversation
   // VERYY IMPORtANt : SAVES A TON LOT OF TOKENS bypassing the thinking & all other steps
-  requestBody.messages = requestBody.messages.map((m: any) => ({
+  request.messages = request.messages.map((m: any) => ({
     ...m,
     parts: [findLastElementWith(m.parts, (p: any) => p.type === "text")],
     annotations: [],
     toolInvocations: [],
   }));
   //console.log("requestBody after", requestBody.messages);
-  dataStream.writeMessageAnnotation({
-    type: "minion",
-    value: "hellofox",
+  writer.writeMessageMetadata({
+    minion: "hellofox",
   });
   let lastFewMessages =
-    requestBody.messages.length > 8
-      ? requestBody.messages.slice(-8)
-      : requestBody.messages;
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: "Analyzing your message...",
+    request.messages.length > 8 ? request.messages.slice(-8) : request.messages;
+  writer.writeMessageMetadata({
+    loader: "Analyzing your message...",
   });
-  const { object: classification } = await generateObject({
+  const response = await generateObject({
     model: models.googleGeminiFlash,
     schema: z.object({
       reasoning: z.string(),
@@ -80,7 +75,7 @@ export const hellofoxRouter: ServerStreamingFunction<
       taskClarity: z.enum(["clear", "ambiguous", "clueless"]),
       //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
     }),
-    messages: lastFewMessages,
+    messages: convertToModelMessages(lastFewMessages),
     system: `Classify the current users Query based on the conversation history.
     
     Determine:
@@ -94,22 +89,19 @@ export const hellofoxRouter: ServerStreamingFunction<
     `,
   }); // 4. Query type (query, modification, answer, confirmation)
 
-  dataStream.writeMessageAnnotation({
-    type: "metadata",
-    object: classification,
-    objectType: "classification",
+  writer.writeObjectAsTool({
+    toolName: "classification",
+    result: response,
   });
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content:
-      classification.type === "task-query"
+  writer.writeMessageMetadata({
+    loader:
+      response.object.type === "task-query"
         ? "Thinking about your task..."
-        : classification.type === "task-confirmation"
+        : response.object.type === "task-confirmation"
           ? "Confirming your task..."
           : "Hmm, let me think...",
   });
-
-  let result = null;
+  let classification = response.object;
   // if (classification.type === "task-confirmation") {
   //   const response = streamText({
   //     model: models.googleGeminiPro,
@@ -167,9 +159,9 @@ export const hellofoxRouter: ServerStreamingFunction<
     classification.type === "task-confirmation"
   ) {
     lastFewMessages =
-      requestBody.messages.length > 8
-        ? requestBody.messages.slice(-8)
-        : requestBody.messages;
+      request.messages.length > 8
+        ? request.messages.slice(-8)
+        : request.messages;
 
     let toolUsage = ``;
     if (classification.taskClarity === "clear") {
@@ -190,7 +182,7 @@ export const hellofoxRouter: ServerStreamingFunction<
       - confirmSpecifics: Confirm the specific details of the task.`;
     }
     // do some shit
-    result = streamText({
+    const result = streamText({
       model: models.googleGeminiPro,
       system: `
       - You are called Microfox, 
@@ -229,9 +221,8 @@ export const hellofoxRouter: ServerStreamingFunction<
       ${classification.type === "task-confirmation" && " YOU MUST CALL isTaskBuildable tool "}
       use proper line breaks in your response.
       `,
-      messages: lastFewMessages,
-      toolCallStreaming: true,
-      maxSteps: 3,
+      messages: convertToModelMessages(lastFewMessages),
+      stopWhen: stepCountIs(3),
       toolChoice: "auto", // force the model to call a tool
       tools: {
         ...(classification.taskClarity === "clear"
@@ -256,7 +247,8 @@ export const hellofoxRouter: ServerStreamingFunction<
       onFinish: async (result) => {
         console.log("result", result.usage);
         TokenUsageAnalyticsTracker.trackUsage({
-          ...props.requestBody,
+          ...props.request,
+          userId: props.request.userId,
           model: models.googleGeminiPro.modelId,
           usage: result.usage,
         });
@@ -269,9 +261,10 @@ export const hellofoxRouter: ServerStreamingFunction<
         );
       },
     });
+    writer.merge(result.toUIMessageStream());
     //if user's goal is not specific to certain platforms & tools, call tool - analyseUserIntent.
   } else {
-    result = streamText({
+    const result = streamText({
       model: models.googleGeminiFlash,
       system: `
         ${getMicrofoxCharacter()}
@@ -290,26 +283,17 @@ export const hellofoxRouter: ServerStreamingFunction<
         Never tell about your technicalities, unless asked.
         use proper line breaks in your response.
         `,
-      messages: lastFewMessages,
+      messages: convertToModelMessages(lastFewMessages),
       onFinish: (result) => {
         console.log("result", result.usage);
         TokenUsageAnalyticsTracker.trackUsage({
-          ...props.requestBody,
+          ...props.request,
+          userId: props.request.userId,
           model: models.googleGeminiFlash.modelId,
           usage: result.usage,
         });
       },
     });
+    writer.merge(result.toUIMessageStream());
   }
-
-  if (result != null) {
-    result.mergeIntoDataStream(dataStream, {
-      experimental_sendStart: false,
-    });
-  }
-
-  return {
-    responseBody: { ...responseBody },
-    appendRequestBody: { ...requestBody },
-  };
 };

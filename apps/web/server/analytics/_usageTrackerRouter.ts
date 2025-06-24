@@ -3,16 +3,38 @@ import { models } from "../models";
 import { AiMiddleware } from "@repo/ai-utils/router";
 import { StreamWriter } from "@repo/ai-utils/helper";
 
-// TODO: Shift to the frontend.
-export const usageTrackerRouter: AiMiddleware = async (props, next) => {
-  const { writer, request, state } = props;
-  writer.write(
-    StreamWriter.writeMessageAnnotation({
-      loader: "Thinking...",
-    })
-  );
+type UsageTrackerMetadata = {};
+type UsageMetadataTool = {
+  "usage-metadata": {
+    input: {
+      userId: string;
+      clientRequestId: string;
+      models: string[];
+    };
+    output: {
+      geminiPro: {
+        userUsage: any[];
+        requestUsage: any[];
+      };
+      claude35Sonnet: {
+        userUsage: any[];
+        requestUsage: any[];
+      };
+    };
+  };
+};
 
-  console.log("request", request);
+// TODO: Shift to the frontend.
+export const usageTrackerRouter: AiMiddleware<
+  UsageTrackerMetadata,
+  any,
+  UsageMetadataTool
+> = async (props, next) => {
+  const { writer, request, state } = props;
+  writer.writeMessageMetadata({
+    loader: "Thinking...",
+  });
+
   const userUsagesGeminiPro =
     await TokenUsageAnalyticsTracker.getTokenUsagePerUser(
       request.userId,
@@ -34,22 +56,24 @@ export const usageTrackerRouter: AiMiddleware = async (props, next) => {
       models.claude35Sonnet.modelId
     );
 
-  writer.write(
-    StreamWriter.writeMessageAnnotation({
-      type: "usage-metadata",
-      objectType: "metadata",
-      object: {
-        geminiPro: {
-          userUsage: userUsagesGeminiPro,
-          requestUsage: requestUsagesGeminiPro,
-        },
-        claude35Sonnet: {
-          userUsage: userUsagesClaude35Sonnet,
-          requestUsage: requestUsagesClaude35Sonnet,
-        },
-      } as any,
-    })
-  );
+  writer.writeCustomTool({
+    toolName: "usage-metadata",
+    input: {
+      userId: request.userId,
+      clientRequestId: request.clientRequestId,
+      models: [models.googleGeminiPro.modelId, models.claude35Sonnet.modelId],
+    },
+    output: {
+      geminiPro: {
+        userUsage: userUsagesGeminiPro,
+        requestUsage: requestUsagesGeminiPro,
+      },
+      claude35Sonnet: {
+        userUsage: userUsagesClaude35Sonnet,
+        requestUsage: requestUsagesClaude35Sonnet,
+      },
+    },
+  });
 
   let isBlock = false;
   if (requestUsagesGeminiPro.length > 0) {

@@ -8,6 +8,10 @@ import { OctokitWebhook } from "@microfox/webhook-octokit";
 import { SlackWebhook } from "@microfox/webhook-slack";
 import { ClientSecret } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  MicrofoxConnection,
+  WebhookSqsPayload,
+} from "@microfox/webhook-core";
 
 const mapWebhookSecret = {
   slack: {
@@ -68,15 +72,7 @@ export async function POST(
       },
     });
 
-    const microfoxConnections: {
-      microfox_bot_id: string;
-      related_users: {
-        microfox_user_id: string;
-        provider: string;
-        [key: string]: any;
-      }[];
-      related_secrets: ClientSecret[];
-    }[] = [];
+    const microfoxConnections: MicrofoxConnection[] = [];
 
     const uniqueBotProjects = [
       ...new Set(
@@ -142,15 +138,17 @@ export async function POST(
       },
     });
 
+    const payload: WebhookSqsPayload = {
+      task_type: "direct",
+      channel: response.webhookEvent?.channel?.id,
+      webhook_event: response.webhookEvent,
+      microfox_connections: microfoxConnections,
+      react_access: reactAccess,
+    };
+
     const command = new SendMessageCommand({
       QueueUrl: process.env.AGENT_SQS_QUEUE_URL!,
-      MessageBody: JSON.stringify({
-        task_type: "direct",
-        channel: response.webhookEvent?.channel,
-        webhook_event: response.webhookEvent,
-        microfox_connections: microfoxConnections,
-        react_access: reactAccess,
-      }),
+      MessageBody: JSON.stringify(payload),
     });
 
     await sqsClient.send(command);

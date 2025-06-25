@@ -34,6 +34,7 @@ functions:
           cors: true
   initiateTask:
     handler: dist/tasks/initiate.handler
+    timeout: 30
     events:
       - sqs:
           arn:
@@ -51,6 +52,17 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: foxhub-agent-${self:provider.stage}-agent-queue
+        VisibilityTimeout: 180
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - AgentDeadLetterQueue
+              - Arn
+          maxReceiveCount: 3
+    AgentDeadLetterQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: foxhub-agent-${self:provider.stage}-agent-dead-letter-queue
 
 outputs:
   AgentQueueUrl:
@@ -62,6 +74,16 @@ outputs:
     Value:
       Fn::GetAtt:
         - AgentQueue
+        - Arn
+  AgentDeadLetterQueueUrl:
+    Description: "URL of the Agent SQS Dead Letter Queue"
+    Value:
+      Ref: AgentDeadLetterQueue
+  AgentDeadLetterQueueArn:
+    Description: "ARN of the Agent SQS Dead Letter Queue"
+    Value:
+      Fn::GetAtt:
+        - AgentDeadLetterQueue
         - Arn
   ApiEndpoints:
     Description: "API Endpoints"

@@ -1,4 +1,5 @@
 import { SQSEvent, SQSBatchResponse } from "aws-lambda";
+import { SupabaseConfig, TaskOrchestrator } from "@microfox/task-kit";
 
 /**
  * Handles a batch of SQS messages.
@@ -15,6 +16,27 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
       // The message body is a string, often containing JSON.
       const messageBody = JSON.parse(record.body);
 
+      const supabaseConfig: SupabaseConfig = {
+        url: process.env.AGENT_SUPABASE_URL!,
+        key: process.env.AGENT_SUPABASE_SERVICE_ROLE_KEY!,
+      };
+      // console.log("supabaseConfig", supabaseConfig);
+      // console.log("googleApiKey", process.env.AGENT_GOOGLE_API_KEY!);
+
+      const orchestrator = new TaskOrchestrator(supabaseConfig, process.env.AGENT_GOOGLE_API_KEY!);
+      console.log("messageBody", messageBody);
+      const newMessageBody = {
+        ...messageBody,
+        // microfox_connections: [],
+      };
+      console.log("newMessageBody", newMessageBody);
+      const tasks = await orchestrator.processIncomingEvent(newMessageBody);
+      console.log("tasks", tasks);
+      if (tasks.length === 0) {
+        console.log('[TestRunner] Orchestrator did not create any tasks. Test finished.');
+        return;
+      }
+      console.log(`[TestRunner] Orchestrator created ${tasks.length} task(s).`);
       // --- Your business logic for one message goes here ---
       console.log("Successfully processed message body:", messageBody);
       // For example: await processUserData(messageBody);

@@ -1,4 +1,7 @@
-import { CodeTemplateType, TaskIntegrations } from "@/server/convertfox/types";
+import {
+  CodeTemplateType,
+  TaskIntegrations,
+} from "@/server/convertfox/helpers/types";
 import { fetchTemplateDir } from "../tool/writeToFile";
 import path from "path";
 import { readFile } from "fs/promises";

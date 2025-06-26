@@ -20,22 +20,26 @@ export class StreamWriter<METADATA, TOOLS extends UITools> {
   constructor(writer: UIMessageStreamWriter<UIMessage<METADATA, any, TOOLS>>) {
     this.writer = writer;
   }
-  generateId() {
+  generateId = () => {
     return customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 10)();
-  }
-  writeMessageMetadata<NEW_METADATA extends METADATA>(metadata: NEW_METADATA) {
+  };
+  writeMessageMetadata = <NEW_METADATA extends METADATA>(
+    metadata: NEW_METADATA
+  ) => {
     return this.writer.write({
       type: "message-metadata" as const,
       messageMetadata: metadata as NEW_METADATA,
     });
-  }
-  writeCustomTool<K extends keyof TOOLS>(
+  };
+  writeCustomTool = <K extends keyof TOOLS>(
     tool: {
       toolCallId?: string;
       toolName: K;
       inputTextDelta?: string[];
+      input?: any;
+      output?: any;
     } & Omit<TOOLS[K], "toolCallId">
-  ) {
+  ) => {
     const toolCallId = tool.toolName?.toString() + "-" + this.generateId();
     if ("input" in tool && tool.input) {
       this.writer.write({
@@ -71,11 +75,11 @@ export class StreamWriter<METADATA, TOOLS extends UITools> {
         output: tool.output,
       });
     }
-  }
-  writeObjectAsTool<K extends keyof TOOLS>(tool: {
+  };
+  writeObjectAsTool = <K extends keyof TOOLS>(tool: {
     toolName: K;
     result: GenerateObjectResult<TOOLS[K]["output"]>;
-  }) {
+  }) => {
     if (!tool.result.object) {
       throw new Error("No object found in the GenerateObjectResult");
     }
@@ -104,5 +108,41 @@ export class StreamWriter<METADATA, TOOLS extends UITools> {
       toolCallId: toolCallId,
       output: tool.result.object,
     });
-  }
+  };
 }
+
+export const getTextParts = (message: UIMessage | null | undefined) => {
+  if (!message) return [];
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text);
+};
+
+export const getTextPartsContent = (message: UIMessage | null | undefined) => {
+  if (!message) return "";
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("")
+    .trim();
+};
+
+export const findLastMessageWith = <T>(
+  message: UIMessage[] | null | undefined,
+  filters: {
+    role?: "user" | "assistant" | "system";
+    metadata?: Record<string, any>;
+  }
+) => {
+  if (!message) return null;
+  return message
+    .filter((m) => {
+      if (filters.role && m.role !== filters.role) return false;
+      if (filters.metadata) {
+        for (const key in filters.metadata) {
+        }
+      }
+      return true;
+    })
+    .pop();
+};

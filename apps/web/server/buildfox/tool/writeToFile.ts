@@ -2,9 +2,9 @@ import {
   codeTemplateAddon,
   codeTemplateType,
   CodeTemplateType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import dedent from "dedent";
 import fs from "fs/promises";
@@ -251,14 +251,24 @@ export const updateSteps = async (
 
 /** Thinking tool */
 export const writeToFile = (
-  props: StreamingFucntionProps<any, any>,
+  props: AiContext<any, any, any, any>,
   clientRequest: ClientRequest,
   templateType?: CodeTemplateType
 ) => {
-  return tool({
+  return tool<
+    {
+      fileName: string;
+      filePath: string;
+      fileType: string;
+      fileContent: string;
+    },
+    {
+      success: boolean;
+    }
+  >({
     description:
       "Write code to a specific file in the project. CRITICAL: fileContent parameter must contain complete, working code - never empty or placeholder text.",
-    parameters: z.object({
+    inputSchema: z.object({
       fileName: z.string().describe("The name of the file to write to"),
       filePath: z
         .string()
@@ -303,11 +313,15 @@ export const writeToFile = (
         const hasPlaceholders = placeholderPatterns.some((pattern) =>
           pattern.test(fileContent)
         );
-        if (hasPlaceholders) {
-          throw new Error(
-            "fileContent contains placeholder text. You must provide complete, working code, not placeholders or TODO comments."
-          );
-        }
+        // console.log(
+        //   "hasPlaceholders",
+        //   placeholderPatterns.map((p) => fileContent.match(p))
+        // );
+        // if (hasPlaceholders) {
+        //   throw new Error(
+        //     "fileContent contains placeholder text. You must provide complete, working code, not placeholders or TODO comments."
+        //   );
+        // }
 
         console.log(
           "updatedFileContent",
@@ -316,9 +330,8 @@ export const writeToFile = (
           filePath,
           fileType
         );
-        props.dataStream.writeMessageAnnotation({
-          type: "thinking",
-          content: `Coding ${fileName}`,
+        props.response.writeMessageMetadata({
+          loader: `Coding ${fileName}`,
         });
         await writeToFileSystemAndUpdateSteps(
           {

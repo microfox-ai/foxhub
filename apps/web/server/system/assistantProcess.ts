@@ -5,30 +5,36 @@ export const assistantMessageProcessor: AiMiddleware<any, any, any> = async (
   props,
   next
 ) => {
-  const { request, state, writer } = props;
+  const { request, state, response } = props;
 
-  const { messages } = request;
-  let returnRequestBody = {
-    ...request,
-  };
+  console.log("assistantMessageProcessor", state, response);
 
-  console.log("assistantMessageProcessor", request, state, messages);
-  if (messages[messages.length - 1]?.role === "assistant") {
-    let extraData: Record<string, any> = {};
-    returnRequestBody = {
-      minionContinue: true,
+  try {
+    //console.log("assistantMessageProcessor", request, state, response);
+    const { messages } = request;
+    let returnRequestBody = {
       ...request,
-      ...extraData,
     };
+
+    if (messages[messages.length - 1]?.role === "assistant") {
+      let extraData: Record<string, any> = {};
+      returnRequestBody = {
+        minionContinue: true,
+        ...request,
+        ...extraData,
+      };
+    }
+
+    response.writeMessageMetadata({
+      clientRequestId: returnRequestBody.clientRequestId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      minionType: returnRequestBody.minionType,
+    });
+
+    return next();
+  } catch (error) {
+    console.error("assistantMessageProcessor", error);
+    return;
   }
-
-  writer.writeMessageMetadata({
-    clientRequestId: returnRequestBody.clientRequestId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    minionType: returnRequestBody.minionType,
-    ...returnRequestBody,
-  });
-
-  return next();
 };

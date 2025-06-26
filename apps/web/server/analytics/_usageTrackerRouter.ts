@@ -30,8 +30,9 @@ export const usageTrackerRouter: AiMiddleware<
   any,
   UsageMetadataTool
 > = async (props, next) => {
-  const { writer, request, state } = props;
-  writer.writeMessageMetadata({
+  const { response, request, state } = props;
+  console.log("usageTrackerRouter", state);
+  response.writeMessageMetadata({
     loader: "Thinking...",
   });
 
@@ -40,23 +41,23 @@ export const usageTrackerRouter: AiMiddleware<
       request.userId,
       models.googleGeminiPro.modelId
     );
-  const requestUsagesGeminiPro =
-    await TokenUsageAnalyticsTracker.getTokenUsagePerRequest(
-      request.clientRequestId,
-      models.googleGeminiPro.modelId
-    );
+  // const requestUsagesGeminiPro =
+  //   await TokenUsageAnalyticsTracker.getTokenUsagePerRequest(
+  //     request.clientRequestId,
+  //     models.googleGeminiPro.modelId
+  //   );
   const userUsagesClaude35Sonnet =
     await TokenUsageAnalyticsTracker.getTokenUsagePerUser(
       request.userId,
       models.claude35Sonnet.modelId
     );
-  const requestUsagesClaude35Sonnet =
-    await TokenUsageAnalyticsTracker.getTokenUsagePerRequest(
-      request.clientRequestId,
-      models.claude35Sonnet.modelId
-    );
+  // const requestUsagesClaude35Sonnet =
+  //   await TokenUsageAnalyticsTracker.getTokenUsagePerRequest(
+  //     request.clientRequestId,
+  //     models.claude35Sonnet.modelId
+  //   );
 
-  writer.writeCustomTool({
+  response.writeCustomTool({
     toolName: "usage-metadata",
     input: {
       userId: request.userId,
@@ -66,25 +67,16 @@ export const usageTrackerRouter: AiMiddleware<
     output: {
       geminiPro: {
         userUsage: userUsagesGeminiPro,
-        requestUsage: requestUsagesGeminiPro,
+        requestUsage: [],
       },
       claude35Sonnet: {
         userUsage: userUsagesClaude35Sonnet,
-        requestUsage: requestUsagesClaude35Sonnet,
+        requestUsage: [],
       },
     },
   });
 
   let isBlock = false;
-  if (requestUsagesGeminiPro.length > 0) {
-    const totalTokensUsedPerPrequest = requestUsagesGeminiPro[0];
-    if (
-      totalTokensUsedPerPrequest?.totalTokens &&
-      totalTokensUsedPerPrequest?.totalTokens > 100_000 // 0.15$
-    ) {
-      isBlock = true;
-    }
-  }
 
   if (userUsagesGeminiPro.length > 0) {
     const totalTokensUsedPerUser = userUsagesGeminiPro[0];
@@ -108,15 +100,15 @@ export const usageTrackerRouter: AiMiddleware<
     }
   }
 
-  if (requestUsagesClaude35Sonnet.length > 0) {
-    const totalTokensUsedPerRequest = requestUsagesClaude35Sonnet[0];
-    if (
-      totalTokensUsedPerRequest?.totalTokens &&
-      totalTokensUsedPerRequest?.totalTokens > 500_000 // 2.5$
-    ) {
-      isBlock = true;
-    }
-  }
+  // if (requestUsagesClaude35Sonnet.length > 0) {
+  //   const totalTokensUsedPerRequest = requestUsagesClaude35Sonnet[0];
+  //   if (
+  //     totalTokensUsedPerRequest?.totalTokens &&
+  //     totalTokensUsedPerRequest?.totalTokens > 500_000 // 2.5$
+  //   ) {
+  //     isBlock = true;
+  //   }
+  // }
 
   if (isBlock) {
     return;

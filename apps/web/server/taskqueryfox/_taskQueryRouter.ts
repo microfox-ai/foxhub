@@ -9,26 +9,23 @@ import {
 import { createToolkit } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
 import { StreamWriter } from "@repo/ai-utils/helper";
-import { AiHandler } from "@repo/ai-utils/router";
+import { AiAgentKit, AiHandler, AiMiddleware } from "@repo/ai-utils/router";
 import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
 // it also has to update the taskInstanceMeta
-export const taskQueryRouter: AiHandler = async (props) => {
-  const { request, state, writer } = props;
-  const { clientRequestId } = request;
+const taskQueryAgent = new AiAgentKit<any, any, any, any>();
 
+taskQueryAgent.agent("/", async (ctx) => {
+  const { request, state, response } = ctx;
   if (!request.minionContinue) {
-    writer.write(
-      StreamWriter.writeMessageAnnotation({
-        type: "minion",
-        value: MinionType.TaskQueryFox,
-      })
-    );
+    response.writeMessageMetadata({
+      minionType: MinionType.TaskQueryFox,
+    });
   }
-
+  const { clientRequestId } = request;
   // get all taskQuery messages + this 1 last message in the queue (hopefully the user message)
   request.messages = request.messages.filter((m, index: number) => {
     const minion = (m.metadata as any)?.minion;
@@ -52,12 +49,9 @@ export const taskQueryRouter: AiHandler = async (props) => {
   }));
 
   try {
-    writer.write(
-      StreamWriter.writeMessageAnnotation({
-        type: "thinking",
-        content: "Fetching tools for this task",
-      })
-    );
+    response.writeMessageMetadata({
+      loader: "Fetching tools for this task",
+    });
 
     let clientRequest = await getClientRequest(clientRequestId);
     let taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
@@ -93,14 +87,19 @@ export const taskQueryRouter: AiHandler = async (props) => {
     console.log(Object.keys(toolSet.executions).length, "toolSet.executions");
     console.log(Object.keys(toolSet.tools).length, "toolSet.tools");
 
-    writer.write(
-      StreamWriter.writeMessageAnnotation({
-        type: "toolsRequiringConfirmation",
-        //list: getToolsRequiringConfirmation(toolSet.tools),
+    response.writeCustomTool({
+      toolName: "toolsRequiringConfirmation",
+      input: {
         list: [],
         allMetadata: toolSet.metadata,
-      })
-    );
+      },
+      output: {
+        type: "ui",
+        objectType: "toolsRequiringConfirmation",
+        persona: "taskQueryFox",
+        text: "Tools Requiring Confirmation",
+      },
+    });
 
     const processedMessages = await client.parse(request.messages);
 
@@ -134,8 +133,10 @@ export const taskQueryRouter: AiHandler = async (props) => {
       prepareStep: client.createHitlPrepareStep(),
     });
 
-    writer.merge(result.toUIMessageStream());
+    response.merge(result.toUIMessageStream());
   } catch (error) {
     console.error(error);
   }
-};
+});
+
+export { taskQueryAgent };

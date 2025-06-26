@@ -1,5 +1,5 @@
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import { z } from "zod";
 import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
@@ -8,12 +8,21 @@ import path from "path"; // Import path module
 import { octokitSdk } from "@/server/buildfox/helper/gitHelpers";
 /** Thinking tool */
 export const editFile = (
-  props: StreamingFucntionProps<any, any>,
+  props: AiContext<any, any, any, any>,
   clientRequest: ClientRequest
 ) => {
-  return tool({
+  return tool<
+    {
+      filePath: string;
+      content: string;
+    },
+    {
+      success: boolean;
+      message: string;
+    }
+  >({
     description: "Write code to a specific file in the project",
-    parameters: z.object({
+    inputSchema: z.object({
       filePath: z
         .string()
         .describe(
@@ -23,9 +32,8 @@ export const editFile = (
     }),
     execute: async ({ filePath, content }, options) => {
       try {
-        props.dataStream.writeMessageAnnotation({
-          type: "thinking",
-          content: `Editing ${filePath.split("/").pop()}`,
+        props.response.writeMessageMetadata({
+          loader: `Editing ${filePath.split("/").pop()}`,
         });
 
         if (!clientRequest.repoName || !clientRequest.prBranch) {
@@ -86,16 +94,14 @@ export const editFile = (
 
         // TODO: check for any new added envs that are not in the type:custom, add them there, now.
 
-        props.dataStream.writeMessageAnnotation({
-          type: "update",
-          content: `Successfully updated ${filePath.split("/").pop()}`,
+        props.response.writeMessageMetadata({
+          loader: `Successfully updated ${filePath.split("/").pop()}`,
         });
       } catch (error) {
         console.error(`Error editing file ${filePath}:`, error);
         const message = error instanceof Error ? error.message : String(error);
-        props.dataStream.writeMessageAnnotation({
-          type: "error",
-          content: `Failed to edit file: ${message}`,
+        props.response.writeMessageMetadata({
+          loader: `Failed to edit file: ${message}`,
         });
         throw new Error(`Failed to edit file: ${message}`);
       }
@@ -109,12 +115,21 @@ export const editFile = (
 };
 
 export const readFile = (
-  props: StreamingFucntionProps<any, any>,
+  props: AiContext<any, any, any, any>,
   clientRequest: ClientRequest
 ) => {
-  return tool({
+  return tool<
+    {
+      filePath: string;
+    },
+    {
+      success: boolean;
+      message: string;
+      content: string;
+    }
+  >({
     description: "Read a specific file in the project",
-    parameters: z.object({
+    inputSchema: z.object({
       filePath: z
         .string()
         .describe("The complete file path to read, including the extension"),
@@ -127,9 +142,8 @@ export const readFile = (
           );
         }
 
-        props.dataStream.writeMessageAnnotation({
-          type: "loading",
-          content: `Reading ${filePath.split("/").pop()}`,
+        props.response.writeMessageMetadata({
+          loader: `Reading ${filePath.split("/").pop()}`,
         });
 
         const fileContent = await octokitSdk.rest.repos.getContent({

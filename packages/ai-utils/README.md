@@ -1,145 +1,227 @@
-# AI Agent Kit
+# AiAgentKit: An Agentic Application Framework
 
-`AiAgentKit` is a lightweight, composable router for building complex AI agents and applications, inspired by modern web frameworks like Express.js and Next.js. It allows you to structure your AI logic using middleware (`agents`) and final handlers (`tools`), and provides a flexible way to handle different API paths with a single, organized entry point.
+`AiAgentKit` is a lightweight, powerful framework for building complex, multi-agent applications in TypeScript. Inspired by web frameworks like Express or Fastify, it provides a robust routing system for creating, composing, and calling AI agents and tools in a structured and predictable way.
 
-This routing system is built on top of the Vercel AI SDK and is designed to stream rich UI components, text, and data to your frontend.
+Stop thinking in single-shot API calls and start building hierarchies of agents that can call each other, use tools, and stream responses back to the user from any point in the chain.
+
+## Quick Start: Your First Agent
+
+See how easy it is to get started. In just a few lines of code, you can create a router, define an agent, and handle a request.
+
+```typescript
+import { AiAgentKit } from "./router";
+
+// 1. Create a new agent router
+const app = new AiAgentKit();
+
+// 2. Define an agent that streams a response
+app.agent("/hello", async (ctx) => {
+  ctx.response.write({ type: "text", text: "Hello, " });
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  ctx.response.write({ type: "text", text: "world!" });
+});
+
+// 3. Handle an incoming request and get a standard Response object
+const request = new Request("http://localhost/hello");
+const response = app.handle(new URL(request.url).pathname, { request });
+
+// You can now return this response from your API endpoint.
+```
+
+---
 
 ## Core Concepts
 
-- **`AiAgentKit`**: The main router instance. You create one and register agents and tools with it.
-- **Agents (Middleware)**: These are handler functions that process an incoming request. They can perform actions, modify context, and then pass control to the next agent in the chain. They are registered with `.agent()`.
-- **Tools (Final Handlers)**: These are special handlers that terminate the request-response cycle. They are meant to be the final processing step for a given path. They are registered with `.tool()`.
-- **`AiContext`**: A context object that is passed through the chain of agents. It contains the incoming messages, a writer for the response stream, and a `state` object for passing data between agents.
-- **Path Matching**: Agents and tools are registered for specific URL-like paths.
-  - Agents use prefix matching (e.g., a path of `/foo` matches `/foo` and `/foo/bar`). They also support wildcards (`*`) and regular expressions.
-  - Tools use exact path matching (e.g., `/foo` only matches `/foo`). They also support regular expressions.
+- **`AiAgentKit`**: The main class, which acts as a router. You create an instance of this to register all your agents, tools, and middleware.
+- **Agents**: The primary actors in the system. An agent is a function that receives a `context` (`ctx`) object and can perform actions, such as streaming text, calling other agents, using tools, or modifying state.
+- **Tools**: Schema-defined functions that an agent can call. Tools are typically used for deterministic operations or for interacting with external APIs. They receive the `context` and a parsed, schema-validated input object.
+- **The Context (`ctx`)**: A per-request object that is passed to every handler. It contains everything needed for an agent to do its work:
+  - `ctx.response`: The stream writer to send data back to the end-user.
+  - `ctx.next`: An object with methods for internal dispatching (`callAgent`, `callTool`, etc.).
+  - `ctx.state`: A mutable object that lives for the duration of a single request, allowing agents and middleware to share data.
+  - `ctx.logger`: A structured logger that automatically includes a unique `requestId` and the current agent `path` for easy debugging.
+  - `ctx.request`: The initial request object.
+- **Hierarchical Routing**: Just like in web frameworks, you can mount entire `AiAgentKit` instances on a path, allowing you to build modular and reusable collections of agents.
 
-## Basic Usage
+---
 
-Here's how to create a simple agent and tool:
+## Installation
 
-```typescript
-import { AiAgentKit } from "./router";
-import { UIMessage } from "ai";
-
-// 1. Create a router instance
-const router = new AiAgentKit<{ myData: string }>();
-
-// 2. Register a global agent (middleware)
-router.agent(async (ctx, next) => {
-  console.log("Global agent runs for every request!");
-  // You can add data to the shared state
-  ctx.state.startTime = Date.now();
-  await next(); // Pass control to the next handler
-});
-
-// 3. Register a tool for a specific path
-router.tool("/hello", async (ctx) => {
-  // Use the writer to stream back a response
-  ctx.writer.write("Hello from the tool!");
-});
-
-// 4. Handle an incoming request
-export async function POST(req: Request) {
-  const { messages, agentPath } = await req.json();
-
-  return router.handle(agentPath, {
-    request: {
-      messages: messages as UIMessage<{ myData: string }>[],
-    },
-  });
-}
+```bash
+# This package is internal to the project for now.
+# To use it, import it directly from your local path.
+import { AiAgentKit } from "../packages/ai-utils/src/router";
 ```
 
-## Nested Routers
+---
 
-For more complex applications, you can split your logic into multiple files using nested routers. `AiAgentKit` supports composition, allowing you to mount one router within another.
+## Step-by-Step Documentation
 
-This is achieved by using the `constructor` to combine the middleware and tool stacks from different routers.
+### 1. Initialization
 
-### Example
-
-Let's say you have a primary router and want to mount a separate router for all paths under `/billing`.
-
-**`billing.router.ts`**
+Create a new `AiAgentKit` router. You can create as many as you need to organize your application.
 
 ```typescript
-import { AiAgentKit } from "./router";
+const app = new AiAgentKit();
+```
 
-// Create a sub-router for billing features
-export const billingRouter = new AiAgentKit();
+### 2. Defining an Agent
 
-// This agent will run for any path starting with `/invoices`
-// within the context of where billingRouter is mounted.
-billingRouter.agent("/invoices", async (ctx, next) => {
-  console.log("Handling an invoice request...");
-  ctx.state.isInvoice = true;
-  await next();
-});
+Use the `.agent()` method to define a handler for a specific path. The handler is an async function that receives the `ctx` object.
 
-// This tool handles the specific path `/invoices/create`
-billingRouter.tool("/invoices/create", async (ctx) => {
-  ctx.writer.write("Creating a new invoice.");
+```typescript
+app.agent("/simple", async (ctx) => {
+  ctx.response.write({ type: "text", text: "This is a simple agent." });
 });
 ```
 
-**`main.router.ts`**
+### 3. Defining a Tool
+
+Use the `.tool()` method to define a tool. You must provide a Zod schema for the input `parameters`, which will be automatically validated. The handler receives the `ctx` and the parsed parameters.
 
 ```typescript
-import { AiAgentKit } from "./router";
-import { billingRouter } from "./billing.router.ts";
+import { z } from "zod";
 
-// Create the main router by composing stacks
-const mainRouter = new AiAgentKit([
-  // Mount the billing router under the "/billing" path
-  ...billingRouter.getStackWithPrefix("/billing"),
-
-  // You can add other root-level tools and agents
-  ...new AiAgentKit()
-    .tool("/status", async (ctx) => {
-      ctx.writer.write("System is A-OK.");
-    })
-    .getStack(),
-]);
-
-// Now, you can handle requests:
-// - A request to "/billing/invoices/create" will be handled by billingRouter's tool.
-// - A request to "/status" will be handled by the main router's tool.
-export async function POST(req: Request) {
-  const { messages, agentPath } = await req.json();
-  return mainRouter.handle(agentPath, { request: { messages } });
-}
-```
-
-To make this pattern work, you need to add two small helper methods to the `AiAgentKit` class in `router.ts`:
-
-```typescript
-// In packages/ai-utils/src/router.ts, inside the AiAgentKit class:
-
-  /**
-   * Returns the internal stack of layers.
-   */
-  getStack() {
-    return this.stack;
+app.tool(
+  "/getWeather",
+  {
+    description: "Gets the weather for a given location.",
+    schema: z.object({
+      city: z.string().describe("The city to get the weather for."),
+    }),
+  },
+  async (ctx, { city }) => {
+    // In a real app, you'd call a weather API here.
+    const weather = `The weather in ${city} is 72°F and sunny.`;
+    ctx.logger.log("Weather tool executed successfully.");
+    return { weather };
   }
+);
+```
 
-  /**
-   * Returns the internal stack with a path prefix applied to each layer.
-   * @param prefix The prefix to add to each path.
-   */
-  getStackWithPrefix(prefix: string) {
-    return this.stack.map(layer => {
-      const newPath = layer.path instanceof RegExp
-        // This is a simplistic way to combine regex and might need refinement
-        ? new RegExp(prefix.replace(/\\/g, '\\\\') + layer.path.source)
-        : `${prefix}${layer.path}`.replace('//', '/');
+### 4. Mounting Routers with `.use()`
 
-      return {
-        ...layer,
-        path: newPath,
-      };
+Organize your code by creating separate routers and mounting them on a main router using `.use()`. This prefixes all routes in the mounted router.
+
+```typescript
+const adminRouter = new AiAgentKit();
+adminRouter.agent("/dashboard", async (ctx) => { ... });
+
+const mainApp = new AiAgentKit();
+// All routes from adminRouter will now be prefixed with '/admin'
+// e.g., the above agent is now available at '/admin/dashboard'
+mainApp.use("/admin", adminRouter);
+```
+
+You can also use `.use()` to register middleware, which is useful for authentication, logging, or modifying the state before an agent runs.
+
+```typescript
+app.use("*", async (ctx, next) => {
+  ctx.state.user = await getUserFromDb(ctx.request);
+  ctx.logger.log("User authenticated.");
+  await next(); // Don't forget to call next() to continue!
+});
+```
+
+---
+
+## Advanced Usage
+
+### Internal Calling & Error Handling
+
+Agents can call other agents and tools using `ctx.next`. This is the key to building complex, chained behaviors. These calls are resilient; they return a result object (`{ ok, data }` or `{ ok, error }`) instead of throwing, allowing the calling agent to handle failures gracefully.
+
+```typescript
+app.agent("/weather-reporter", async (ctx) => {
+  ctx.response.write({ type: "text", text: "Checking the weather..." });
+
+  const result = await ctx.next.callTool("/getWeather", {
+    city: "San Francisco",
+  });
+
+  if (result.ok) {
+    ctx.response.write({
+      type: "text",
+      text: `\nReport: ${result.data.weather}`,
+    });
+  } else {
+    ctx.logger.error("Failed to get weather:", result.error);
+    ctx.response.write({
+      type: "text",
+      text: `\nSorry, I couldn't get the weather.`,
     });
   }
+});
 ```
 
-This approach allows for clean code organization and separation of concerns as your AI application grows in complexity.
+### Agent as a Tool
+
+For an LLM to call one of your agents, it must be presented as a `Tool`. `AiAgentKit` makes this easy with a two-step pattern:
+
+**Step 1: Define the Tool Schema with `.actAsTool()`**
+When creating an agent, specify how it should look to an LLM.
+
+```typescript
+import { z } from "zod";
+const casualRouter = new AiAgentKit();
+
+casualRouter
+  .actAsTool("/casual", {
+    description: "A friendly, casual greeting.",
+    inputSchema: z.object({ name: z.string() }),
+  })
+  .agent("/casual", async ({ response, request }) => {
+    // The 'params' come from the LLM tool call
+    const name = (request.params as any)?.toolInfo?.params?.name || "there";
+    response.write({ type: "text", text: `Yo, what's up ${name}! 👋` });
+  });
+```
+
+**Step 2: Provide the Tool to the LLM with `next.agentAsTool()`**
+Inside another agent, use this method to create the final Vercel AI SDK `Tool` object.
+
+```typescript
+import { streamText } from "ai";
+
+greetingRouter.agent("/decide", async ({ response, next }) => {
+  const { textStream } = await streamText({
+    model: openai("gpt-4-turbo"),
+    prompt: "Should I greet Chairman Meow casually?",
+    tools: {
+      // The framework handles connecting this to the agent's implementation
+      casualChat: next.agentAsTool("/greeting/casual"),
+    },
+  });
+
+  for await (const textPart of textStream) {
+    response.write({ type: "text", text: textPart });
+  }
+});
+```
+
+### Dynamic Tool Attachment with `next.attachTool()`
+
+Similarly, you can provide any registered `.tool()` handler to an LLM using `next.attachTool()`.
+
+```typescript
+const { textStream } = await streamText({
+  model: openai("gpt-4-turbo"),
+  prompt: "...",
+  tools: {
+    getWeather: next.attachTool("/getWeather"),
+  },
+});
+```
+
+### Logging and Debugging
+
+The built-in logger (`ctx.logger`) is your best friend for debugging. It automatically tags every log message with a unique `requestId` and the `path` of the currently executing handler. This makes it easy to trace the flow of a request, even through multiple internal calls.
+
+```
+[aK4xLp8VnI2C] [/decide] -> Running middleware
+[aK4xLp8VnI2C] [/decide] User authenticated.
+[aK4xLp8VnI2C] [/decide] -> Executing agent handler
+[aK4xLp8VnI2C] [/greeting/casual] -> Executing agent handler
+[aK4xLp8VnI2C] [/greeting/casual] <- Finished agent
+[aK4xLp8VnI2C] [/decide] <- Finished agent
+```

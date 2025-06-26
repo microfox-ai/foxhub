@@ -2,7 +2,7 @@ import {
   codeTemplateAddon,
   codeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 
 const EXCLUDED_PACKAGES_LIST = ["puppeteer"];
 export const packagesPrompt = (taskInstanceMeta: TaskInstanceMetaType) => {

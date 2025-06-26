@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 export async function getClientRequest(clientRequestId: string) {
   const clientRequest = await prisma.clientRequest.findUnique({
     where: {

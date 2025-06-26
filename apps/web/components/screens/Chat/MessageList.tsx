@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { MessageWrapper } from "./message/MessageWrapper";
 import { useChatUI } from "./ChatUiProvider";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
+import { getUiParts } from "./helpers/parts";
 
 interface TabMessagesProps {
   isLoading: boolean;
@@ -29,7 +30,18 @@ export default function MessageList({
     return null;
   };
 
-  const lastAnnotationIndices = new Map<string, number>();
+  const lastAnnotationIndices = useMemo(() => {
+    const map = new Map<string, number>();
+    messages.forEach((message, index) => {
+      const uiParts = getUiParts(message);
+      (uiParts as any[]).forEach(part => {
+        if (part.output?.uiComponent) {
+          map.set(part.output.uiComponent, index);
+        }
+      });
+    });
+    return map;
+  }, [messages]);
 
   return (
     <>
@@ -46,7 +58,6 @@ export default function MessageList({
                 message={update}
                 index={index}
                 length={messages.length}
-                isStreaming={isStreaming}
                 lastAnnotationIndices={lastAnnotationIndices}
                 renderDateSeperator={(currDate) =>
                   renderDateSeparator(

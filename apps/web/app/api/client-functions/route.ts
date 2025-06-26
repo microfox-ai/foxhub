@@ -3,7 +3,7 @@ import { getServiceName } from "@/server/buildfox/helper/getServiceName";
 import {
   TaskInstanceMetaType,
   TaskStructure,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import {
   deleteEmbedding,
@@ -39,7 +39,14 @@ export async function POST(req: NextRequest) {
       endpoints,
     } = body;
 
-    if (!originClientRequestId || !name || !baseUrl || !type || !stage || !sha) {
+    if (
+      !originClientRequestId ||
+      !name ||
+      !baseUrl ||
+      !type ||
+      !stage ||
+      !sha
+    ) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -143,7 +150,11 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
-    if (taskInstanceMeta && newMetadata?.docData?.paths && Object.keys(newMetadata?.docData?.paths).length > 0) {
+    if (
+      taskInstanceMeta &&
+      newMetadata?.docData?.paths &&
+      Object.keys(newMetadata?.docData?.paths).length > 0
+    ) {
       await embedApiEndpoints({
         taskStructure: taskInstanceMeta?.taskStructure as TaskStructure,
         docData: newMetadata?.docData as OpenAPIDoc,
@@ -259,7 +270,10 @@ export async function DELETE(req: NextRequest) {
       });
 
       return NextResponse.json(
-        { message: "Function archived successfully", function: archivedFunction },
+        {
+          message: "Function archived successfully",
+          function: archivedFunction,
+        },
         { status: 200 }
       );
     } else {

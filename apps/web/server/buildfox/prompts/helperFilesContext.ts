@@ -2,7 +2,7 @@ import {
   codeTemplateAddon,
   codeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { ClientRequest } from "@prisma/client";
 import fs from "fs/promises";
 import path from "path";

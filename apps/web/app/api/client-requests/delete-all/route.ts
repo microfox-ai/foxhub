@@ -1,6 +1,6 @@
 import { prisma } from "@/prisma/prisma";
 import { fetchTemplateDir } from "@/server/buildfox/tool/writeToFile";
-import { TaskStructure } from "@/server/convertfox/types";
+import { TaskStructure } from "@/server/convertfox/helpers/types";
 import { triggerDeployment } from "@/server/deployfox/deployGit";
 import { readFile } from "fs/promises";
 import { NextRequest } from "next/server";
@@ -46,8 +46,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json(
         {
           success: true,
-          message:
-            "Empty client request deleted",
+          message: "Empty client request deleted",
           stats: deleteResponse,
         },
         { status: 200 }

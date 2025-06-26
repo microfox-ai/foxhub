@@ -1,13 +1,16 @@
 import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
-import { fetchPackageReadme, fetchText } from "@/server/convertfox/gitFetchers";
+import {
+  fetchPackageReadme,
+  fetchText,
+} from "@/server/convertfox/helpers/gitFetchers";
 import {
   CodeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { models } from "@/server/models";
 import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { ClientRequest, ClientSecret } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import { generateText, tool } from "ai";
 import dedent from "dedent";
 import fs from "fs/promises";
@@ -31,7 +34,7 @@ async function fetchGithubReadMe(
 }
 
 const generateCodingBrief = async (config: {
-  props: StreamingFucntionProps<any, any>;
+  ctx: AiContext<any, any, any, any>;
   readmes: {
     docs: string;
     package: string;
@@ -155,7 +158,8 @@ const generateCodingBrief = async (config: {
   });
 
   TokenUsageAnalyticsTracker.trackUsage({
-    ...config.props.requestBody,
+    userId: config.ctx.request.userId,
+    clientRequestId: config.ctx.request.clientRequestId,
     model: models.googleGeminiTwoFive.modelId,
     usage: codingBrief.usage,
   });
@@ -174,7 +178,7 @@ const EXCLUDED_PACKAGES_LIST = [
 ];
 /** this should be removed from tools */
 export const fetchPackageDocs = (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   clientRequest: ClientRequest,
   taskInstanceMeta?: TaskInstanceMetaType,
   otherDetails?: {
@@ -183,10 +187,18 @@ export const fetchPackageDocs = (
     _function: any;
   }
 ) => {
-  return tool({
+  return tool<
+    {
+      packages: {
+        package: string;
+        readmeSearch?: string;
+      }[];
+    },
+    any
+  >({
     description:
       "Fetch All related docs for each package to understand how to use it",
-    parameters: z.object({
+    inputSchema: z.object({
       packages: z
         .array(
           z.object({
@@ -219,9 +231,8 @@ export const fetchPackageDocs = (
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;
-          props.dataStream.writeMessageAnnotation({
-            type: "loading",
-            content: `Fetching documentation for ${pkg.package} - ${pkg.readmeSearch}`,
+          ctx.response.writeMessageMetadata({
+            loader: `Fetching documentation for ${pkg.package} - ${pkg.readmeSearch}`,
           });
           try {
             // let thisPlatform =
@@ -323,7 +334,7 @@ export const fetchPackageDocs = (
       }
 
       // if (otherDetails?._function.name) {
-      //   props.dataStream.writeMessageAnnotation({
+      //   ctx.dataStream.writeMessageAnnotation({
       //     type: "thinking",
       //     content: `Summarizing the docs for ${otherDetails?._function.name}`,
       //   });
@@ -339,13 +350,12 @@ export const fetchPackageDocs = (
       //   type: otherDetails?.type ?? "lambda",
       //   _function: otherDetails?._function,
       //   taskInstanceMeta,
-      //   props,
+      //   ctx,
       // });
 
       if (otherDetails?._function.name) {
-        props.dataStream.writeMessageAnnotation({
-          type: "thinking",
-          content: `Coding ${otherDetails?._function.name}`,
+        ctx.response.writeMessageMetadata({
+          loader: `Coding ${otherDetails?._function.name}`,
         });
       }
       //console.log("brief", brief);

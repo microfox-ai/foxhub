@@ -21,6 +21,8 @@ import useSWR from "swr";
 import { ChatUIMessageWithTypes, MinionFlow, MinionType } from "../hooks/convertors";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { useLayout } from "../providers/LayoutProvider";
+import { getTextParts } from "@repo/ai-utils/helper";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 
@@ -38,6 +40,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
   const { setSelectedRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
+
+  const { user } = useAuth();
 
 
   const {
@@ -69,6 +73,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
             ...body,
             messages: messages,
             clientRequestId: clientRequest?.id,
+            userId: user?.id,
           }
         }
       }
@@ -85,7 +90,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         let _minionType;
         //add this message to the db
         if (
-          message.parts?.length === 0
+          message.parts?.length === 0 || !message.role || !message.parts || !message.parts[0]
         ) {
           console.log("[onFinish] Message has no parts, returning.");
           return;
@@ -97,14 +102,17 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
         const postDataPayload = {
           context: "on-finish",
-          id: clientRequest?.id + "-" + message.id,
+          id: message.id + "-" + _clientRequestId,
           attachments: message.metadata?.attachments,
           minionType: _minionType,
           minionFlow: _minionFlow,
-          userId: clientRequest?.userId,
+          userId: user?.id,
+          role: message.role,
           metadata: message.metadata,
+          parts: message.parts,
+          content: getTextParts(message).join(", ") ?? "",
           ...rest,
-          originClientRequestId: _clientRequestId ?? clientRequest?.id,
+          originClientRequestId: _clientRequestId,
         };
         console.log("[onFinish] Storing assistant message to DB with payload:", postDataPayload);
         PortalSdk.postData("/api/chat/message", postDataPayload);
@@ -190,6 +198,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
           userId: clientRequest?.userId,
           minionType: _minionType,
           minionFlow: _minionFlow,
+          content: getTextParts(message).join(", ") ?? "",
           context: "on-start",
         };
         console.log("[createMessage] Posting message to DB with payload:", payload);
@@ -208,7 +217,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         return;
       }
       let _ids = messageIds.map((_id) =>
-        _id.startsWith(clientRequest.id) ? _id : clientRequest.id + "-" + _id
+        _id.endsWith(clientRequest.id) ? _id : _id + "-" + clientRequest.id
       );
       return await PortalSdk.deleteData(
         `/api/chat/message?ids=${_ids.join(",")}&originClientRequestId=${clientRequest.id}`,
@@ -229,7 +238,10 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   ) => {
     console.log("[handleSubmit] called with:", { text, chatRequestOptions });
     // first store the lastmessage to db
-    event?.preventDefault?.();
+    if (event) {
+      event.preventDefault?.();
+      setInput("");
+    }
     const newMessage: UIMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -279,6 +291,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         metadata: {
           ...bodyParams,
           ...(message.metadata || {}),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
       }
       console.log("[appendMessage] Constructed messageNew:", messageNew);

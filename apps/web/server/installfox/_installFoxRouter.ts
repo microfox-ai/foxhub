@@ -1,7 +1,3 @@
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
 import { prisma } from "@/prisma/prisma";
 import {
   getClientRequest,
@@ -20,13 +16,16 @@ import {
 import {
   CodeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { createPullRequest } from "../buildfox/createPullRequest";
 import { getServiceName } from "../buildfox/helper/getServiceName";
 import { MinionType } from "@/components/screens/hooks/convertors";
-import { object } from "webidl-conversions";
 import { getClientSecretsFromTemplateEnvs } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 import { addTemplateSecretsToClientRequest } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
+import { AiAgentKit } from "@repo/ai-utils/router";
+import { DefaultMessageMetadata } from "../microfoxRouter";
+import { uiTool } from "../ui/uiTool";
+
 interface ClientRequestMeta {
   repoName: string;
   repoDir: string;
@@ -36,59 +35,45 @@ interface ClientRequestMeta {
   metadata: any;
 }
 
-export const installFoxRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
+const installFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
 
-  // Check if shardId exists in requestBody
-  if (!requestBody.shard_id) {
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+installFoxAgent.agent("/installfox", async (ctx) => {
+  const { request, response } = ctx;
+
+  // Check if shardId exists in request
+  if (!request.shard_id) {
+    response.writeMessageMetadata({
+      error: "Shard ID is required",
+    });
+    return;
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "minion",
-    value: MinionType.InstallFox,
-  });
-
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: "Starting installation process...",
+  response.writeMessageMetadata({
+    minionType: MinionType.InstallFox,
+    loader: "Starting installation process...",
   });
 
   try {
     // 0. Get the clientRequest and shardPage
     const shardPage = await prisma.shardPage.findUnique({
       where: {
-        id: requestBody.shard_id,
+        id: request.shard_id,
       },
     });
 
     if (!shardPage) {
-      dataStream.writeMessageAnnotation({
-        type: "error",
-        content: "Shard not found",
+      response.writeMessageMetadata({
+        error: "Shard not found",
       });
-      return {
-        responseBody: { ...responseBody },
-        appendRequestBody: { ...requestBody },
-      };
+      return;
     }
 
-    let clientRequest = await getClientRequest(requestBody.clientRequestId);
+    let clientRequest = await getClientRequest(request.clientRequestId);
     if (!clientRequest) {
-      dataStream.writeMessageAnnotation({
-        type: "error",
-        content: "Client request not found",
+      response.writeMessageMetadata({
+        error: "Client request not found",
       });
-      return {
-        responseBody: { ...responseBody },
-        appendRequestBody: { ...requestBody },
-      };
+      return;
     }
 
     const clientRequestMeta =
@@ -97,16 +82,14 @@ export const installFoxRouter: ServerStreamingFunction<
       shardPage.taskInstanceMeta as unknown as TaskInstanceMetaType;
 
     if (clientRequestMeta.repoDir && !clientRequest.requestDir) {
-      dataStream.writeMessageAnnotation({
-        type: "thinking",
-        content: "Creating new codebase for this request.",
+      response.writeMessageMetadata({
+        loader: "Creating new codebase for this request.",
       });
 
       clientRequest = await createPullRequest({
         clientRequestId: clientRequest.id,
         description: clientRequestMeta.metadata.description,
         title: clientRequestMeta.metadata.title,
-        dataStream,
         fullRequestDir: clientRequestMeta.repoDir,
       });
     }
@@ -147,9 +130,8 @@ export const installFoxRouter: ServerStreamingFunction<
       });
     }
 
-    dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Adding Internal secrets",
+    response.writeMessageMetadata({
+      loader: "Adding Internal secrets",
     });
 
     let templateType = (taskInstanceMeta as any as TaskInstanceMetaType)
@@ -166,15 +148,14 @@ export const installFoxRouter: ServerStreamingFunction<
     }
 
     if (!taskInstanceMeta) {
-      dataStream.writeMessageAnnotation({
-        type: "error",
-        content: "Task instance meta not found",
+      response.writeMessageMetadata({
+        error: "Task instance meta not found",
       });
+      return;
     }
 
-    dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Writing the required codebase",
+    response.writeMessageMetadata({
+      loader: "Writing the required codebase",
     });
 
     await updateClientRequest({
@@ -205,25 +186,28 @@ export const installFoxRouter: ServerStreamingFunction<
     });
 
     // 4. Output UI saying primary setups are done
-    dataStream.writeMessageAnnotation({
-      type: "ui",
-      objectType: "installSetup",
-      persona: "installfox",
-      text: "Primary setup is complete! We need a few more details before we get started.",
-      object: {
-        platforms: shardTaskInstanceMeta.taskIntegrations?.platforms ?? [],
-        envVariablesUsed:
-          shardTaskInstanceMeta.buildingStep?.envVariablesUsed ?? [],
-      },
-      envVariablesCollect:
-        shardTaskInstanceMeta.buildingStep?.envsToCollect ?? [],
-    });
+    response.writeCustomTool(
+      uiTool.construct<"card">("installfox", "installSetup", {
+        uiType: "card",
+        text: "Primary setup is complete! We need a few more details before we get started.",
+        object: {
+          objectType: "install_setup",
+          object: {
+            platforms: shardTaskInstanceMeta.taskIntegrations?.platforms ?? [],
+            envVariablesUsed:
+              shardTaskInstanceMeta.buildingStep?.envVariablesUsed ?? [],
+            envVariablesCollect:
+              shardTaskInstanceMeta.buildingStep?.envsToCollect ?? [],
+          },
+        },
+      })
+    );
   } catch (error) {
-    console.error("Error in installFoxRouter", error);
+    console.error("Error in installFoxAgent", error);
+    response.writeMessageMetadata({
+      error: "Installation failed. Please try again.",
+    });
   }
+});
 
-  return {
-    responseBody: { ...responseBody },
-    appendRequestBody: { ...requestBody },
-  };
-};
+export { installFoxAgent };

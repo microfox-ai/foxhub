@@ -1,4 +1,4 @@
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 import dayjs from "dayjs";
 export const generateStatsReport = (taskInstanceMeta: TaskInstanceMetaType) => {
   const { buildingStep, taskStructure } = taskInstanceMeta;

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/tabs";
 import { AlertCircle, Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { ExtraEnvVariable } from "@/server/convertfox/types";
+import { ExtraEnvVariable } from "@/server/convertfox/helpers/types";
 import { cn } from "@/lib/utils";
 import { EnvVariableInput } from "./EnvVariableInput";
 import { Command, CommandInput, CommandList, CommandItem } from "@/components/ui/command";

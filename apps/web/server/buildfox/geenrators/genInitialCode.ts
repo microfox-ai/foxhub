@@ -1,9 +1,9 @@
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import dedent from "dedent";
 import { promises as fs } from "fs";
 import path from "path";
-import { TaskInstanceMetaType } from "../../convertfox/types";
+import { TaskInstanceMetaType } from "../../convertfox/helpers/types";
 import {
   fetchTemplateDir,
   INTERNAL_TEMPLATE_PLAIN_ROOT,
@@ -11,13 +11,12 @@ import {
 } from "../tool/writeToFile";
 
 export const genInitialServerlessCode = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
-  props.dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Generating initial code..",
+  ctx.response.writeMessageMetadata({
+    loader: "Generating initial code..",
   });
 
   // TODO: Instead of hardcoding, fetch from the template repo.

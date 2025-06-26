@@ -1,4 +1,4 @@
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { ClientDeployment } from "@prisma/client";
 import { createContext, useContext, useEffect, useState } from "react";

@@ -1,15 +1,14 @@
-import { IN_DEV } from "@/utils/constants/appInfo";
 import { UIMessage } from "ai";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight, FileText, RefreshCcw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { MessageMetadata } from "../../hooks/convertors";
+import { getDisplayParts, getStickyUiParts, getUiParts } from "../helpers/parts";
 import { getMessageClass } from "../helpers/ui";
 import { useMicrofoxChat } from "../MicrofoxChatProvider";
-import { AnnotationUIList } from "./AnnotationUIList";
 import { LoadingIndicator } from "./LoadingIndicator";
-import { MessageMarkdown } from "./MessageThoughtWrapper";
-import { ToolInvocationPart } from "./ToolInvocationPart";
+import { DisplayPart } from "./wrappers/DisplayPart";
+import { RenderUiTool } from "./wrappers/RenderUiTool";
+import { StickyUiPartsWrapper } from "./wrappers/StickyUiPartsWrapper";
 
 // Define types for annotations
 export type ThinkingAnnotation = {
@@ -34,30 +33,8 @@ interface MessageWrapperProps {
   index: number;
   renderDateSeperator: (currentDate: string) => React.ReactNode;
   length: number;
-  isStreaming: boolean;
   lastAnnotationIndices: Map<string, number>;
 }
-
-type MessagePartType = UIMessage["parts"][number];
-
-const MessagePart = ({
-  part,
-  messageId,
-  isStreaming,
-}: {
-  part: MessagePartType;
-  messageId: string;
-  isStreaming: boolean;
-}) => {
-  if (part.type === "text") {
-    return <MessageMarkdown isStreaming={isStreaming}>{part.text}</MessageMarkdown>;
-  }
-
-
-  if (part.type === "source-url") {
-    return <MessageMarkdown isStreaming={isStreaming}>{part.sourceId}</MessageMarkdown>;
-  }
-};
 
 // RENDER CONTENT BY PARTS AND NOT BY CONTENT, BECAUSE CONTENT MIGHT BE A MERGE OF MULTIPLE PARTS.
 export const MessageWrapper = ({
@@ -65,29 +42,30 @@ export const MessageWrapper = ({
   index,
   renderDateSeperator,
   length,
-  isStreaming,
   lastAnnotationIndices,
 }: MessageWrapperProps) => {
   const { handleRefresh, status } = useMicrofoxChat();
   const systemType = message.metadata?.systemType;
   const minion = message.metadata?.minionType;
 
-  const displayParts = message.parts?.filter(
-    (part) => part.type !== "tool-invocation" && part.type != "step-start"
-  );
-  const toolInvocations = message.parts?.filter(
-    (part) => part.type === "tool-invocation"
-  );
-  const lastToolInvocation = toolInvocations?.length > 0 ? toolInvocations?.[toolInvocations.length - 1] : null;
+  const displayParts = getDisplayParts(message);
+  const uiParts = getUiParts(message);
+  const stickyUiParts = getStickyUiParts(uiParts);
 
   const [activeTab, setActiveTab] = useState<number>(0);
   useEffect(() => {
-    if (displayParts && isStreaming) {
+    if (displayParts && displayParts.length > 1) {
       setActiveTab(displayParts.length - 1);
     }
-  }, [displayParts, isStreaming]);
+  }, []);
 
-  const uiAnnotations = message.metadata?.uiAnnotations;
+  useEffect(() => {
+    if (displayParts && status === "streaming") {
+      setActiveTab(displayParts.length - 1);
+    }
+  }, [displayParts, status]);
+
+  // const uiAnnotations = message.metadata?.uiAnnotations;
   const onRefresh = async () => {
     await handleRefresh(index);
   };
@@ -119,13 +97,11 @@ export const MessageWrapper = ({
                 {message.metadata?.createdAt && dayjs(message.metadata?.createdAt).format("h:mm A")}
               </span>
             )}
-            {status === "error" &&
+            {status !== "streaming" &&
               message.role === "assistant" &&
-              !message.metadata?.content &&
-              (!toolInvocations || toolInvocations.length === 0) &&
-              (!uiAnnotations || uiAnnotations.length === 0) && (
+              message.metadata?.error && (
                 <div className="text-red-500">
-                  Something went wrong! Try again.
+                  {message.metadata?.error || "Something went wrong! Try again."}
                 </div>
               )}
             {message.role === "assistant" &&
@@ -148,10 +124,12 @@ export const MessageWrapper = ({
             {message.parts &&
               message.parts.length > 0 &&
               displayParts.length === 1 && (
-                <MessagePart
+                <DisplayPart
                   part={displayParts?.[0] as any}
                   messageId={message.id}
-                  isStreaming={isStreaming}
+                  lastMessage={index === length - 1}
+                  lastAnnotationIndices={lastAnnotationIndices}
+                  messageIndex={index}
                 />
               )}
             {displayParts.length > 1 && (
@@ -176,31 +154,40 @@ export const MessageWrapper = ({
                   />
                 </div>
                 {displayParts?.[activeTab] && (
-                  <MessagePart
+                  <DisplayPart
                     part={displayParts?.[activeTab]}
                     messageId={message.id}
-                    isStreaming={isStreaming}
+                    lastMessage={index === length - 1}
+                    lastAnnotationIndices={lastAnnotationIndices}
+                    messageIndex={index}
                   />
                 )}
-                {toolInvocations?.map((toolInvocation, idx) => (
+                {/* {message.customTools?.map((toolInvocation, idx) => (
                   <ToolInvocationPart
                     key={idx + toolInvocation.type}
                     part={toolInvocation}
                     messageId={message.id}
                     message={message}
                   />
-                ))}
+                ))} */}
               </div>
             )}
-            {uiAnnotations && uiAnnotations.length > 0 && (
+            {/* {uiAnnotations && uiAnnotations.length > 0 && (
               <AnnotationUIList
                 uiAnnotations={uiAnnotations as any[]}
                 lastMessage={index === length - 1}
                 lastAnnotationIndices={lastAnnotationIndices}
                 messageIndex={index}
               />
+            )} */}
+            {stickyUiParts.length > 0 && (
+              <StickyUiPartsWrapper>
+                {stickyUiParts.map((part) => (
+                  <RenderUiTool key={part.toolCallId} tool={part} lastMessage={index === length - 1} lastAnnotationIndices={lastAnnotationIndices} messageIndex={index} />
+                ))}
+              </StickyUiPartsWrapper>
             )}
-            {lastToolInvocation && (
+            {/* {lastToolInvocation && (
               <div className="mt-2 flex flex-col gap-2">
                 <ToolInvocationPart
                   part={lastToolInvocation}
@@ -208,7 +195,7 @@ export const MessageWrapper = ({
                   message={message}
                 />
               </div>
-            )}
+            )} */}
             {message.metadata?.attachments && (
               <div className="mt-2 flex flex-wrap justify-evenly gap-2">
                 {message.metadata?.attachments.map((m: any, idx: number) =>

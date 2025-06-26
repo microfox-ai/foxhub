@@ -1,17 +1,16 @@
 // should fetch the reference from the database based on the task request, & its related files via git when needed.
-
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import { z } from "zod";
 import { ClientRequest } from "@prisma/client";
 import { prisma } from "@/prisma/prisma";
-import { TaskInstanceMetaType, TaskStructure } from "../convertfox/types";
+import {
+  TaskInstanceMetaType,
+  TaskStructure,
+} from "../convertfox/helpers/types";
 import path from "path";
 import { Octokit } from "octokit";
-import {
-  GITHUB_TOKEN,
-  PROJECT_REPO_OWNER,
-} from "@/utils/constants/githubInfo";
+import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { AiContext } from "@repo/ai-utils/router";
 
 const githubSdk = new Octokit({
   auth: GITHUB_TOKEN,
@@ -19,13 +18,22 @@ const githubSdk = new Octokit({
 
 /** Tool to fetch reference code and related files based on search query */
 export const fetchReferences = (
-  props: StreamingFucntionProps<any, any>,
+  props: AiContext<any, any, any, any>,
   clientRequest: ClientRequest
 ) => {
-  return tool({
+  return tool<
+    {
+      query: string;
+      maxResults?: number;
+      includeFileContents?: boolean;
+    },
+    {
+      success: boolean;
+    }
+  >({
     description:
       "Fetch reference code and related files based on search criteria",
-    parameters: z.object({
+    inputSchema: z.object({
       query: z
         .string()
         .describe(

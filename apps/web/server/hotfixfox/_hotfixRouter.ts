@@ -2,54 +2,47 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { models } from "../models";
 import { editFile, readFile } from "./tool/editFile";
+import { AiAgentKit } from "@repo/ai-utils/router";
+import { DefaultMessageMetadata } from "../microfoxRouter";
+import { uiTool } from "../ui/uiTool";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
 // it also has to update the taskInstanceMeta
-export const hotfixFoxRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
-  const { clientRequestId, api_errors } = requestBody;
+const hotfixFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
+
+hotfixFoxAgent.agent("/", async (ctx) => {
+  const { request, response } = ctx;
+  const { clientRequestId, api_errors } = request;
 
   let clientRequest = await getClientRequest(clientRequestId);
   let taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
 
   if (!clientRequest || !taskInstanceMeta?.taskInfo) {
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    response.writeMessageMetadata({
+      error: "Client request or task instance meta not found",
+    });
+    return;
   }
 
   if (!api_errors) {
-    props.dataStream.writeMessageAnnotation({
-      type: "error",
-      content: "No api_errors provided",
+    response.writeMessageMetadata({
+      error: "No api_errors provided",
     });
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    return;
   }
 
   const files = taskInstanceMeta.buildingStep?.files?.map((file) => {
     return file.filePath;
   });
 
-  props.dataStream.writeMessageAnnotation({
-    type: "loading",
-    text: "Debugging the errors",
+  response.writeMessageMetadata({
+    loader: "Debugging the errors",
   });
 
   const result = await generateObject({
@@ -96,7 +89,9 @@ export const hotfixFoxRouter: ServerStreamingFunction<
     `,
   });
   TokenUsageAnalyticsTracker.trackUsage({
-    ...props.requestBody,
+    userId: request.userId,
+    clientRequestId: request.clientRequestId,
+    originClientRequestId: request.originClientRequestId,
     model: models.claude35Sonnet.modelId,
     usage: result.usage,
   });
@@ -104,9 +99,8 @@ export const hotfixFoxRouter: ServerStreamingFunction<
   const filesToFix = result.object.filesToFix;
   //console.log(filesToFix);
 
-  props.dataStream.writeMessageAnnotation({
-    type: "loading",
-    text: `Fixing errors across ${filesToFix.length} files`,
+  response.writeMessageMetadata({
+    loader: `Fixing errors across ${filesToFix.length} files`,
   });
 
   for (const fileToFix of filesToFix) {
@@ -147,23 +141,23 @@ export const hotfixFoxRouter: ServerStreamingFunction<
         ${fileToFix.modification}
         `,
         tools: {
-          read_file: readFile(props, clientRequest),
-          edit_file: editFile(props, clientRequest),
+          read_file: readFile(ctx, clientRequest),
+          edit_file: editFile(ctx, clientRequest),
         },
         toolChoice: "auto",
-        maxSteps: 2,
         onStepFinish: (step) => {
           console.log(step.usage);
         },
       });
 
-      props.dataStream.writeMessageAnnotation({
-        type: "loading",
-        text: `Fixed ${fileToFix.filePath.split("/").pop()}`,
+      response.writeMessageMetadata({
+        loader: `Fixed ${fileToFix.filePath.split("/").pop()}`,
       });
 
       TokenUsageAnalyticsTracker.trackUsage({
-        ...props.requestBody,
+        userId: request.userId,
+        clientRequestId: request.clientRequestId,
+        originClientRequestId: request.originClientRequestId,
         model: models.claude35Sonnet.modelId,
         usage: result.usage,
       });
@@ -172,33 +166,33 @@ export const hotfixFoxRouter: ServerStreamingFunction<
     }
   }
 
-  // TODO: check for any new added envs that in the type:custom, add not yet filled, ask to be filled, now
-  props.dataStream.writeMessageAnnotation({
-    type: "ui",
-    objectType: "hotFixes",
-    persona: "buildfox",
-    text: `Finished fixing errors`,
-    filesFixed: filesToFix,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Make changes",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
+  response.writeCustomTool(
+    uiTool.construct<"card">("hotfixfox", "hotfixes", {
+      uiType: "card",
+      text: `Finished fixing errors`,
+      object: {
+        objectType: "hotfixes",
+        object: {
+          filesFixed: filesToFix,
+        },
       },
-      {
-        action: "shiftMinion",
-        actionText: "Retry Testing !",
-        type: "confirm",
-        text: "Retry Testing !",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "deployfox",
-      },
-    ],
-  });
+      buttons: [
+        {
+          text: "Make changes",
+          type: "deny",
+        },
+        {
+          action: {
+            id: "shiftMinion",
+            props: "deployfox",
+            actionText: "Retry Testing !",
+          },
+          text: "Retry Testing !",
+          type: "confirm",
+        },
+      ],
+    })
+  );
+});
 
-  return {
-    responseBody: { ...responseBody },
-    appendRequestBody: { ...requestBody },
-  };
-};
+export { hotfixFoxAgent };

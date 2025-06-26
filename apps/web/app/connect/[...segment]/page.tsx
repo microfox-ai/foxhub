@@ -94,9 +94,9 @@ const AuthPopupWindow = async ({
     const tokenResponse = await providerInstance.exchangeCodeForTokens(code);
 
     const accessToken =
-      "accessToken" in tokenResponse ? tokenResponse.accessToken : tokenResponse.access_token;
+      "accessToken" in tokenResponse ? tokenResponse?.accessToken : tokenResponse?.access_token || null;
     const refreshToken =
-      "refreshToken" in tokenResponse ? tokenResponse.refreshToken : null;
+      "refreshToken" in tokenResponse ? tokenResponse?.refreshToken : (tokenResponse as any)?.refresh_token || null;
 
     const keyValuePairs = (clientSecret.variables as any[] as ClientSecretVariable[]).map((variable: ClientSecretVariable) => {
       if ((variable.key as string).includes("_ACCESS_TOKEN") || (variable.key as string).includes("_BOT_TOKEN") || (variable.key as string).includes("_OAUTH_TOKEN")) {

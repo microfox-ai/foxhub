@@ -114,7 +114,9 @@ export const writeToFileSystemAndUpdateSteps = async (
 export const deleteAllGenFiles = async (clientRequest: ClientRequest) => {
   const rootDir = await getRootDir(clientRequest);
   await fs.rm(rootDir, { recursive: true, force: true, maxRetries: 3 });
-  await fs.rmdir(rootDir);
+  if (await fs.stat(rootDir).catch((e) => false)) {
+    await fs.rmdir(rootDir);
+  }
 };
 
 export const readAllGenFilesList = async (

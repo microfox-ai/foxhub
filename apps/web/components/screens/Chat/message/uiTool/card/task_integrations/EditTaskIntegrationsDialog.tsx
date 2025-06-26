@@ -11,6 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown, X, Pencil } from "lucide-react";
 import { Package } from "../../../types";
+import useSWR from "swr";
+import { PackageStatus } from "@/server/types";
 
 interface EditTaskIntegrationsDialogProps {
     isOpen: boolean;
@@ -37,9 +39,21 @@ export const EditTaskIntegrationsDialog = ({
     });
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
+    const { data: searchPackages, mutate: mutateSearchPackages } = useSWR<Package[]>(
+        `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.SEMISTABLE},${PackageStatus.EXTERNAL}&rawContent=true`,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch packages");
+            return res.json();
+        },
+        {
+            revalidateOnFocus: false,
+        }
+    );
+
     const handleAddPlatform = () => {
         if (newPlatform.name && newPlatform.reason && newPlatform.package) {
-            const selectedPackage = packages.find(p => p.name === newPlatform.package);
+            const selectedPackage = packages.find(p => p.name === newPlatform.package) ?? searchPackages?.find(p => p.name === newPlatform.package);
             const platformsToAdd: TaskIntegrationPlatform[] = [
                 {
                     ...newPlatform,
@@ -50,7 +64,7 @@ export const EditTaskIntegrationsDialog = ({
             // Add dependencies if they exist
             if (selectedPackage?.addedDependencies) {
                 selectedPackage.addedDependencies.forEach(depName => {
-                    const depPackage = packages.find(p => p.name === depName);
+                    const depPackage = packages.find(p => p.name === depName) ?? searchPackages?.find(p => p.name === depName);
                     if (depPackage) {
                         platformsToAdd.push({
                             name: depPackage.title || depName,
@@ -223,8 +237,8 @@ export const EditTaskIntegrationsDialog = ({
                                     />
                                     <CommandEmpty>No package found.</CommandEmpty>
                                     <CommandGroup className="max-h-[200px] overflow-y-auto">
-                                        {packages
-                                            .filter((pkg) =>
+                                        {searchPackages
+                                            ?.filter((pkg) =>
                                                 pkg.name.toLowerCase().includes(newPlatform.package?.toLowerCase() || "")
                                             )
                                             .map((pkg) => (

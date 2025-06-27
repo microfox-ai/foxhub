@@ -11,7 +11,7 @@ import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProv
 import { ClientSecret } from "@prisma/client";
 
 export const TaskRequiredInfo = () => {
-    const { clientRequestId } = useClientProject();
+    const { clientRequestId, selectedProject } = useClientProject();
     const { taskInstanceMeta } = useTaskInstanceMetaContext();
     const [showAddEnvModal, setShowAddEnvModal] = useState(false);
     const [selectedEnvKey, setSelectedEnvKey] = useState<string | null>(null);
@@ -36,28 +36,49 @@ export const TaskRequiredInfo = () => {
     const envsToCollect = (taskInstanceMeta?.buildingStep as any)?.envsToCollect;
 
     const handleSaveCustomEnv = async (values: Record<string, string>) => {
-        if (!customSecret) {
-            toast.error("Custom secret not found");
+        const variables = Object.entries(values)
+            .filter(([_, value]) => value.trim())
+            .map(([key, value]) => ({
+                key,
+                value: value.trim(),
+                isOptional: false,
+            }));
+
+        if (variables.length === 0) {
+            toast.info("No variables to save.");
+            setShowAddEnvModal(false);
             return;
         }
 
         try {
-            const body = {
-                id: customSecret.id,
-                variables: Object.entries(values)
-                    .filter(([_, value]) => value.trim())
-                    .map(([key, value]) => ({
-                        key,
-                        value: value.trim(),
-                        isOptional: false,
-                    })),
-            };
-
-            await PortalSdk.putData("/api/client-secrets/update-deployments", body);
+            if (!customSecret) {
+                if (!selectedProject) {
+                    toast.error("Project not found");
+                    return;
+                }
+                const body = {
+                    botProjectId: selectedProject.id,
+                    userId: selectedProject.userId,
+                    clientRequestId: clientRequestId,
+                    addToClientRequest: true,
+                    packageType: "custom",
+                    status: "FILLED",
+                    name: "Custom Secret",
+                    variables,
+                };
+                await PortalSdk.postData("/api/client-secrets", body);
+                toast.success("Configuration created successfully");
+            } else {
+                const body = {
+                    id: customSecret.id,
+                    variables,
+                };
+                await PortalSdk.putData("/api/client-secrets/update-deployments", body);
+                toast.success("Configuration updated successfully");
+            }
 
             await mutateSecrets();
             setShowAddEnvModal(false);
-            toast.success("Configuration updated successfully");
         } catch (error) {
             console.error("Error saving environment variables:", error);
             throw error;
@@ -92,7 +113,7 @@ export const TaskRequiredInfo = () => {
                 </Button>
             </div>
             <div className="rounded-sm border border-gray-200 flex flex-col gap-2">
-                {customSecret && envVariablesConfig && envVariablesConfig?.length > 0 && (
+                {envVariablesConfig && envVariablesConfig?.length > 0 && (
                     <ul className="flex flex-wrap gap-4 p-4 min-h-[300px]">
                         {envVariablesConfig?.map((env: any) => {
                             const hasValue = (customSecret?.variables as any[])?.some(
@@ -138,7 +159,7 @@ export const TaskRequiredInfo = () => {
                         </li>
                     </ul>
                 )}
-                {(!customSecret || !envVariablesConfig || envVariablesConfig?.length === 0) && (
+                {(!envVariablesConfig || envVariablesConfig?.length === 0) && (
                     <div className="flex flex-col items-center justify-center p-4 h-[300px]">
                         <BoxIcon className="w-10 h-10 text-gray-500 my-4" />
                         <p className="text-md text-gray-500">

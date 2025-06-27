@@ -107,7 +107,7 @@ export const EnvVariablesDialog = ({
       setIsEditing(false);
       setEditingIndex(null);
     }
-  }, [isOpen, initialStep, initialValues]);
+  }, [isOpen, initialStep, JSON.stringify(initialValues)]);
 
   // Update completed steps when envValues change
   useEffect(() => {

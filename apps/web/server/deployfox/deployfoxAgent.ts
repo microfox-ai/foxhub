@@ -62,12 +62,13 @@ deployfoxAgent.agent("/", async (ctx) => {
   console.log("requestBody deployfox", request.params);
 
   const deployStage = stage || DEPLOY_STAGE.STAGING;
-  const isLocal =
-    is_local === undefined || is_local === null
-      ? IN_STAGING
-        ? true
-        : false
-      : is_local;
+  const isLocal = false
+  // const isLocal =
+  //   is_local === undefined || is_local === null
+  //     ? IN_STAGING
+  //       ? true
+  //       : false
+  //     : is_local;
 
   response.writeMessageMetadata({
     loader: `Deploying Automation to ${deployStage} ${isLocal ? "locally" : ""}`,

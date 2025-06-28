@@ -24,63 +24,155 @@ async function listByPackage(pkg: string, limit = 10) {
   console.table(data);
 }
 
-export async function getPackaggeDocs(
+export async function getPackageFunctions(
   pkg: string,
-  type: "constructor" | "function" | "rule" | "all" | "main"
+  type: "constructor" | "function" | "rule" | "all" | "main" = "all"
 ) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-  return [];
+  const pkgName = pkg.replace('@microfox/', '');
+  let packagesToSearch = [pkgName];
+
+  // Fetch linked packages to search within them as well
+  const { data: linkedData, error: linkedError } = await supabase
+    .from('docs_embeddings')
+    .select('linked_packages')
+    .eq('package_name', pkgName)
+    .limit(1)
+
+  if (linkedError) {
+    console.error(`Error fetching linked packages for ${pkg}:`, linkedError);
+  } else if (linkedData && linkedData.length > 0 && linkedData[0]?.linked_packages) {
+    const linked = linkedData[0]?.linked_packages?.map((p: string) =>
+      p.replace("@microfox/", "")
+    );
+    packagesToSearch.push(...linked);
+  }
+  const uniquePackagesToSearch = [...new Set(packagesToSearch)];
+  console.log(`\n📚 Searching for docs in packages: ${uniquePackagesToSearch.join(', ')}`);
+
+  console.log('\n🕵️  Checking doc counts per package...');
+  for (const pkgName of uniquePackagesToSearch) {
+    const { count, error } = await supabase
+      .from('docs_embeddings')
+      .select('*', { count: 'exact', head: true })
+      .eq('package_name', pkgName);
+    if (error) {
+      console.error(`Error counting docs for ${pkgName}:`, error.message);
+    } else {
+      console.log(`  - ${pkgName}: ${count} doc(s)`);
+    }
+  }
+
+  const query = supabase
+    .from('docs_embeddings')
+    .select('*')
+    .in('package_name', uniquePackagesToSearch);
+
+  if (type !== 'all') {
+    query.eq('doc_type', type);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching package functions:', error);
+    return [];
+  }
+
+  console.log(`\nFound ${data.length} results.`);
+  console.table(
+    data.map((d) => ({
+      package: d.package_name,
+      function: d.function_name,
+      type: d.doc_type,
+      docs: d.doc_text,
+    }))
+  );
+
+  return data;
 }
 
 export async function semanticFunctionSearch(
   pkg: string,
   query: string,
-  type: "constructor" | "function" | "rule" | "all" | "main",
+  type: "constructor" | "function" | "rule" | "all" | "main" = "all",
   limit = 10
 ) {
   console.log(`\n🔍 Embedding query: "${query}"…`);
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const qEmb = await embed(query);
-  console.log("🧠 Query embedding obtained");
+  console.log('🧠 Query embedding obtained');
+  const doc_type_filter = type === 'all' ? null : type;
 
   if (pkg === "*") {
     console.log("🌍 Global search (all packages)…");
     const { data, error } = await supabase.rpc("match_docs", {
       query_embedding: qEmb,
       k: limit,
+      doc_type_filter,
     });
     if (error) throw error;
     console.log(`\n🎯 Top ${limit} global results for "${query}":`);
-    console.table(
-      data.map((r: any) => ({
-        package_name: r.package_name,
-        function_name: r.function_name,
-        file_path: r.file_path,
-        similarity: r.similarity,
-      }))
-    );
+    if (data) {
+      console.table(
+        data.map((r: any) => ({
+          package: r.package_name,
+          function: r.function_name,
+          similarity: r.similarity,
+          docs: r.doc_text,
+        }))
+      );
+    }
     return data;
   } else {
-    let finalPkg = pkg;
-    if (pkg.startsWith("@microfox/")) {
-      finalPkg = pkg.slice(10);
+    const pkgName = pkg.replace('@microfox/', '');
+    let packagesToSearch = [pkgName];
+
+    // Fetch linked packages to search within them as well
+    const { data: linkedData, error: linkedError } = await supabase
+      .from('docs_embeddings')
+      .select('linked_packages')
+      .eq('package_name', pkgName)
+      .limit(1);
+
+    if (linkedError) {
+      console.error(`Error fetching linked packages for ${pkg}:`, linkedError);
+    } else if (
+      linkedData &&
+      linkedData.length > 0 &&
+      linkedData[0]?.linked_packages
+    ) {
+      const linked = linkedData[0]?.linked_packages?.map((p: string) =>
+        p.replace("@microfox/", "")
+      );
+      packagesToSearch.push(...linked);
     }
-    console.log(`📦 Package search in "${finalPkg}"…`);
-    const { data, error } = await supabase.rpc("match_docs_in_package", {
+
+    const uniquePackagesToSearch = [...new Set(packagesToSearch)];
+    console.log(
+      `📦 Package search in: "${uniquePackagesToSearch.join(", ")}"`
+    );
+
+    const { data, error } = await supabase.rpc("match_docs_in_packages", {
       query_embedding: qEmb,
-      pkg_name: finalPkg,
+      pkg_names: uniquePackagesToSearch,
       k: limit,
+      doc_type_filter,
     });
     if (error) throw error;
-    console.log(`\n🎯 Top ${limit} results for "${query}" in "${finalPkg}":`);
-    console.table(
-      data.map((r: any) => ({
-        package_name: r.package_name,
-        function_name: r.function_name,
-        file_path: r.file_path,
-        similarity: r.similarity,
-      }))
+    console.log(
+      `\n🎯 Top ${limit} results for "${query}" in relevant packages:`
     );
+    if (data) {
+      console.table(
+        data.map((r: any) => ({
+          package: r.package_name,
+          function: r.function_name,
+          similarity: r.similarity,
+          docs: r.doc_text,
+        }))
+      );
+    }
     return data;
   }
 }

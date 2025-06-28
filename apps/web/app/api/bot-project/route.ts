@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       },
     });
 
-    console.log("userBotPermissions", userBotPermissions);
+    //console.log("userBotPermissions", userBotPermissions);
     const otherBotProjects = userBotPermissions
       .map((permission) => permission.botProjectId)
       .filter(

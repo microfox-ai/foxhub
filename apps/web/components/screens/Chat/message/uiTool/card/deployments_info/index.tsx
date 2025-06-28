@@ -113,6 +113,7 @@ export const DeploymentsInfo = ({
       return;
     }
 
+
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
@@ -177,6 +178,8 @@ export const DeploymentsInfo = ({
       toast.error("No client deployment found. Please try again later.");
       return;
     }
+
+    console.log("fetching logs", endpointLink, clientDeployment);
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({

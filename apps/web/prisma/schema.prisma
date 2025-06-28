@@ -380,3 +380,190 @@ model WebhookEvent {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
+
+// ------- API Embeddings -------
+model ApiEmbedding {
+  id                    String           @id @default(uuid())
+  userId                String?
+  botProjectId          String?
+  originClientRequestId String?
+  baseUrl               String
+  schemaPath            String?
+  endpointPath          String
+  httpMethod            String
+  docText               String
+  embedding             Unsupported("vector(768)")?
+  isPublic              Boolean          @default(false)
+  stage                 deployment_stage @default(STAGING)
+  metadata              Json?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([botProjectId])
+  @@index([originClientRequestId])
+  @@index([isPublic])
+  @@index([stage])
+  @@index(map: "idx_api_embeddings_embedding", fields: [embedding])
+}
+
+enum deployment_stage {
+  DEV
+  STAGING
+  PREVIEW
+  PROD
+}
+
+// =================================================================
+//  Task Kit Tables
+//  This script creates the tables required for the @microfox/task-kit
+//  package, based on the Zod schemas.
+// =================================================================
+
+// -----------------------------------------------------------------
+//  Custom Types (Enums)
+//  These types enforce specific values for task properties.
+// -----------------------------------------------------------------
+
+enum task_status {
+  pending
+  scheduled
+  progress
+  input_await
+  completed
+  failed
+  archived
+}
+
+enum task_type {
+  default
+  watcher
+  scheduled
+  stale
+}
+
+enum task_priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum event_status {
+  unclassified
+  classified
+  failed
+}
+
+// -----------------------------------------------------------------
+//  Table: events
+//  Logs raw incoming events before they are classified into tasks.
+// -----------------------------------------------------------------
+
+model Event {
+  id                   String        @id @default(uuid())
+  microfoxIds          String[]
+  createdAt            DateTime      @default(now())
+  providerName         String?
+  providerEventId      String?
+  eventType            String
+  status               event_status  @default(unclassified)
+  content              String?
+  metadata             Json?
+  classificationNotes  String?
+  tasks                Task[]
+
+  @@index([providerEventId])
+  @@index([status])
+  @@index(map: "idx_events_microfox_ids", fields: [microfoxIds])
+
+  @@map("events")
+}
+
+// -----------------------------------------------------------------
+//  Table: tasks
+//  Stores individual tasks to be processed.
+// -----------------------------------------------------------------
+
+model Task {
+  id                  String          @id @default(uuid())
+  microfoxId          String
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  scheduledFor        DateTime?
+  expiresAt           DateTime?
+  name                String?
+  taskType            task_type
+  status              task_status
+  priority            task_priority?
+  authorizedUsers     String[]
+  input               Json?
+  output              Json?
+  metadata            Json?
+  providerName        String?
+  aiDescription       String?
+  triggeringEventId   String?
+  triggeringEvent     Event?          @relation(fields: [triggeringEventId], references: [id], onDelete: SetNull)
+  activities          Activity[]
+  eventWatchers       EventWatcher[]
+
+  @@index([microfoxId])
+  @@index([status])
+  @@index([priority])
+  @@index([providerName])
+  @@index([scheduledFor])
+  @@index([triggeringEventId])
+  @@map("tasks")
+}
+
+// -----------------------------------------------------------------
+//  Table: activities
+//  Records a sequence of actions or events within a single task.
+// -----------------------------------------------------------------
+
+model Activity {
+  id                String    @id @default(uuid())
+  taskId            String
+  task              Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sequenceNumber    Int
+  parentActivityId  String?
+  parentActivity    Activity? @relation("ActivityChildren", fields: [parentActivityId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  childActivities   Activity[] @relation("ActivityChildren")
+  prevActivityId    String?
+  nextActivityId    String?
+  type              String
+  timestamp         DateTime  @default(now())
+  messageId         String?
+  messageContent    String?
+  metadata          Json?
+  messageMetadata   Json?
+  aiGeneratedData   Json?
+
+  @@unique([taskId, sequenceNumber])
+  @@index([taskId])
+  @@index([type])
+  @@index([parentActivityId])
+  @@map("activities")
+}
+
+// -----------------------------------------------------------------
+//  Table: event_watchers
+//  Defines rules to match incoming events to tasks.
+// -----------------------------------------------------------------
+
+model EventWatcher {
+  id              String   @id @default(uuid())
+  taskId          String
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  microfoxId      String
+  providerName    String
+  eventType       String
+  teamId          String?
+  organizationId  String?
+  matchQuery      Json
+  createdAt       DateTime @default(now())
+
+  @@index([taskId])
+  @@index(map: "idx_event_watchers_keys", fields: [microfoxId, providerName, eventType])
+  @@map("event_watchers")
+}
+

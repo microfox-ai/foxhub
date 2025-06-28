@@ -19,7 +19,7 @@ hellofoxQueryAgent.use("/", async (ctx, next) => {
     state.classification.type === "task-query" ||
     state.classification.type === "task-confirmation"
   ) {
-    return next();
+    await next();
   }
 });
 

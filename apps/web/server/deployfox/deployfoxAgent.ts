@@ -27,14 +27,14 @@ deployfoxAgent.use("/", (ctx, next) => {
 });
 
 // Register agent definitions
-deployfoxAgent.actAsTool("/deployfox", {
-  description: "Deploy automation to specified stage",
-  inputSchema: z.object({
-    clientRequestId: z.string(),
-    stage: z.enum([DEPLOY_STAGE.STAGING, DEPLOY_STAGE.PROD]).optional(),
-    is_local: z.boolean().optional(),
-  }),
-});
+// deployfoxAgent.actAsTool("/deployfox", {
+//   description: "Deploy automation to specified stage",
+//   inputSchema: z.object({
+//     clientRequestId: z.string(),
+//     stage: z.enum([DEPLOY_STAGE.STAGING, DEPLOY_STAGE.PROD]).optional(),
+//     is_local: z.boolean().optional(),
+//   }),
+// });
 
 // Register agents
 deployfoxAgent.agent("/", async (ctx) => {

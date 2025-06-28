@@ -388,7 +388,7 @@ const Status = () => {
                                   <div className="flex items-center gap-1 cursor-pointer">
                                     <FunctionSquare className="w-5 h-5 text-muted-foreground" />
                                     <span className="font-medium text-lg">
-                                      {item.readme_map?.functionalities?.length}
+                                      {/* {item.constructor[0]?.functionalities?.length} */}
                                     </span>
                                   </div>
                                 </TooltipTrigger>

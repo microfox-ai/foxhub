@@ -24,9 +24,18 @@ async function listByPackage(pkg: string, limit = 10) {
   console.table(data);
 }
 
+export async function getPackaggeDocs(
+  pkg: string,
+  type: "constructor" | "function" | "rule" | "all" | "main"
+) {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  return [];
+}
+
 export async function semanticFunctionSearch(
   pkg: string,
   query: string,
+  type: "constructor" | "function" | "rule" | "all" | "main",
   limit = 10
 ) {
   console.log(`\n🔍 Embedding query: "${query}"…`);

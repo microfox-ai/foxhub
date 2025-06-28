@@ -38,7 +38,7 @@ export interface MicrofoxChatProviderProps {
 
 export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOptions?: Partial<UseChatOptions<UIMessage>>) => {
 
-  const { setSelectedRequest } = useClientProject();
+  const { selectedRequest, setSelectedRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
 
   const { user } = useAuth();
@@ -50,12 +50,14 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     isValidating,
     isLoading,
   } = useSWR<ChatUIMessageWithTypes[]>(
-    `/api/chat/message?requestId=${clientRequest?.id}`,
+    `/api/chat/message?requestId=${selectedRequest?.id}`,
     async (url: string) => {
       const res = await PortalSdk.getData(url, {});
       return res;
     }
-  );
+  )
+
+
 
   const { ...chatOptions } = useChat<UIMessage<any, any, any>>({
     transport: new DefaultChatTransport({
@@ -134,11 +136,11 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   });
 
   useEffect(() => {
-    if (serverMessages?.length && serverMessages.length > 0 && chatOptions.messages.length === 0) {
+    if (serverMessages?.length && serverMessages.length > 0) {
       console.log("serverMessages", serverMessages);
       chatOptions.setMessages(serverMessages as any);
     }
-  }, [serverMessages, chatOptions.messages]);
+  }, [serverMessages]);
 
   //-----------LISTENING-------------
   const lastKnownMinionType = useMemo(() => {

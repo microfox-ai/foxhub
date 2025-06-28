@@ -926,43 +926,45 @@ export class AiAgentKit<
         ctx.logger.error(errorMsg);
         throw new AgentNotFoundError(normalizedPath);
       }
-      const runner = layersToRun.reduceRight(
-        (
-          next: NextFunction,
-          layer: Layer<KIT_METADATA, PARTS, TOOLS, ContextState>
-        ) =>
-          async () => {
-            const layerPath =
-              typeof layer.path === "string"
-                ? layer.path
-                : layer.path.toString();
 
-            const layerType = layer.isTool
-              ? "tool"
-              : layer.isAgent
-                ? "agent"
-                : "middleware";
-            ctx.logger.log(`-> Running ${layerType}: ${layerPath}`);
+      // A more robust, explicit dispatcher to avoid promise chain issues.
+      const dispatch = async (index: number): Promise<void> => {
+        const layer = layersToRun[index];
+        if (!layer) {
+          // End of the chain
+          return;
+        }
 
-            // DO NOT manipulate the stack here. It's managed per-execution-frame.
-            try {
-              if (layer.isTool) {
-                await layer.handler(ctx, next);
-              } else {
-                await layer.handler(ctx, next);
-              }
-              ctx.logger.log(`<- Finished ${layerType}: ${layerPath}`);
-            } catch (err) {
-              ctx.logger.error(
-                `Error in ${layerType} layer for path: ${layerPath}`,
-                err
-              );
-              throw err;
-            }
-          },
-        async () => {}
-      );
-      await runner();
+        const next = () => dispatch(index + 1);
+
+        const layerPath =
+          typeof layer.path === "string" ? layer.path : layer.path.toString();
+
+        const layerType = layer.isTool
+          ? "tool"
+          : layer.isAgent
+            ? "agent"
+            : "middleware";
+        ctx.logger.log(`-> Running ${layerType}: ${layerPath}`);
+
+        try {
+          // Wrap the handler execution in a new Promise to make the async
+          // contract explicit and robust, preventing premature resolution of the await.
+          await new Promise<void>((resolve, reject) => {
+            layer.handler(ctx, next).then(resolve).catch(reject);
+          });
+
+          ctx.logger.log(`<- Finished ${layerType}: ${layerPath}`);
+        } catch (err) {
+          ctx.logger.error(
+            `Error in ${layerType} layer for path: ${layerPath}`,
+            err
+          );
+          throw err;
+        }
+      };
+
+      return dispatch(0);
     } finally {
       // No-op. Stack is managed by context creation/destruction.
     }
@@ -1058,18 +1060,27 @@ export class AiAgentKit<
           ) as any;
 
           onExecutionStart();
-          try {
-            await self._execute(path, ctx);
-          } finally {
-            onExecutionEnd();
-          }
 
-          if (pendingExecutions > 0) {
-            self.logger.log(
-              `Waiting for ${pendingExecutions} pending executions to finish...`
-            );
-            await executionCompletionPromise;
-          }
+          // Fire off the main execution chain. We don't await it here because, in a streaming
+          // context, the await might resolve prematurely when the agent yields control.
+          // Instead, we catch errors and use .finally() to reliably mark the end of this
+          // specific execution, while the main function body waits on the lifecycle promise.
+          self
+            ._execute(path, ctx)
+            .catch((err) => {
+              ctx.logger.error("Unhandled error in main execution chain", err);
+              // Optionally, you could write an error message to the stream here.
+            })
+            .finally(() => {
+              onExecutionEnd();
+            });
+
+          // Wait for the promise that resolves only when all executions (the main one
+          // and all sub-calls) have completed.
+          await executionCompletionPromise;
+          self.logger.log(
+            `[AiAgentKit][lifecycle] All executions truly finished. Stream can be safely closed.`
+          );
         },
       }),
     });

@@ -43,13 +43,9 @@ buildManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
   console.log("/buildflow agent", state);
 
   if (!request.messages) return;
-  const lastUsersMessage = findLastMessageWith(request.messages, {
-    role: "user",
-  });
   const lastAssistantMessage = findLastMessageWith(request.messages, {
     role: "assistant",
   });
-  const lastUsersMessageContent = getTextParts(lastUsersMessage).join("");
   let minionType: MinionTypeType = request.minionType;
 
   if (minionType === MinionType.Unknown && request.messages.length <= 1) {
@@ -94,111 +90,7 @@ buildManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
   );
 
   if (needIntentObserver) {
-    response.writeMessageMetadata({
-      loader: "Thinking about the user's intent",
-    });
-
-    const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
-      where: {
-        originClientRequestId: request.clientRequestId,
-      },
-    });
-
-    const result = await generateObject({
-      model: models.googleGeminiPro,
-      schema: z.object({
-        intent: z.enum([
-          "Modify-App",
-          "Add-Features",
-          "Rebuild-App",
-          "Redeploy-App",
-          "Deploy-App-to-Production",
-          "Casual-Chat",
-          "Publish-App-to-Store",
-          "In-Task-Query",
-        ]),
-        reason: z.string(),
-      }),
-      system: `
-            We are building an automation for the user.
-            In the middle of the conversation, user has sent the following message,
-            we need to detect the exact intent of the user to understand what they want to do.
-
-            Task Tool Calls available:
-            ${(taskInstanceMeta?.taskStructure as any as TaskStructure)?.lambdaFunctions?.map((toolCall) => toolCall.name).join(", ")}
-
-            CRITICAL:
-            If the user is asking for a change/modification of the built task/automation/app, then always pass the intent as "Modify-App"
-            if the user is asking something related to the current task or looking to trigger something inside the task like the task tool calls, then pass the intent as "In-Task-Query"
-            If the user is asking for a new feature, then pass the intent as "Add-Features"
-            If the user is asking to rebuild the task, then pass the intent as "Rebuild-App"
-            If the user is asking to redeploy the task, then pass the intent as "Redeploy-App"
-            If the user is asking to publish the task, then pass the intent as "Publish-App-to-Store"
-            if nothing else matches, fallback to "In-Task-Query" or "Casual-Chat"
-        `,
-      prompt: `
-            The user has sent the following message:
-            ${lastUsersMessageContent}
-        `,
-    });
-
-    console.log("result", result.object.intent);
-
-    switch (result.object.intent) {
-      case "Modify-App":
-        await next.callAgent("/convertfox", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      case "Add-Features":
-        await next.callAgent("/hellofox/task-query", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      case "Casual-Chat":
-        await next.callAgent("/hellofox/casual", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      case "Rebuild-App":
-        await next.callAgent("/buildfox", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      case "Redeploy-App":
-        await next.callAgent("/deployfox", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      case "Publish-App-to-Store":
-        await next.callAgent("/publishfox", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      case "In-Task-Query":
-        await next.callAgent("/taskqueryfox", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      case "Deploy-App-to-Production":
-        await next.callAgent("/deployfox", {
-          type: "ai_call",
-          redirectIntent: result.object,
-        });
-        return;
-      default:
-        response.writeMessageMetadata({
-          error: "Unknown intent observed. Please try again.",
-        });
-        return;
-    }
+    await next.callAgent("/decideIntent", { type: "direct_call" });
   } else {
     switch (minionType) {
       case MinionType.HelloFox:
@@ -234,6 +126,122 @@ buildManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
         });
         return;
     }
+  }
+});
+
+buildManager.agent("/decideIntent", async (ctx) => {
+  const { request, response, next } = ctx;
+  if (!request.messages) return;
+
+  const lastUsersMessage = findLastMessageWith(request.messages, {
+    role: "user",
+  });
+  const lastUsersMessageContent = getTextParts(lastUsersMessage).join("");
+
+  response.writeMessageMetadata({
+    loader: "Thinking about the user's intent",
+  });
+
+  const taskInstanceMeta = await prisma.taskInstanceMeta.findUnique({
+    where: {
+      originClientRequestId: request.clientRequestId,
+    },
+  });
+
+  const result = await generateObject({
+    model: models.googleGeminiPro,
+    schema: z.object({
+      intent: z.enum([
+        "Modify-App",
+        "Add-Features",
+        "Rebuild-App",
+        "Redeploy-App",
+        "Deploy-App-to-Production",
+        "Casual-Chat",
+        "Publish-App-to-Store",
+        "In-Task-Query",
+      ]),
+      reason: z.string(),
+    }),
+    system: `
+            We are building an automation for the user.
+            In the middle of the conversation, user has sent the following message,
+            we need to detect the exact intent of the user to understand what they want to do.
+
+            Task Tool Calls available:
+            ${(taskInstanceMeta?.taskStructure as any as TaskStructure)?.lambdaFunctions?.map((toolCall) => toolCall.name).join(", ")}
+
+            CRITICAL:
+            If the user is asking for a change/modification of the built task/automation/app, then always pass the intent as "Modify-App"
+            if the user is asking something related to the current task or looking to trigger something inside the task like the task tool calls, then pass the intent as "In-Task-Query"
+            If the user is asking for a new feature, then pass the intent as "Add-Features"
+            If the user is asking to rebuild the task, then pass the intent as "Rebuild-App"
+            If the user is asking to redeploy the task, then pass the intent as "Redeploy-App"
+            If the user is asking to publish the task, then pass the intent as "Publish-App-to-Store"
+            if nothing else matches, fallback to "In-Task-Query" or "Casual-Chat"
+        `,
+    prompt: `
+            The user has sent the following message:
+            ${lastUsersMessageContent}
+        `,
+  });
+
+  console.log("result", result.object.intent);
+
+  switch (result.object.intent) {
+    case "Modify-App":
+      await next.callAgent("@/buildFlow/convertfox", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    case "Add-Features":
+      await next.callAgent("@/buildFlow/hellofox/task-query", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    case "Casual-Chat":
+      await next.callAgent("@/buildFlow/hellofox/casual", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    case "Rebuild-App":
+      await next.callAgent("@/buildFlow/buildfox", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    case "Redeploy-App":
+      await next.callAgent("@/buildFlow/deployfox", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    case "Publish-App-to-Store":
+      await next.callAgent("@/buildFlow/publishfox", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    case "In-Task-Query":
+      await next.callAgent("@/buildFlow/taskqueryfox", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    case "Deploy-App-to-Production":
+      await next.callAgent("@/buildFlow/deployfox", {
+        type: "ai_call",
+        redirectIntent: result.object,
+      });
+      return;
+    default:
+      response.writeMessageMetadata({
+        error: "Unknown intent observed. Please try again.",
+      });
+      return;
   }
 });
 

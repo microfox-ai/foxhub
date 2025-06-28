@@ -1,11 +1,17 @@
 import { Package } from "@/components/screens/Chat/message/types";
 import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
+import { embed } from "./geminiEmbed";
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
 
 const PACKAGE_INFO_TABLE = "package_infos";
+
+const MATCH_THRESHOLD = 0.78;
+const MATCH_COUNT = 10;
+const TABLE_NAME = 'package_infos';
+const RPC_FUNCTION_NAME = 'match_package_infos';
 
 export interface PackageDbInfo {
   id: string;
@@ -281,6 +287,47 @@ async function getAllPackages({
   return typedData;
 }
 
+export async function findSimilarPackages(
+  query: string,
+  match_threshold: number = MATCH_THRESHOLD,
+  match_count: number = MATCH_COUNT,
+) {
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const embedding = await embed(query);
+
+    const { data: packages, error } = await supabase.rpc(RPC_FUNCTION_NAME, {
+      query_embedding: embedding,
+      match_threshold: match_threshold,
+      match_count: match_count,
+    });
+
+    if (error) {
+      console.error('Error querying Supabase:', error);
+      throw new Error(`Error finding similar packages: ${error.message}`);
+    }
+
+    if (!packages || packages.length === 0) {
+      console.log('No similar packages found.');
+      return [];
+    }
+
+    const packagesWithFunctionalities = packages.map((pkg: any) => {
+      const functionalities =
+        pkg.constructors?.flatMap((c: any) => c.functionalities || []) || [];
+      return {
+        ...pkg,
+        functionalities,
+      };
+    });
+
+    return packagesWithFunctionalities;
+  } catch (err) {
+    console.error('An unexpected error occurred:', err);
+    throw err;
+  }
+}
+
 export const PackageInfoHelper = {
   searchPackages,
   getPackageByName,
@@ -289,4 +336,5 @@ export const PackageInfoHelper = {
   getAllPackages,
   getPackageInfos,
   getPackageInfo,
+  findSimilarPackages,
 };

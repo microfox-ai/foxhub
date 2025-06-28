@@ -1,4 +1,4 @@
-import { codeTemplateType } from "@/server/convertfox/types";
+import { codeTemplateType } from "@/server/convertfox/helpers/types";
 
 export const promptMap = {
   // [codeTemplateType.enum.plain_sls]: {

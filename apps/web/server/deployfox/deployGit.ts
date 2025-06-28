@@ -5,31 +5,30 @@
 //     branchName: clientRequest.prBranch,
 //     repoName: clientRequest.repoName,
 //   });
-import { ClientRequest, DEPLOY_STAGE, DEPLOY_STATUS } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { uploadToRepo } from "../buildfox/helper/uploadToGit";
+import { prisma } from "@/prisma/prisma";
 import {
   GITHUB_TOKEN,
   PROJECT_REPO_OWNER,
   TEMPLATE_REPO,
   TEMPLATE_REPO_OWNER,
 } from "@/utils/constants/githubInfo";
-import { Octokit } from "octokit";
-import { TaskInstanceMetaType } from "../convertfox/types";
-import dayjs from "dayjs";
 import { getTemplateVersion } from "@/utils/services/github_functions/getTemplateVersion";
+import { ClientRequest, DEPLOY_STAGE, DEPLOY_STATUS } from "@prisma/client";
+import dayjs from "dayjs";
+import { Octokit } from "octokit";
+import { TaskInstanceMetaType } from "../convertfox/helpers/types";
 import { cloneTemplate } from "./cloneTemplate";
-import { prisma } from "@/prisma/prisma";
+import { UIMessageStreamWriter } from "ai";
+import { AiStreamWriter } from "@repo/ai-utils/router";
+import { UITools } from "@repo/ai-utils/types";
 
 export const deployViaGit = async (
-  props: StreamingFucntionProps<any, any>,
+  writer: AiStreamWriter<any, any, UITools>,
   clientRequest: ClientRequest,
   taskInstanceMeta: TaskInstanceMetaType,
   stage: DEPLOY_STAGE,
   isLocal: boolean
 ) => {
-  const { dataStream } = props;
-
   if (
     !clientRequest.repoName ||
     !clientRequest.requestDir ||
@@ -38,9 +37,8 @@ export const deployViaGit = async (
     throw new Error("Repo name or request dir or pr branch is required");
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation ${isLocal ? "locally" : ""}`,
+  writer.writeMessageMetadata({
+    loader: `Deploying a ${stage ?? DEPLOY_STAGE.STAGING} version of automation ${isLocal ? "locally" : ""}`,
   });
 
   const { sha } = await triggerDeployment(

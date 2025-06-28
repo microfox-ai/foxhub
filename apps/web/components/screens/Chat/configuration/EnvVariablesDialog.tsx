@@ -15,7 +15,7 @@ import { AlertCircle, BoxIcon, ChevronLeft, ChevronRight, HelpCircle, Loader2, P
 import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
-import { ExtraEnvVariable, taskRequiredInfo } from "@/server/convertfox/types";
+import { ExtraEnvVariable, taskRequiredInfo } from "@/server/convertfox/helpers/types";
 import { cn } from "@/lib/utils";
 import { EnvVariableInput } from "./EnvVariableInput";
 import {
@@ -107,7 +107,7 @@ export const EnvVariablesDialog = ({
       setIsEditing(false);
       setEditingIndex(null);
     }
-  }, [isOpen, initialStep, initialValues]);
+  }, [isOpen, initialStep, JSON.stringify(initialValues)]);
 
   // Update completed steps when envValues change
   useEffect(() => {

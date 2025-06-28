@@ -4,7 +4,7 @@ import {
   Package,
 } from "@/components/screens/Chat/message/types";
 import { PackageStatus } from "@/server/types";
-import { TaskIntegrations } from "@/server/convertfox/types";
+import { TaskIntegrations } from "@/server/convertfox/helpers/types";
 import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 
 export const getPackageInfosFromTaskIntegrations = async (

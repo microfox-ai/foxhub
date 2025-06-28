@@ -34,6 +34,7 @@ export interface Constructor {
   botConfigComponent: string;
   botConfigInstructions?: BotConfigInstructions;
   authEndpoint?: string;
+  functionalities?: string[];
 }
 
 export interface Package {

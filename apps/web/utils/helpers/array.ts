@@ -1,3 +1,5 @@
+import { UIMessage } from "@ai-sdk/react";
+
 export const findLastElement = <T>(array: T[]) => {
   return array[array.length - 1];
 };
@@ -15,4 +17,14 @@ export const findLastElementWith = <T>(
     return null;
   }
   return new_array?.[new_array.length - 1];
+};
+
+export const cleanUiMessageParts = (messages: UIMessage[]) => {
+  return messages.map((message) => ({
+    ...message,
+    parts: [
+      findLastElementWith(message.parts, (p: any) => p.type === "text") ??
+        message.parts[0] ?? { type: "text", text: "" },
+    ],
+  }));
 };

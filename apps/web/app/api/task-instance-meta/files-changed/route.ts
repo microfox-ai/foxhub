@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { modifyTaskInstanceMeta } from "@/server/convertfox/modifyTaskInstanceMeta";
+import { modifyTaskInstanceMeta } from "@/server/convertfox/helpers/modifyTaskInstanceMeta";
 import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 100; // 100 seconds

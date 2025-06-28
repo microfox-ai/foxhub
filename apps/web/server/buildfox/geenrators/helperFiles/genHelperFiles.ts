@@ -2,8 +2,8 @@ import {
   codeTemplateAddon,
   codeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+} from "@/server/convertfox/helpers/types";
+import { AiContext } from "@repo/ai-utils/router";
 import { genDbRedisHelper } from "./genDbRedisHelper";
 import { ClientRequest } from "@prisma/client";
 import {
@@ -15,7 +15,7 @@ import path from "path";
 import fs from "fs/promises";
 
 export const genHelperFiles = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
@@ -23,7 +23,7 @@ export const genHelperFiles = async (
   for (const addon of taskInstanceMeta.taskStructure?.templateAddons ?? []) {
     if (addon === codeTemplateAddon.enum.sls_upstash_redis) {
       _taskInstanceMeta = await genDbRedisHelper(
-        props,
+        ctx,
         taskInstanceMeta,
         clientRequest
       );

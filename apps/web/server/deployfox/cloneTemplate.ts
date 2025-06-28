@@ -1,15 +1,9 @@
-import {
-  GITHUB_TOKEN,
-  PROJECT_REPO_OWNER,
-  TEMPLATE_REPO,
-  TEMPLATE_REPO_OWNER,
-} from "@/utils/constants/githubInfo";
+import { GITHUB_TOKEN } from "@/utils/constants/githubInfo";
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { Octokit } from "octokit";
 import YAML from "yaml";
 import { getServiceName } from "../buildfox/helper/getServiceName";
-import { TaskInstanceMetaType } from "../convertfox/types";
+import { TaskInstanceMetaType } from "../convertfox/helpers/types";
 
 interface CloneTemplateParams {
   sourceOwner: string;

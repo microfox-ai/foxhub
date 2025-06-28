@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./dist/*.js"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component",
     "check-types": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
@@ -37,6 +42,10 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.25",
-    "@ai-sdk/openai": "^1.2.5"
+    "@ai-sdk/openai": "^2.0.0-alpha.15",
+    "ai": "^5.0.0-alpha.15",
+    "nanoid": "^5.0.0",
+    "resumable-stream": "^2.2.0",
+    "zod": "^3.22.0"
   }
 }

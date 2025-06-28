@@ -1,5 +1,5 @@
 import { ClientRequest, DEPLOY_STAGE } from "@prisma/client";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 
 export const getServiceName = (
   clientRequest: ClientRequest,

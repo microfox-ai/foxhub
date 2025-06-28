@@ -34,7 +34,6 @@ const DeployTrigger = () => {
   });
   const { append } = useMicrofoxChat();
 
-
   useEffect(() => {
     // Determine current deployment status and display text
     const getCurrentDeploymentDisplay = () => {
@@ -106,10 +105,10 @@ const DeployTrigger = () => {
         deployStage = DEPLOY_STAGE.STAGING;
         buttonText = "Deploy to Staging";
         break;
-      case "local":
-        deployStage = DEPLOY_STAGE.STAGING;
-        buttonText = "Deploy to Local";
-        break;
+      // case "local":
+      //   deployStage = DEPLOY_STAGE.STAGING;
+      //   buttonText = "Deploy to Local";
+      //   break;
       default:
         return;
     }
@@ -129,13 +128,13 @@ const DeployTrigger = () => {
           {
             type: "attachment",
             key: "is_local",
-            value: targetStage === "local",
+            value: false, //targetStage === "local",
           },
         ]
       ),
       constructAppendBody("deployfox", {
         stage: deployStage,
-        is_local: targetStage === "local",
+        is_local: false, //targetStage === "local",
       })
     );
   };
@@ -152,7 +151,7 @@ const DeployTrigger = () => {
       label: "Deploy to Staging",
       shortLabel: "Staging",
       color: "border-blue-600 text-blue-600",
-    }
+    },
   ];
 
   if (IN_STAGING) {

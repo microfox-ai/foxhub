@@ -1,4 +1,4 @@
-import { CodeTemplateType } from "@/server/convertfox/types";
+import { CodeTemplateType } from "@/server/convertfox/helpers/types";
 import { writeToFileSystemAndUpdateSteps } from "../tool/writeToFile";
 import { fetchTemplateDir } from "../tool/writeToFile";
 import path from "path";

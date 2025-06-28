@@ -14,7 +14,7 @@
     "remove:prod": "serverless remove --stage prod",
     "start": "serverless offline start",
     "dev": "npm run build && serverless offline start",
-    "lint": "eslint  --ignore-path .gitignore ."
+    "lint": "eslint ."
   },
   "dependencies": {
     "dotenv": "^16.4.5",
@@ -31,10 +31,8 @@
     "serverless": "^3.38.0",
     "serverless-offline": "^13.3.3",
     "serverless-plugin-typescript": "^2.1.5",
-    "typescript": "^5.3.3"
-  },
-  "eslintConfig": {
-    "extends": "@serverless/eslint-config/node",
-    "root": true
+    "typescript": "^5.3.3",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "typescript-eslint": "^8.35.0"
   }
 }

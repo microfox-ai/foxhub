@@ -19,48 +19,31 @@ export type LoadingAnnotation = {
 export type StatusAnnotation = ThinkingAnnotation | LoadingAnnotation;
 
 interface LoadingIndicatorProps {
-    message: UIMessage;
+    message: UIMessage<{
+        loader?: string;
+    }, any, any>;
 }
 
 export const LoadingIndicator = ({ message }: LoadingIndicatorProps) => {
     const { status } = useMicrofoxChat();
-
-    // Get the latest thinking or loading annotation
-    const getLatestStatusAnnotation = (): StatusAnnotation | null => {
-        if (!message.annotations) return null;
-        const statusAnnotations = message.annotations.filter(
-            (a: any): a is StatusAnnotation =>
-                a.type === "thinking" || a.type === "loading"
-        );
-        return statusAnnotations[statusAnnotations.length - 1] || null;
-    };
+    const loader = message.metadata?.loader;
 
     return (
         <div className="flex gap-2 items-center">
             <div className="bg-black/80 animate-bounce h-4 w-4 rounded-full p-0 text-xs text-white"></div>
             {(() => {
-                const latestAnnotation = getLatestStatusAnnotation();
-                if (!latestAnnotation) return null;
-
-                const content =
-                    latestAnnotation.type === "thinking"
-                        ? (latestAnnotation.contents ??
-                            latestAnnotation.content)
-                        : (latestAnnotation.text ??
-                            latestAnnotation.content ??
-                            latestAnnotation.contents);
 
                 return (
                     <AnimatePresence mode="wait">
                         <motion.div
-                            key={content}
+                            key={loader}
                             className="loading-text line-clamp-1"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3 }}
                         >
-                            {content}
+                            {loader}
                         </motion.div>
                     </AnimatePresence>
                 );

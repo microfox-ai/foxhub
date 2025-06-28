@@ -5,7 +5,7 @@ import { INTERNAL_TEMPLATE_UPSTASH_ROOT } from "@/server/buildfox/tool/writeToFi
 import {
   codeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { APP_BASE_FOR_SHARD, IN_DEV } from "@/utils/constants/appInfo";
 import {
   GITHUB_ACTION_POLICIES,
@@ -146,14 +146,16 @@ export async function createNewBotProject({
   // Use passed region info or fallback to detection
   let finalRegionInfo = regionInfo;
   let finalAwsRegion = awsRegion;
-  
+
   if (!finalAwsRegion || !finalRegionInfo) {
     // Fallback to server-side detection (should not happen with new flow)
     finalRegionInfo = await detectOptimalAwsRegion();
     finalAwsRegion = finalRegionInfo.region;
     console.log(`Fallback AWS Region Detection: ${finalRegionInfo.reasoning}`);
   } else {
-    console.log(`Using client-detected AWS Region: ${finalRegionInfo.reasoning}`);
+    console.log(
+      `Using client-detected AWS Region: ${finalRegionInfo.reasoning}`
+    );
   }
 
   // Save botProject to DB
@@ -181,7 +183,7 @@ export async function createNewBotProject({
           geoInfo: finalRegionInfo.geoInfo,
           reasoning: finalRegionInfo.reasoning,
           detectedAt: new Date().toISOString(),
-          source: awsRegion ? 'client-request' : 'server-fallback',
+          source: awsRegion ? "client-request" : "server-fallback",
         } as any,
       },
       permissions: {

@@ -3,10 +3,10 @@ import {
   codeTemplateType,
   extraEnvVariables,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { models } from "@/server/models";
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import { generateObject } from "ai";
 import { z } from "zod";
 import {
@@ -22,7 +22,7 @@ import {
 const IGNORE_ENVS = ["IS_OFFLINE", "SERVERLESS_OFFLINE"];
 
 export const genEnvCollector = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   envVariablesUsed: string[],
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
@@ -33,9 +33,8 @@ export const genEnvCollector = async (
   let envs = envVariablesUsed;
   let templatedEnvs: any[] = [];
   try {
-    props.dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Securely Generating Internal Secrets..",
+    ctx.response.writeMessageMetadata({
+      loader: "Securely Generating Internal Secrets..",
     });
 
     // 1. internal envs based on the template.
@@ -97,9 +96,8 @@ export const genEnvCollector = async (
     }
 
     try {
-      props.dataStream.writeMessageAnnotation({
-        type: "thinking",
-        content: "Thinking about what variables are needed",
+      ctx.response.writeMessageMetadata({
+        loader: "Thinking about what variables are needed",
       });
 
       console.log("understanding envs", envs);
@@ -123,7 +121,8 @@ export const genEnvCollector = async (
       });
 
       TokenUsageAnalyticsTracker.trackUsage({
-        ...props.requestBody,
+        userId: ctx.request.userId,
+        clientRequestId: ctx.request.clientRequestId,
         model: models.googleGeminiPro.modelId,
         usage: envExtraInfo.usage,
       });

@@ -1,13 +1,11 @@
 import { prisma } from "@/prisma/prisma";
 import dayjs from "dayjs";
+import { LanguageModelV2Usage } from "@ai-sdk/provider";
 
-export interface TokenUsageAnalytics {
+export interface TokenUsageAnalytics extends LanguageModelV2Usage {
   requestId?: string;
   userId?: string;
   botProjectId?: string;
-  promptTokens: number;
-  totalTokens: number;
-  completionTokens: number;
   model: string;
 }
 
@@ -20,9 +18,9 @@ export enum TokenUsageModel {
 export const TokenUsageAnalyticsTracker = {
   updateUsage: async (usageData: TokenUsageAnalytics) => {
     if (
-      !usageData.promptTokens ||
-      !usageData.totalTokens ||
-      !usageData.completionTokens
+      !usageData.inputTokens ||
+      !usageData.outputTokens ||
+      !usageData.totalTokens
     ) {
       console.error("usageData is missing required fields", usageData);
       return;
@@ -44,13 +42,13 @@ export const TokenUsageAnalyticsTracker = {
       },
       update: {
         promptTokens: {
-          increment: usageData.promptTokens,
+          increment: usageData.inputTokens,
         },
         totalTokens: {
           increment: usageData.totalTokens,
         },
         completionTokens: {
-          increment: usageData.completionTokens,
+          increment: usageData.outputTokens,
         },
         invocations: {
           increment: 1,
@@ -58,9 +56,9 @@ export const TokenUsageAnalyticsTracker = {
       },
       create: {
         matchId,
-        promptTokens: usageData.promptTokens,
+        promptTokens: usageData.inputTokens,
         totalTokens: usageData.totalTokens,
-        completionTokens: usageData.completionTokens,
+        completionTokens: usageData.outputTokens,
         model: usageData.model,
         day: dateKey,
         month: dayjs().format("YYYY-MM"),
@@ -76,10 +74,7 @@ export const TokenUsageAnalyticsTracker = {
     userId: string,
     props: {
       model: string;
-      promptTokens: number;
-      totalTokens: number;
-      completionTokens: number;
-    }
+    } & LanguageModelV2Usage
   ) => {
     const usage = TokenUsageAnalyticsTracker.updateUsage({
       ...props,
@@ -93,10 +88,7 @@ export const TokenUsageAnalyticsTracker = {
   }: {
     requestId: string;
     model: string;
-    promptTokens: number;
-    totalTokens: number;
-    completionTokens: number;
-  }) => {
+  } & LanguageModelV2Usage) => {
     // // also update count on the user end
     // const usage = TokenUsageAnalyticsTracker.updateUserTokenUsage(userId, {
     //   ...props,
@@ -114,11 +106,7 @@ export const TokenUsageAnalyticsTracker = {
     clientRequestId?: string;
     originClientRequestId?: string;
     model: string;
-    usage: {
-      promptTokens: number;
-      totalTokens: number;
-      completionTokens: number;
-    };
+    usage: LanguageModelV2Usage;
   }) => {
     if (props.clientRequestId || props.originClientRequestId) {
       const requestUsage = TokenUsageAnalyticsTracker.updateRequestTokenUsage({

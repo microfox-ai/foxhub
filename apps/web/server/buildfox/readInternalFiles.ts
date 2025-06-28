@@ -1,18 +1,31 @@
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
 import { tool } from "ai";
 import fs from "fs/promises";
 import { z } from "zod";
 import { ClientRequest } from "@prisma/client";
 import path from "path";
+import { AiContext } from "@repo/ai-utils/router";
 
 /** Read multiple files from the project */
 export const readInternalFiles = (
-  props: StreamingFucntionProps<any, any>,
+  props: AiContext<any, any, any, any>,
   clientRequest: ClientRequest
 ) => {
-  return tool({
+  return tool<
+    {
+      filePaths: string[];
+    },
+    {
+      success: boolean;
+      files: {
+        filePath: string;
+        content: string | null;
+        success: boolean;
+        error?: string;
+      }[];
+    }
+  >({
     description: "Read content from multiple files in the project",
-    parameters: z.object({
+    inputSchema: z.object({
       filePaths: z
         .array(z.string())
         .describe(

@@ -5,64 +5,52 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import {
-  createOpenAPIToolsClient,
-  OpenAPIToolsClient,
-} from "@/utils/services/OpenAPIToolsClient";
+//import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
+import { createToolkit } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
-import { generateText, streamText } from "ai";
+import { StreamWriter } from "@repo/ai-utils/helper";
+import { AiAgentKit, AiHandler, AiMiddleware } from "@repo/ai-utils/router";
+import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
-import {
-  getToolsRequiringConfirmation,
-  processToolCalls,
-} from "@/utils/services/ToolHumanLayer";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
 // it also has to update the taskInstanceMeta
-export const taskQueryRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
-  const { clientRequestId } = requestBody;
+const taskQueryAgent = new AiAgentKit<any, any, any, any>();
 
-  if (!requestBody.minionContinue) {
-    dataStream.writeMessageAnnotation({
-      type: "minion",
-      value: MinionType.TaskQueryFox,
+taskQueryAgent.agent("/", async (ctx) => {
+  const { request, state, response } = ctx;
+  if (!request.minionContinue) {
+    response.writeMessageMetadata({
+      minionType: MinionType.TaskQueryFox,
     });
   }
-
+  const { clientRequestId } = request;
   // get all taskQuery messages + this 1 last message in the queue (hopefully the user message)
-  requestBody.messages = requestBody.messages.filter(
-    (m: any, index: number) => {
-      const minion = m.annotations?.find((a: any) => a.type === "minion");
-      return (
-        minion?.value === MinionType.TaskQueryFox ||
-        index === requestBody.messages.length - 1
-      );
-    }
-  );
+  request.messages = request.messages.filter((m, index: number) => {
+    const minion = (m.metadata as any)?.minion;
+    return (
+      minion?.value === MinionType.TaskQueryFox ||
+      index === request.messages.length - 1
+    );
+  });
 
-  requestBody.messages = requestBody.messages.map((m: any, index: number) => ({
+  request.messages = request.messages.map((m, index: number) => ({
     ...m,
     parts:
-      index === requestBody.messages.length - 1
+      index === request.messages.length - 1
         ? m.parts
-        : [findLastElementWith(m.parts, (p: any) => p.type === "text")],
-    annotations: [],
-    toolInvocations: [],
+        : [
+            findLastElementWith(m.parts, (p: any) => p.type === "text") ?? {
+              type: "text",
+              text: "",
+            },
+          ],
   }));
 
   try {
-    dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Fetching tools for this task",
+    response.writeMessageMetadata({
+      loader: "Fetching tools for this task",
     });
 
     let clientRequest = await getClientRequest(clientRequestId);
@@ -75,10 +63,7 @@ export const taskQueryRouter: ServerStreamingFunction<
     });
 
     if (!clientDeployment || !clientRequest || !taskInstanceMeta) {
-      return {
-        responseBody: { ...responseBody },
-        appendRequestBody: { ...requestBody },
-      };
+      return;
     }
 
     const docData = (clientDeployment.metadata as any).docData;
@@ -87,33 +72,48 @@ export const taskQueryRouter: ServerStreamingFunction<
       "/" +
       (clientDeployment.stage === DEPLOY_STAGE.PROD ? "prod" : "staging");
 
-    const thisCLient = await createOpenAPIToolsClient({
+    // const thisCLient = await createOpenAPIToolsClient({
+    //   schema: docData,
+    //   baseUrl: baseUrl,
+    // });
+
+    // const toolSet = await thisCLient.tools({ disableAllExecutions: true });
+    const client = await createToolkit({
       schema: docData,
       baseUrl: baseUrl,
     });
 
-    const toolSet = await thisCLient.tools({ disableAllExecutions: true });
-
+    const toolSet = await client.tools({ disableAllExecutions: true });
     console.log(Object.keys(toolSet.executions).length, "toolSet.executions");
     console.log(Object.keys(toolSet.tools).length, "toolSet.tools");
 
-    dataStream.writeMessageAnnotation({
-      type: "toolsRequiringConfirmation",
-      list: getToolsRequiringConfirmation(toolSet.tools),
-      allMetadata: toolSet.metadata,
+    response.writeCustomTool({
+      toolName: "toolsRequiringConfirmation",
+      input: {
+        list: [],
+        allMetadata: toolSet.metadata,
+      },
+      output: {
+        type: "ui",
+        objectType: "toolsRequiringConfirmation",
+        persona: "taskQueryFox",
+        text: "Tools Requiring Confirmation",
+      },
     });
 
-    const processedMessages = await processToolCalls(
-      {
-        messages: requestBody.messages,
-        dataStream,
-        tools: toolSet.tools,
-      },
-      toolSet.executions
-    );
+    const processedMessages = await client.parse(request.messages);
 
-    const msg = streamText({
-      model: models.googleGeminiPro,
+    // const processedMessages = await processToolCalls(
+    //   {
+    //     messages: requestBody.messages,
+    //     dataStream,
+    //     tools: toolSet.tools,
+    //   },
+    //   toolSet.executions
+    // );
+
+    const result = streamText({
+      model: models.claude35Sonnet,
       system: `
     You are a helpful assistant that can answer questions in regards to the current task.
 
@@ -126,28 +126,17 @@ export const taskQueryRouter: ServerStreamingFunction<
 
       If the tool has a lot of information, output into a neat markdown format.
     `,
-      messages: processedMessages,
+      messages: convertToModelMessages(processedMessages),
       tools: toolSet.tools,
       toolChoice: "auto",
-      maxSteps: 10,
-      onError: (error) => {
-        console.error(error);
-      },
+      stopWhen: (s) => s.steps.length > 10,
+      prepareStep: client.createHitlPrepareStep(),
     });
 
-    msg.mergeIntoDataStream(dataStream, {
-      experimental_sendFinish: true,
-    });
-
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    response.merge(result.toUIMessageStream());
   } catch (error) {
     console.error(error);
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
   }
-};
+});
+
+export { taskQueryAgent };

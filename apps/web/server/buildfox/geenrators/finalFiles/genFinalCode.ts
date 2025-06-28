@@ -1,12 +1,12 @@
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import dedent from "dedent";
 import { promises as fs } from "fs";
 import path from "path";
 import {
   codeTemplateAddon,
   TaskInstanceMetaType,
-} from "../../../convertfox/types";
+} from "../../../convertfox/helpers/types";
 import {
   fetchTemplateDir,
   readAllGenFilesList,
@@ -18,14 +18,13 @@ import { updateJsonFile } from "../../helper/updateJsonFile";
 
 // IMPROTANT TODO: serverless.yml being written has no idea what env variables are needed..
 export const genServerlessFinalCode = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
   try {
-    props.dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Writing final code pieces",
+    ctx.response.writeMessageMetadata({
+      loader: "Writing final code pieces",
     });
 
     if (!taskInstanceMeta?.taskStructure?.templateType) {
@@ -35,7 +34,7 @@ export const genServerlessFinalCode = async (
     const allGenFilesList = await readAllGenFilesList(clientRequest, true);
     // Call the abstracted function to generate serverless.yml
     await genServerlessYML(
-      props,
+      ctx,
       taskInstanceMeta,
       clientRequest,
       allGenFilesList
@@ -46,10 +45,9 @@ export const genServerlessFinalCode = async (
         ?.filePath ?? "";
     // modify the package.json file to support all the functions & cron jobs
     await updateJsonFile(
-      packageJsonPath?.replace("/package.json", "").replace(
-        "\\package.json",
-        ""
-      ),
+      packageJsonPath
+        ?.replace("/package.json", "")
+        .replace("\\package.json", ""),
       "package.json",
       (packageJsonContent) => {
         let newPackageJsonContent = { ...packageJsonContent };
@@ -89,7 +87,7 @@ export const genServerlessFinalCode = async (
 
     // Generate index.ts file
     await genServerlessIndex(
-      props,
+      ctx,
       taskInstanceMeta,
       clientRequest,
       allGenFilesList

@@ -9,7 +9,7 @@ import { TEMPLATE_REPO_OWNER } from "@/utils/constants/githubInfo";
 import { ClientRequest, TaskInstanceMeta } from "@prisma/client";
 import { slackBotSdk } from "../slackBotSdk";
 import { MICROFOX_LOGO } from "../slackBotSdk";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 
 export async function publishShard(
   clientRequest: ClientRequest,

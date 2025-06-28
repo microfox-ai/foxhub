@@ -71,6 +71,39 @@ export async function GET(request: Request) {
       },
     });
 
+    let userBotPermissions = await prisma.projectPermission.findMany({
+      where: {
+        userId,
+      },
+    });
+
+    //console.log("userBotPermissions", userBotPermissions);
+    const otherBotProjects = userBotPermissions
+      .map((permission) => permission.botProjectId)
+      .filter(
+        (id) => id !== null && !botProjects.some((project) => project.id === id)
+      );
+
+    let userBotProjects = await prisma.botProject.findMany({
+      where: {
+        id: {
+          in: otherBotProjects,
+        },
+      },
+      include: {
+        clientRequests: true,
+        permissions: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (userBotProjects.length > 0) {
+      botProjects = botProjects.concat(userBotProjects);
+    }
+
     if (!botProjects || botProjects.length === 0) {
       // Detect optimal AWS region based on client's location
       return NextResponse.json([]);

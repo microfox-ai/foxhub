@@ -5,9 +5,9 @@ import {
   MySlackChannels,
   slackBotSdk
 } from "@/utils/services/slackBotSdk";
-import { useChat, UseChatOptions } from "@ai-sdk/react";
+import { useChat, UseChatOptions, } from "@ai-sdk/react";
 import { ClientRequest } from "@prisma/client";
-import { ChatRequestOptions, CreateMessage, Message, UIMessage } from "ai";
+import { ChatRequestOptions, CreateUIMessage, UIMessage, DefaultChatTransport } from "ai";
 import React, {
   createContext,
   useCallback,
@@ -21,6 +21,8 @@ import useSWR from "swr";
 import { ChatUIMessageWithTypes, MinionFlow, MinionType } from "../hooks/convertors";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { useLayout } from "../providers/LayoutProvider";
+import { getTextParts } from "@repo/ai-utils/helper";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 
@@ -31,13 +33,15 @@ const MicrofoxContext = createContext<MicrofoxContextType | undefined>(
 export interface MicrofoxChatProviderProps {
   children: React.ReactNode;
   clientRequest?: ClientRequest;
-  chatOptions?: Partial<UseChatOptions>;
+  chatOptions?: Partial<UseChatOptions<UIMessage<any, any, any>>>;
 }
 
-export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOptions?: Partial<UseChatOptions>) => {
+export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOptions?: Partial<UseChatOptions<UIMessage>>) => {
 
-  const { setSelectedRequest } = useClientProject();
+  const { selectedRequest, setSelectedRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
+
+  const { user } = useAuth();
 
 
   const {
@@ -46,60 +50,80 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     isValidating,
     isLoading,
   } = useSWR<ChatUIMessageWithTypes[]>(
-    `/api/chat/message?requestId=${clientRequest?.id}`,
+    `/api/chat/message?requestId=${selectedRequest?.id}`,
     async (url: string) => {
       const res = await PortalSdk.getData(url, {});
       return res;
     }
-  );
+  )
 
-  const { handleSubmit: ununsedSubmit, ...chatOptions } = useChat({
-    api: "/api/chat",
-    initialMessages: (serverMessages as any[]) || [],
-    initialInput: "",
+
+
+  const { ...chatOptions } = useChat<UIMessage<any, any, any>>({
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      prepareSendMessagesRequest: ({ id, messages, requestMetadata, body, ...rest }) => {
+        console.log("[prepareSendMessagesRequest]", { id, messages, requestMetadata, body, rest });
+        return {
+          ...rest,
+          headers: {
+            "Content-Type": "application/json",
+            "x-client-request-id": clientRequest?.id ?? "",
+            ...rest.headers,
+          },
+          body: {
+            ...body,
+            messages: messages,
+            clientRequestId: clientRequest?.id,
+            userId: user?.id,
+          }
+        }
+      }
+    }),
+    messages: (serverMessages as any[]) || [],
     ...userChatOptions,
     id: clientRequest?.id,
     onFinish: (response) => {
+      console.log("[onFinish] called with response:", response);
       try {
-        const { experimental_attachments, id, reasoning, data, annotations, ...rest } =
+        const { message, ...rest } =
           response;
         let _minionFlow;
         let _minionType;
-
         //add this message to the db
         if (
-          rest.parts?.length === 0 &&
-          rest.content === "" &&
-          annotations?.length === 0
+          message.parts?.length === 0 || !message.role || !message.parts || !message.parts[0]
         ) {
+          console.log("[onFinish] Message has no parts, returning.");
           return;
         }
-        const _clientRequestId = (annotations?.find((annotation: any) => annotation.type === 'clientRequestId') as any)?.value ?? clientRequest?.id;
-        _minionType = (annotations?.find((annotation: any) => annotation.type === 'minion') as any)?.value;
-        _minionFlow = (annotations?.find((annotation: any) => annotation.type === 'minionFlow') as any)?.value ?? clientRequest?.minionFlow ?? "buildFlow";
+        const _clientRequestId = message.metadata?.clientRequestId ?? clientRequest?.id;
+        _minionType = message.metadata?.minionType;
+        _minionFlow = message.metadata?.minionFlow ?? clientRequest?.minionFlow ?? "buildFlow";
         //const _agentAction = (annotations?.find((annotation: any) => annotation.type === 'agentAction') as any)?.value;
 
-        //console.log("rest response", rest);
-        PortalSdk.postData("/api/chat/message", {
+        const postDataPayload = {
           context: "on-finish",
-          id: clientRequest?.id + "-" + id,
-          attachments: experimental_attachments,
+          id: message.id + "-" + _clientRequestId,
+          attachments: message.metadata?.attachments,
           minionType: _minionType,
           minionFlow: _minionFlow,
-          userId: clientRequest?.userId,
-          annotations: annotations,
+          userId: user?.id,
+          role: message.role,
+          metadata: message.metadata,
+          parts: message.parts,
+          content: getTextParts(message).join(", ") ?? "",
           ...rest,
-          originClientRequestId: _clientRequestId ?? clientRequest?.id,
-        });
+          originClientRequestId: _clientRequestId,
+        };
+        console.log("[onFinish] Storing assistant message to DB with payload:", postDataPayload);
+        PortalSdk.postData("/api/chat/message", postDataPayload);
       } catch (error) {
-        console.log("error creating message on-finish", error);
+        console.error("[onFinish] Error storing assistant message:", error);
       }
     },
-    onResponse: (response) => {
-      // console.log(response);
-    },
     onError: (error) => {
-      console.log("error", error);
+      console.error("[onError] Chat error:", error);
       if (!IN_DEV) {
         slackBotSdk.sendMessage({
           text: `Reporting Error in Chat: ${error}`,
@@ -111,32 +135,39 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     },
   });
 
+  useEffect(() => {
+    if (serverMessages?.length && serverMessages.length > 0) {
+      console.log("serverMessages", serverMessages);
+      chatOptions.setMessages(serverMessages as any);
+    }
+  }, [serverMessages]);
+
   //-----------LISTENING-------------
   const lastKnownMinionType = useMemo(() => {
     if (chatOptions.messages.length === 0) {
       return MinionType.Unknown;
     }
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
-    const minionTypeAnnotation: any = lastMessage?.annotations?.find((a: any) => a.type === "minion");
-    return minionTypeAnnotation?.value ?? MinionType.Unknown;
+    const minionTypeAnnotation: any = lastMessage?.metadata?.minionType;
+    return minionTypeAnnotation ?? MinionType.Unknown;
   }, [chatOptions.messages]);
   const lastKnownMinionFlow = useMemo(() => {
     if (chatOptions.messages.length === 0) {
       return MinionFlow.Unknown;
     }
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
-    const minionFlowAnnotation: any = lastMessage?.annotations?.find((a: any) => a.type === "minionFlow");
-    return minionFlowAnnotation?.value ?? MinionFlow.Unknown;
+    const minionFlowAnnotation: any = lastMessage?.metadata?.minionFlow;
+    return minionFlowAnnotation ?? MinionFlow.Unknown;
   }, [chatOptions.messages]);
   //console.log("lastKnownStuff", lastKnownMinionType, lastKnownMinionFlow);
 
   useEffect(() => {
     console.log("messages", chatOptions.messages);
     const lastMessage = chatOptions.messages?.[chatOptions.messages.length - 1];
-    const isClientRequestTitle: any = lastMessage?.annotations?.find((a: any) => a.type === "clientRequestTitle");
-    if (isClientRequestTitle && isClientRequestTitle.content) {
+    const isClientRequestTitle: any = lastMessage?.metadata?.clientRequestTitle;
+    if (isClientRequestTitle) {
       setSelectedRequest((s) => {
-        return s ? { ...s, title: isClientRequestTitle.content } : s;
+        return s ? { ...s, title: isClientRequestTitle } : s;
       });
     }
   }, [chatOptions.messages]);
@@ -152,25 +183,31 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
       _minionType: ChatUIMessageWithTypes["minionType"],
       _minionFlow: ChatUIMessageWithTypes["minionFlow"]
     ) => {
+      console.log("[createMessage] called with:", { message, _minionType, _minionFlow });
       if (!clientRequest) {
+        console.log("[createMessage] No client request, returning.");
         return;
       }
       if (!message.id) {
         message.id = crypto.randomUUID();
+        console.log("[createMessage] Generated new message id:", message.id);
       }
-      //console.log("message", message);
       try {
-        await PortalSdk.postData("/api/chat/message", {
+        const payload = {
           ...message,
           id: clientRequest.id + "-" + message.id,
           originClientRequestId: clientRequest.id,
           userId: clientRequest?.userId,
           minionType: _minionType,
           minionFlow: _minionFlow,
+          content: getTextParts(message).join(", ") ?? "",
           context: "on-start",
-        });
+        };
+        console.log("[createMessage] Posting message to DB with payload:", payload);
+        await PortalSdk.postData("/api/chat/message", payload);
+        console.log("[createMessage] Successfully posted message to DB.");
       } catch (error) {
-        console.log("error creating message", error);
+        console.error("[createMessage] Error creating message:", error);
       }
     },
     [clientRequest]
@@ -182,7 +219,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         return;
       }
       let _ids = messageIds.map((_id) =>
-        _id.startsWith(clientRequest.id) ? _id : clientRequest.id + "-" + _id
+        _id.endsWith(clientRequest.id) ? _id : _id + "-" + clientRequest.id
       );
       return await PortalSdk.deleteData(
         `/api/chat/message?ids=${_ids.join(",")}&originClientRequestId=${clientRequest.id}`,
@@ -195,36 +232,42 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   //-----------USECHAT OVERWITES------------
   // BYPASSING the original handle submit
   const handleSubmit = async (
+    text: string,
     event?: {
       preventDefault?: () => void;
     },
     chatRequestOptions?: ChatRequestOptions
   ) => {
+    console.log("[handleSubmit] called with:", { text, chatRequestOptions });
     // first store the lastmessage to db
-    event?.preventDefault?.();
-    const newMessage: Message = {
+    if (event) {
+      event.preventDefault?.();
+      setInput("");
+    }
+    const newMessage: UIMessage = {
       id: crypto.randomUUID(),
-      content: chatOptions.input,
       role: "user",
       parts: [
         {
           type: "text",
-          text: chatOptions.input,
+          text: text,
         },
       ],
     };
-    chatOptions.setInput("");
-    console.log("newMessageBody", chatRequestOptions?.body);
+    console.log("[handleSubmit] created new message:", newMessage);
     await appendMessage(newMessage, chatRequestOptions);
+    console.log("[handleSubmit] finished.");
   };
 
   /** should prefill the minion annotation */
   const appendMessage = useCallback(
     async (
-      message: Message | CreateMessage,
+      message: UIMessage,
       chatRequestOptions?: ChatRequestOptions,
       bypassDb?: boolean
     ) => {
+      console.log("[appendMessage] called with:", { message, chatRequestOptions, bypassDb });
+
       if (!clientRequest && !(chatRequestOptions?.body as any)?.clientRequestId) {
         toast.error("Client request not initialized. Please try again.");
         return;
@@ -235,49 +278,51 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
       // fallback to the last known minion type & flow (if not set in the chatRequestOptions)
       let _minionType = (chatRequestOptions?.body as any)?.minionType ?? lastKnownMinionType ?? MinionType.Unknown;
       let _minionFlow = (chatRequestOptions?.body as any)?.minionFlow ?? lastKnownMinionFlow ?? clientRequest?.minionFlow ?? MinionFlow.Unknown;
+      console.log("[appendMessage] Determined minion type and flow:", { _minionType, _minionFlow });
+
       const bodyParams = {
         ...chatRequestOptions?.body,
         minionType: _minionType,
         minionFlow: _minionFlow,
         ...(clientRequest ? { clientRequestId: clientRequest?.id } : {}),
       };
+      console.log("[appendMessage] Constructed bodyParams:", bodyParams);
 
-      //console.log("bodyParams", bodyParams);
-      // Create annotations from body parameters
-      const bodyAnnotations = Object.entries(bodyParams).map(([key, value]) => ({
-        type: 'body',
-        key,
-        value
-      }));
-
-      // Add body annotations to message
-      const messageWithAnnotations = {
+      let messageNew = {
         ...message,
-        annotations: [
-          ...(message.annotations || []),
-          ...bodyAnnotations
-        ]
-      };
+        metadata: {
+          ...bodyParams,
+          ...(message.metadata || {}),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+      }
+      console.log("[appendMessage] Constructed messageNew:", messageNew);
+
 
       if (!bypassDb) {
+        console.log("[appendMessage] Storing user message to DB...");
         await createMessage(
-          messageWithAnnotations as any,
+          messageNew,
           _minionType,
           _minionFlow
         );
+        console.log("[appendMessage] Stored user message to DB.");
       }
 
-      const id = await chatOptions.append(messageWithAnnotations as any, {
+      console.log("[appendMessage] Calling chatOptions.sendMessage with:", { messageNew, chatRequestOptions: { ...chatRequestOptions, body: bodyParams } });
+      const id = await chatOptions.sendMessage(messageNew, {
         ...chatRequestOptions,
         body: bodyParams,
       });
+      console.log("[appendMessage] chatOptions.sendMessage returned id:", id);
       return id;
     },
     [clientRequest, lastKnownMinionType, lastKnownMinionFlow, clientRequest?.minionFlow, handleRightCollapse]
   );
 
   const handleRefresh = async (messageIndex: number) => {
-    //console.log("refreshing", messageIndex);
+
     if (messageIndex >= chatOptions.messages.length) {
       return;
     }
@@ -290,13 +335,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     }
 
     // Extract body parameters from annotations
-    const bodyParams = messageToResend.annotations?.reduce((acc: any, annotation: any) => {
-      if (annotation.type === 'body') {
-        acc[annotation.key] = annotation.value;
-      }
-      return acc;
-    }, {});
-    messageToResend.annotations = [];
+    const bodyParams = messageToResend.metadata;
 
     const messagesToDelete = chatOptions.messages.slice(messageIndex + 1); // Assistant response and subsequent messages
 
@@ -314,15 +353,16 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     if (messageToResend) {
       try {
         // Resend the user message, triggering backend processing again
-        await appendMessage(messageToResend as Message, { body: bodyParams }, true);
+        await appendMessage(messageToResend as UIMessage, { body: bodyParams }, true);
       } catch (error) {
         console.log("error appending message during refresh", error);
         toast.error("Failed to refresh. Please try again.");
-        // Optionally restore messages if append fails
       }
     }
-    // console.log("deleted messages", extraMessages.map(m => m.id));
   };
+
+
+  const [input, setInput] = useState("");
 
   return {
     ...chatOptions,
@@ -336,6 +376,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     clientRequest,
     lastKnownMinionType,
     lastKnownMinionFlow,
+    input,
+    setInput,
   };
 }
 

@@ -1,11 +1,11 @@
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import { generateText } from "ai";
 import dedent from "dedent";
 import fs from "fs/promises";
 import path from "path";
 import { TokenUsageAnalyticsTracker } from "../../../analytics/helper";
-import { TaskInstanceMetaType } from "../../../convertfox/types";
+import { TaskInstanceMetaType } from "../../../convertfox/helpers/types";
 import { models } from "../../../models";
 import { codingSystemPrompt } from "../../prompt.coding";
 import { fetchTemplateDir, writeToFile } from "../../tool/writeToFile";
@@ -16,11 +16,11 @@ import { fetchPackageDocs } from "../../tool/fetchPackageDocs";
 // I need a helper mapper for file to fetch from (use addons to support this)
 
 export const genDbRedisHelper = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest
 ) => {
-  // result.mergeIntoDataStream(props.dataStream, {
+  // result.mergeIntoDataStream(ctx.response, {
   //   experimental_sendStart: false,
   //   experimental_sendFinish: false,
   // });
@@ -30,9 +30,8 @@ export const genDbRedisHelper = async (
 
   // write helpers/redis.txt for upstash
   // modify the serverless.yml file to support all the functions & cron jobs
-  props.dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Generating redis db setups..",
+  ctx.response.writeMessageMetadata({
+    loader: "Generating redis db setups..",
   });
 
   const redisHelper = await fs.readFile(
@@ -94,18 +93,17 @@ export const genDbRedisHelper = async (
                 `,
       tools: {
         write_code: writeToFile(
-          props,
+          ctx,
           clientRequest,
           taskInstanceMeta?.taskStructure?.templateType
         ),
         fetch_package_docs: fetchPackageDocs(
-          props,
+          ctx,
           clientRequest,
           taskInstanceMeta
         ),
       },
       toolChoice: "required",
-      maxSteps: 1,
       maxRetries: 3,
       onStepFinish: (step) => {
         console.log("step", step.usage);
@@ -114,7 +112,8 @@ export const genDbRedisHelper = async (
     console.log("result", result.usage);
 
     TokenUsageAnalyticsTracker.trackUsage({
-      ...props.requestBody,
+      userId: ctx.request.userId,
+      clientRequestId: ctx.request.clientRequestId,
       model: models.claude35Sonnet.modelId,
       usage: result.usage,
     });

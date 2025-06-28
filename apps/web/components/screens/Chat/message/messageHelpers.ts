@@ -21,7 +21,7 @@ export const constructMessageFromButton = (
     ],
     annotations: [
       {
-        type: "minion",
+        type: "minionType",
         value: button.minionType,
       },
       ...(extraAnnotations ?? []),
@@ -69,7 +69,7 @@ export const constructShiftMinionMessage = (button: any) => {
     ],
     annotations: [
       {
-        type: "minion",
+        type: "minionType",
         value: button.value,
       },
     ],

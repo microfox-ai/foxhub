@@ -56,4 +56,4 @@ export interface ChatUIMessageWithTypes
   minionFlow?: MinionFlowType;
 }
 
-export type AnnotationType = "loading" | "metadata" | "thinking" | "minion";
+export type AnnotationType = "loading" | "metadata" | "thinking" | "minionType";

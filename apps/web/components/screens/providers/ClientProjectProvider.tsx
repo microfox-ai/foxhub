@@ -74,6 +74,7 @@ function useClientProjectContext() {
     async (url: string) => await fetch(url).then((res) => res.json())
   );
 
+  // VSWJT: WHY IS THIS NEEDED ?
   const updateClientDeploymentById = async (id: string) => {
     try {
       if (!id) {

@@ -13,15 +13,11 @@ import {
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
-import { generateObject, streamText } from "ai";
+import { convertToModelMessages, generateObject, streamText } from "ai";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-import { getMicrofoxCharacter } from "../hellofox/default";
+import { getMicrofoxCharacter } from "../hellofox/_prompts";
 import { models } from "../models";
 import { genServerlessFinalCode } from "./geenrators/finalFiles/genFinalCode";
 import { genBuildStep } from "./geenrators/genBuildStep";
@@ -34,26 +30,27 @@ import { getServiceName } from "./helper/getServiceName";
 import { octokitSdk } from "./helper/gitHelpers";
 import { pushToGit } from "./helper/pushToGit";
 import { deleteAllGenFiles } from "./tool/writeToFile";
+import { AiAgentKit } from "@repo/ai-utils/router";
+import { DefaultMessageMetadata } from "../microfoxRouter";
+import { findLastMessageWith } from "@repo/ai-utils/helper";
+import { uiTool } from "../ui/uiTool";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation
 //TODO: (Requires further thought) shared scripts or files, using a tool call to check if said shared file exists, & fetchit/createit as needed.
 
+const buildFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
+
 // Tight control required on this route as this burns MOOOOOOOONEEEEEEY
-export const buildFoxRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
+buildFoxAgent.agent("/", async (ctx) => {
+  const { request, response } = ctx;
 
-  const lastUserMessage = findLastElementWith(
-    requestBody.messages,
-    (m: any) => m.role === "user"
-  );
+  const lastUserMessage = findLastMessageWith(request.messages, {
+    role: "user",
+  });
 
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: "Thinking about the user's intent...",
+  response.writeMessageMetadata({
+    loader: "Thinking about the user's intent...",
   });
 
   // classify the users query
@@ -66,7 +63,7 @@ export const buildFoxRouter: ServerStreamingFunction<
       //complexity: z.enum(["simple", "complex"]),
       //queryType: z.enum(["query", "modification", "answer", "confirmation"]),
     }),
-    messages: [lastUserMessage],
+    messages: convertToModelMessages([lastUserMessage as any]),
     system: `Classify the users message.
     
     Determine:
@@ -74,33 +71,28 @@ export const buildFoxRouter: ServerStreamingFunction<
     2. Brief reasoning for classification`,
   });
 
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: `${classification.intent} observed.`,
+  response.writeMessageMetadata({
+    loader: `${classification.intent} observed.`,
   });
 
   TokenUsageAnalyticsTracker.trackUsage({
-    ...requestBody,
+    userId: request.userId,
+    clientRequestId: request.clientRequestId,
+    originClientRequestId: request.originClientRequestId,
     model: models.googleGeminiFlash.modelId,
     usage,
   });
 
   const timeStart = dayjs();
-  const { clientRequestId } = requestBody;
+  const { clientRequestId } = request;
 
   let taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
   if (!taskInstanceMeta?.taskInfo) {
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    throw new Error("Task instance meta not found");
   }
   let clientRequest = await getClientRequest(clientRequestId);
   if (!clientRequest) {
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    throw new Error("Client request not found");
   }
 
   if (
@@ -113,26 +105,24 @@ export const buildFoxRouter: ServerStreamingFunction<
     const result = streamText({
       model: models.googleGeminiFlash,
       system: `${getMicrofoxCharacter()}, Tell the user kindly that you don't support modification at this step. User can scroll up to make changes before the building has began. and retry building your automation by cliecking refresh!`,
-      messages: [lastUserMessage],
+      messages: convertToModelMessages([lastUserMessage as any]),
     });
-    result.mergeIntoDataStream(dataStream, {
-      experimental_sendFinish: true,
+    response.writeMessageMetadata({
+      error:
+        "You can't modify the task at this step. Please scroll up to make changes before the building has began. and retry building your automation by cliecking refresh!",
     });
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    throw new Error(
+      "You can't modify the task at this step. Please scroll up to make changes before the building has began. and retry building your automation by cliecking refresh!"
+    );
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "minion",
-    value: "buildfox",
+  response.writeMessageMetadata({
+    minionType: "buildfox",
   });
 
   if (!clientRequest.prUrl) {
-    dataStream.writeMessageAnnotation({
-      type: "thinking",
-      content: "Creating a new codebase for your task",
+    response.writeMessageMetadata({
+      loader: "Creating a new codebase for your task",
     });
     clientRequest = await createPullRequest({
       clientRequestId,
@@ -150,19 +140,19 @@ export const buildFoxRouter: ServerStreamingFunction<
     },
   });
 
-  await genInitialServerlessCode(props, taskInstanceMeta, clientRequest);
+  await genInitialServerlessCode(ctx, taskInstanceMeta, clientRequest);
 
   // generate helper files - like redis, chrome, etc...
-  await genHelperFiles(props, taskInstanceMeta, clientRequest);
+  await genHelperFiles(ctx, taskInstanceMeta, clientRequest);
 
   // write/modify cron jobs
-  await genCronJobs(props, taskInstanceMeta, clientRequest, clientSecrets);
+  await genCronJobs(ctx, taskInstanceMeta, clientRequest, clientSecrets);
 
   // write/modify lambda functions
-  await genLambdaCode(props, taskInstanceMeta, clientRequest, clientSecrets);
+  await genLambdaCode(ctx, taskInstanceMeta, clientRequest, clientSecrets);
 
   // write/modify root files - index.ts, package.json, serverless.yml, etc.
-  await genServerlessFinalCode(props, taskInstanceMeta, clientRequest);
+  await genServerlessFinalCode(ctx, taskInstanceMeta, clientRequest);
 
   // re-add core env variables, for they might have been changed
   await addGithubSecretsToRepo({
@@ -178,7 +168,7 @@ export const buildFoxRouter: ServerStreamingFunction<
   // });
 
   // push to git
-  await pushToGit(props, clientRequest, taskInstanceMeta);
+  await pushToGit(ctx, clientRequest, taskInstanceMeta);
 
   if (clientRequestId) {
     console.log("Updating client request", clientRequestId);
@@ -190,38 +180,39 @@ export const buildFoxRouter: ServerStreamingFunction<
 
   // record the changes in the build fox steps taken so far using taskInstanceMeta.
   const { taskInstanceMetaUpdated, envVariables } = await genBuildStep({
-    props,
+    ctx,
     clientRequest,
     taskInstanceMeta,
     timeStart,
   });
 
-  dataStream.writeMessageAnnotation({
-    type: "ui",
-    objectType: "envCollector",
-    persona: "buildfox",
-    text: envVariables.length > 0 ? `All Done !` : `All Done !`,
-    description:
-      envVariables.length > 0
-        ? `Your task is built, butI need some more details to complete the build. Please add the secrets below.`
-        : `All done! You can now test your automation by clicking the button below.`,
-    buttons: [
-      {
-        action: "highlightInput",
-        text: "Make changes",
-        type: "deny",
-        className: "bg-neutral-200 text-black hover:bg-neutral-300",
+  response.writeCustomTool(
+    uiTool.construct<"card">("buildfox", "env_collector", {
+      uiType: "card",
+      text: envVariables.length > 0 ? `All Done !` : `All Done !`,
+      object: {
+        objectType: "env_collector",
+        object: {
+          envVariables,
+        },
       },
-      {
-        action: "shiftMinion",
-        actionText: "Test Automation !",
-        type: "confirm",
-        text: "Test Automation !",
-        className: "bg-green-500 text-white hover:bg-green-600",
-        value: "deployfox",
-      },
-    ],
-  });
+      buttons: [
+        {
+          text: "Make changes",
+          type: "deny",
+        },
+        {
+          action: {
+            id: "shiftMinion",
+            props: "deployfox",
+            actionText: "Test Automation !",
+          },
+          text: "Test Automation !",
+          type: "confirm",
+        },
+      ],
+    })
+  );
   // TODO: require a router for further file modifications if needed (means changing the prompts & input Data should be the file)
   // TODO: shiftMinion to deployfox
   try {
@@ -265,9 +256,6 @@ export const buildFoxRouter: ServerStreamingFunction<
 
   // delete the files in local directory
   await deleteAllGenFiles(clientRequest);
+});
 
-  return {
-    responseBody: { ...responseBody },
-    appendRequestBody: { ...requestBody },
-  };
-};
+export { buildFoxAgent };

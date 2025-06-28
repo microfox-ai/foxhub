@@ -1,4 +1,4 @@
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 
 export const baseFilePrompt = (
   fileType: "lambda" | "cron",

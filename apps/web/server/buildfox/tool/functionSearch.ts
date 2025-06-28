@@ -27,35 +27,50 @@ async function listByPackage(pkg: string, limit = 10) {
 export async function getPackageFunctions(
   pkg: string,
   type: "constructor" | "function" | "rule" | "all" | "main" = "all"
-) {
+): Promise<
+  {
+    package: string;
+    function: string;
+    type: string;
+    docs: string;
+  }[]
+> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-  const pkgName = pkg.replace('@microfox/', '');
+  const pkgName = pkg.startsWith("@microfox/")
+    ? pkg
+    : `@ext_${pkg.replaceAll("/", "#")}`;
   let packagesToSearch = [pkgName];
 
   // Fetch linked packages to search within them as well
   const { data: linkedData, error: linkedError } = await supabase
-    .from('docs_embeddings')
-    .select('linked_packages')
-    .eq('package_name', pkgName)
-    .limit(1)
+    .from("docs_embeddings")
+    .select("linked_packages")
+    .eq("package_name", pkgName)
+    .limit(1);
 
   if (linkedError) {
     console.error(`Error fetching linked packages for ${pkg}:`, linkedError);
-  } else if (linkedData && linkedData.length > 0 && linkedData[0]?.linked_packages) {
+  } else if (
+    linkedData &&
+    linkedData.length > 0 &&
+    linkedData[0]?.linked_packages
+  ) {
     const linked = linkedData[0]?.linked_packages?.map((p: string) =>
       p.replace("@microfox/", "")
     );
     packagesToSearch.push(...linked);
   }
   const uniquePackagesToSearch = [...new Set(packagesToSearch)];
-  console.log(`\n📚 Searching for docs in packages: ${uniquePackagesToSearch.join(', ')}`);
+  console.log(
+    `\n📚 Searching for docs in packages: ${uniquePackagesToSearch.join(", ")}`
+  );
 
-  console.log('\n🕵️  Checking doc counts per package...');
+  console.log("\n🕵️  Checking doc counts per package...");
   for (const pkgName of uniquePackagesToSearch) {
     const { count, error } = await supabase
-      .from('docs_embeddings')
-      .select('*', { count: 'exact', head: true })
-      .eq('package_name', pkgName);
+      .from("docs_embeddings")
+      .select("*", { count: "exact", head: true })
+      .eq("package_name", pkgName);
     if (error) {
       console.error(`Error counting docs for ${pkgName}:`, error.message);
     } else {
@@ -64,18 +79,18 @@ export async function getPackageFunctions(
   }
 
   const query = supabase
-    .from('docs_embeddings')
-    .select('*')
-    .in('package_name', uniquePackagesToSearch);
+    .from("docs_embeddings")
+    .select("*")
+    .in("package_name", uniquePackagesToSearch);
 
-  if (type !== 'all') {
-    query.eq('doc_type', type);
+  if (type !== "all") {
+    query.eq("doc_type", type);
   }
 
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching package functions:', error);
+    console.error("Error fetching package functions:", error);
     return [];
   }
 
@@ -86,6 +101,7 @@ export async function getPackageFunctions(
       function: d.function_name,
       type: d.doc_type,
       docs: d.doc_text,
+      file_path: d.file_path,
     }))
   );
 
@@ -97,12 +113,21 @@ export async function semanticFunctionSearch(
   query: string,
   type: "constructor" | "function" | "rule" | "all" | "main" = "all",
   limit = 10
-) {
+): Promise<
+  {
+    package: string;
+    function: string;
+    type: string;
+    docs: string;
+    similarity: number;
+    file_path: string;
+  }[]
+> {
   console.log(`\n🔍 Embedding query: "${query}"…`);
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const qEmb = await embed(query);
-  console.log('🧠 Query embedding obtained');
-  const doc_type_filter = type === 'all' ? null : type;
+  console.log("🧠 Query embedding obtained");
+  const doc_type_filter = type === "all" ? null : type;
 
   if (pkg === "*") {
     console.log("🌍 Global search (all packages)…");
@@ -125,14 +150,16 @@ export async function semanticFunctionSearch(
     }
     return data;
   } else {
-    const pkgName = pkg.replace('@microfox/', '');
+    const pkgName = pkg.startsWith("@microfox/")
+      ? pkg
+      : `@ext_${pkg.replaceAll("/", "#")}`;
     let packagesToSearch = [pkgName];
 
     // Fetch linked packages to search within them as well
     const { data: linkedData, error: linkedError } = await supabase
-      .from('docs_embeddings')
-      .select('linked_packages')
-      .eq('package_name', pkgName)
+      .from("docs_embeddings")
+      .select("linked_packages")
+      .eq("package_name", pkgName)
       .limit(1);
 
     if (linkedError) {
@@ -149,9 +176,7 @@ export async function semanticFunctionSearch(
     }
 
     const uniquePackagesToSearch = [...new Set(packagesToSearch)];
-    console.log(
-      `📦 Package search in: "${uniquePackagesToSearch.join(", ")}"`
-    );
+    console.log(`📦 Package search in: "${uniquePackagesToSearch.join(", ")}"`);
 
     const { data, error } = await supabase.rpc("match_docs_in_packages", {
       query_embedding: qEmb,
@@ -170,6 +195,7 @@ export async function semanticFunctionSearch(
           function: r.function_name,
           similarity: r.similarity,
           docs: r.doc_text,
+          file_path: r.file_path,
         }))
       );
     }

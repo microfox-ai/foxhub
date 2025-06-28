@@ -19,7 +19,7 @@ import { z } from "zod";
 import { baseFilePrompt } from "../prompts/basePrompt";
 import { envsPrompt } from "../prompts/envsPrompt";
 import { helperFilesContext } from "../prompts/helperFilesContext";
-import { semanticFunctionSearch } from "./functionSearch";
+import { getPackageFunctions, semanticFunctionSearch } from "./functionSearch";
 import { fetchTemplateDir, readAllGenFilesList } from "./writeToFile";
 
 async function fetchGithubReadMe(
@@ -239,12 +239,8 @@ export const fetchPackageDocs = (
             //   taskInstanceMeta?.taskIntegrations?.platforms.find(
             //     (p) => p.package === pkg
             //   );
-            let mainReadme = await fetchPackageReadme(pkg.package);
-            let packageInfo = await PackageInfoHelper.getPackageInfo(
-              pkg.package
-            );
-            let constructorPath;
-            readme = mainReadme;
+            let mainReadme = await getPackageFunctions(pkg.package, "main");
+            readme = mainReadme.map((r) => r.docs).join("\n\n");
             if (!pkg.readmeSearch) {
               console.log("no reason for this platform", pkg);
               return {
@@ -253,23 +249,14 @@ export const fetchPackageDocs = (
                 reason: pkg.readmeSearch,
               };
             }
-            if (
-              packageInfo &&
-              packageInfo?.readme_map?.all_readmes?.length > 0
-            ) {
-              constructorPath = packageInfo?.readme_map?.all_readmes.find(
-                (r: any) => r.type === "constructor"
-              )?.path;
-              if (constructorPath) {
-                const constructorReadme = await fetchText(constructorPath);
-                readme += `For constructor of this sdk - You Must use this documentation as reference, do not assume your own knowledge\n\n${constructorReadme}`;
-                //console.log("constructorReadme", constructorReadme);
-              }
+            let constructors = await getPackageFunctions(
+              pkg.package,
+              "constructor"
+            );
+            if (constructors.length > 0) {
+              readme += `For constructor of this sdk - You Must use this documentation as reference, do not assume your own knowledge\n\n${constructors.map((r) => r.docs).join("\n\n")}`;
             }
 
-            const pakageExactName = pkg.package.startsWith("@microfox/")
-              ? pkg.package
-              : `@ext_${pkg.package.replaceAll("/", "#")}`;
             const platform = taskInstanceMeta?.taskIntegrations?.platforms.find(
               (p) => p.package === pkg.package
             );
@@ -277,18 +264,27 @@ export const fetchPackageDocs = (
               ? pkg.readmeSearch // + `\n\n${platform?.reason}`
               : pkg.readmeSearch;
             const microfoxFunction = await semanticFunctionSearch(
-              pakageExactName,
-              readmeSearch
+              pkg.package,
+              readmeSearch,
+              "function"
             );
-            //console.log("functions", microfoxFunction);
             for (const _function of microfoxFunction) {
-              if (
-                _function.similarity > 1.5 &&
-                readme.length < 10000 &&
-                !_function.file_path.includes(`${pakageExactName}/README.md`)
-              ) {
-                console.log("function pattern hit", _function.function_name);
-                readme += `\n\n${_function.content}`;
+              if (_function.similarity > 1.5 && readme.length < 10000) {
+                console.log("function pattern hit", _function.docs);
+                console.log("function file path", _function.file_path);
+                readme += `\n\n${_function.docs}`;
+              }
+            }
+            let rules = await semanticFunctionSearch(
+              pkg.package,
+              readmeSearch,
+              "rule"
+            );
+            for (const rule of rules) {
+              if (readme.length < 12000) {
+                console.log("rule pattern hit", rule.docs);
+                console.log("rule file path", rule.file_path);
+                readme += `\n\n${rule.docs}\n\n`;
               }
             }
             console.log("readme char size", readme.length);

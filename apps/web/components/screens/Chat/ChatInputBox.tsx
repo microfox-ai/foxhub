@@ -181,7 +181,7 @@ export default function ChatInputBox({
               //   lastMessage.annotations.length - 1
               //   ] as any
               // )?.type === "ui" ||
-              (!input.trim() && attachedMedia.length === 0) ||
+              (!input?.trim() && attachedMedia.length === 0) ||
               messageStatus === "pending" ||
               messageStatus === "streaming" ||
               mediaUploadStatus === "UPLOADING" ||

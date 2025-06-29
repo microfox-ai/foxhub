@@ -9,7 +9,7 @@ interface MessageThoughtWrapperProps {
 export const MessageMarkdown: FC<MessageThoughtWrapperProps> = ({ children, isStreaming = false }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const isThought = children.trim().toLowerCase().startsWith('thought:');
+    const isThought = children?.trim()?.toLowerCase()?.startsWith('thought:');
 
     useEffect(() => {
         if (scrollRef.current) {

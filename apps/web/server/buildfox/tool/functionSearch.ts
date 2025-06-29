@@ -24,6 +24,7 @@ async function listByPackage(pkg: string, limit = 10) {
   console.table(data);
 }
 
+
 export async function getPackageFunctions(
   pkg: string,
   type: "constructor" | "function" | "rule" | "all" | "main" = "all"
@@ -33,11 +34,12 @@ export async function getPackageFunctions(
     function: string;
     type: string;
     docs: string;
+    file_path: string;
   }[]
 > {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const pkgName = pkg.startsWith("@microfox/")
-    ? pkg
+    ? pkg.replace("@microfox/", "")
     : `@ext_${pkg.replaceAll("/", "#")}`;
   let packagesToSearch = [pkgName];
 
@@ -96,16 +98,22 @@ export async function getPackageFunctions(
 
   console.log(`\nFound ${data.length} results.`);
   console.table(
-    data.map((d) => ({
+    data.map(d => ({
       package: d.package_name,
       function: d.function_name,
       type: d.doc_type,
-      docs: d.doc_text,
+      // docs: d.content,
       file_path: d.file_path,
     }))
   );
 
-  return data;
+  return data.map((d: any) => ({
+    package: d.package_name,
+    function: d.function_name,
+    type: d.doc_type,
+    docs: d.content,
+    file_path: d.file_path,
+  }));
 }
 
 export async function semanticFunctionSearch(
@@ -144,14 +152,22 @@ export async function semanticFunctionSearch(
           package: r.package_name,
           function: r.function_name,
           similarity: r.similarity,
-          docs: r.doc_text,
+          // docs: r.content,
+          file_path: r.file_path,
         }))
       );
     }
-    return data;
+    return data.map((d: any) => ({
+      package: d.package_name,
+      function: d.function_name,
+      type: d.doc_type,
+      docs: d.content,
+      similarity: d.similarity,
+      file_path: d.file_path,
+    }));
   } else {
     const pkgName = pkg.startsWith("@microfox/")
-      ? pkg
+      ? pkg.replace("@microfox/", "")
       : `@ext_${pkg.replaceAll("/", "#")}`;
     let packagesToSearch = [pkgName];
 
@@ -186,7 +202,7 @@ export async function semanticFunctionSearch(
     });
     if (error) throw error;
     console.log(
-      `\n🎯 Top ${limit} results for "${query}" in relevant packages:`
+      `\n🎯 Top ${limit} ${type} results for "${query}" in relevant packages:`
     );
     if (data) {
       console.table(
@@ -194,11 +210,18 @@ export async function semanticFunctionSearch(
           package: r.package_name,
           function: r.function_name,
           similarity: r.similarity,
-          docs: r.doc_text,
+          // docs: r.content,
           file_path: r.file_path,
         }))
       );
     }
-    return data;
+    return data.map((d: any) => ({
+      package: d.package_name,
+      function: d.function_name,
+      type: d.doc_type,
+      docs: d.content,
+      similarity: d.similarity,
+      file_path: d.file_path,
+    }));
   }
 }

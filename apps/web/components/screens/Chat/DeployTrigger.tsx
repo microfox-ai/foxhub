@@ -154,14 +154,14 @@ const DeployTrigger = () => {
     },
   ];
 
-  if (IN_STAGING) {
-    deploymentOptions.push({
-      value: "local",
-      label: "Deploy to Local",
-      shortLabel: "Local",
-      color: "border-yellow-600 text-yellow-600",
-    });
-  }
+  // if (IN_STAGING) {
+  //   deploymentOptions.push({
+  //     value: "local",
+  //     label: "Deploy to Local",
+  //     shortLabel: "Local",
+  //     color: "border-yellow-600 text-yellow-600",
+  //   });
+  // }
 
   return (
     <DropdownMenu>

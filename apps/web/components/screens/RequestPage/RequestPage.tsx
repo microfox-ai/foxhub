@@ -2,7 +2,7 @@
 import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ChatWindow from "../Chat/ChatWindow";
 import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ApiDocProvider } from "../providers/ApiDocProvider";
@@ -26,8 +26,14 @@ export const RequestPage = () => {
     handleRightResizeHandleClick,
   } = useLayout();
 
-  const { selectedProject, selectedRequest, isLoading, clientRequestId } =
+  const { selectedProject, selectedRequest, isLoading, clientRequestId, updateClientDeploymentById } =
     useClientProject();
+
+  useEffect(() => {
+    if (!isRightCollapsed && clientRequestId) {
+      updateClientDeploymentById(clientRequestId);
+    }
+  }, [isRightCollapsed]);
 
   if (!user || isLoading) {
     return (

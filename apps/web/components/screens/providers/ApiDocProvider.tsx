@@ -7,6 +7,7 @@ import {
   OpenAPIPath,
 } from "@/utils/services/OpenAPIToolsClient";
 import { ClientDeploymentMetadata } from "@/server/types";
+import { useClientProject } from "./ClientProjectProvider";
 
 export interface Endpoint {
   path: string;
@@ -37,7 +38,7 @@ interface ApiDocContextType {
 const ApiDocContext = createContext<ApiDocContextType | undefined>(undefined);
 
 export function ApiDocProvider({ children }: { children: React.ReactNode }) {
-  const { deploymentInfo } = useTaskInstanceMetaContext();
+  const { selectedClientDeployment: deploymentInfo } = useClientProject();
   const [apiDoc, setApiDoc] = useState<OpenAPIDoc | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);

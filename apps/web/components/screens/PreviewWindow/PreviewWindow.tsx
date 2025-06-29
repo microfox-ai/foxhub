@@ -230,7 +230,7 @@ const PreviewWindow = () => {
     };
 
     resetForm();
-  }, [selectedEndpoint, form]);
+  }, [selectedEndpoint, form, clientDeployment]);
 
   // Helper function to create Zod schema from OpenAPI schema
   const createZodSchemaFromOpenAPI = (
@@ -917,7 +917,7 @@ const PreviewWindow = () => {
     }
   };
 
-  if (!clientDeployment && apiDoc) {
+  if (!clientDeployment && !apiDoc) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-background">
         {/* Header - Fixed */}

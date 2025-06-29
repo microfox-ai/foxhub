@@ -13,13 +13,13 @@ interface IDeployment {
   sha: string;
   stage: "PROD" | "STAGING" | "DEV" | "PREVIEW";
   status:
-  | "starting"
-  | "downloading"
-  | "installing"
-  | "configuring"
-  | "deploying"
-  | "deployed"
-  | "failed";
+    | "starting"
+    | "downloading"
+    | "installing"
+    | "configuring"
+    | "deploying"
+    | "deployed"
+    | "failed";
   statusDescription?: string;
   startTime: string;
   endTime?: string;
@@ -31,12 +31,7 @@ interface IDeployment {
   pid?: number;
   port?: number;
   version?: string;
-  localState?:
-  | "active"
-  | "stopped"
-  | "errored"
-  | "starting"
-  | "awsLambda";
+  localState?: "active" | "stopped" | "errored" | "starting" | "awsLambda";
   lastActive?: string;
   timeoutAt?: string;
   error?: {
@@ -249,6 +244,10 @@ export const useDeployStatus = ({
             backendData?.deployment?.status === "deployed" ||
             backendData?.deployment?.status === "failed";
 
+          if (shouldBreak && clientRequestId) {
+            updateClientDeploymentById(clientRequestId);
+          }
+
           next(null, { data: backendData, shouldBreak });
         } catch (error) {
           console.error("❌ Error parsing SSE data:", error);
@@ -403,4 +402,3 @@ export const getDeploymentProgress = (deployment: Partial<IDeployment>) => {
   const progress = statusProgressMap[status] || 0;
   return progress;
 };
-

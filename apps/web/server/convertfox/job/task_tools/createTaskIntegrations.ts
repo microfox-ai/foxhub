@@ -115,7 +115,7 @@ export const createTaskIntegrations: AiToolFactory<
           Your final list of queries MUST NOT include searches for:
           -   Deployment services (e.g., AWS Lambda, Vercel). This is handled internally.
           -   Database services (e.g., Postgres, Redis, Supabase). This is handled internally.
-          -   Generic, non-package patterns (e.g., "HTTP Server," "Webhook pattern," "REST API design"). Focus on specific, searchable libraries or functions.
+          -   Generic, non-package patterns (e.g., "HTTP Server", "Webhook pattern", "REST API design", "API Validation & Throttling", "API Rate Limiting"). Focus on specific, searchable libraries or functions.
           -   Overly broad or tutorial-like questions (e.g., "how to build a chat app").
           -   Cron jobs (as it is not a package but a pattern of code)
 
@@ -127,7 +127,7 @@ export const createTaskIntegrations: AiToolFactory<
           Now, begin your process for the following task.
         `,
         schema: z.object({
-          searchQueries: z.array(z.string()).describe("Array of actionable, function-level search queries to find tools or libraries for the task."),
+          searchQueries: z.array(z.string()).describe("Array of actionable, package-level search queries mentioning the required functionality needed for the task."),
         }),
         prompt: `
           Name: ${taskInfo.name}
@@ -175,7 +175,7 @@ export const createTaskIntegrations: AiToolFactory<
           });
           // Store all unique packages found
           for (const pkg of similarPackages) {
-            if (!allFoundPackages[pkg.package_name]) {
+            if (!allFoundPackages[pkg.package_name] && packageList.some(p => p.package_name === pkg.package_name)) {
               allFoundPackages[pkg.package_name] = pkg;
             }
           }
@@ -219,6 +219,7 @@ export const createTaskIntegrations: AiToolFactory<
           -   **Database Services** (e.g., Postgres, Redis, Supabase).
           -   **Generic Architectural Patterns** (e.g., Webhooks, HTTP Server, Cron Jobs).
           Acknowledge these in your thought process if necessary, but EXCLUDE them from the final JSON output.
+          Do not duplicate packages. If a package is already in the list, do not add it again.
           ---
         `,
         schema: taskIntegrations,

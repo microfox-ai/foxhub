@@ -382,28 +382,24 @@ model WebhookEvent {
 }
 
 // ------- API Embeddings -------
-model ApiEmbedding {
+model api_embeddings {
   id                    String           @id @default(uuid())
-  userId                String?
-  botProjectId          String?
-  originClientRequestId String?
-  baseUrl               String
-  schemaPath            String?
-  endpointPath          String
-  httpMethod            String
-  docText               String
+  user_id                String?
+  bot_project_id          String?
+  origin_client_request_id String?
+  base_url               String
+  schema_path            String?
+  endpoint_path          String
+  http_method            String
+  doc_text               String
   embedding             Unsupported("vector(768)")?
-  isPublic              Boolean          @default(false)
+  is_public              Boolean          @default(false)
   stage                 deployment_stage @default(STAGING)
   metadata              Json?
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 
-  @@index([botProjectId])
-  @@index([originClientRequestId])
-  @@index([isPublic])
-  @@index([stage])
-  @@index(map: "idx_api_embeddings_embedding", fields: [embedding])
+  @@index([bot_project_id])
 }
 
 enum deployment_stage {

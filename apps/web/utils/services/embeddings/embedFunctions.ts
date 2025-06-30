@@ -199,7 +199,7 @@ export async function embedApiEndpoints({
                 doc_text: docText,
                 embedding,
                 metadata,
-                updated_at: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               })
               .eq("id", existing.id);
 
@@ -216,6 +216,7 @@ export async function embedApiEndpoints({
             const { error: insertError } = await supabase
               .from("api_embeddings")
               .insert({
+                id: crypto.randomUUID(),
                 bot_project_id: botProjectId || null,
                 origin_client_request_id: originClientRequestId || null,
                 user_id: userId || null,
@@ -228,6 +229,8 @@ export async function embedApiEndpoints({
                 is_public: false,
                 stage: stage,
                 metadata,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               });
 
             if (insertError) {

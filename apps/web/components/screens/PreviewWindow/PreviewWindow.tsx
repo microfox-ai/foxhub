@@ -917,7 +917,7 @@ const PreviewWindow = () => {
     }
   };
 
-  if (!clientDeployment && !apiDoc) {
+  if (!clientDeployment && apiDoc) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-background">
         {/* Header - Fixed */}

@@ -132,7 +132,6 @@ export async function POST(req: NextRequest) {
     newMetadata.serverless.serviceName = serviceName;
     newMetadata.serverless.functionBase = functionBase;
     newMetadata.serverless.region = region;
-    console.log("newMetadata", newMetadata);
 
     // Create the ClientDeployment with awsRegion from clientRequest
     // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),

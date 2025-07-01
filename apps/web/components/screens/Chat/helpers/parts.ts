@@ -21,8 +21,10 @@ export const getDisplayParts = (message: UIMessage<any, any, any>) => {
 };
 
 export const getUiParts = (message: UIMessage<any, any, any>) => {
-  return message.parts?.filter((part) =>
-    part.type.startsWith("tool-ui-")
+  return message.parts?.filter(
+    (part) =>
+      part.type.startsWith("tool-ui-") ||
+      (part as any).output?._humanIntervention
   ) as ToolUIPart[];
 };
 
@@ -30,6 +32,7 @@ export const getStickyUiParts = (parts: ToolUIPart<any>[]) => {
   return parts?.filter(
     (part) =>
       part.state === "output-available" &&
-      (part as any).output?.props?.isUISticky
+      ((part as any).output?.props?.isUISticky ||
+        part.output?._humanIntervention)
   );
 };

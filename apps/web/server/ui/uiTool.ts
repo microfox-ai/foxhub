@@ -11,6 +11,7 @@ export type MyUiTool = {
     type: "ui";
     uiComponent: string;
     props: UiComponentProps[keyof UiComponentProps];
+    _humanIntervention?: boolean;
   };
 };
 export const uiTool = {

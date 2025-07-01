@@ -132,7 +132,6 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
   const selectedFunctionName =
     (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functionBase + "-" + thisFunction?.functionName;
 
-  console.log(deploymentInfo?.metadata);
   return (
     <ApiDocContext.Provider
       value={{

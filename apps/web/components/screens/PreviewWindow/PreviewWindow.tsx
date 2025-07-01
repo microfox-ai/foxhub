@@ -1122,7 +1122,7 @@ const PreviewWindow = () => {
                   variant="ghost"
                   size="sm"
                   className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
-                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000")}
+                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000/dev")}
                 >
                   {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
                 </Button>

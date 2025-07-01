@@ -76,16 +76,17 @@ taskQueryAgent.agent("/", async (ctx) => {
     //   schema: docData,
     //   baseUrl: baseUrl,
     // });
-
     // const toolSet = await thisCLient.tools({ disableAllExecutions: true });
     const client = await createToolkit({
       schema: docData,
       baseUrl: baseUrl,
+      name: "internalClient",
     });
 
     const toolSet = await client.tools({ disableAllExecutions: true });
     console.log(Object.keys(toolSet.executions).length, "toolSet.executions");
     console.log(Object.keys(toolSet.tools).length, "toolSet.tools");
+    //console.log(toolSet.tools, "client");
 
     response.writeCustomTool({
       toolName: "toolsRequiringConfirmation",
@@ -101,7 +102,16 @@ taskQueryAgent.agent("/", async (ctx) => {
       },
     });
 
-    const processedMessages = await client.parse(request.messages);
+    let processedMessages = await client.processToolResult(request.messages);
+    processedMessages = processedMessages.map((m) => ({
+      ...m,
+      parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
+    }));
+    console.log(
+      request.messages[0],
+      JSON.stringify(processedMessages[processedMessages.length - 1]?.parts),
+      "processedMessages"
+    );
 
     // const processedMessages = await processToolCalls(
     //   {
@@ -129,11 +139,24 @@ taskQueryAgent.agent("/", async (ctx) => {
       messages: convertToModelMessages(processedMessages),
       tools: toolSet.tools,
       toolChoice: "auto",
-      stopWhen: (s) => s.steps.length > 10,
+      stopWhen: (s) => {
+        const lastStep = s.steps[s.steps.length - 1];
+        if (lastStep?.toolResults && lastStep?.toolResults?.length > 0) {
+          const allToolResults = lastStep.toolResults;
+          console.log(allToolResults, "allToolResults");
+          if (allToolResults.find((t) => t.output._humanIntervention)) {
+            return true;
+          }
+        }
+        return false;
+      },
       prepareStep: client.createHitlPrepareStep(),
     });
 
     response.merge(result.toUIMessageStream());
+
+    const test = await result.text;
+    console.log(test, "result");
   } catch (error) {
     console.error(error);
   }

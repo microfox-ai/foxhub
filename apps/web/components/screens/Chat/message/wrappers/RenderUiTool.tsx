@@ -9,6 +9,8 @@ import { DeploymentsInfo } from "../uiTool/card/deployments_info"
 import { HotFixes } from "../uiTool/card/hotfixes"
 import { InstallSetup } from "../uiTool/card/install_setup"
 import PublicationInfo from "../uiTool/card/publication_info"
+import { AcceptHitl } from "../uiTool/hitl/Accept"
+import { ToolResultPart, ToolUIPart } from "ai"
 
 
 export const RenderUiTool = ({ tool, lastMessage, lastAnnotationIndices, messageIndex }: {
@@ -23,6 +25,12 @@ export const RenderUiTool = ({ tool, lastMessage, lastAnnotationIndices, message
         return null;
     }
     const isLastInQueue = lastAnnotationIndices.get(tool.output.uiComponent) === messageIndex;
+    if (tool.output?._humanIntervention) {
+        return <AcceptHitl
+            tool={tool as ToolUIPart}
+            lastMessage={lastMessage}
+        />
+    }
     switch (tool.output?.props?.uiType) {
         case "buttons_list":
             return <ActionButtons

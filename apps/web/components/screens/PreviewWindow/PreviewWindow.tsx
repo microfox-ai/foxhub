@@ -331,6 +331,7 @@ const PreviewWindow = () => {
         await fetchServerlessLogs({
           clientDeploymentId: clientDeployment?.id,
           endpointLink: endpointLink,
+          functionName: selectedFunctionName,
           setServerlessLogs: setServerlessLogs
         });
       }
@@ -886,6 +887,7 @@ const PreviewWindow = () => {
           await fetchServerlessLogs({
             clientDeploymentId: clientDeployment?.id,
             endpointLink: endpointLink,
+            functionName: selectedFunctionName,
             setServerlessLogs: setErrorServerlessLogs
           });
           setFetchError(null); // Clear any previous errors
@@ -908,6 +910,7 @@ const PreviewWindow = () => {
       await fetchServerlessLogs({
         clientDeploymentId: clientDeployment?.id,
         endpointLink: endpointLink,
+        functionName: selectedFunctionName,
         setServerlessLogs: setServerlessLogs
       });
     } catch (error) {

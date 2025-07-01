@@ -390,12 +390,12 @@ export class AiAgentKit<
    * @param handler The middleware function or AiAgentKit router instance to mount.
    */
   use(
-    path: string | RegExp,
+    mountPathArg: string | RegExp,
     handler:
       | AiMiddleware<KIT_METADATA, PARTS, TOOLS, ContextState>
       | AiAgentKit<any, any, any, any>
   ): this {
-    if (path instanceof RegExp && handler instanceof AiAgentKit) {
+    if (mountPathArg instanceof RegExp && handler instanceof AiAgentKit) {
       throw new AiKitError(
         "[AiAgentKit] Mounting a router on a RegExp path is not supported."
       );
@@ -403,25 +403,32 @@ export class AiAgentKit<
 
     if (handler instanceof AiAgentKit) {
       const router = handler;
-      const mountPath = path.toString().replace(/\/$/, ""); // remove trailing slash
+      const mountPath = mountPathArg.toString().replace(/\/$/, ""); // remove trailing slash
 
       // Mount routes from the sub-router
       router.stack.forEach((layer) => {
         const layerPath = layer.path.toString();
-        const newPath = mountPath + (layerPath === "/" ? "" : layerPath);
+        // Prevent layer paths starting with '/' from being treated as absolute by join
+        const relativeLayerPath = layerPath.startsWith("/")
+          ? layerPath.substring(1)
+          : layerPath;
+        const newPath = path.posix.join(mountPath, relativeLayerPath);
         this.stack.push({ ...layer, path: newPath });
       });
 
       // Mount tool definitions from the sub-router
       router.actAsToolDefinitions.forEach((value, key) => {
         const keyPath = key.toString();
-        const newKey = mountPath + (keyPath === "/" ? "" : keyPath);
+        const relativeKeyPath = keyPath.startsWith("/")
+          ? keyPath.substring(1)
+          : keyPath;
+        const newKey = path.posix.join(mountPath, relativeKeyPath);
         this.actAsToolDefinitions.set(newKey, value);
       });
     } else {
       // It's a middleware
       this.stack.push({
-        path: path,
+        path: mountPathArg,
         handler: handler,
         isTool: false,
         isAgent: false, // Middleware is not a terminal agent
@@ -687,11 +694,18 @@ export class AiAgentKit<
    */
   getStackWithPrefix(prefix: string) {
     return this.stack.map((layer) => {
-      const newPath =
-        layer.path instanceof RegExp
-          ? // This is a simplistic way to combine regex and might need refinement
-            new RegExp(prefix.replace(/\\/g, "\\\\") + layer.path.source)
-          : `${prefix}${layer.path}`.replace("//", "/");
+      let newPath: string | RegExp;
+      if (layer.path instanceof RegExp) {
+        // This is a simplistic way to combine regex and might need refinement
+        newPath = new RegExp(prefix.replace(/\\/g, "\\\\") + layer.path.source);
+      } else {
+        const layerPathStr = layer.path.toString();
+        // Prevent layer paths starting with '/' from being treated as absolute by join
+        const relativeLayerPath = layerPathStr.startsWith("/")
+          ? layerPathStr.substring(1)
+          : layerPathStr;
+        newPath = path.posix.join(prefix, relativeLayerPath);
+      }
 
       return {
         ...layer,
@@ -708,11 +722,12 @@ export class AiAgentKit<
    */
   private _resolvePath(parentPath: string, newPath: string): string {
     if (newPath.startsWith("@/")) {
-      // Absolute path from root, normalize it.
-      return path.normalize(newPath.substring(1));
+      // Absolute path from root, use POSIX normalize for consistency
+      return path.posix.normalize(newPath.substring(1));
     }
-    const joinedPath = path.join(parentPath, newPath);
-    return joinedPath.replace(/\\/g, "/"); // Ensure forward slashes for web paths
+    // Relative path, use POSIX join to ensure consistent behavior
+    const joinedPath = path.posix.join(parentPath, newPath);
+    return joinedPath;
   }
 
   /**

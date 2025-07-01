@@ -1,3 +1,4 @@
+import { FunctionInfo } from "@/utils/services/parseServerlessLogs";
 import { ClientSecret, DEPLOY_STAGE } from "@prisma/client";
 
 export interface IMediaPayloadType {
@@ -80,11 +81,8 @@ export interface ClientDeploymentMetadata {
   serverless: {
     output?: string;
     stage?: DEPLOY_STAGE;
-    functions: {
-      functionName: string;
-      size: string;
-      endpointLink?: string;
-    }[];
+    region?: string;
+    functions: FunctionInfo[];
     serviceName?: string;
     functionBase?: string;
   };

@@ -127,7 +127,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
 
   const thisFunction = (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functions.find(
     (f: any) =>
-      f.endpointLink === selectedEndpoint || f.endpointLink.includes(selectedEndpoint)
+      f.endpointLink === selectedEndpoint || f.endpointLink?.includes(selectedEndpoint) || f.path === selectedEndpoint
   );
   const selectedFunctionName =
     (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functionBase + "-" + thisFunction?.functionName;

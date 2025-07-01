@@ -11,6 +11,7 @@ import {
 } from "@/utils/services/embeddings/embedFunctions";
 import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
 import {
+  FunctionInfo,
   parseServerlessFunctions,
   parseServerlessLogs,
 } from "@/utils/services/parseServerlessLogs";
@@ -76,8 +77,6 @@ export async function POST(req: NextRequest) {
 
     const { userId, botProjectId } = clientRequest;
 
-    // TODO: VSWJT - MAKE THIS A SEPERATE FUNCTION
-    let functions: any[] = [];
     if (
       !clientRequest.prBranch ||
       !clientRequest.requestDir ||
@@ -99,6 +98,7 @@ export async function POST(req: NextRequest) {
     );
     let region = clientRequest.awsRegion;
     let functionBase = serviceName + "-" + stage?.toLowerCase();
+    let functions: FunctionInfo[] = [];
     try {
       const serverlessYmlPath = `${clientRequest.requestDir}/serverless.yml`;
       const fileContentResponse = await githubSdk.rest.repos.getContent({
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
           "base64"
         ).toString("utf-8");
         const serverlessConfig = YAML.parse(decodedContent);
-        const functions = parseServerlessFunctions(
+        functions = parseServerlessFunctions(
           serverlessConfig,
           functionBase,
           metadata.serverless?.output

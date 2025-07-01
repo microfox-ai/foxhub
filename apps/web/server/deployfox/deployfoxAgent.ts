@@ -41,6 +41,8 @@ deployfoxAgent.agent("/", async (ctx) => {
   const { request, state, response } = ctx;
   const { clientRequestId, stage, is_local, params } = request;
 
+  console.log("requestBody deployfox", request.stage);
+
   console.log("requestBody deployfox", request.params);
   if (!clientRequestId) {
     response.writeMessageMetadata({
@@ -62,7 +64,7 @@ deployfoxAgent.agent("/", async (ctx) => {
   console.log("requestBody deployfox", request.params);
 
   const deployStage = stage || DEPLOY_STAGE.STAGING;
-  const isLocal = false
+  const isLocal = false;
   // const isLocal =
   //   is_local === undefined || is_local === null
   //     ? IN_STAGING

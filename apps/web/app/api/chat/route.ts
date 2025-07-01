@@ -19,6 +19,7 @@ export async function POST(req: Request) {
   return microfoxRouter.handle("/" + minionFlow, {
     request: {
       messages: body.messages,
+      ...restOfBody,
       clientRequestId,
       minionType,
       minionFlow,

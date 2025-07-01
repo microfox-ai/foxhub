@@ -9,7 +9,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { packageName, templateType } = await req.json();
+    const { packageName, templateType, templateId } = await req.json();
+
+    if (templateId) {
+      const templates = await prisma.clientSecretTemplate.findMany({
+        where: {
+          templateId,
+        },
+      });
+
+      return NextResponse.json(templates);
+    }
 
     if (!packageName || !templateType) {
       return NextResponse.json(

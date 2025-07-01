@@ -118,19 +118,7 @@ const DeployTrigger = () => {
         {
           text: buttonText,
           minionType: "deployfox",
-        },
-        [
-          {
-            type: "attachment",
-            key: "stage",
-            value: deployStage,
-          },
-          {
-            type: "attachment",
-            key: "is_local",
-            value: false, //targetStage === "local",
-          },
-        ]
+        }
       ),
       constructAppendBody("deployfox", {
         stage: deployStage,

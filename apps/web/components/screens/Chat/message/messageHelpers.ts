@@ -5,10 +5,7 @@
 /**
  * Constructs a message object from a button for appendMessage action
  */
-export const constructMessageFromButton = (
-  button: any,
-  extraAnnotations?: any[]
-) => {
+export const constructMessageFromButton = (button: any) => {
   return {
     id: crypto.randomUUID(),
     content: button.value ?? button.text,
@@ -18,13 +15,6 @@ export const constructMessageFromButton = (
         type: "text" as const,
         text: button.value ?? button.text,
       },
-    ],
-    annotations: [
-      {
-        type: "minionType",
-        value: button.minionType,
-      },
-      ...(extraAnnotations ?? []),
     ],
   };
 };
@@ -65,12 +55,6 @@ export const constructShiftMinionMessage = (button: any) => {
       {
         type: "text" as const,
         text: button.actionText ?? button.text ?? "Changing gears..",
-      },
-    ],
-    annotations: [
-      {
-        type: "minionType",
-        value: button.value,
       },
     ],
   };

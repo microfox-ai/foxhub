@@ -10,7 +10,10 @@ import {
   embedApiEndpoints,
 } from "@/utils/services/embeddings/embedFunctions";
 import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
-import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
+import {
+  parseServerlessFunctions,
+  parseServerlessLogs,
+} from "@/utils/services/parseServerlessLogs";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
@@ -23,6 +26,9 @@ import {
   TaskInstanceMeta,
 } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
+import YAML from "yaml";
+import { Octokit } from "octokit";
 
 // Create ClientDeployment
 export async function POST(req: NextRequest) {
@@ -70,17 +76,62 @@ export async function POST(req: NextRequest) {
 
     const { userId, botProjectId } = clientRequest;
 
-    const serverlessLog = metadata.serverless?.output;
-    const serviceName = getServiceName(
+    // TODO: VSWJT - MAKE THIS A SEPERATE FUNCTION
+    let functions: any[] = [];
+    if (
+      !clientRequest.prBranch ||
+      !clientRequest.requestDir ||
+      !clientRequest.repoName
+    ) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const githubSdk = new Octokit({
+      auth: GITHUB_TOKEN,
+    });
+
+    let serviceName = getServiceName(
       clientRequest,
       clientRequest.taskInstanceMeta as unknown as TaskInstanceMetaType
     );
-    const functions = parseServerlessLogs(serverlessLog);
+    let region = clientRequest.awsRegion;
+    let functionBase = serviceName + "-" + stage?.toLowerCase();
+    try {
+      const serverlessYmlPath = `${clientRequest.requestDir}/serverless.yml`;
+      const fileContentResponse = await githubSdk.rest.repos.getContent({
+        owner: PROJECT_REPO_OWNER,
+        repo: clientRequest.repoName,
+        path: serverlessYmlPath,
+        ref: clientRequest.prBranch,
+      });
+      if ("content" in fileContentResponse.data) {
+        const decodedContent = Buffer.from(
+          fileContentResponse.data.content,
+          "base64"
+        ).toString("utf-8");
+        const serverlessConfig = YAML.parse(decodedContent);
+        const functions = parseServerlessFunctions(
+          serverlessConfig,
+          functionBase,
+          metadata.serverless?.output
+        );
+        serviceName = serverlessConfig.service;
+        region = serverlessConfig.provider.region;
+      }
+    } catch (e) {
+      console.log("Error fetching or parsing serverless.yml", e);
+      const serverlessLog = metadata.serverless?.output;
+      functions = parseServerlessLogs(serverlessLog);
+    }
+
     let newMetadata = { ...metadata };
     newMetadata.serverless.functions = functions;
     newMetadata.serverless.serviceName = serviceName;
-    newMetadata.serverless.functionBase =
-      serviceName + "-" + stage?.toLowerCase();
+    newMetadata.serverless.functionBase = functionBase;
+    newMetadata.serverless.region = region;
     console.log("newMetadata", newMetadata);
 
     // Create the ClientDeployment with awsRegion from clientRequest

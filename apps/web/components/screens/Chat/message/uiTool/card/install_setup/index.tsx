@@ -30,19 +30,7 @@ export const InstallSetup = ({
                 {
                     text: "Deploy to Production !",
                     minionType: "deployfox",
-                },
-                [
-                    {
-                        type: "attachment",
-                        key: "stage",
-                        value: DEPLOY_STAGE.PROD,
-                    },
-                    {
-                        type: "attachment",
-                        key: "is_local",
-                        value: false,
-                    },
-                ]
+                }
             ),
             constructAppendBody("deployfox", {
                 stage: DEPLOY_STAGE.PROD,

@@ -6,7 +6,7 @@ import {
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
 //import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
-import { createToolkit } from "@microfox/tool-kit";
+import { createOpenApiToolset } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
 import { StreamWriter } from "@repo/ai-utils/helper";
 import { AiAgentKit, AiHandler, AiMiddleware } from "@repo/ai-utils/router";
@@ -88,15 +88,25 @@ taskQueryAgent.agent("/", async (ctx) => {
     //   baseUrl: baseUrl,
     // });
     // const toolSet = await thisCLient.tools({ disableAllExecutions: true });
-    const client = await createToolkit({
+    const client = await createOpenApiToolset({
       schema: docData,
       baseUrl: baseUrl,
       name: "internalClient",
+      auth: {
+        encryptionKey: process.env.OPEN_API_ENCRYPTION_KEY || "",
+      },
     });
 
+    console.log(docData, "docData");
+    console.log(baseUrl, "baseUrl");
+    console.log(client, "client");
     const toolSet = await client.tools({ disableAllExecutions: true });
     console.log(Object.keys(toolSet.executions).length, "toolSet.executions");
-    console.log(Object.keys(toolSet.tools).length, "toolSet.tools");
+    console.log(
+      Object.keys(toolSet.tools).length,
+      "toolSet.tools",
+      toolSet.tools
+    );
     //console.log(toolSet.tools, "client");
 
     response.writeCustomTool({
@@ -150,18 +160,7 @@ taskQueryAgent.agent("/", async (ctx) => {
       messages: convertToModelMessages(processedMessages),
       tools: toolSet.tools,
       toolChoice: "auto",
-      stopWhen: (s) => {
-        const lastStep = s.steps[s.steps.length - 1];
-        if (lastStep?.toolResults && lastStep?.toolResults?.length > 0) {
-          const allToolResults = lastStep.toolResults;
-          console.log(allToolResults, "allToolResults");
-          if (allToolResults.find((t) => t.output._humanIntervention)) {
-            return true;
-          }
-        }
-        return false;
-      },
-      prepareStep: client.createHitlPrepareStep(),
+      stopWhen: (s) => client.createHitlStopStep()(s),
     });
 
     response.merge(result.toUIMessageStream());

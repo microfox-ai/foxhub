@@ -87,7 +87,9 @@ export const taskIntegrationPlatform = z.object({
   //     "The preferred auth method for the platform based on the given task"
   //   )
   //   .optional(),
-  package: z.string().describe("The package name of the platform").optional(),
+  package: z
+    .string()
+    .describe("The package name of the platform - @microfox/null if not found"),
   functionSearch: z
     .string()
     .describe(

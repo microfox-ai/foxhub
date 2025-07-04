@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { useTaskInstanceMetaContext } from '../../providers/TaskInstanceMetaProvider';
@@ -182,7 +182,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         return `https://github.com/${PROJECT_REPO_OWNER}/${selectedRequest.repoName}/tree/${selectedRequest.prBranch}`;
     }, [selectedRequest, activeFile]);
 
-    const fetchFileContent = async (filePath: string) => {
+    const fetchFileContent = useCallback(async (filePath: string) => {
         if (!selectedRequest || !selectedRequest.repoName || !selectedRequest.prBranch) {
             toast.error('No project selected');
             return null;
@@ -205,7 +205,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [selectedRequest]);
 
     const { data: secretsData, mutate: mutateSecrets } = useSWR<{
         clientSecrets: ClientSecret[];
@@ -347,7 +347,7 @@ const CodeStudio: React.FC<CodeStudioProps> = ({ }) => {
         };
 
         loadFileContent();
-    }, [activeFile]);
+    }, [activeFile, selectedRequest]);
 
     // Add keyboard shortcut support for saving
     useEffect(() => {

@@ -240,6 +240,7 @@ export const fetchPackageDocs = (
             //     (p) => p.package === pkg
             //   );
             let mainReadme = await getPackageFunctions(pkg.package, "main");
+            console.log("mainReadme", mainReadme);
             readme = mainReadme.map((r) => r.docs).join("\n\n");
             if (!pkg.readmeSearch) {
               console.log("no reason for this platform", pkg);

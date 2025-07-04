@@ -48,8 +48,10 @@ export const genServerlessIndex = async (
     })
   );
 
-  const serverlessYmlFInal = allGenFilesList?.find((file: any) =>
-    file.filePath?.includes("serverless.yml")
+  const serverlessYmlFInal = allGenFilesList?.find(
+    (file: any) =>
+      file.fileName?.includes("serverless.yml") ||
+      file.filePath?.includes("serverless.yml")
   );
   if (!serverlessYmlFInal) {
     throw new Error("Serverless.yml file not found");

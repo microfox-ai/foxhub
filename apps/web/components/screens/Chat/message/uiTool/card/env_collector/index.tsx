@@ -45,6 +45,7 @@ import { ExtraEnvVariable, TaskInstanceMetaType } from "@/server/convertfox/help
 import { FileTree, type BuildFile, type FileTreeNode } from "../../../../code/FileTree";
 import { ActionButtons } from "../../buttons_list/ActionButtons";
 import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 
 interface UIAnnotation {
   objectType: string;
@@ -125,6 +126,7 @@ export const EnvCollector = ({
   const requestParamId = params?.request_id;
   const projectParamId = params?.project_id;
   const { user } = useAuth();
+  const { selectedRequest, mutateSelectedClientRequest } = useClientProject();
   const { data: secretsData, mutate: mutateSecrets } = useSWR<{
     clientSecrets: ClientSecret[];
   }>(
@@ -165,6 +167,12 @@ export const EnvCollector = ({
     refreshInterval: 10000
   }
   );
+
+  useEffect(() => {
+    if (selectedRequest && (!selectedRequest.repoName || !selectedRequest.prBranch)) {
+      mutateSelectedClientRequest();
+    }
+  }, [selectedRequest]);
 
   const isLoading = isTaskInstanceMetaLoading || !taskInstanceMeta;
 
@@ -258,6 +266,8 @@ export const EnvCollector = ({
       </div>
     );
   }
+
+
 
   return (
     <>

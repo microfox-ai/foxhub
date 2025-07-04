@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EnvConfigurationEditor } from "./EnvConfigurationEditor";
+import { useClientProject } from "../../providers/ClientProjectProvider";
 
 
 interface EnvVariablesDialogProps {

@@ -36,9 +36,6 @@ function useClientProjectContext() {
     useLocalState<BotProjectWithRequests | null>("selectedProject", null);
   const [selectedClientDeployment, setSelectedClientDeployment] =
     useState<ClientDeployment | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(
-    null
-  );
   const { user } = useAuth();
   const router = useRouter();
 
@@ -60,6 +57,16 @@ function useClientProjectContext() {
     mutate: mutateBotProjects,
   } = useSWR<BotProjectWithRequests[]>(
     user?.id ? `/api/bot-project?userId=${user?.id}` : null,
+    async (url: string) => await fetch(url).then((res) => res.json())
+  );
+
+  const {
+    data: selectedClientRequest,
+    error: selectedClientRequestError,
+    isLoading: selectedClientRequestLoading,
+    mutate: mutateSelectedClientRequest,
+  } = useSWR(
+    requestParamId ? `/api/client-requests/${requestParamId}` : null,
     async (url: string) => await fetch(url).then((res) => res.json())
   );
 
@@ -118,28 +125,10 @@ function useClientProjectContext() {
   };
 
   useEffect(() => {
-    if (selectedRequest?.id) {
-      updateClientDeploymentById(selectedRequest.id);
+    if (selectedClientRequest?.id) {
+      updateClientDeploymentById(selectedClientRequest.id);
     }
-  }, [selectedRequest?.id]);
-
-  useEffect(() => {
-    if (projectParamId && projects) {
-      const project = projects?.find((p: any) => p.id === projectParamId);
-      if (project) {
-        setSelectedProject(project);
-        const request = project?.clientRequests.find(
-          (r: any) => r.id === requestParamId
-        );
-        if (
-          request &&
-          (!selectedRequest || request.id !== selectedRequest.id)
-        ) {
-          setSelectedRequest(request);
-        }
-      }
-    }
-  }, [projectParamId, requestParamId, projects]);
+  }, [selectedClientRequest?.id]);
 
   const createNewEmptyRequest = async (
     flow?: MinionFlowType,
@@ -183,7 +172,7 @@ function useClientProjectContext() {
 
           setSubmitAnnotations(annotations ?? []);
           setAutoSubmit(_autoSubmit ?? null);
-          setSelectedRequest(newRequest);
+          mutateSelectedClientRequest(newRequest);
           router.push(
             `/project/${selectedProject.id}/request/${newRequest.id}`
           );
@@ -248,12 +237,13 @@ function useClientProjectContext() {
     selectedClientDeployment,
     updateClientDeploymentById,
     selectedProject,
-    selectedRequest,
+    selectedRequest: selectedClientRequest,
     projects,
     isLoading,
     createNewEmptyRequest,
     setSelectedProject,
-    setSelectedRequest,
+    setSelectedRequest: mutateSelectedClientRequest,
+    mutateSelectedClientRequest,
     selectedProjectClientRequests: (selectedProjectClientRequests?.data ??
       []) as ClientRequest[],
     selectedProjectClientRequestsLoading,

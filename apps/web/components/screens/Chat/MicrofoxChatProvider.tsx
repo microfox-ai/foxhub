@@ -38,7 +38,7 @@ export interface MicrofoxChatProviderProps {
 
 export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOptions?: Partial<UseChatOptions<UIMessage>>) => {
 
-  const { selectedRequest, setSelectedRequest } = useClientProject();
+  const { selectedRequest, mutateSelectedClientRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
 
   const { user } = useAuth();
@@ -166,9 +166,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     const lastMessage = chatOptions.messages?.[chatOptions.messages.length - 1];
     const isClientRequestTitle: any = lastMessage?.metadata?.clientRequestTitle;
     if (isClientRequestTitle) {
-      setSelectedRequest((s) => {
-        return s ? { ...s, title: isClientRequestTitle } : s;
-      });
+      mutateSelectedClientRequest();
     }
   }, [chatOptions.messages]);
 

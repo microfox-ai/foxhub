@@ -1,5 +1,9 @@
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import { PackageInfoHelper, findSimilarPackages, PackageDbInfo } from "@/utils/services/embeddings/packageSearch";
+import {
+  PackageInfoHelper,
+  findSimilarPackages,
+  PackageDbInfo,
+} from "@/utils/services/embeddings/packageSearch";
 import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
 import { generateObject, streamText, tool } from "ai";
 import { z } from "zod";
@@ -48,12 +52,12 @@ export const createTaskIntegrations: AiToolFactory<
     inputSchema:
       classification === "modification"
         ? z.object({
-          taskInstanceMeta: taskInstance.or(z.any()),
-          modification: z.string().optional(),
-        })
+            taskInstanceMeta: taskInstance.or(z.any()),
+            modification: z.string().optional(),
+          })
         : z.object({
-          taskInstanceMeta: taskInstance.or(z.any()),
-        }),
+            taskInstanceMeta: taskInstance.or(z.any()),
+          }),
     execute: async (
       { taskInstanceMeta, modification },
       { messages, toolCallId }
@@ -72,10 +76,10 @@ export const createTaskIntegrations: AiToolFactory<
       const packageList = await PackageInfoHelper.getAllPackages({
         statuses: IN_STAGING
           ? [
-            PackageStatus.STABLE,
-            PackageStatus.SEMISTABLE,
-            PackageStatus.EXTERNAL,
-          ]
+              PackageStatus.STABLE,
+              PackageStatus.SEMISTABLE,
+              PackageStatus.EXTERNAL,
+            ]
           : [PackageStatus.STABLE, PackageStatus.EXTERNAL],
       });
 
@@ -127,7 +131,11 @@ export const createTaskIntegrations: AiToolFactory<
           Now, begin your process for the following task.
         `,
         schema: z.object({
-          searchQueries: z.array(z.string()).describe("Array of actionable, package-level search queries mentioning the required functionality needed for the task."),
+          searchQueries: z
+            .array(z.string())
+            .describe(
+              "Array of actionable, package-level search queries mentioning the required functionality needed for the task."
+            ),
         }),
         prompt: `
           Name: ${taskInfo.name}
@@ -153,19 +161,29 @@ export const createTaskIntegrations: AiToolFactory<
       });
 
       const ragResults = [];
-      const allFoundPackages: Record<string, PackageDbInfo & { functionalities: string[] }> = {};
+      const allFoundPackages: Record<
+        string,
+        PackageDbInfo & { functionalities: string[] }
+      > = {};
 
       for (const query of searchQueries) {
-        const rawSimilarPackages: PackageDbInfo[] = await findSimilarPackages(query, 0.5, 5);
+        const rawSimilarPackages: PackageDbInfo[] = await findSimilarPackages(
+          query,
+          0.5,
+          5
+        );
         if (rawSimilarPackages && rawSimilarPackages.length > 0) {
-          
-          const similarPackages = rawSimilarPackages.map(pkg => {
-            const functionalities = pkg.status === PackageStatus.EXTERNAL
+          const similarPackages = rawSimilarPackages.map((pkg) => {
+            const functionalities =
+              pkg.status === PackageStatus.EXTERNAL
                 ? [`anything related to ${pkg.package_name}`]
-                : pkg.constructors?.map((c: any) => c.functionalities).flat().filter(Boolean) || [];
+                : pkg.constructors
+                    ?.map((c: any) => c.functionalities)
+                    .flat()
+                    .filter(Boolean) || [];
             return { ...pkg, functionalities };
           });
-          
+
           const bestMatch = similarPackages[0];
           const alternatives = similarPackages.slice(1);
           ragResults.push({
@@ -175,19 +193,39 @@ export const createTaskIntegrations: AiToolFactory<
           });
           // Store all unique packages found
           for (const pkg of similarPackages) {
-            if (!allFoundPackages[pkg.package_name] && packageList.some(p => p.package_name === pkg.package_name)) {
+            if (
+              !allFoundPackages[pkg.package_name] &&
+              packageList.some((p) => p.package_name === pkg.package_name)
+            ) {
               allFoundPackages[pkg.package_name] = pkg;
             }
           }
         }
       }
-      console.log("allFoundPackages", allFoundPackages);
+      //console.log("allFoundPackages", allFoundPackages);
+
+      ctx.response.write({
+        type: "text",
+        text: dedent`
+        Based on the requirements, the intitial search results and the available packages, the following packages are found:\n\n
+        ${ragResults
+          .map(
+            (r) => `
+          Platform: ${r.bestMatch?.package_title || "None"}\n
+          Requirement: ${r.searchQueryUsed}\n
+          Alternatives: ${r.alternatives.map((a) => a.package_title).join(", ") || "None"}\n\n
+          ---
+        `
+          )
+          .join("\n\n")}
+        `,
+      });
 
       // Step 3: AI analysis of RAG results
       ctx.response.writeMessageMetadata({
-        loader: `Analysing ${Object.keys(allFoundPackages).length} potential packages...`,
+        loader: `Filtering for the best packages...`,
       });
-      
+
       const packageResult = await generateObject({
         model: models.googleGeminiPro,
         system: `
@@ -227,14 +265,23 @@ export const createTaskIntegrations: AiToolFactory<
         TASK SUMMARY: ${taskInfo.summary}
         ---
         SEARCH RESULTS:
-        ${ragResults.map(r => `
+        ${ragResults
+          .map(
+            (r) => `
           Query: "${r.searchQueryUsed}"
-          Best Match: ${r.bestMatch?.package_name || 'None'}
-          Alternatives: ${r.alternatives.map(a => a.package_name).join(", ") || 'None'}
-        `).join('\n')}
+          Best Match: ${r.bestMatch?.package_name || "None"}
+          Alternatives: ${r.alternatives.map((a) => a.package_name).join(", ") || "None"}
+        `
+          )
+          .join("\n")}
         ---
         AVAILABLE PACKAGE FUNCTIONALITIES:
-        ${Object.values(allFoundPackages).map((pkg) => `Package: ${pkg.package_name}\nStatus: ${pkg.status}\nFunctionalities: ${pkg.functionalities.join(", ")}`).join("\n")}
+        ${Object.values(allFoundPackages)
+          .map(
+            (pkg) =>
+              `Package: ${pkg.package_name}\nStatus: ${pkg.status}\nFunctionalities: ${pkg.functionalities.join(", ")}`
+          )
+          .join("\n")}
         `,
       });
 
@@ -260,18 +307,37 @@ export const createTaskIntegrations: AiToolFactory<
 
       console.log(
         "platforms",
-        platforms.map((p) => p.name + "-" + p.package)
+        platforms.map((p) => p.name)
       );
 
       try {
-        let finalPlatforms = platforms.filter(
-          (platform) => platform.package != undefined
-        );
+        let finalPlatforms = platforms
+          .map((p) => {
+            if (p.package === undefined) return;
+            let packageInfo = allFoundPackages[p.package];
+            if (p.package === "@microfox/null") {
+              return {
+                ...p,
+                package: p.package,
+              };
+            }
+            return {
+              ...p,
+              name: packageInfo?.package_title || p.name,
+              package: p.package,
+            };
+          })
+          .filter((p) => p != undefined);
 
         platforms.forEach(async (platform) => {
           if (platform.package === undefined) return;
           let packageInfo = allFoundPackages[platform.package];
-          console.log("package Name", platform.package, "has added dependencies", packageInfo?.added_dependencies);
+          console.log(
+            "package Name",
+            platform.package,
+            "has added dependencies",
+            packageInfo?.added_dependencies
+          );
           if (
             packageInfo &&
             packageInfo.added_dependencies &&

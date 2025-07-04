@@ -1,5 +1,6 @@
 import { MinionFlow, MinionType } from "@/components/screens/hooks/convertors";
 import { microfoxRouter } from "@/server/microfoxRouter";
+import { UIMessage } from "ai";
 
 export const maxDuration = 600;
 
@@ -7,7 +8,10 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { messages, ...restOfBody } = body;
   // console.log("body", body, restOfBody);
-  const lastMessage = body.messages?.[body.messages.length - 1];
+  const lastMessage = body.messages?.[body.messages.length - 1] as UIMessage<
+    any,
+    any
+  >;
   let minionFlow = lastMessage?.metadata?.minionFlow ?? restOfBody.minionFlow;
   if (minionFlow === MinionFlow.Unknown) {
     minionFlow = MinionFlow.BuildFlow;
@@ -21,13 +25,18 @@ export async function POST(req: Request) {
     restOfBody,
     messages[messages.length - 1]
   );
-  return microfoxRouter.handle("/" + minionFlow, {
-    request: {
-      messages: body.messages,
-      ...restOfBody,
-      clientRequestId,
-      minionType,
-      minionFlow,
-    },
-  });
+  const revalidatePath = lastMessage?.metadata?.revalidatePath;
+
+  return microfoxRouter.handle(
+    revalidatePath ? revalidatePath : "/" + minionFlow,
+    {
+      request: {
+        messages: body.messages,
+        ...restOfBody,
+        clientRequestId,
+        minionType,
+        minionFlow,
+      },
+    }
+  );
 }

@@ -194,6 +194,9 @@ export type AiContext<
    * @internal
    */
   next: NextHandler<METADATA, PARTS, TOOLS, ContextState>;
+
+  _onExecutionStart?: () => void;
+  _onExecutionEnd?: () => void;
 };
 
 /** Represents the `next` function in a middleware chain, used to pass control to the next handler. */
@@ -963,11 +966,12 @@ export class AiAgentKit<
         ctx.logger.log(`-> Running ${layerType}: ${layerPath}`);
 
         try {
-          // Wrap the handler execution in a new Promise to make the async
-          // contract explicit and robust, preventing premature resolution of the await.
-          await new Promise<void>((resolve, reject) => {
-            layer.handler(ctx, next).then(resolve).catch(reject);
-          });
+          if (ctx._onExecutionStart) {
+            ctx._onExecutionStart();
+          }
+          // The handler is an async function, so we can await it directly.
+          // The original Promise wrapper was redundant and could hide issues.
+          await layer.handler(ctx, next);
 
           ctx.logger.log(`<- Finished ${layerType}: ${layerPath}`);
         } catch (err) {
@@ -976,14 +980,21 @@ export class AiAgentKit<
             err
           );
           throw err;
+        } finally {
+          if (ctx._onExecutionEnd) {
+            ctx._onExecutionEnd();
+          }
         }
       };
 
-      return dispatch(0);
+      await dispatch(0);
+      return;
     } finally {
       // No-op. Stack is managed by context creation/destruction.
     }
   }
+
+  private pendingExecutions = 0;
 
   /**
    * The main public entry point for the router. It handles an incoming request,
@@ -1009,31 +1020,11 @@ export class AiAgentKit<
     const self = this; // Reference to the router instance
 
     // --- Execution Lifecycle Management ---
-    let pendingExecutions = 0;
     let executionCompletionResolver: (() => void) | null = null;
     const executionCompletionPromise = new Promise<void>((resolve) => {
       executionCompletionResolver = resolve;
     });
 
-    const onExecutionStart = () => {
-      pendingExecutions++;
-      self.logger.log(
-        `[AiAgentKit][lifecycle] Execution started. Pending: ${pendingExecutions}`
-      );
-    };
-
-    const onExecutionEnd = () => {
-      pendingExecutions--;
-      self.logger.log(
-        `[AiAgentKit][lifecycle] Execution ended. Pending: ${pendingExecutions}`
-      );
-      if (pendingExecutions === 0 && executionCompletionResolver) {
-        self.logger.log(
-          `[AiAgentKit][lifecycle] All executions finished. Resolving promise.`
-        );
-        executionCompletionResolver();
-      }
-    };
     // --- End Execution Lifecycle Management ---
 
     return createUIMessageStreamResponse({
@@ -1064,31 +1055,67 @@ export class AiAgentKit<
               generateId: generateId,
             },
             next: undefined as any, // Will be replaced right after
-            _onExecutionStart: onExecutionStart,
-            _onExecutionEnd: onExecutionEnd,
+            _onExecutionStart: () => {
+              self.pendingExecutions++;
+              self.logger.log(
+                `[AiAgentKit][lifecycle] Execution started. Pending: ${self.pendingExecutions}`
+              );
+            },
+            _onExecutionEnd: () => {
+              self.pendingExecutions--;
+              self.logger.log(
+                `[AiAgentKit][lifecycle] Execution ended. Pending: ${self.pendingExecutions}`
+              );
+              if (self.pendingExecutions === 0 && executionCompletionResolver) {
+                self.logger.log(
+                  `[AiAgentKit][lifecycle] All executions finished. Resolving promise.`
+                );
+                executionCompletionResolver();
+              }
+            },
           };
           ctx.next = new NextHandler(
             ctx,
             self,
-            onExecutionStart,
-            onExecutionEnd
+            ctx._onExecutionStart,
+            ctx._onExecutionEnd
           ) as any;
 
-          onExecutionStart();
+          ctx._onExecutionStart();
+          self.logger.log(
+            `[AiAgentKit][lifecycle] Main execution chain started.`
+          );
 
           // Fire off the main execution chain. We don't await it here because, in a streaming
           // context, the await might resolve prematurely when the agent yields control.
           // Instead, we catch errors and use .finally() to reliably mark the end of this
           // specific execution, while the main function body waits on the lifecycle promise.
-          self
-            ._execute(path, ctx)
-            .catch((err) => {
-              ctx.logger.error("Unhandled error in main execution chain", err);
-              // Optionally, you could write an error message to the stream here.
-            })
-            .finally(() => {
-              onExecutionEnd();
-            });
+          // self
+          //   ._execute(path, ctx)
+          //   .catch((err) => {
+          //     ctx.logger.error("Unhandled error in main execution chain", err);
+          //     // Optionally, you could write an error message to the stream here.
+          //   })
+          //   .finally(() => {
+          //     ctx._onExecutionEnd();
+          //   });
+
+          try {
+            await self._execute(path, ctx);
+          } catch (err) {
+            ctx.logger.error("Unhandled error in main execution chain", err);
+          } finally {
+            ctx._onExecutionEnd();
+            self.logger.log(
+              `[AiAgentKit][lifecycle] Main execution chain finished.`
+            );
+          }
+
+          // ctx.next
+          //   .callAgent(path, initialContext.request.params)
+          //   .catch((err) => {
+          //     ctx.logger.error("Unhandled error in main execution chain", err);
+          //   });
 
           // Wait for the promise that resolves only when all executions (the main one
           // and all sub-calls) have completed.

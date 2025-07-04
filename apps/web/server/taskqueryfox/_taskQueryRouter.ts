@@ -18,8 +18,19 @@ import { models } from "../models";
 // it also has to update the taskInstanceMeta
 const taskQueryAgent = new AiAgentKit<any, any, any, any>();
 
+taskQueryAgent.use("/", async (ctx, next) => {
+  const { request, state, response } = ctx;
+  console.log(ctx.executionContext.currentPath, "currentPath");
+  response.writeMessageMetadata({
+    revalidatePath: ctx.executionContext.currentPath,
+    revalidateType: "agent",
+  });
+  return next();
+});
+
 taskQueryAgent.agent("/", async (ctx) => {
   const { request, state, response } = ctx;
+
   if (!request.minionContinue) {
     response.writeMessageMetadata({
       minionType: MinionType.TaskQueryFox,
@@ -107,11 +118,11 @@ taskQueryAgent.agent("/", async (ctx) => {
       ...m,
       parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
     }));
-    console.log(
-      request.messages[0],
-      JSON.stringify(processedMessages[processedMessages.length - 1]?.parts),
-      "processedMessages"
-    );
+    // console.log(
+    //   request.messages[0],
+    //   JSON.stringify(processedMessages[processedMessages.length - 1]?.parts),
+    //   "processedMessages"
+    // );
 
     // const processedMessages = await processToolCalls(
     //   {

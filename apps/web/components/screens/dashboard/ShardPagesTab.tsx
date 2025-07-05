@@ -30,18 +30,10 @@ export const ShardPagesTab = (props: ShardPagesTabProps) => {
                         <li
                             key={shardpage.id}
                             onClick={() => {
-                                createNewEmptyRequest(MinionFlow.BuildFlow, [
-                                    {
-                                        type: "body",
-                                        key: "shard_id",
-                                        value: shardpage.id
-                                    },
-                                    {
-                                        type: "body",
-                                        key: "minionType",
-                                        value: MinionType.InstallFox
-                                    }
-                                ], "Set this up for me - " + shardpage.title);
+                                createNewEmptyRequest(MinionFlow.BuildFlow, {
+                                    shard_id: shardpage.id,
+                                    minionType: MinionType.InstallFox
+                                }, "Set this up for me - " + shardpage.title);
                             }}
                             className="flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
                             <PlusIcon className="w-4 h-4" />

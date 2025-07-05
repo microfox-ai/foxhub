@@ -165,10 +165,10 @@ const IdeasSection: React.FC = () => {
             <div className='flex flex-row justify-between px-4 md:px-16 py-4'>
                 <div className="flex flex-col items-start justify-start">
                     <h2 className="text-3xl md:text-5xl font-thin text-left text-white mb-4">
-                        Add pre-built Shards to power up your microfox.
+                        Add pre-built micro-agents to power up your microfox.
                     </h2>
                     <p className="text-left text-neutral-400 mb-4">
-                        Shards are pre designed Ai toolkit for your microfox. They are tested, iterated by our solution engineers and produce powerful results.
+                        Micro-agents are pre designed Ai toolkit for your microfox. They are tested, iterated by our solution engineers and produce powerful results.
                     </p>
                 </div>
                 {/* <img

@@ -30,7 +30,7 @@ export default function ChatInputBox({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
-  const { selectedRequest, submitAnnotations, setSubmitAnnotations, autoSubmit, setAutoSubmit } = useClientProject();
+  const { selectedRequest, submitMetadata, setSubmitMetadata, autoSubmit, setAutoSubmit } = useClientProject();
   const { handleSubmit, messages, status, append, input, setInput } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -65,13 +65,15 @@ export default function ChatInputBox({
       return;
     }
     const isFirstMessage = messages.length === 0;
-    const minionFlow: any = isFirstMessage ? selectedRequest?.minionFlow ?? MinionFlow.BuildFlow : undefined;
+    const minionFlow: any = isFirstMessage ? (selectedRequest?.minionFlow ?? MinionFlow.BuildFlow) : undefined;
     let minionType: any = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
-    const extraBody = constructAutoSubmitBody(submitAnnotations);
+    const extraBody = {
+      ...submitMetadata
+    }
     if (extraBody.api_errors) {
       minionType = MinionType.HotFixFox;
     }
-    setSubmitAnnotations([]);
+    setSubmitMetadata({});
     setAutoSubmit(null);
     handleSubmit(input, e, {
       body: {
@@ -82,9 +84,9 @@ export default function ChatInputBox({
     });
   }
 
-  const apiErrors = submitAnnotations.find((annotation) => annotation.type === "body" && annotation.key === "api_errors");
+  const apiErrors = submitMetadata.api_errors;
   useEffect(() => {
-    if (apiErrors?.value?.length > 0) {
+    if (apiErrors?.length > 0) {
       setInput("Fix the following")
       textareaRef.current?.focus();
     }
@@ -98,13 +100,13 @@ export default function ChatInputBox({
         body: {
           minionFlow: minionFlow,
           minionType: minionType,
-          ...constructAutoSubmitBody(submitAnnotations)
+          ...submitMetadata
         }
       });
       setAutoSubmit(null);
-      setSubmitAnnotations([]);
+      setSubmitMetadata({});
     }
-  }, [autoSubmit, submitAnnotations]);
+  }, [autoSubmit, submitMetadata]);
 
   return (
     <div className={cn("w-full overflow-visible", className)}>
@@ -165,9 +167,10 @@ export default function ChatInputBox({
                 {apiErrors?.value?.length} Logs attached
                 <XIcon
                   onClick={() => {
-                    setSubmitAnnotations((sa) => {
-                      return sa.filter((a) => a.type !== "body" || a.key !== "api_errors");
-                    });
+                    setSubmitMetadata((sm: any) => ({
+                      ...sm,
+                      api_errors: undefined
+                    }))
                   }}
                   className="h-4 w-4 cursor-pointer" />
               </div>

@@ -37,12 +37,14 @@ const FeaturesSection: React.FC = () => {
                     Automate your workflows with prompts
                 </h3>
 
-                <Button
-                    className='bg-neutral-900 text-white font-thin mb-4 rounded-full py-4'
-                >
-                    <span className='font-regular px-2'>Hire Microfox</span>
-                    <ChevronRight className='w-4 h-4' />
-                </Button>
+                <div className="flex flex-row gap-4">
+                    <Button
+                        className='bg-neutral-900 text-white font-thin mb-4 rounded-full py-4'
+                    >
+                        <span className='font-regular px-2'>Hire Microfox</span>
+                        <ChevronRight className='w-4 h-4' />
+                    </Button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 my-12">
                     {features.map((feature, index) => (

@@ -1,191 +1,100 @@
-// import { findLastElementWith } from "@/utils/helpers/array";
-// import {
-//   defaultCallbackResultBody,
-//   defaultRequestBody,
-//   ServerStreamingFunction,
-// } from "@repo/ai-utils/router";
-// import { generateObject } from "ai";
-// import { z } from "zod";
-// import { models } from "../models";
-// import { convertfoxRouter } from "../convertfox/_router";
-// import { hellofoxRouter } from "../hellofox/hellofox.agent";
-// import { deployFoxRouter } from "../deployfox/deployfoxAgent";
-// import { buildFoxRouter } from "../buildfox/_buildFoxRouter";
-// import {
-//   MinionFlow,
-//   MinionSupports,
-//   MinionType,
-//   MinionTypeType,
-// } from "@/components/screens/hooks/convertors";
-// import { hotfixFoxRouter } from "../hotfixfox/_hotfixRouter";
-// import { publishFoxRouter } from "../publishfox/_publishFoxRouter";
-// import { installFoxRouter } from "../installfox/_installFoxRouter";
-// // hellofox, convertfox, buildfox, deployfox, testfox.
-// export const chatFlow: ServerStreamingFunction<
-//   any,
-//   defaultCallbackResultBody
-// > = async (props) => {
-//   const { dataStream, requestBody, responseBody } = props;
+import { AiAgentKit } from "@repo/ai-utils/router";
+import { MinionFlow } from "@/components/screens/hooks/convertors";
+import { DefaultMessageMetadata } from "../microfoxRouter";
+import { convertToModelMessages, streamText } from "ai";
+import { models } from "../models";
+import { cleanUiMessageParts } from "@/utils/helpers/array";
+import { createOpenApiToolset } from "@microfox/tool-kit";
+import docData from "../slsfox/test_openapi.json";
+import { fetchAuthSecrets } from "../slsfox/fetchVariables";
+import { codeTemplateType } from "../convertfox/helpers/types";
+import { templateEnvsFromTaskIntegrations } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
+import { prisma } from "@/prisma/prisma";
 
-//   if (!requestBody.messages)
-//     return {
-//       responseBody: { ...responseBody },
-//       appendRequestBody: { ...requestBody },
-//     };
+const chatManager = new AiAgentKit<any, any, any, any>();
 
-//   const lastUsersMessage = findLastElementWith(
-//     requestBody.messages as any[],
-//     (message) => message.role === "user"
-//   );
-//   const lastAssistantMessage = findLastElementWith(
-//     requestBody.messages as any[],
-//     (message) => message.role === "assistant"
-//   );
-//   if (!lastUsersMessage)
-//     return {
-//       responseBody: { ...responseBody },
-//       appendRequestBody: { ...requestBody },
-//     };
+chatManager.use("/", async (ctx, next) => {
+  const { response } = ctx;
+  response.writeMessageMetadata({
+    minionFlow: MinionFlow.ChatFlow,
+  });
+  return next();
+});
 
-//   props.dataStream.writeMessageAnnotation({
-//     type: "minionFlow",
-//     value: MinionFlow.ChatFlow,
-//   });
+chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
+  const clientRequest = await prisma.clientRequest.findUnique({
+    where: {
+      id: ctx.request.clientRequestId,
+    },
+  });
 
-//   // clientRequestId is sent back in analytics
-//   // props.dataStream.writeMessageAnnotation({
-//   //   type: "clientRequestId",
-//   //   value: requestBody.clientRequestId,
-//   // });
+  const client = await createOpenApiToolset({
+    schema: docData as any,
+    baseUrl: "http://localhost:4000",
+    name: "slack-web-tiny",
+    getAuth: async (options) => {
+      const output = await fetchAuthSecrets(
+        options,
+        clientRequest,
+        undefined,
+        true
+      );
+      if (clientRequest) {
+        const envs = await templateEnvsFromTaskIntegrations(
+          codeTemplateType.enum.upstash_sls,
+          clientRequest
+        );
+        output.variables = output.variables?.concat(envs) ?? envs;
+      }
+      return output;
+    },
+  });
 
-//   const lastUsersMessageContent = lastUsersMessage.content;
-//   let minionType: MinionTypeType = requestBody.minionType;
+  const toolSet = await client.tools({
+    disableAllExecutions: true,
+  });
 
-//   if (minionType === MinionType.Unknown && requestBody.messages.length <= 1) {
-//     minionType = MinionType.HelloFox;
-//   }
+  console.log("toolSet", Object.keys(toolSet.tools));
+  //return;
 
-//   const isMinionFirsttime =
-//     requestBody.messages.filter(
-//       (m: any) =>
-//         m.role === "assistant" &&
-//         m.annotations?.find((a: any) => a.type === "minion")?.value ===
-//           minionType
-//     ).length < 1;
+  const processedMessages = await client.processToolResult(
+    cleanUiMessageParts(ctx.request.messages)
+  );
 
-//   const isSameMinionJustBefore =
-//     lastAssistantMessage?.annotations?.find((a: any) => a.type === "minion")
-//       ?.value === minionType;
+  const stream = streamText({
+    model: models.claudeHaiku,
+    messages: convertToModelMessages(cleanUiMessageParts(processedMessages)),
+    tools: toolSet.tools,
+    toolChoice: "auto",
+    system:
+      "You are called Microfox, a helpful assistant that can user with his tasks.",
+    stopWhen: client.createHitlStopStep(),
+  });
 
-//   const isMinionSupportsIntentReading =
-//     MinionSupports[minionType]?.includes("intent-observor"); // convertfox, hellofox
+  ctx.response.merge(stream.toUIMessageStream());
+});
 
-//   let needIntentObserver = false;
+export { chatManager };
 
-//   if (minionType === MinionType.Unknown) {
-//     needIntentObserver = true;
-//   }
-//   if (
-//     !isMinionFirsttime &&
-//     !isMinionSupportsIntentReading &&
-//     isSameMinionJustBefore
-//   ) {
-//     needIntentObserver = true;
-//   }
+// ux pattern.
+// user asks to send a notification to everyone in team.
+// pickAuthSecrets is called as tool, so as to select the identity & get the variables.
+// user picks/approves the identity.
+// after authentication exists, it call the listChannels tool & asks user.
 
-//   console.log(
-//     "needIntentObserver",
-//     minionType,
-//     needIntentObserver,
-//     isMinionFirsttime,
-//     isMinionSupportsIntentReading,
-//     isSameMinionJustBefore
-//   );
+// in a second message, user says a particular channel.
+// it should not again call the pickAuthSecrets tool (as the auth are already set at the above step).
+// it should call the postmessage tool to send the message now.
 
-//   if (needIntentObserver) {
-//     props.dataStream.writeMessageAnnotation({
-//       type: "thinking",
-//       content: "Thinking about the user's intent",
-//     });
+// AUTH:
+// 2. authSecret selection - first time setup. (untested)
+// 3. check encrypt/decrypt headers working.
+// 4. multiPackage authSecrets for a single toolCall
+// 5. cuwtom secrets for a single toolCall
 
-//     const result = await generateObject({
-//       model: models.googleGeminiPro,
-//       schema: z.object({
-//         intent: z.enum([
-//           "Casual-Chat",
-//           "Publish-App-to-Store",
-//           "Modify-Task",
-//           "Add-Features",
-//           "Rebuild-App",
-//           "Redeploy-App",
-//         ]),
-//         reason: z.string(),
-//       }),
-//       system: `
-//             We are building an automation for the user.
-//             In the middle of the conversation, user has sent the following message,
-//             we need to detect the exact intent of the user to understand what they want to do.
+// TODO:
+// 1. insert toolCapabilities into the prompt
+// 2. divide toolselection & toolExecution into seperate agents.
+// 3.
 
-//             CRITICAL:
-//             If the user is asking for even a tiny change/modification, then always pass the intent as "Modify-Task"
-//             If the user is asking for a new feature, then pass the intent as "Add-Features"
-//         `,
-//       prompt: `
-//             The user has sent the following message:
-//             ${lastUsersMessageContent}
-//         `,
-//     });
-
-//     console.log("result", result.object.intent);
-
-//     switch (result.object.intent) {
-//       case "Modify-Task":
-//         return convertfoxRouter(props);
-//       case "Add-Features":
-//         return hellofoxRouter(props);
-//       case "Casual-Chat":
-//         return hellofoxRouter(props);
-//       case "Rebuild-App":
-//         return buildFoxRouter(props);
-//       case "Redeploy-App":
-//         return deployFoxRouter(props);
-//       case "Publish-App-to-Store":
-//         return publishFoxRouter(props);
-//       default:
-//         props.dataStream.writeMessageAnnotation({
-//           type: "error",
-//           content: "Unknown minion type",
-//         });
-//         return {
-//           responseBody: { ...responseBody },
-//           appendRequestBody: { ...requestBody },
-//         };
-//     }
-//   } else {
-//     switch (minionType) {
-//       case MinionType.HelloFox:
-//         return hellofoxRouter(props);
-//       case MinionType.ConvertFox:
-//         return convertfoxRouter(props);
-//       case MinionType.BuildFox:
-//         return buildFoxRouter(props);
-//       case MinionType.DeployFox:
-//         return deployFoxRouter(props);
-//       case MinionType.HotFixFox:
-//         return hotfixFoxRouter(props);
-//       case MinionType.PublishFox:
-//         return publishFoxRouter(props);
-//       case MinionType.InstallFox:
-//         return installFoxRouter(props);
-//       default:
-//         props.dataStream.writeMessageAnnotation({
-//           type: "error",
-//           content: "Unknown minion type",
-//         });
-//         return {
-//           responseBody: { ...responseBody },
-//           appendRequestBody: { ...requestBody },
-//         };
-//     }
-//   }
-// };
+// default Available toolcalss - sequentialThinker, Fetcher WebPage

@@ -129,7 +129,7 @@ const MicrofoxSection = () => {
                 <div className='flex flex-col justify-start'>
                     {/* Header Section */}
                     <div className="my-8 sm:my-16">
-                        <h2 className="text-4xl sm:text-6xl lg:text-8xl font-bold mb-2">Hire Microfox </h2>
+                        <h2 className="text-4xl sm:text-6xl lg:text-8xl font-bold mb-2"> </h2>
                         <p className="text-2xl sm:text-3xl lg:text-4xl text-muted-foreground max-w-3xl">
                             Run your digital operations at scale.
                         </p>

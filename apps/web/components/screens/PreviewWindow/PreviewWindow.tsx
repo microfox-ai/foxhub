@@ -78,7 +78,7 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const [showLogs, setShowLogs] = useState(false);
-  const { setSubmitAnnotations, setAutoSubmit, selectedClientDeployment: clientDeployment } = useClientProject();
+  const { setSubmitMetadata, setAutoSubmit, selectedClientDeployment: clientDeployment } = useClientProject();
   const { setActiveTab } = useTabUi()
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
@@ -1041,18 +1041,10 @@ const PreviewWindow = () => {
                       clientDeployment: clientDeployment,
                       fetchError: fetchError
                     }
-                    setSubmitAnnotations((sa) => {
-                      const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
-                      const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
-                      return [
-                        ...newAnnotations,
-                        {
-                          type: "body",
-                          key: "api_errors",
-                          value: [...(existingErrorAttachment?.value || []), errorAttachment]
-                        }
-                      ]
-                    });
+                    setSubmitMetadata((sm: any) => ({
+                      ...sm,
+                      api_errors: sm.api_errors ? [...sm.api_errors, errorAttachment] : [errorAttachment]
+                    }))
                     setActiveTab("chat")
                     handleRightCollapse(true);
                   }}
@@ -1650,18 +1642,10 @@ const PreviewWindow = () => {
                                   modificationInstructions: modificationInstructions
                                 }
                                 setModificationInstructions("");
-                                setSubmitAnnotations((sa) => {
-                                  const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
-                                  const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
-                                  return [
-                                    ...newAnnotations,
-                                    {
-                                      type: "body",
-                                      key: "api_errors",
-                                      value: [...(existingErrorAttachment?.value || []), errorAttachment]
-                                    }
-                                  ]
-                                });
+                                setSubmitMetadata((sm: any) => ({
+                                  ...sm,
+                                  api_errors: sm.api_errors ? [...sm.api_errors, errorAttachment] : [errorAttachment]
+                                }))
                                 setActiveTab("chat")
                                 handleRightCollapse(true);
                               }}

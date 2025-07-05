@@ -25,6 +25,8 @@ type TaskIntegrationsProps = Omit<UiComponentProps['card'], 'uiType'> & {
     lastMessage?: boolean;
     hideMetaInfo?: boolean;
     isLastInQueue?: boolean;
+    onAllSecretsFilled?: () => void;
+    hideButtons?: boolean;
 }
 
 export const TaskIntegrations = ({
@@ -33,6 +35,8 @@ export const TaskIntegrations = ({
     hideMetaInfo,
     isLastInQueue,
     lastMessage,
+    onAllSecretsFilled,
+    hideButtons,
 }: TaskIntegrationsProps) => {
     const { taskInstanceMeta, updateTaskInstanceMeta, mutate: mutateTaskInstanceMeta } = useTaskInstanceMetaContext();
     const [isExpanded, setIsExpanded] = useState(false);
@@ -201,6 +205,14 @@ export const TaskIntegrations = ({
         }
     };
 
+    const [calledOnAllSecretsFilled, setCalledOnAllSecretsFilled] = useState(false);
+    useEffect(() => {
+        if (areKeysFilled && !calledOnAllSecretsFilled) {
+            onAllSecretsFilled?.();
+            setCalledOnAllSecretsFilled(true);
+        }
+    }, [areKeysFilled, onAllSecretsFilled, calledOnAllSecretsFilled]);
+
     //console.log("secretsData", secretsData);
     // If no platforms available, don't render anything
     if (!platforms || platforms.length === 0) {
@@ -282,9 +294,9 @@ export const TaskIntegrations = ({
                                                 <span className="leading-none font-medium w-fit text-gray-900">
                                                     {platform.name}
                                                 </span>
-                                                <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
+                                                {!hideMetaInfo && <span className="text-xs line-clamp-1 max-w-[200px] flex-1 w-full bg-gray-100 text-gray-600 px-1 rounded-full">
                                                     {packageInfo?.name ?? "Not Supported yet"}
-                                                </span>
+                                                </span>}
                                             </div>
                                             <div className="flex items-center gap-2 rounded-lg border border-gray-200 relative">
                                                 {isOAuthRequired && !isApiKeyRequired && (
@@ -316,35 +328,35 @@ export const TaskIntegrations = ({
                     })}
             </div>
 
-            <div className="flex justify-start items-center gap-2">
-
-                <Button
-                    variant="outline"
-                    onClick={() => setIsEditDialogOpen(true)}
-                    className="flex items-center gap-2"
-                    disabled={!isLastInQueue}
-                >
-                    Edit
-                </Button>
-                <ActionButtons
-                    className="mt-0"
-                    buttons={buttons ?? []}
-                    areKeysRequired={platforms.some(
-                        (p) => {
-                            const packageInfo = packagesData?.find((pkg) => pkg.name === p.package);
-                            return !p.optional &&
-                                (packageInfo?.constructors.some(
-                                    (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
-                                ) ||
-                                    packageInfo?.constructors.some(
-                                        (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
-                                    ));
-                        })}
-                    areKeysFilled={areKeysFilled}
-                    disabled={!isLastInQueue}
-                    lastMessage={lastMessage}
-                />
-            </div>
+            {!hideButtons && (
+                <div className="flex justify-start items-center gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => setIsEditDialogOpen(true)}
+                        className="flex items-center gap-2"
+                        disabled={!isLastInQueue}
+                    >
+                        Edit
+                    </Button>
+                    <ActionButtons
+                        className="mt-0"
+                        buttons={buttons ?? []}
+                        areKeysRequired={platforms.some(
+                            (p) => {
+                                const packageInfo = packagesData?.find((pkg) => pkg.name === p.package);
+                                return !p.optional &&
+                                    (packageInfo?.constructors.some(
+                                        (c: Constructor) => c.auth === ClientSecretPackageType.APIKEY
+                                    ) ||
+                                        packageInfo?.constructors.some(
+                                            (c: Constructor) => c.auth === ClientSecretPackageType.OAUTH2
+                                        ));
+                            })}
+                        areKeysFilled={areKeysFilled}
+                        disabled={!isLastInQueue}
+                        lastMessage={lastMessage}
+                    />
+                </div>)}
 
             <EditTaskIntegrationsDialog
                 isOpen={isEditDialogOpen}

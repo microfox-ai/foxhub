@@ -1,5 +1,24 @@
+import { AuthObject, ToolMetadata } from "@microfox/tool-kit";
 import { UiComponentProps } from "./UiComponentProps";
+import { ClientSecret } from "@prisma/client";
 
+export type HitlAuthObject = AuthObject & {
+  secrets: {
+    packageName: string;
+    packageConstructor?: string;
+    secrets: ClientSecret[];
+    selectedSecretId?: string;
+  }[];
+};
+
+export type HitlOutput = {
+  uiComponent: string;
+  props: UiComponentProps[keyof UiComponentProps];
+  _humanIntervention: true;
+  args: any;
+  metadata: ToolMetadata;
+  auth: HitlAuthObject;
+};
 export type MyUiTool = {
   input: {
     uiType: string;
@@ -7,12 +26,14 @@ export type MyUiTool = {
     uiComponent: string;
     props?: UiComponentProps[keyof UiComponentProps];
   };
-  output?: {
-    type: "ui";
-    uiComponent: string;
-    props: UiComponentProps[keyof UiComponentProps];
-    _humanIntervention?: boolean;
-  };
+  output?:
+    | {
+        type: "ui";
+        uiComponent: string;
+        props: UiComponentProps[keyof UiComponentProps];
+        _humanIntervention?: boolean;
+      }
+    | HitlOutput;
 };
 export const uiTool = {
   construct: <P extends keyof UiComponentProps>(

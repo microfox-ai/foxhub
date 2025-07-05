@@ -11,8 +11,16 @@ import { InstallSetup } from "../uiTool/card/install_setup"
 import PublicationInfo from "../uiTool/card/publication_info"
 import { AcceptHitl } from "../uiTool/hitl/Accept"
 import { ToolResultPart, ToolUIPart } from "ai"
+import { HitlAuthWrapper } from "./HitlWrapper"
+import { RenderHiltTool } from "../uiTool/hitl/RenderHitl"
+import { HitlProvider } from "../uiTool/hitl/HitlProvider"
 
-
+/**
+ * RenderUiTool is a component that renders a UI tool (tool-ui-<component>) or sticky parts (tool-<component>).
+ * usually all hitl or sticky parts (but better make a seperation by them having tool-hitl-)
+ * @param param0 
+ * @returns 
+ */
 export const RenderUiTool = ({ tool, lastMessage, lastAnnotationIndices, messageIndex }: {
     tool: MyUiTool & {
         type: `tool-ui-${keyof UiComponentProps}` | `tool-${string}`
@@ -20,16 +28,40 @@ export const RenderUiTool = ({ tool, lastMessage, lastAnnotationIndices, message
     lastMessage: boolean
     lastAnnotationIndices: Map<string, number>,
     messageIndex: number
+    bypassHitlAuth?: boolean
 }) => {
     if (!tool.output) {
         return null;
     }
     const isLastInQueue = lastAnnotationIndices.get(tool.output.uiComponent) === messageIndex;
     if (tool.output?._humanIntervention) {
-        return <AcceptHitl
-            tool={tool as ToolUIPart}
-            lastMessage={lastMessage}
-        />
+        const manipulated_tool = {
+            ...tool,
+            output: {
+                ...tool.output,
+                props: {
+                    ...tool.output.props,
+                    uiType: "hitl" as const,
+                }
+            }
+        }
+        return (
+            <HitlProvider>
+                <HitlAuthWrapper
+                    tool={tool}
+                    lastMessage={lastMessage}
+                    lastAnnotationIndices={lastAnnotationIndices}
+                    messageIndex={messageIndex}
+                >
+                    <RenderHiltTool
+                        tool={manipulated_tool}
+                        lastMessage={lastMessage}
+                        lastAnnotationIndices={lastAnnotationIndices}
+                        messageIndex={messageIndex}
+                    />
+                </HitlAuthWrapper>
+            </HitlProvider>
+        )
     }
     switch (tool.output?.props?.uiType) {
         case "buttons_list":

@@ -24,7 +24,6 @@ async function listByPackage(pkg: string, limit = 10) {
   console.table(data);
 }
 
-
 export async function getPackageFunctions(
   pkg: string,
   type: "constructor" | "function" | "rule" | "all" | "main" = "all"
@@ -98,7 +97,7 @@ export async function getPackageFunctions(
 
   console.log(`\nFound ${data.length} results.`);
   console.table(
-    data.map(d => ({
+    data.map((d) => ({
       package: d.package_name,
       function: d.function_name,
       type: d.doc_type,

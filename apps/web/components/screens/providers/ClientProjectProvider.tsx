@@ -39,9 +39,8 @@ function useClientProjectContext() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [submitAnnotations, setSubmitAnnotations] = useState<
-    { type: "body"; key: string; value: any }[]
-  >([]);
+
+  const [submitMetadata, setSubmitMetadata] = useState<any>({});
   const [autoSubmit, setAutoSubmit] = useState<string | null>(null);
   const params = useParams<{
     project_id?: string;
@@ -132,7 +131,7 @@ function useClientProjectContext() {
 
   const createNewEmptyRequest = async (
     flow?: MinionFlowType,
-    annotations?: any[],
+    metadata?: any,
     _autoSubmit?: string
   ) => {
     if (!user || !selectedProject) {
@@ -153,7 +152,7 @@ function useClientProjectContext() {
       return;
     }
 
-    await toast.promise(
+    toast.promise(
       PortalSdk.postData(`/api/client-requests/create-empty`, {
         userId: user.id,
         botProjectId: selectedProject.id,
@@ -170,7 +169,7 @@ function useClientProjectContext() {
             timestamp: new Date().toISOString(),
           });
 
-          setSubmitAnnotations(annotations ?? []);
+          setSubmitMetadata(metadata ?? {});
           setAutoSubmit(_autoSubmit ?? null);
           mutateSelectedClientRequest(newRequest);
           router.push(
@@ -247,8 +246,8 @@ function useClientProjectContext() {
     selectedProjectClientRequests: (selectedProjectClientRequests?.data ??
       []) as ClientRequest[],
     selectedProjectClientRequestsLoading,
-    submitAnnotations,
-    setSubmitAnnotations,
+    submitMetadata,
+    setSubmitMetadata,
     autoSubmit,
     setAutoSubmit,
     createNewProject,

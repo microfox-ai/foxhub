@@ -309,12 +309,10 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
       }
 
       console.log("[appendMessage] Calling chatOptions.sendMessage with:", { messageNew, chatRequestOptions: { ...chatRequestOptions, body: bodyParams } });
-      const id = await chatOptions.sendMessage(messageNew, {
+      await chatOptions.sendMessage(messageNew, {
         ...chatRequestOptions,
         body: bodyParams,
       });
-      console.log("[appendMessage] chatOptions.sendMessage returned id:", id);
-      return id;
     },
     [clientRequest, lastKnownMinionType, lastKnownMinionFlow, clientRequest?.minionFlow, handleRightCollapse]
   );

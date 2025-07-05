@@ -12,7 +12,7 @@ import { NoProjects } from "./NoProjects";
 import Link from "next/link";
 
 const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
-  const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, setSubmitAnnotations, createNewEmptyRequest } = useClientProject();
+  const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, createNewEmptyRequest } = useClientProject();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultTab);
 

@@ -77,7 +77,7 @@ export const DeploymentsInfo = ({
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
-  const { setSubmitAnnotations, selectedRequest, selectedClientDeployment: clientDeployment } =
+  const { setSubmitMetadata, selectedRequest, selectedClientDeployment: clientDeployment } =
     useClientProject();
   const { taskInstanceMeta } = useTaskInstanceMetaContext();
 
@@ -130,25 +130,10 @@ export const DeploymentsInfo = ({
 
         console.log("errorAttachment", errorAttachment);
 
-        setSubmitAnnotations((sa) => {
-          const existingErrorAttachment = sa.find(
-            (a) => a.type === "body" && a.key === "api_errors"
-          );
-          const newAnnotations = existingErrorAttachment
-            ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors")
-            : sa;
-          return [
-            ...newAnnotations,
-            {
-              type: "body",
-              key: "api_errors",
-              value: [
-                ...(existingErrorAttachment?.value || []),
-                errorAttachment,
-              ],
-            },
-          ];
-        });
+        setSubmitMetadata((sm: any) => ({
+          ...sm,
+          api_errors: sm.api_errors ? [...sm.api_errors, errorAttachment] : [errorAttachment]
+        }))
         setActiveTab("chat");
         handleRightCollapse(true);
       })(),

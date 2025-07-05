@@ -27,9 +27,6 @@ const buildManager = new AiAgentKit<any, any, any, any>();
 
 buildManager.use("/", async (ctx, next) => {
   const { request, state, response } = ctx;
-  if (request.minionContinue) {
-    return;
-  }
   //console.log("/buildFlow use", request, state, response);
   response.writeMessageMetadata({
     minionFlow: MinionFlow.BuildFlow,

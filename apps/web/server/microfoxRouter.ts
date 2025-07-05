@@ -6,6 +6,7 @@ import { AiAgentKit } from "@repo/ai-utils/router";
 import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
 import { buildManager } from "./flows/buildFlow";
 import { assistantMessageProcessor } from "./system/assistantProcess";
+import { chatManager } from "./flows/chatFlow";
 export interface MicrofoxRequestBody {
   originClientRequestId?: string;
   userId?: string;
@@ -25,6 +26,6 @@ const microfoxRouter = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
 microfoxRouter.use("/", assistantMessageProcessor);
 microfoxRouter.use("/", usageTrackerRouter);
 microfoxRouter.agent("/" + MinionFlow.BuildFlow, buildManager);
-//microfoxRouter.agent(MinionFlow.ChatFlow, chatFlow);
+microfoxRouter.agent("/" + MinionFlow.ChatFlow, chatManager);
 
 export { microfoxRouter };

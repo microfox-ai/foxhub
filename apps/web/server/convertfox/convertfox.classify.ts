@@ -22,7 +22,9 @@ export const convertfoxClassify: AiMiddleware<any, any, any, any> = async (
   console.log("convertfoxRouter", state);
 
   // Clean up messages to save tokens
-  request.messages = cleanUiMessageParts(request.messages);
+  request.messages = cleanUiMessageParts(request.messages, {
+    onlyLastText: true,
+  });
   response.writeMessageMetadata({
     loader: "Checking up on the task progress...",
   });

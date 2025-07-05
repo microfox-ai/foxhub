@@ -2,13 +2,15 @@ import { ToolResultPart, ToolUIPart } from "ai"
 import { Button } from "@/components/ui/button"
 import { useMicrofoxChat } from "../../../MicrofoxChatProvider";
 import { ToolMetadata } from "@microfox/tool-kit";
+import { useHitl } from "./HitlProvider";
 
 export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastMessage: boolean }) => {
-    const { messages, addToolResult } = useMicrofoxChat();
+    const { messages } = useMicrofoxChat();
+    const { addHitlToolResult } = useHitl();
     if (tool.state !== "output-available") {
         return null;
     }
-    const toolMetadata = tool.output?.metadata as ToolMetadata;
+    const toolMetadata = tool.output.metadata;
     const lastMessageInChat = messages[messages.length - 1];
     return (
         <div className="flex flex-col gap-2 my-4 bg-gray-100 p-4 rounded-xl">
@@ -25,7 +27,7 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
                 <Button
                     variant="outline"
                     onClick={() => {
-                        addToolResult({
+                        addHitlToolResult({
                             toolCallId: tool.toolCallId,
                             output: {
                                 approved: false,
@@ -39,7 +41,7 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
                     variant="default"
                     className="bg-black text-white hover:bg-black/80"
                     onClick={() => {
-                        addToolResult({
+                        addHitlToolResult({
                             toolCallId: tool.toolCallId,
                             output: {
                                 approved: true,

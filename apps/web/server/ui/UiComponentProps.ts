@@ -80,4 +80,7 @@ export interface UiComponentProps {
     buttons?: Button[];
     object?: CardObject;
   };
+  hitl: {
+    uiType: "hitl";
+  };
 }

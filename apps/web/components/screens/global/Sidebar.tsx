@@ -34,6 +34,8 @@ import {
 import { useLayout } from "../providers/LayoutProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { FeatureBaseLinkAttributes } from "@/components/auth/FeatureBase";
+import { IN_STAGING } from "@/utils/constants/appInfo";
+import { MinionFlow } from "../hooks/convertors";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -185,11 +187,13 @@ export default function Sidebar({
           <SidebarHeader isCollapsed={isCollapsed} onCollapse={onCollapse} />
 
           <div className="flex-1">
+
             {selectedProject && (
               <NewRequestButton
                 isCollapsed={isCollapsed}
-                onNewRequest={() => createNewEmptyRequest()}
+                onNewRequest={() => createNewEmptyRequest(MinionFlow.ChatFlow)}
                 selectedProject={selectedProject}
+                text="New Chat"
               />
             )}
 
@@ -414,10 +418,12 @@ const NewRequestButton = ({
   isCollapsed,
   onNewRequest,
   selectedProject,
+  text,
 }: {
   isCollapsed: boolean;
   onNewRequest: (project: BotProject) => void;
   selectedProject: BotProject;
+  text: string;
 }) => {
   if (isCollapsed) {
     return (
@@ -442,7 +448,7 @@ const NewRequestButton = ({
           sideOffset={10}
           showArrow={false}
         >
-          <p>New Task</p>
+          <p>{text}</p>
         </TooltipContent>
       </Tooltip>
     );
@@ -458,7 +464,7 @@ const NewRequestButton = ({
       className="w-full my-4 rounded-full shadow-md overflow-hidden bg-black text-white hover:bg-black/80 hover:text-white"
       style={{ padding: "0.25rem", marginRight: "0.25rem" }}
     >
-      New Task
+      {text}
     </ButtonSCN>
   );
 };

@@ -1,15 +1,19 @@
 import { AiAgentKit } from "@repo/ai-utils/router";
 import { MinionFlow } from "@/components/screens/hooks/convertors";
 import { DefaultMessageMetadata } from "../microfoxRouter";
-import { convertToModelMessages, streamText } from "ai";
+import { convertToModelMessages, generateText, streamText } from "ai";
 import { models } from "../models";
-import { cleanUiMessageParts } from "@/utils/helpers/array";
+import {
+  cleanUiMessageParts,
+  findLastElementWith,
+} from "@/utils/helpers/array";
 import { createOpenApiToolset } from "@microfox/tool-kit";
-import docData from "../slsfox/test_openapi.json";
 import { fetchAuthSecrets } from "../slsfox/fetchVariables";
 import { codeTemplateType } from "../convertfox/helpers/types";
 import { templateEnvsFromTaskIntegrations } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 import { prisma } from "@/prisma/prisma";
+import { getTextParts } from "@microfox/ai-router";
+import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
 
 const chatManager = new AiAgentKit<any, any, any, any>();
 
@@ -28,50 +32,36 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
     },
   });
 
-  const client = await createOpenApiToolset({
-    schema: docData as any,
-    baseUrl: "http://localhost:4000",
-    name: "slack-web-tiny",
-    getAuth: async (options) => {
-      const output = await fetchAuthSecrets(
-        options,
-        clientRequest,
-        undefined,
-        true
-      );
-      if (clientRequest) {
-        const envs = await templateEnvsFromTaskIntegrations(
-          codeTemplateType.enum.upstash_sls,
-          clientRequest
-        );
-        output.variables = output.variables?.concat(envs) ?? envs;
-      }
-      return output;
-    },
-  });
+  ctx.state.clientRequest = clientRequest;
+  if (
+    clientRequest &&
+    !clientRequest?.title &&
+    ctx.request.messages.length > 3
+  ) {
+    const cleanedMessages = cleanUiMessageParts(ctx.request.messages, {
+      removeToolCalls: true,
+    });
+    const textParts = cleanedMessages.map(getTextParts).flat().join("\n");
 
-  const toolSet = await client.tools({
-    disableAllExecutions: true,
-  });
+    const text = await generateText({
+      model: models.claudeHaiku,
+      system: `
+        You are a helpful assistant that can generate a title for a chat session.
+        Generate a 2-5 word title for the chat session.
+        `,
+      prompt: `
+        Generate a title for the following chat session:
+        ${textParts}
+        `,
+    });
 
-  console.log("toolSet", Object.keys(toolSet.tools));
-  //return;
+    const updatedClientRequest = await updateClientRequest({
+      clientRequestId: clientRequest.id,
+      title: text.text,
+    });
 
-  const processedMessages = await client.processToolResult(
-    cleanUiMessageParts(ctx.request.messages)
-  );
-
-  const stream = streamText({
-    model: models.claudeHaiku,
-    messages: convertToModelMessages(cleanUiMessageParts(processedMessages)),
-    tools: toolSet.tools,
-    toolChoice: "auto",
-    system:
-      "You are called Microfox, a helpful assistant that can user with his tasks.",
-    stopWhen: client.createHitlStopStep(),
-  });
-
-  ctx.response.merge(stream.toUIMessageStream());
+    ctx.state.clientRequest = updatedClientRequest;
+  }
 });
 
 export { chatManager };

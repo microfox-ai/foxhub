@@ -5,6 +5,12 @@ import { CLIENTSECRETSTATUS } from "@prisma/client";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+
+type ProviderInfo = {
+  icon?: string;
+  name?: string;
+}
+
 interface OAuthConnectCallbackProps {
   docId: string;
   keys: Array<{
@@ -13,7 +19,7 @@ interface OAuthConnectCallbackProps {
     isOptional: boolean;
   }>;
   tokenResponse: any;
-  identityMetadata: (Identity | undefined | {}) & { providerInfo?: { icon?: string, name?: string } };
+  identityMetadata: (Identity | undefined | any)
 }
 
 const OAuthConnectCallback = ({ docId, keys, tokenResponse, identityMetadata }: OAuthConnectCallbackProps) => {
@@ -32,6 +38,9 @@ const OAuthConnectCallback = ({ docId, keys, tokenResponse, identityMetadata }: 
             status: CLIENTSECRETSTATUS.FILLED,
             tokenResponse: tokenResponse,
             identityMetadata: identityMetadata,
+            identityOrgId: identityMetadata?.organisationInfo?.id,
+            identityTeamId: identityMetadata?.teamInfo?.id,
+            identityUserId: identityMetadata?.userInfo?.id,
           }),
         });
 

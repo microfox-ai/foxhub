@@ -4,7 +4,7 @@ import MyBots from "@/components/screens/mybots/MyBots";
 const MyBotsPage = () => {
     return (
         <ProtectedPage>
-            <MyBots />
+            <MyBots uiType="connections" />
         </ProtectedPage>
     );
 };

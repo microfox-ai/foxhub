@@ -154,6 +154,12 @@ model TaskInstanceMeta {
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
+model ChatAgenticState {
+  id                    String        @id @default(uuid())
+  originClientRequestId String        @unique
+  state                 Json?
+}
+
 model UsageAnalytics {
   id               String  @id @unique @default(uuid())
   matchId          String  @unique

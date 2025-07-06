@@ -130,7 +130,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
     console.log("ragResults", ragResults);
 
     // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
-    const toolPopulatedMcps: (ApiMcp & { tools: QueryApisResult[] })[] = [];
+    const toolPopulatedMcps: (ApiMcp)[] = [];
     for (const ragResult of ragResults) {
         const toolsResults = await queryApis({
             query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
@@ -138,14 +138,20 @@ toolSelectionAgent.agent("/", async (ctx) => {
             match_threshold: 0.5,
             match_count: 10,
         });
-        console.log("toolsResults", toolsResults.map((tool) => tool.metadata.openApiSchema));
+        // CONSTRUCT A TOOL BASED MCP WITH ONLY THE PROVIDED TOOLS (in the array in future).    
+        //console.log("toolsResults", toolsResults.map((tool) => tool.metadata.openApiSchema));
         toolPopulatedMcps.push({
             ...ragResult,
-            tools: toolsResults,
+            //tools: toolsResults,
+            openApiSchema: toolsResults?.[0]?.metadata.openApiSchema,
         });
     }
 
     console.log("toolPopulatedMcps", toolPopulatedMcps);
+
+    ctx.next.callAgent("@/chatFlow/toolExecution", {
+        toolPopulatedMcps,
+    })
 
     //3. call the next agent with the tools passed in. (Leave this to me.)
 });

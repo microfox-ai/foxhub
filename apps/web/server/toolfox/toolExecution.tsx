@@ -1,7 +1,7 @@
 import { MinionType } from "@/components/screens/hooks/convertors";
 import { cleanUiMessageParts, findLastElementWith } from "@/utils/helpers/array";
 import { AiRouter, findLastElement, getTextParts, getTextPartsContent } from "@microfox/ai-router";
-import { createOpenApiToolset } from "@microfox/tool-kit";
+import { AuthOptions, createOpenApiToolset } from "@microfox/tool-kit";
 import docData from "../slsfox/test_openapi.json";
 import { fetchAuthSecrets } from "../slsfox/fetchVariables";
 import { codeTemplateType } from "../convertfox/helpers/types";
@@ -9,12 +9,29 @@ import { ClientRequest } from "@prisma/client";
 import { templateEnvsFromTaskIntegrations } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
+import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { prisma } from "@/prisma/prisma";
 
-const toolExecutionAgent = new AiRouter<any>();
+const toolExecutionAgent = new AiRouter<any, any, any, any>();
 
 toolExecutionAgent.use("/", async (ctx, next) => {
     const { request, state, response } = ctx;
     console.log(ctx.executionContext.currentPath, "currentPath");
+    if (request.revalidatePath) {
+        const lastKnownState = await prisma.chatAgenticState.findUnique({
+            where: {
+                originClientRequestId: request.clientRequestId,
+            },
+        });
+        ctx.state.toolPopulatedMcps = (lastKnownState?.state as any).toolPopulatedMcps;
+    }
+    if (!ctx.state.clientRequest) {
+        ctx.state.clientRequest = await prisma.clientRequest.findUnique({
+            where: {
+                id: request.clientRequestId,
+            },
+        });
+    }
     response.writeMessageMetadata({
         revalidatePath: ctx.executionContext.currentPath,
         revalidateType: "agent",
@@ -22,33 +39,61 @@ toolExecutionAgent.use("/", async (ctx, next) => {
     return next();
 });
 
+// 1. while reconstructing it needs to reconsstruct only the tool which was paused 
+// 2. and then it should do tool selection intelligently on the fly. (both process processToolResult & toolSection can happen simultaneously)
 toolExecutionAgent.agent("/", async (ctx) => {
     const { request, state, response } = ctx;
 
     const clientRequest = state.clientRequest as ClientRequest;
-    console.log("clientRequest", clientRequest);
 
-    const client = await createOpenApiToolset({
-        schema: docData as any,
-        baseUrl: "http://localhost:4000",
-        name: "slack-web-tiny",
-        getAuth: async (options) => {
-            const output = await fetchAuthSecrets(
-                options,
-                clientRequest,
-                undefined,
-                true
-            );
-            if (clientRequest) {
-                const envs = await templateEnvsFromTaskIntegrations(
-                    codeTemplateType.enum.upstash_sls,
-                    clientRequest
-                );
-                output.variables = output.variables?.concat(envs) ?? envs;
+    if (!clientRequest) {
+        throw new Error("Client request not found");
+    }
+
+    let toolPopulatedMcps = state.toolPopulatedMcps;
+    if (ctx.request.params?.toolPopulatedMcps) {
+        toolPopulatedMcps = ctx.request.params?.toolPopulatedMcps as ApiMcp[];
+        await prisma.chatAgenticState.upsert({
+            where: {
+                originClientRequestId: clientRequest.id,
+            },
+            update: {
+                state: {
+                    toolPopulatedMcps: toolPopulatedMcps,
+                }
+            },
+            create: {
+                originClientRequestId: clientRequest.id,
+                state: {
+                    toolPopulatedMcps: toolPopulatedMcps,
+                }
             }
-            return output;
-        },
-    });
+        });
+    }
+
+    const client = await createOpenApiToolset(toolPopulatedMcps?.map((mcp: ApiMcp) => {
+        return {
+            schema: mcp.openApiSchema as any,
+            baseUrl: mcp.base_url,
+            name: mcp.name,
+            getAuth: async (options: AuthOptions) => {
+                const output = await fetchAuthSecrets(
+                    options,
+                    clientRequest,
+                    undefined,
+                    true
+                );
+                if (clientRequest) {
+                    const envs = await templateEnvsFromTaskIntegrations(
+                        codeTemplateType.enum.upstash_sls,
+                        clientRequest
+                    );
+                    output.variables = output.variables?.concat(envs) ?? envs;
+                }
+                return output;
+            },
+        }
+    }));
 
     const toolSet = await client.tools({
         disableAllExecutions: true,
@@ -80,6 +125,5 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
 
 export { toolExecutionAgent };
-// 1. feed the tools into the agent
 // 2. enable revalidation for tool processing
 // 3. streamText.

@@ -1,5 +1,6 @@
 import { MinionType } from "@/components/screens/hooks/convertors";
-import { AiRouter } from "@microfox/ai-router";
+import { findLastElementWith } from "@/utils/helpers/array";
+import { AiRouter, findLastElement, getTextParts, getTextPartsContent } from "@microfox/ai-router";
 
 
 const toolSelectionAgent = new AiRouter<any>();
@@ -16,6 +17,16 @@ toolSelectionAgent.agent("/", async (ctx) => {
     const { request, state, response } = ctx;
 
     console.log("toolSelectionAgent", request.messages);
+
+    const lastUserMessage = findLastElementWith(request.messages, (message: any) => message.role === "user");
+
+    if (!lastUserMessage) {
+        throw new Error("No user message found");
+    }
+
+    const userMessage = getTextPartsContent(lastUserMessage);
+
+    console.log("last userMessage", userMessage);
 
     // 1. generate a list of RAG search query to find the best package/agent 
     // {mcpSearchQuery: "search query to find the correct API/MCP/Agent", 

@@ -1,6 +1,4 @@
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { DataStreamWriter } from "ai";
-import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { GITHUB_TOKEN } from "@/utils/constants/githubInfo";
 import { Octokit } from "octokit";
 
 export const octokitSdk: Octokit = new Octokit({

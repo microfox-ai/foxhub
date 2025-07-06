@@ -17,6 +17,7 @@ import {
   constructAppendBody,
 } from "./message/messageHelpers";
 import { IN_DEV } from "@/utils/constants/appInfo";
+import { IN_STAGING } from "../../../utils/constants/appInfo";
 
 const DeployTrigger = () => {
   const { selectedClientDeployment } = useClientProject();
@@ -32,7 +33,6 @@ const DeployTrigger = () => {
     color: "border-gray-500 text-gray-600",
   });
   const { append } = useMicrofoxChat();
-
 
   useEffect(() => {
     // Determine current deployment status and display text
@@ -105,10 +105,10 @@ const DeployTrigger = () => {
         deployStage = DEPLOY_STAGE.STAGING;
         buttonText = "Deploy to Staging";
         break;
-      case "local":
-        deployStage = DEPLOY_STAGE.STAGING;
-        buttonText = "Deploy to Local";
-        break;
+      // case "local":
+      //   deployStage = DEPLOY_STAGE.STAGING;
+      //   buttonText = "Deploy to Local";
+      //   break;
       default:
         return;
     }
@@ -118,23 +118,11 @@ const DeployTrigger = () => {
         {
           text: buttonText,
           minionType: "deployfox",
-        },
-        [
-          {
-            type: "attachment",
-            key: "stage",
-            value: deployStage,
-          },
-          {
-            type: "attachment",
-            key: "is_local",
-            value: targetStage === "local",
-          },
-        ]
+        }
       ),
       constructAppendBody("deployfox", {
         stage: deployStage,
-        is_local: targetStage === "local",
+        is_local: false, //targetStage === "local",
       })
     );
   };
@@ -152,15 +140,9 @@ const DeployTrigger = () => {
       shortLabel: "Staging",
       color: "border-blue-600 text-blue-600",
     },
-    {
-      value: "local",
-      label: "Deploy to Local",
-      shortLabel: "Local",
-      color: "border-yellow-600 text-yellow-600",
-    }, // TODO: remove this from prod
   ];
 
-  // if (IN_DEV) {
+  // if (IN_STAGING) {
   //   deploymentOptions.push({
   //     value: "local",
   //     label: "Deploy to Local",

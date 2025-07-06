@@ -200,6 +200,36 @@ If you encounter migration issues:
 - Ensure backward compatibility of schema changes
 - Consult with the team before making significant schema modifications
 
+### Database Backup and Restore with Supabase
+
+You can backup and restore your Supabase database using `pg_dump` and `psql`. This is useful for creating local backups or migrating data to a new project. For a detailed guide, you can refer to this article: [Backup and restore your supabase DB](https://waxlyrical.medium.com/backup-your-supabase-db-with-pg-dump-14f08c40e456).
+
+#### Prerequisites
+
+1.  **Install PostgreSQL**: Ensure you have PostgreSQL installed on your machine. This will provide the `pg_dump` and `psql` command-line tools.
+2.  **Update PATH**: Add the `bin` directory of your PostgreSQL installation to your system's PATH environment variable so you can run the commands from any directory.
+
+#### How to Backup
+
+1.  **Get Database Connection String**: In your Supabase project, navigate to **Project Settings** > **Database** and copy the URI connection string.
+2.  **Run Backup Command**: In your terminal, use the following command, replacing the connection string with the one you copied.
+
+    ```sh
+    pg_dump --dbname="YOUR_SUPABASE_CONNECTION_STRING" --disable-triggers > database-dump.sql
+    ```
+    This command will create a file named `database-dump.sql` containing your database's backup.
+
+#### How to Restore
+
+1.  **Get New Database Connection String**: If you are restoring to a different Supabase project, get the connection string for the new database.
+2.  **Run Restore Command**: To restore the database, use this command, making sure to use the correct connection string for the target database and the correct path to your backup file.
+
+    > **Important Note for Windows Users**: Before restoring, ensure your `database-dump.sql` file is saved with UTF-8 encoding. You can use an editor like Notepad++ to open the file and select `Encoding > Convert to UTF-8` to prevent potential errors.
+
+    ```sh
+    psql --dbname="NEW_SUPABASE_CONNECTION_STRING" -f database-dump.sql
+    ```
+
 ### Amazing ideas
 
 Build dynamic/capble Ai assistants that suit your needs.

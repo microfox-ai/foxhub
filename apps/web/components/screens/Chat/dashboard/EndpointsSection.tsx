@@ -1,6 +1,7 @@
 import { Loader2, XCircle, Package, Split } from "lucide-react";
 import { HttpMethod } from "@/utils/services/OpenAPIToolsClient";
 import { EndpointList } from "./EndpointList";
+import { FunctionInfo } from "@/utils/services/parseServerlessLogs";
 
 interface EndpointsSectionProps {
     endpoints: Array<{
@@ -9,16 +10,20 @@ interface EndpointsSectionProps {
         title: string;
         operationId?: string;
     }>;
+    functions: FunctionInfo[];
     isLoading: boolean;
     error: Error | null;
     onEndpointClick: (endpoint: { path: string; method: HttpMethod }) => void;
+    onFunctionClick: (func: FunctionInfo) => void;
 }
 
 export const EndpointsSection = ({
     endpoints,
+    functions,
     isLoading,
     error,
     onEndpointClick,
+    onFunctionClick
 }: EndpointsSectionProps) => {
     return (
         <div className=" ">
@@ -57,7 +62,9 @@ export const EndpointsSection = ({
             ) : endpoints.length > 0 ? (
                 <EndpointList
                     endpoints={endpoints}
+                    functions={functions}
                     onEndpointClick={onEndpointClick}
+                    onFunctionClick={onFunctionClick}
                 />
             ) : (
                 <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">

@@ -6,8 +6,8 @@ import morgan from 'morgan';
 import cronRoutes from './routes/cron.routes';
 
 const app = express();
-const PORT = 8003;
-const NODE_ENV = 'production';
+const PORT = process.env.PORT || 8003;
+const NODE_ENV = process.env.NODE_ENV || 'production';
 
 // Middleware
 app.use(helmet({

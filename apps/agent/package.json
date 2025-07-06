@@ -7,8 +7,8 @@
   "scripts": {
     "build": "tsc",
     "deploy": "npm run build && serverless deploy --stage dev",
-    "deploy:staging": "npm run build && serverless deploy --stage staging",
-    "deploy:prod": "npm run build && serverless deploy --stage prod",
+    "deploy:staging": "npm run build && serverless deploy --verbose --stage staging",
+    "deploy:prod": "npm run build && serverless deploy --verbose --stage prod",
     "remove:staging": "serverless remove --stage staging",
     "remove:prod": "serverless remove --stage prod",
     "lint": "eslint  --ignore-path .gitignore ."

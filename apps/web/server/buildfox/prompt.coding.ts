@@ -7,7 +7,7 @@ import {
   CodeTemplateType,
   TaskInstanceMetaType,
   TaskStructure,
-} from "../convertfox/types";
+} from "../convertfox/helpers/types";
 import { baseFilePrompt } from "./prompts/basePrompt";
 import { envsPrompt } from "./prompts/envsPrompt";
 import { helperFilesContext } from "./prompts/helperFilesContext";

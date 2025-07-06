@@ -1,7 +1,7 @@
 import {
   codeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { ClientRequest, ClientSecret } from "@prisma/client";
 import {
   envsFromTaskIntegrations,

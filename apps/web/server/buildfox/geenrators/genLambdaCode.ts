@@ -1,23 +1,25 @@
 import { ClientRequest, ClientSecret } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { generateText } from "ai";
-import { codeTemplateType, TaskInstanceMetaType } from "../../convertfox/types";
+import { generateText, stepCountIs } from "ai";
+import {
+  codeTemplateType,
+  TaskInstanceMetaType,
+} from "../../convertfox/helpers/types";
 import { models } from "../../models";
 import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { writeToFile } from "../tool/writeToFile";
 import { fetchPackageDocs } from "../tool/fetchPackageDocs";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
+import { AiContext } from "@repo/ai-utils/router";
 
 // IMPORTANT TODO: decide to fetch package Info or fetch example based on previous builds (& then, only then required info is fetched)
 export const genLambdaCode = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest,
   clientSecrets: ClientSecret[]
 ) => {
-  props.dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Writing lambda functions",
+  ctx.response.writeMessageMetadata({
+    loader: "Writing lambda functions",
   });
 
   try {
@@ -39,18 +41,18 @@ export const genLambdaCode = async (
         model: models.claude35Sonnet,
         system: codingSystemPrompt("backend", true),
         prompt,
-        toolChoice: "auto",
-        maxSteps: 2,
-        maxRetries: 3,
+        toolChoice: "required",
+        stopWhen: stepCountIs(2),
+        //maxRetries: 3,
         //maxTokens: 5000,
         tools: {
           write_code: writeToFile(
-            props,
+            ctx,
             clientRequest,
             taskInstanceMeta?.taskStructure?.templateType
           ),
           fetch_package_docs: fetchPackageDocs(
-            props,
+            ctx,
             clientRequest,
             taskInstanceMeta,
             {
@@ -71,13 +73,13 @@ export const genLambdaCode = async (
         //   },
       });
       TokenUsageAnalyticsTracker.trackUsage({
-        ...props.requestBody,
+        userId: ctx.request.userId,
+        clientRequestId: ctx.request.clientRequestId,
         model: models.claude35Sonnet.modelId,
         usage: result.usage,
       });
-      props.dataStream.writeMessageAnnotation({
-        type: "thinking",
-        content: "Finished coding - " + _function.name,
+      ctx.response.writeMessageMetadata({
+        loader: "Finished coding - " + _function.name,
       });
 
       console.log("result", result.usage);
@@ -86,9 +88,8 @@ export const genLambdaCode = async (
     return taskInstanceMeta;
   } catch (err) {
     console.log("error", err);
-    props.dataStream.writeMessageAnnotation({
-      type: "error",
-      content: "Error generating lambda function",
+    ctx.response.writeMessageMetadata({
+      error: "Error generating lambda function",
     });
     throw err;
   }

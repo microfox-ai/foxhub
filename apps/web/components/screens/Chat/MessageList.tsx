@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { MessageWrapper } from "./message/MessageWrapper";
 import { useChatUI } from "./ChatUiProvider";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
+import { getUiParts } from "./helpers/parts";
 
 interface TabMessagesProps {
   isLoading: boolean;
@@ -30,17 +31,16 @@ export default function MessageList({
   };
 
   const lastAnnotationIndices = useMemo(() => {
-    const indices = new Map<string, number>();
+    const map = new Map<string, number>();
     messages.forEach((message, index) => {
-      if (message && message.annotations) {
-        (message.annotations as any[]).forEach((annotation) => {
-          if (annotation.type === "ui" && annotation.objectType) {
-            indices.set(annotation.objectType, index);
-          }
-        });
-      }
+      const uiParts = getUiParts(message);
+      (uiParts as any[]).forEach(part => {
+        if (part.output?.uiComponent) {
+          map.set(part.output.uiComponent, index);
+        }
+      });
     });
-    return indices;
+    return map;
   }, [messages]);
 
   return (
@@ -58,15 +58,13 @@ export default function MessageList({
                 message={update}
                 index={index}
                 length={messages.length}
-                isStreaming={isStreaming}
                 lastAnnotationIndices={lastAnnotationIndices}
                 renderDateSeperator={(currDate) =>
                   renderDateSeparator(
                     currDate,
                     index > 0
-                      ? new Date(
-                        messages?.[index - 1]?.createdAt!
-                      ).toISOString()!
+                      ?
+                      messages?.[index - 1]?.metadata?.createdAt
                       : ""
                   )
                 }

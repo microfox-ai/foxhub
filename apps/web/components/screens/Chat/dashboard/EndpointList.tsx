@@ -1,5 +1,7 @@
 import { HttpMethod } from "@/utils/services/OpenAPIToolsClient";
 import { EndpointCard } from "./EndpointCard";
+import { FunctionInfo } from "@/utils/services/parseServerlessLogs";
+import { FunctionCard } from "./FunctionCard";
 
 interface EndpointListProps {
     endpoints: Array<{
@@ -8,12 +10,16 @@ interface EndpointListProps {
         title: string;
         operationId?: string;
     }>;
+    functions: FunctionInfo[];
     onEndpointClick: (endpoint: { path: string; method: HttpMethod }) => void;
+    onFunctionClick: (func: FunctionInfo) => void;
 }
 
 export const EndpointList = ({
     endpoints,
+    functions,
     onEndpointClick,
+    onFunctionClick,
 }: EndpointListProps) => {
     // Group endpoints by their exact path pattern
     const groupedEndpoints = endpoints.reduce(
@@ -41,6 +47,20 @@ export const EndpointList = ({
         if (aParams !== bParams) return aParams - bParams;
         return a.localeCompare(b);
     });
+
+    if (functions.length > 0) {
+        return (
+            <div className="space-y-2">
+                {functions.map((func) => (
+                    <FunctionCard
+                        key={func.functionName}
+                        functionInfo={func}
+                        onClick={() => onFunctionClick(func)}
+                    />
+                ))}
+            </div>
+        )
+    }
 
 
     return (

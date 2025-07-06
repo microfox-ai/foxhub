@@ -1,3 +1,5 @@
+import { UIMessage } from "@ai-sdk/react";
+
 export const findLastElement = <T>(array: T[]) => {
   return array[array.length - 1];
 };
@@ -15,4 +17,39 @@ export const findLastElementWith = <T>(
     return null;
   }
   return new_array?.[new_array.length - 1];
+};
+
+export const cleanUiMessageParts = (
+  messages: UIMessage<any, any>[],
+  options?: {
+    removeToolCalls?: boolean;
+    onlyLastText?: boolean;
+  }
+) => {
+  let processedMessages = messages.map((m) => ({
+    ...m,
+    parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
+  }));
+
+  if (options?.removeToolCalls) {
+    processedMessages = processedMessages.map((m) => ({
+      ...m,
+      parts: m.parts.filter((p) => p.type !== "tool-call"),
+    }));
+  }
+
+  if (options?.onlyLastText) {
+    processedMessages = processedMessages.map((m) => ({
+      ...m,
+      parts: [
+        findLastElementWith(m.parts, (p) => p.type === "text") || {
+          type: "text",
+          text: "",
+          input: {},
+        },
+      ],
+    }));
+  }
+
+  return processedMessages;
 };

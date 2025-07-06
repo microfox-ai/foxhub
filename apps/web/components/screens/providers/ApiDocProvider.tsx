@@ -7,6 +7,7 @@ import {
   OpenAPIPath,
 } from "@/utils/services/OpenAPIToolsClient";
 import { ClientDeploymentMetadata } from "@/server/types";
+import { useClientProject } from "./ClientProjectProvider";
 
 export interface Endpoint {
   path: string;
@@ -37,7 +38,7 @@ interface ApiDocContextType {
 const ApiDocContext = createContext<ApiDocContextType | undefined>(undefined);
 
 export function ApiDocProvider({ children }: { children: React.ReactNode }) {
-  const { deploymentInfo } = useTaskInstanceMetaContext();
+  const { selectedClientDeployment: deploymentInfo } = useClientProject();
   const [apiDoc, setApiDoc] = useState<OpenAPIDoc | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -57,6 +58,9 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
+      console.log("forceBaseUrl", forceBaseUrl);
+      console.log("deploymentInfo", deploymentInfo);
+
       const baseUrl = forceBaseUrl || deploymentInfo?.baseUrl + "/" + deploymentInfo?.stage?.toLowerCase();
       try {
         const response = await fetch(
@@ -69,7 +73,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
         setApiDoc(data);
       } catch (error) {
         console.error("Failed to fetch API docs:", error);
-        setForceBaseUrl(null);
+        //setForceBaseUrl(null);
         setError(
           error instanceof Error ? error : new Error("Unknown error occurred")
         );
@@ -123,7 +127,7 @@ export function ApiDocProvider({ children }: { children: React.ReactNode }) {
 
   const thisFunction = (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functions.find(
     (f: any) =>
-      f.endpointLink === selectedEndpoint || f.endpointLink.includes(selectedEndpoint)
+      f.endpointLink === selectedEndpoint || f.endpointLink?.includes(selectedEndpoint) || f.path === selectedEndpoint
   );
   const selectedFunctionName =
     (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functionBase + "-" + thisFunction?.functionName;

@@ -9,9 +9,9 @@ import {
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
 import { SLACK_BOT_OAUTH_TOKEN } from "@/utils/services/slackBotSdk";
-import { DataStreamWriter } from "ai";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { octokitSdk } from "./helper/gitHelpers";
+import { AiContext } from "@repo/ai-utils/router";
 
 export async function createPullRequest({
   clientRequestId,
@@ -24,7 +24,7 @@ export async function createPullRequest({
   clientRequestId: string;
   description: string;
   title?: string;
-  dataStream?: DataStreamWriter;
+  dataStream?: AiContext<any, any, any, any>;
   requestSubdir?: string;
   fullRequestDir?: string;
 }) {
@@ -192,9 +192,8 @@ export async function createPullRequest({
       branch: newBranch,
     });
   if (!clientRequestFile) {
-    dataStream?.writeMessageAnnotation({
-      type: "thinking_dev",
-      content: "Failed to update clientRequest.json",
+    dataStream?.response.writeMessageMetadata({
+      loader: "Failed to update clientRequest.json",
     });
     throw new Error("Failed to update clientRequest.json");
   }

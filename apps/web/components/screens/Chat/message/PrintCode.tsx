@@ -1,4 +1,4 @@
-import { Markdown } from "./markdown";
+import { Markdown } from "./text/markdown";
 
 
 export const PrintCode = ({ code }: { code: string }) => {

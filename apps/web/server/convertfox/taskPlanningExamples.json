@@ -1,8 +1,0 @@
-{
-  "taskInfo": {
-    "name": "Personalized Email Automation for Job Applicants",
-    "description": "Automate sending personalized emails to job applicants and maintain a record of their data and status in an Excel sheet without using an Applicant Tracking System (ATS).",
-    "goal": "Create a system to send personalized emails to job applicants and track their status using a spreadsheet.",
-    "summary": "This task involves creating a system to automate sending personalized emails to job applicants and tracking their status in an Excel sheet without using an ATS.  The system will use a loop of Thought, Action, PAUSE, Observation to achieve this goal."
-  }
-}

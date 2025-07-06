@@ -6,8 +6,8 @@ import {
   writeToFile,
 } from "../../tool/writeToFile";
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { AiContext } from "@repo/ai-utils/router";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 import path from "path";
 import fs from "fs/promises";
 import { generateText } from "ai";
@@ -16,7 +16,7 @@ import { codingSystemPrompt } from "../../prompt.coding";
 import YAML from "yaml";
 
 export const genServerlessIndex = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   taskInstanceMeta: TaskInstanceMetaType,
   clientRequest: ClientRequest,
   allGenFilesList: any[]
@@ -48,8 +48,10 @@ export const genServerlessIndex = async (
     })
   );
 
-  const serverlessYmlFInal = allGenFilesList?.find((file: any) =>
-    file.filePath?.includes("serverless.yml")
+  const serverlessYmlFInal = allGenFilesList?.find(
+    (file: any) =>
+      file.fileName?.includes("serverless.yml") ||
+      file.filePath?.includes("serverless.yml")
   );
   if (!serverlessYmlFInal) {
     throw new Error("Serverless.yml file not found");
@@ -76,9 +78,8 @@ export const genServerlessIndex = async (
   );
   console.log("Parsed function paths:", functionPaths);
 
-  props.dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Writing the function & cron job mapper..",
+  ctx.response.writeMessageMetadata({
+    loader: "Writing the function & cron job mapper..",
   });
 
   const result2 = await generateText({
@@ -93,7 +94,7 @@ export const genServerlessIndex = async (
                   `Name: ${func.name}Function - Path: ${func.paths.map((p: { method: string; path: string }) => `${p.method} ${p.path}`).join("\n - ")}`
               )
               .join("\n - ")}
-  
+
             The example index.ts file is as follows:
             ${indexTs}
 
@@ -123,18 +124,17 @@ export const genServerlessIndex = async (
             make sure you rewrite the entire file instead of any diffs.
             `,
     tools: {
-      write_code: writeToFile(props, clientRequest),
+      write_code: writeToFile(ctx, clientRequest),
     },
     toolChoice: "required",
-    maxSteps: 1,
-    maxTokens: 3000,
     onStepFinish: (step) => {
       console.log("step", step.usage);
     },
   });
   console.log("result2", result2.usage);
   TokenUsageAnalyticsTracker.trackUsage({
-    ...props.requestBody,
+    userId: ctx.request.userId,
+    clientRequestId: ctx.request.clientRequestId,
     model: models.claude35Sonnet.modelId,
     usage: result2.usage,
   });

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 
 // Initialize the relativeTime plugin
 dayjs.extend(relativeTime);

@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/tabs";
 import { AlertCircle, Loader2, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
-import { ExtraEnvVariable } from "@/server/convertfox/types";
+import { ExtraEnvVariable } from "@/server/convertfox/helpers/types";
 import { cn } from "@/lib/utils";
 import { EnvVariableInput } from "./EnvVariableInput";
 import { Command, CommandInput, CommandList, CommandItem } from "@/components/ui/command";
@@ -76,7 +76,7 @@ export function EnvConfigurationEditor({
 
         // Validate env key uniqueness when env field changes
         if (field === 'env') {
-            const normalizedValue = value.trim().toUpperCase();
+            const normalizedValue = value?.trim().toUpperCase();
             if (existingEnvKeys.includes(normalizedValue) && normalizedValue !== initialValues?.env) {
                 setEnvError("This environment variable key already exists");
             } else {
@@ -101,7 +101,7 @@ export function EnvConfigurationEditor({
             return;
         }
 
-        const normalizedEnv = config.env.trim().toUpperCase();
+        const normalizedEnv = config?.env?.trim()?.toUpperCase();
         if (existingEnvKeys.includes(normalizedEnv) && normalizedEnv !== initialValues?.env) {
             setEnvError("This environment variable key already exists");
             return;
@@ -271,7 +271,7 @@ export function EnvConfigurationEditor({
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && e.currentTarget.value) {
                                                     e.preventDefault();
-                                                    const newOption = e.currentTarget.value.trim();
+                                                    const newOption = e.currentTarget?.value?.trim();
                                                     if (newOption && !config.ui?.options?.includes(newOption)) {
                                                         handleUIChange("options", [...(config.ui?.options || []), newOption]);
                                                         e.currentTarget.value = '';
@@ -288,8 +288,8 @@ export function EnvConfigurationEditor({
                                         size="icon"
                                         onClick={() => {
                                             const input = document.querySelector('input[cmdk-input]') as HTMLInputElement;
-                                            if (input?.value.trim()) {
-                                                const newOption = input.value.trim();
+                                            if (input?.value?.trim()) {
+                                                const newOption = input?.value?.trim();
                                                 if (!config.ui?.options?.includes(newOption)) {
                                                     handleUIChange("options", [...(config.ui?.options || []), newOption]);
                                                     input.value = '';

@@ -6,6 +6,7 @@ import {
   addLambdaEnvironmentVariables,
   removeLambdaEnvironmentVariables,
 } from "../aws/aws_helper";
+import { Identity } from "@microfox/oauth-kit";
 
 // RULE 1 - CLIENT SECRETS ARE SCOPED TO BOT PROJECTS
 // RULE 2 - 1 CLIENT SECRET CAN BE USED IN MULTIPLE CLIENT REQUESTS & VICE VERCA (Many-to-Many)
@@ -71,13 +72,30 @@ export const clientSecretExistsInRequest = async (
 };
 
 export const createNewClientSecret = async (
-  _clientSecret: Omit<ClientSecret, "id" | "createdAt" | "updatedAt" | "type">
+  _clientSecret: Omit<
+    ClientSecret,
+    | "id"
+    | "createdAt"
+    | "updatedAt"
+    | "type"
+    | "identityUserId"
+    | "identityTeamId"
+    | "identityOrgId"
+  >
 ) => {
-  const { botProjectId, userId, variables } = _clientSecret;
+  const { botProjectId, userId, variables, identityMetadata } = _clientSecret;
 
   if (!botProjectId || !userId || !variables) {
     throw new Error("Missing required fields");
   }
+
+  const extraInfo = identityMetadata
+    ? {
+        identityUserId: (identityMetadata as Identity).userInfo?.id,
+        identityTeamId: (identityMetadata as Identity).teamInfo?.id,
+        identityOrgId: (identityMetadata as Identity).organisationInfo?.id,
+      }
+    : {};
 
   try {
     // Create a new clientSecret in the database
@@ -94,6 +112,15 @@ export const createNewClientSecret = async (
               _clientSecret.packageConstructor,
         clientRequestIds: _clientSecret.clientRequestIds ?? [],
         clientDeploymentIds: _clientSecret.clientDeploymentIds ?? [],
+        ...(extraInfo?.identityUserId && {
+          identityUserId: extraInfo.identityUserId,
+        }),
+        ...(extraInfo?.identityTeamId && {
+          identityTeamId: extraInfo.identityTeamId,
+        }),
+        ...(extraInfo?.identityOrgId && {
+          identityOrgId: extraInfo.identityOrgId,
+        }),
       },
     });
 

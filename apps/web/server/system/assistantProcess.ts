@@ -1,42 +1,40 @@
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-  StreamingFucntionProps,
-} from "@repo/ai-utils/router";
+import { StreamWriter } from "@repo/ai-utils/helper";
+import { AiHandler, AiMiddleware } from "@repo/ai-utils/router";
 
-export const assistantMessageProcessor: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
+export const assistantMessageProcessor: AiMiddleware<any, any, any> = async (
+  props,
+  next
+) => {
+  const { request, state, response } = props;
 
-  const { messages } = requestBody;
-  let returnRequestBody = {
-    ...requestBody,
-  };
+  console.log("assistantMessageProcessor", state, response);
 
-  if (messages[messages.length - 1]?.role === "assistant") {
-    let annotations = messages[messages.length - 1]?.annotations;
-    let extraData: Record<string, any> = {};
-    annotations.forEach((annotation: any) => {
-      let keys = Object.keys(annotation);
-      if (keys.includes("type") && keys.includes("value")) {
-        extraData[annotation.type] = annotation.value;
-        if (annotation.type === "minion") {
-          extraData.minionType = annotation.value;
-        }
-      }
-    });
-    console.log("extraData", extraData);
-    returnRequestBody = {
-      minionContinue: true,
-      ...requestBody,
-      ...extraData,
+  try {
+    //console.log("assistantMessageProcessor", request, state, response);
+    const { messages } = request;
+    let returnRequestBody = {
+      ...request,
     };
-  }
 
-  return {
-    responseBody: { ...responseBody },
-    appendRequestBody: { ...returnRequestBody },
-  };
+    if (messages[messages.length - 1]?.role === "assistant") {
+      let extraData: Record<string, any> = {};
+      returnRequestBody = {
+        minionContinue: true,
+        ...request,
+        ...extraData,
+      };
+    }
+
+    response.writeMessageMetadata({
+      clientRequestId: returnRequestBody.clientRequestId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      minionType: returnRequestBody.minionType,
+    });
+
+    return next();
+  } catch (error) {
+    console.error("assistantMessageProcessor", error);
+    return;
+  }
 };

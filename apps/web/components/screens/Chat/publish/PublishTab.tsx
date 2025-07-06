@@ -54,7 +54,7 @@ import { motion } from "framer-motion";
 import { useTaskInstanceMetaContext } from "../../providers/TaskInstanceMetaProvider";
 import isEqual from "lodash/isEqual";
 import { EnvVariablesDialog } from "../configuration/EnvVariablesDialog";
-import { ExtraEnvVariable } from "@/server/convertfox/types";
+import { ExtraEnvVariable } from "@/server/convertfox/helpers/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { APP_BASE_URL, APP_BASE_URL_PROD, IN_STAGING } from "@/utils/constants/appInfo";
 

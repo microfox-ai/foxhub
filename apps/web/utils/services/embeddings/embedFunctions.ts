@@ -1,10 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
 import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
-import { TaskStructure } from "@/server/convertfox/types";
+import { TaskStructure } from "@/server/convertfox/helpers/types";
 
-const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
-const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 type EmbedApiEndpointsArgs = {
   taskStructure?: TaskStructure;
@@ -88,10 +88,10 @@ export async function embedApiEndpoints({
     };
 
     for (const [path, methods] of Object.entries(docData.paths)) {
-      console.log(`Processing path: ${path}`);
+      // console.log(`Processing path: ${path}`);
       for (const [method, op] of Object.entries(methods)) {
         try {
-          console.log(`Processing method: ${method}`);
+          // console.log(`Processing method: ${method}`);
           // build doc_text
           let docText = `ENDPOINT_PATH: ${method.toUpperCase()} ${path}\n`;
           if (op.summary) docText += `SUMMARY: ${op.summary}\n`;
@@ -120,7 +120,7 @@ export async function embedApiEndpoints({
             docText += `  Interaction: ${fn.interactionType.join(", ")}\n`;
           }
           if (!fn && !cron) {
-            console.log(`No function or cron found for ${path} ${method}`);
+            // console.log(`No function or cron found for ${path} ${method}`);
             continue;
           }
 
@@ -199,7 +199,7 @@ export async function embedApiEndpoints({
                 doc_text: docText,
                 embedding,
                 metadata,
-                updated_at: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               })
               .eq("id", existing.id);
 
@@ -208,7 +208,7 @@ export async function embedApiEndpoints({
               results.failed++;
               results.errors.push({ path, method, error: updateError });
             } else {
-              console.log(`Updated embedding for ${method} ${path}`);
+              // console.log(`Updated embedding for ${method} ${path}`);
               results.success++;
             }
           } else {
@@ -216,6 +216,7 @@ export async function embedApiEndpoints({
             const { error: insertError } = await supabase
               .from("api_embeddings")
               .insert({
+                id: crypto.randomUUID(),
                 bot_project_id: botProjectId || null,
                 origin_client_request_id: originClientRequestId || null,
                 user_id: userId || null,
@@ -228,6 +229,8 @@ export async function embedApiEndpoints({
                 is_public: false,
                 stage: stage,
                 metadata,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               });
 
             if (insertError) {
@@ -235,7 +238,7 @@ export async function embedApiEndpoints({
               results.failed++;
               results.errors.push({ path, method, error: insertError });
             } else {
-              console.log(`Inserted embedding for ${method} ${path}`);
+              // console.log(`Inserted embedding for ${method} ${path}`);
               results.success++;
             }
           }
@@ -250,11 +253,11 @@ export async function embedApiEndpoints({
       }
     }
 
-    console.log(
-      `Embedding complete. Success: ${results.success}, Failed: ${results.failed}`
-    );
+    // console.log(
+    //   `Embedding complete. Success: ${results.success}, Failed: ${results.failed}`
+    // );
     if (results.failed > 0) {
-      console.error(`Failed endpoints:`, results.errors);
+      // console.error(`Failed endpoints:`, results.errors);
     }
     return results;
   } catch (error) {

@@ -19,6 +19,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
 import { ClientRequest } from "@prisma/client";
 import { MinionFlow, MinionFlowType } from "../hooks/convertors";
+import useLocalState from "../hooks/useLocalState";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -32,18 +33,14 @@ const ClientProjectContext = createContext<
 
 function useClientProjectContext() {
   const [selectedProject, setSelectedProject] =
-    useState<BotProjectWithRequests | null>(null);
+    useLocalState<BotProjectWithRequests | null>("selectedProject", null);
   const [selectedClientDeployment, setSelectedClientDeployment] =
     useState<ClientDeployment | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<ClientRequest | null>(
-    null
-  );
   const { user } = useAuth();
   const router = useRouter();
 
-  const [submitAnnotations, setSubmitAnnotations] = useState<
-    { type: "body"; key: string; value: any }[]
-  >([]);
+
+  const [submitMetadata, setSubmitMetadata] = useState<any>({});
   const [autoSubmit, setAutoSubmit] = useState<string | null>(null);
   const params = useParams<{
     project_id?: string;
@@ -63,6 +60,16 @@ function useClientProjectContext() {
   );
 
   const {
+    data: selectedClientRequest,
+    error: selectedClientRequestError,
+    isLoading: selectedClientRequestLoading,
+    mutate: mutateSelectedClientRequest,
+  } = useSWR(
+    requestParamId ? `/api/client-requests/${requestParamId}` : null,
+    async (url: string) => await fetch(url).then((res) => res.json())
+  );
+
+  const {
     data: selectedProjectClientRequests = [],
     error: selectedProjectClientRequestsError,
     isLoading: selectedProjectClientRequestsLoading,
@@ -73,6 +80,7 @@ function useClientProjectContext() {
     async (url: string) => await fetch(url).then((res) => res.json())
   );
 
+  // VSWJT: WHY IS THIS NEEDED ?
   const updateClientDeploymentById = async (id: string) => {
     try {
       if (!id) {
@@ -116,32 +124,14 @@ function useClientProjectContext() {
   };
 
   useEffect(() => {
-    if (selectedRequest?.id) {
-      updateClientDeploymentById(selectedRequest.id);
+    if (selectedClientRequest?.id) {
+      updateClientDeploymentById(selectedClientRequest.id);
     }
-  }, [selectedRequest?.id]);
-
-  useEffect(() => {
-    if (projectParamId && projects) {
-      const project = projects?.find((p: any) => p.id === projectParamId);
-      if (project) {
-        setSelectedProject(project);
-        const request = project?.clientRequests.find(
-          (r: any) => r.id === requestParamId
-        );
-        if (
-          request &&
-          (!selectedRequest || request.id !== selectedRequest.id)
-        ) {
-          setSelectedRequest(request);
-        }
-      }
-    }
-  }, [projectParamId, requestParamId, projects]);
+  }, [selectedClientRequest?.id]);
 
   const createNewEmptyRequest = async (
     flow?: MinionFlowType,
-    annotations?: any[],
+    metadata?: any,
     _autoSubmit?: string
   ) => {
     if (!user || !selectedProject) {
@@ -162,7 +152,7 @@ function useClientProjectContext() {
       return;
     }
 
-    await toast.promise(
+    toast.promise(
       PortalSdk.postData(`/api/client-requests/create-empty`, {
         userId: user.id,
         botProjectId: selectedProject.id,
@@ -179,9 +169,9 @@ function useClientProjectContext() {
             timestamp: new Date().toISOString(),
           });
 
-          setSubmitAnnotations(annotations ?? []);
+          setSubmitMetadata(metadata ?? {});
           setAutoSubmit(_autoSubmit ?? null);
-          setSelectedRequest(newRequest);
+          mutateSelectedClientRequest(newRequest);
           router.push(
             `/project/${selectedProject.id}/request/${newRequest.id}`
           );
@@ -246,17 +236,18 @@ function useClientProjectContext() {
     selectedClientDeployment,
     updateClientDeploymentById,
     selectedProject,
-    selectedRequest,
+    selectedRequest: selectedClientRequest,
     projects,
     isLoading,
     createNewEmptyRequest,
     setSelectedProject,
-    setSelectedRequest,
+    setSelectedRequest: mutateSelectedClientRequest,
+    mutateSelectedClientRequest,
     selectedProjectClientRequests: (selectedProjectClientRequests?.data ??
       []) as ClientRequest[],
     selectedProjectClientRequestsLoading,
-    submitAnnotations,
-    setSubmitAnnotations,
+    submitMetadata,
+    setSubmitMetadata,
     autoSubmit,
     setAutoSubmit,
     createNewProject,

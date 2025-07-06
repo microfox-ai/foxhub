@@ -1,4 +1,3 @@
-import { fetchGithubJson } from "@/server/convertfox/gitFetchers";
 import { PackageStatus } from "@/server/types";
 import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { NextResponse } from "next/server";

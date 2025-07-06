@@ -9,10 +9,6 @@ import {
   MySlackChannels,
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
-import {
-  defaultCallbackResultBody,
-  ServerStreamingFunction,
-} from "@repo/ai-utils/router";
 import { Octokit } from "octokit";
 import {
   GITHUB_TOKEN,
@@ -24,43 +20,36 @@ import { cloneTemplate } from "../deployfox/cloneTemplate";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { publishShard } from "@/utils/services/db_functions/publishShard";
+import { AiAgentKit } from "@repo/ai-utils/router";
+import { DefaultMessageMetadata } from "../microfoxRouter";
+import { uiTool } from "../ui/uiTool";
 
-export const publishFoxRouter: ServerStreamingFunction<
-  any,
-  defaultCallbackResultBody
-> = async (props) => {
-  const { dataStream, requestBody, responseBody } = props;
+const publishFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
 
-  const { clientRequestId } = requestBody;
+publishFoxAgent.agent("/", async (ctx) => {
+  const { request, response } = ctx;
+
+  const { clientRequestId } = request;
   let clientRequest = await getClientRequest(clientRequestId);
   let taskInstanceMeta = await getTaskInstanceMeta(clientRequestId);
 
   if (!clientRequest || !taskInstanceMeta?.taskInfo) {
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    response.writeMessageMetadata({
+      error: "Client request or task instance meta not found",
+    });
+    return;
   }
 
   if (!clientRequest.serviceName) {
-    dataStream.writeMessageAnnotation({
-      type: "error",
-      content: "Service name is required to publish an automation",
+    response.writeMessageMetadata({
+      error: "Service name is required to publish an automation",
     });
-    return {
-      responseBody: { ...responseBody },
-      appendRequestBody: { ...requestBody },
-    };
+    return;
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "minion",
-    value: MinionType.PublishFox,
-  });
-
-  dataStream.writeMessageAnnotation({
-    type: "loading",
-    content: "Publishing your automation",
+  response.writeMessageMetadata({
+    minionType: MinionType.PublishFox,
+    loader: "Publishing your automation",
   });
 
   // Create a new branch name based on the client request
@@ -68,37 +57,39 @@ export const publishFoxRouter: ServerStreamingFunction<
   try {
     const { shardPage } = await publishShard(clientRequest, taskInstanceMeta);
 
-    dataStream.writeMessageAnnotation({
-      type: "ui",
-      objectType: "publicationInfo",
-      persona: "publishfox",
-      text: "Publication Completed! Shard has been created.",
-      buttons: [
-        {
-          action: "highlightInput",
-          text: "Make changes",
-          type: "deny",
-          className: "bg-neutral-200 text-black hover:bg-neutral-300",
+    response.writeCustomTool(
+      uiTool.construct<"card">("publishfox", "publicationInfo", {
+        uiType: "card",
+        text: "Publication Completed! Shard has been created.",
+        buttons: [
+          {
+            text: "Make changes",
+            type: "deny",
+          },
+          {
+            action: {
+              id: "link",
+              props: `${APP_BASE_URL}/store/edit/${shardPage.id}`,
+              actionText: "View Store Page",
+            },
+            text: "View Store Page",
+            type: "confirm",
+          },
+        ],
+        object: {
+          objectType: "publication_info",
+          object: {
+            shardPage: shardPage,
+          },
         },
-        {
-          action: "link",
-          actionText: "View Store Page !",
-          text: "View Store Page",
-          type: "confirm",
-          url: `${APP_BASE_URL}/store/edit/${shardPage.id}`,
-        },
-      ],
-    });
+      })
+    );
   } catch (error) {
     console.error("Error publishing automation:", error);
-    dataStream.writeMessageAnnotation({
-      type: "error",
-      content: "Failed to publish automation. Please try again.",
+    response.writeMessageMetadata({
+      error: "Failed to publish automation. Please try again.",
     });
   }
+});
 
-  return {
-    responseBody: { ...responseBody },
-    appendRequestBody: { ...requestBody },
-  };
-};
+export { publishFoxAgent };

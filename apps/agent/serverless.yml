@@ -10,6 +10,14 @@ provider:
   region: us-east-1
   stage: ${opt:stage, env:STAGE, 'dev'}
   environment: ${file(env.json)}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+      Resource:
+        - Fn::GetAtt: [AgentQueue, Arn]
 
 custom:
   apiGatewayThrottling:
@@ -24,16 +32,45 @@ functions:
           path: /
           method: any
           cors: true
+  initiateTask:
+    handler: dist/tasks/initiate.handler
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - AgentQueue
+              - Arn
+          # Optional
+          # batchSize: 10
+          # Optional, minimum is 0 and the maximum is 300 (seconds)
+          # maximumBatchingWindow: 10
 
 resources:
-  Outputs:
-    ApiEndpoints:
-      Description: 'API Endpoints'
-      Value:
-        Fn::Join:
-          - ''
-          - - 'API: https://'
-            - Ref: 'ApiGatewayRestApi'
-            - '.execute-api.'
-            - Ref: 'AWS::Region'
-            - "/${env:ENVIRONMENT, 'dev'}"
+  Resources:
+    AgentQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: foxhub-agent-${self:provider.stage}-agent-queue
+
+outputs:
+  AgentQueueUrl:
+    Description: "URL of the Agent SQS Queue"
+    Value:
+      Ref: AgentQueue
+  AgentQueueArn:
+    Description: "ARN of the Agent SQS Queue"
+    Value:
+      Fn::GetAtt:
+        - AgentQueue
+        - Arn
+  ApiEndpoints:
+    Description: "API Endpoints"
+    Value:
+      Fn::Join:
+        - ""
+        - - "API: https://"
+          - Ref: "ApiGatewayRestApi"
+          - ".execute-api."
+          - Ref: "AWS::Region"
+          - "/"
+          - ${self:provider.stage}

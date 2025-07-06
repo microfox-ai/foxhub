@@ -1,13 +1,16 @@
 import { TokenUsageAnalyticsTracker } from "@/server/analytics/helper";
-import { fetchPackageReadme, fetchText } from "@/server/convertfox/gitFetchers";
+import {
+  fetchPackageReadme,
+  fetchText,
+} from "@/server/convertfox/helpers/gitFetchers";
 import {
   CodeTemplateType,
   TaskInstanceMetaType,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { models } from "@/server/models";
 import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { ClientRequest, ClientSecret } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 import { generateText, tool } from "ai";
 import dedent from "dedent";
 import fs from "fs/promises";
@@ -16,7 +19,7 @@ import { z } from "zod";
 import { baseFilePrompt } from "../prompts/basePrompt";
 import { envsPrompt } from "../prompts/envsPrompt";
 import { helperFilesContext } from "../prompts/helperFilesContext";
-import { semanticFunctionSearch } from "./functionSearch";
+import { getPackageFunctions, semanticFunctionSearch } from "./functionSearch";
 import { fetchTemplateDir, readAllGenFilesList } from "./writeToFile";
 
 async function fetchGithubReadMe(
@@ -31,7 +34,7 @@ async function fetchGithubReadMe(
 }
 
 const generateCodingBrief = async (config: {
-  props: StreamingFucntionProps<any, any>;
+  ctx: AiContext<any, any, any, any>;
   readmes: {
     docs: string;
     package: string;
@@ -155,7 +158,8 @@ const generateCodingBrief = async (config: {
   });
 
   TokenUsageAnalyticsTracker.trackUsage({
-    ...config.props.requestBody,
+    userId: config.ctx.request.userId,
+    clientRequestId: config.ctx.request.clientRequestId,
     model: models.googleGeminiTwoFive.modelId,
     usage: codingBrief.usage,
   });
@@ -174,7 +178,7 @@ const EXCLUDED_PACKAGES_LIST = [
 ];
 /** this should be removed from tools */
 export const fetchPackageDocs = (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   clientRequest: ClientRequest,
   taskInstanceMeta?: TaskInstanceMetaType,
   otherDetails?: {
@@ -183,10 +187,18 @@ export const fetchPackageDocs = (
     _function: any;
   }
 ) => {
-  return tool({
+  return tool<
+    {
+      packages: {
+        package: string;
+        readmeSearch?: string;
+      }[];
+    },
+    any
+  >({
     description:
       "Fetch All related docs for each package to understand how to use it",
-    parameters: z.object({
+    inputSchema: z.object({
       packages: z
         .array(
           z.object({
@@ -219,21 +231,17 @@ export const fetchPackageDocs = (
       const readmes = await Promise.all(
         fetchReadMePackages.map(async (pkg) => {
           let readme;
-          props.dataStream.writeMessageAnnotation({
-            type: "loading",
-            content: `Fetching documentation for ${pkg.package} - ${pkg.readmeSearch}`,
+          ctx.response.writeMessageMetadata({
+            loader: `Fetching documentation for ${pkg.package} - ${pkg.readmeSearch}`,
           });
           try {
             // let thisPlatform =
             //   taskInstanceMeta?.taskIntegrations?.platforms.find(
             //     (p) => p.package === pkg
             //   );
-            let mainReadme = await fetchPackageReadme(pkg.package);
-            let packageInfo = await PackageInfoHelper.getPackageInfo(
-              pkg.package
-            );
-            let constructorPath;
-            readme = mainReadme;
+            let mainReadme = await getPackageFunctions(pkg.package, "main");
+            console.log("mainReadme", mainReadme);
+            readme = mainReadme.map((r) => r.docs).join("\n\n");
             if (!pkg.readmeSearch) {
               console.log("no reason for this platform", pkg);
               return {
@@ -242,23 +250,14 @@ export const fetchPackageDocs = (
                 reason: pkg.readmeSearch,
               };
             }
-            if (
-              packageInfo &&
-              packageInfo?.readme_map?.all_readmes?.length > 0
-            ) {
-              constructorPath = packageInfo?.readme_map?.all_readmes.find(
-                (r: any) => r.type === "constructor"
-              )?.path;
-              if (constructorPath) {
-                const constructorReadme = await fetchText(constructorPath);
-                readme += `For constructor of this sdk - You Must use this documentation as reference, do not assume your own knowledge\n\n${constructorReadme}`;
-                //console.log("constructorReadme", constructorReadme);
-              }
+            let constructors = await getPackageFunctions(
+              pkg.package,
+              "constructor"
+            );
+            if (constructors.length > 0) {
+              readme += `For constructor of this sdk - You Must use this documentation as reference, do not assume your own knowledge\n\n${constructors.map((r) => r.docs).join("\n\n")}`;
             }
 
-            const pakageExactName = pkg.package.startsWith("@microfox/")
-              ? pkg.package
-              : `@ext_${pkg.package.replaceAll("/", "#")}`;
             const platform = taskInstanceMeta?.taskIntegrations?.platforms.find(
               (p) => p.package === pkg.package
             );
@@ -266,18 +265,27 @@ export const fetchPackageDocs = (
               ? pkg.readmeSearch // + `\n\n${platform?.reason}`
               : pkg.readmeSearch;
             const microfoxFunction = await semanticFunctionSearch(
-              pakageExactName,
-              readmeSearch
+              pkg.package,
+              readmeSearch,
+              "function"
             );
-            //console.log("functions", microfoxFunction);
             for (const _function of microfoxFunction) {
-              if (
-                _function.similarity > 1.5 &&
-                readme.length < 10000 &&
-                !_function.file_path.includes(`${pakageExactName}/README.md`)
-              ) {
-                console.log("function pattern hit", _function.function_name);
-                readme += `\n\n${_function.content}`;
+              if (_function.similarity > 1.5 && readme.length < 10000) {
+                console.log("function pattern hit", _function.docs);
+                console.log("function file path", _function.file_path);
+                readme += `\n\n${_function.docs}`;
+              }
+            }
+            let rules = await semanticFunctionSearch(
+              pkg.package,
+              readmeSearch,
+              "rule"
+            );
+            for (const rule of rules) {
+              if (readme.length < 12000) {
+                console.log("rule pattern hit", rule.docs);
+                console.log("rule file path", rule.file_path);
+                readme += `\n\n${rule.docs}\n\n`;
               }
             }
             console.log("readme char size", readme.length);
@@ -323,7 +331,7 @@ export const fetchPackageDocs = (
       }
 
       // if (otherDetails?._function.name) {
-      //   props.dataStream.writeMessageAnnotation({
+      //   ctx.dataStream.writeMessageAnnotation({
       //     type: "thinking",
       //     content: `Summarizing the docs for ${otherDetails?._function.name}`,
       //   });
@@ -339,13 +347,12 @@ export const fetchPackageDocs = (
       //   type: otherDetails?.type ?? "lambda",
       //   _function: otherDetails?._function,
       //   taskInstanceMeta,
-      //   props,
+      //   ctx,
       // });
 
       if (otherDetails?._function.name) {
-        props.dataStream.writeMessageAnnotation({
-          type: "thinking",
-          content: `Coding ${otherDetails?._function.name}`,
+        ctx.response.writeMessageMetadata({
+          loader: `Coding ${otherDetails?._function.name}`,
         });
       }
       //console.log("brief", brief);

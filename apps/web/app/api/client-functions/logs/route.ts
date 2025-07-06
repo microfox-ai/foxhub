@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { clientDeploymentId, endpointLink } = body;
+    const { clientDeploymentId, functionName, endpointLink } = body;
     const clientDeployment = await prisma.clientDeployment.findUnique({
       where: {
         id: clientDeploymentId,
@@ -32,7 +32,10 @@ export async function POST(req: NextRequest) {
     }
     const thisFunction = serverlessConfig.functions.find(
       (f: any) =>
-        endpointLink.includes(f.endpointLink) || f.endpointLink === endpointLink
+        f.functionName === functionName ||
+        endpointLink.includes(f.endpointLink) ||
+        f.path === endpointLink ||
+        f.endpointLink === endpointLink
     );
 
     // console.log(
@@ -47,12 +50,12 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
-    const functionName =
+    const fullFunctionName =
       serverlessConfig.functionBase + "-" + thisFunction.functionName;
 
     //console.log(functionName, "functionName");
     const logs = await getLambdaLogs({
-      functionName: functionName,
+      functionName: fullFunctionName,
       region: clientDeployment.awsRegion ?? AWS_REGION.US_EAST_1,
       streamLimit: 1,
       limit: 20,

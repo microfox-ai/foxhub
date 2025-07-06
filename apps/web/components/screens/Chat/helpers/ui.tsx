@@ -1,4 +1,4 @@
-import { Message } from "@ai-sdk/react";
+import { UIMessage } from "@ai-sdk/react";
 import {
   MessageCircle,
   Mail,
@@ -34,7 +34,7 @@ export const getTemplateIcon = (type?: string) => {
   }
 };
 
-export const getMessageClass = (role: Message["role"]) => {
+export const getMessageClass = (role: UIMessage["role"]) => {
   switch (role) {
     case "user":
       return "bg-neutral-100 text-black";
@@ -48,10 +48,10 @@ export const getMessageClass = (role: Message["role"]) => {
 };
 
 const statusVariantMapping: Record<string, { variant: string; color: string }> =
-  {
-    UN_ASSIGNED: { variant: "secondary", color: "#a4a7ae" },
-    IN_DEVELOPMENT: { variant: "default", color: "#3b82f6" },
-    IN_REVIEW: { variant: "warning", color: "#f59e0b" },
-    CLOSED: { variant: "error", color: "#ef4444" },
-    COMPLETED: { variant: "success", color: "#10b981" },
-  };
+{
+  UN_ASSIGNED: { variant: "secondary", color: "#a4a7ae" },
+  IN_DEVELOPMENT: { variant: "default", color: "#3b82f6" },
+  IN_REVIEW: { variant: "warning", color: "#f59e0b" },
+  CLOSED: { variant: "error", color: "#ef4444" },
+  COMPLETED: { variant: "success", color: "#10b981" },
+};

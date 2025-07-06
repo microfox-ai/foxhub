@@ -28,7 +28,7 @@ import {
   OpenAPISchema
 } from "@/utils/services/OpenAPIToolsClient";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeftIcon, ChevronDown, Clock, Copy, ExternalLink, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
+import { ArrowLeftIcon, Check, ChevronDown, Clock, Copy, ExternalLink, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -78,7 +78,7 @@ const PreviewWindow = () => {
   const [lastCopiedId, setLastCopiedId] = useState<string>("");
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const [showLogs, setShowLogs] = useState(false);
-  const { setSubmitAnnotations, setAutoSubmit, selectedClientDeployment: clientDeployment } = useClientProject();
+  const { setSubmitMetadata, setAutoSubmit, selectedClientDeployment: clientDeployment } = useClientProject();
   const { setActiveTab } = useTabUi()
   const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
@@ -230,7 +230,7 @@ const PreviewWindow = () => {
     };
 
     resetForm();
-  }, [selectedEndpoint, form]);
+  }, [selectedEndpoint, form, clientDeployment]);
 
   // Helper function to create Zod schema from OpenAPI schema
   const createZodSchemaFromOpenAPI = (
@@ -331,6 +331,7 @@ const PreviewWindow = () => {
         await fetchServerlessLogs({
           clientDeploymentId: clientDeployment?.id,
           endpointLink: endpointLink,
+          functionName: selectedFunctionName,
           setServerlessLogs: setServerlessLogs
         });
       }
@@ -886,6 +887,7 @@ const PreviewWindow = () => {
           await fetchServerlessLogs({
             clientDeploymentId: clientDeployment?.id,
             endpointLink: endpointLink,
+            functionName: selectedFunctionName,
             setServerlessLogs: setErrorServerlessLogs
           });
           setFetchError(null); // Clear any previous errors
@@ -908,6 +910,7 @@ const PreviewWindow = () => {
       await fetchServerlessLogs({
         clientDeploymentId: clientDeployment?.id,
         endpointLink: endpointLink,
+        functionName: selectedFunctionName,
         setServerlessLogs: setServerlessLogs
       });
     } catch (error) {
@@ -958,6 +961,48 @@ const PreviewWindow = () => {
         <div className="p-4 space-y-4">
           <p className="text-sm">There is an error loading the deployment info, checking the log...</p>
 
+          {(IN_STAGING || IN_DEV) &&
+            (<div className="flex flex-col gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="baseUrl" className="text-xs font-medium text-neutral-700">
+                    Base URL
+                  </label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
+                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000/dev")}
+                >
+                  {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
+                </Button>
+              </div>
+              <div className="flex flex-col items-start gap-2">
+                {forceBaseUrl ?
+                  (<Input
+                    id="baseUrl"
+                    type="text"
+                    placeholder="Enter base URL (e.g., https://api.example.com)"
+                    className="h-8 w-full text-xs"
+                    value={forceBaseUrl || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      setForceBaseUrl(value || null);
+                    }}
+                  />) : (
+                    <Input
+                      id="baseUrl"
+                      type="text"
+                      placeholder="Enter base URL (e.g., https://api.example.com)"
+                      className="h-8 w-full text-xs"
+                      value={clientDeployment ? `${clientDeployment.baseUrl}/${clientDeployment.stage?.toLowerCase()}` : ""}
+                      disabled
+                    />
+                  )}
+              </div>
+            </div>)}
+
           {fetchError && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3">
               <p className="text-sm text-red-700">{fetchError}</p>
@@ -996,18 +1041,10 @@ const PreviewWindow = () => {
                       clientDeployment: clientDeployment,
                       fetchError: fetchError
                     }
-                    setSubmitAnnotations((sa) => {
-                      const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
-                      const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
-                      return [
-                        ...newAnnotations,
-                        {
-                          type: "body",
-                          key: "api_errors",
-                          value: [...(existingErrorAttachment?.value || []), errorAttachment]
-                        }
-                      ]
-                    });
+                    setSubmitMetadata((sm: any) => ({
+                      ...sm,
+                      api_errors: sm.api_errors ? [...sm.api_errors, errorAttachment] : [errorAttachment]
+                    }))
                     setActiveTab("chat")
                     handleRightCollapse(true);
                   }}
@@ -1077,7 +1114,7 @@ const PreviewWindow = () => {
                   variant="ghost"
                   size="sm"
                   className="ml-auto h-6 text-xs text-neutral-500 hover:text-neutral-700"
-                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000")}
+                  onClick={() => setForceBaseUrl(forceBaseUrl ? null : "http://localhost:4000/dev")}
                 >
                   {!forceBaseUrl ? "Switch to Local" : "Switch to Deployment"}
                 </Button>
@@ -1100,7 +1137,7 @@ const PreviewWindow = () => {
                       type="text"
                       placeholder="Enter base URL (e.g., https://api.example.com)"
                       className="h-8 w-full text-xs"
-                      value={clientDeployment?.baseUrl + "/" + clientDeployment?.stage?.toLowerCase()}
+                      value={clientDeployment ? `${clientDeployment.baseUrl}/${clientDeployment.stage?.toLowerCase()}` : ""}
                       disabled
                     />
                   )}
@@ -1545,6 +1582,20 @@ const PreviewWindow = () => {
                                 >
                                   <RefreshCw className={`h-3 w-3 text-neutral-500 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
                                 </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyText(JSON.stringify(serverlessLogs, null, 2));
+                                    setLastCopiedId("serverless-logs-copy");
+                                  }}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-neutral-100"
+                                >
+                                  {copied && lastCopiedId === "serverless-logs-copy" ? (
+                                    <Check className="h-3 w-3 text-green-500" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 text-neutral-500" />
+                                  )}
+                                </button>
                                 <a
                                   href={`https://${AWS_LAMBDA_DEFAULT_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_LAMBDA_DEFAULT_REGION}#logsV2:log-groups/log-group/${encodeURIComponent(`${AWS_LAMBDA_LOG_GROUP_PREFIX}${selectedFunctionName}`)}`}
                                   target="_blank"
@@ -1591,18 +1642,10 @@ const PreviewWindow = () => {
                                   modificationInstructions: modificationInstructions
                                 }
                                 setModificationInstructions("");
-                                setSubmitAnnotations((sa) => {
-                                  const existingErrorAttachment = sa.find((a) => a.type === "body" && a.key === "api_errors");
-                                  const newAnnotations = existingErrorAttachment ? sa.filter((a) => a.type !== "body" || a.key !== "api_errors") : sa;
-                                  return [
-                                    ...newAnnotations,
-                                    {
-                                      type: "body",
-                                      key: "api_errors",
-                                      value: [...(existingErrorAttachment?.value || []), errorAttachment]
-                                    }
-                                  ]
-                                });
+                                setSubmitMetadata((sm: any) => ({
+                                  ...sm,
+                                  api_errors: sm.api_errors ? [...sm.api_errors, errorAttachment] : [errorAttachment]
+                                }))
                                 setActiveTab("chat")
                                 handleRightCollapse(true);
                               }}

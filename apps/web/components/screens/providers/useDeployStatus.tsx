@@ -4,6 +4,7 @@ import useSWRSubscription from "swr/subscription";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useParams } from "next/navigation";
 import { useClientProject } from "./ClientProjectProvider";
+import { useTaskInstanceMetaContext } from "./TaskInstanceMetaProvider";
 
 // Backend MongoDB models interfaces
 interface IDeployment {
@@ -30,12 +31,7 @@ interface IDeployment {
   pid?: number;
   port?: number;
   version?: string;
-  localState?:
-    | "active"
-    | "stopped"
-    | "errored"
-    | "starting"
-    | "awsLambda";
+  localState?: "active" | "stopped" | "errored" | "starting" | "awsLambda";
   lastActive?: string;
   timeoutAt?: string;
   error?: {
@@ -135,6 +131,7 @@ export const useDeployStatus = ({
   progress: number;
 } => {
   const { updateClientDeploymentById } = useClientProject();
+  const { mutate } = useTaskInstanceMetaContext();
 
   // Get deployment data via REST API - only if we have a SHA
   const swrKey = sha ? [`deployment-status-api`, sha] : null;
@@ -171,6 +168,7 @@ export const useDeployStatus = ({
     const status = deploymentApiData?.deployment?.status;
     const isFinalized = status === "deployed" || status === "failed";
     console.log(`📊 Deployment status: ${status}, finalized: ${isFinalized}`);
+    console.log("deploymentApiData", deploymentApiData);
     return isFinalized;
   }, [deploymentApiData]);
 
@@ -246,6 +244,10 @@ export const useDeployStatus = ({
             backendData?.deployment?.status === "deployed" ||
             backendData?.deployment?.status === "failed";
 
+          if (shouldBreak && clientRequestId) {
+            updateClientDeploymentById(clientRequestId);
+          }
+
           next(null, { data: backendData, shouldBreak });
         } catch (error) {
           console.error("❌ Error parsing SSE data:", error);
@@ -277,6 +279,7 @@ export const useDeployStatus = ({
           const completeData = JSON.parse(event.data);
           if (completeData.status === "deployed" && clientRequestId) {
             updateClientDeploymentById(clientRequestId);
+            mutate();
           }
           console.log("✅ Deployment completed:", completeData);
           next(null, { shouldBreak: true, finalStatus: completeData.status });
@@ -399,4 +402,3 @@ export const getDeploymentProgress = (deployment: Partial<IDeployment>) => {
   const progress = statusProgressMap[status] || 0;
   return progress;
 };
-

@@ -1,6 +1,8 @@
 import { ListIcon, PyramidIcon, BotIcon, CornerDownRightIcon } from "lucide-react";
 import Link from "next/link";
 import { TabProps } from "./types";
+import { MinionFlow } from "../hooks/convertors";
+import { IN_STAGING } from "@/utils/constants/appInfo";
 
 export const HomeTab = ({ activeTab, setActiveTab, createNewEmptyRequest }: TabProps) => {
     return (
@@ -25,13 +27,25 @@ export const HomeTab = ({ activeTab, setActiveTab, createNewEmptyRequest }: TabP
                 <BotIcon className="w-4 h-4" />
                 <span> Show all cutom bots </span>
             </Link>
+            {IN_STAGING && (
+                <li
+                    onClick={() => {
+                        createNewEmptyRequest?.();
+                    }}
+                    className="bg-white text-black flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
+                    <CornerDownRightIcon className="w-4 h-4" />
+                    <span> Build a New Automation </span>
+                </li>
+            )}
             <li
                 onClick={() => {
-                    createNewEmptyRequest?.();
+                    createNewEmptyRequest?.(
+                        MinionFlow.ChatFlow
+                    );
                 }}
                 className="bg-black text-white flex flex-row gap-2 px-4 cursor-pointer items-center justify-start border border-gray-200 rounded-lg p-2">
                 <CornerDownRightIcon className="w-4 h-4" />
-                <span> Start a New Task </span>
+                <span> Start a New Chat </span>
             </li>
         </ul>
     );

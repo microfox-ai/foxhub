@@ -6,6 +6,7 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { ClientSecretVariable } from "@/server/types";
 import { prisma } from "@/prisma/prisma";
+import { OauthKit, SupportedProviders } from "@microfox/oauth-kit";
 
 const AuthPopupWindow = async ({
   params,
@@ -93,9 +94,9 @@ const AuthPopupWindow = async ({
     const tokenResponse = await providerInstance.exchangeCodeForTokens(code);
 
     const accessToken =
-      "accessToken" in tokenResponse ? tokenResponse.accessToken : tokenResponse.access_token;
+      "accessToken" in tokenResponse ? tokenResponse?.accessToken : tokenResponse?.access_token || null;
     const refreshToken =
-      "refreshToken" in tokenResponse ? tokenResponse.refreshToken : null;
+      "refreshToken" in tokenResponse ? tokenResponse?.refreshToken : (tokenResponse as any)?.refresh_token || null;
 
     const keyValuePairs = (clientSecret.variables as any[] as ClientSecretVariable[]).map((variable: ClientSecretVariable) => {
       if ((variable.key as string).includes("_ACCESS_TOKEN") || (variable.key as string).includes("_BOT_TOKEN") || (variable.key as string).includes("_OAUTH_TOKEN")) {
@@ -126,7 +127,19 @@ const AuthPopupWindow = async ({
       };
     });
 
-    return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} tokenResponse={tokenResponse} />;
+    const providerName = packageName.replace("-oauth", "").replace("oauth-", "");
+    if (SupportedProviders.includes(providerName as any)) {
+      try {
+        const identityMetadata = await OauthKit.exchangeTokenResponseForIdentity(providerName, tokenResponse);
+        return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} tokenResponse={tokenResponse} identityMetadata={identityMetadata} />;
+      } catch (error) {
+        console.error("Error exchanging token response for identity:", error);
+        return <div>Error exchanging token response for identity</div>;
+      }
+    }
+    else {
+      return <OAuthConnectCallback docId={DOCUMENT_ID} keys={keyValuePairs} tokenResponse={tokenResponse} identityMetadata={{}} />;
+    }
   }
   else if (segment.length === 1) {
 

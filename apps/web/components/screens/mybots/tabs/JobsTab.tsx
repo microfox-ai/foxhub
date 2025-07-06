@@ -6,7 +6,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Loader2, Clock, Database, Server, Target, ChevronRight } from "lucide-react";
 import useSWR from "swr";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { TaskInstanceMetaType } from "@/server/convertfox/types";
+import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 

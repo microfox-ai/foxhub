@@ -22,6 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { TaskSettings } from "./TaskSettings";
 import { TaskRequiredInfo } from "./TaskRequiredInfo";
+import { ClientDeploymentMetadata } from "@/server/types";
+import { FunctionInfo } from "@/utils/services/parseServerlessLogs";
+import { toast } from "sonner";
 
 const ConfigureTab = () => {
     const { selectedRequest } = useClientProject();
@@ -42,6 +45,10 @@ const ConfigureTab = () => {
         mutateTaskInstanceMeta();
     }, []);
 
+    const allFunctions = (deploymentInfo?.metadata as any as ClientDeploymentMetadata)?.serverless?.functions;
+
+    console.log("deploymentInfo", allFunctions);
+
 
     const handleEndpointClick = (endpoint: {
         path: string;
@@ -49,6 +56,20 @@ const ConfigureTab = () => {
     }) => {
         setSelectedEndpoint(endpoint.path);
         setSelectedMethod(endpoint.method);
+        handleRightCollapse(false);
+    };
+
+    const handleFunctionClick = (func: FunctionInfo) => {
+        if (!func.path) {
+            toast.info("This endpoint cannot be tested, it is triggered internally!")
+            return;
+        }
+        if (typeof func.path !== "string") {
+            toast.info("This endpoint cannot be tested, it is triggered internally!")
+            return;
+        }
+        setSelectedEndpoint(func.path || "");
+        setSelectedMethod(func.method as HttpMethod);
         handleRightCollapse(false);
     };
 
@@ -79,10 +100,12 @@ const ConfigureTab = () => {
 
             <div className="col-span-6">
                 <EndpointsSection
+                    functions={allFunctions}
                     endpoints={endpoints}
                     isLoading={isLoading}
                     error={error}
                     onEndpointClick={handleEndpointClick}
+                    onFunctionClick={handleFunctionClick}
                 />
             </div>
 

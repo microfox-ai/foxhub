@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Edit, Trash2, RefreshCw, Check } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import {
@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ClientSecretTemplate } from "@prisma/client";
+import { ClientSecret, CLIENTSECRETSTATUS, ClientSecretTemplate } from "@prisma/client";
 import {
     Select,
     SelectContent,
@@ -24,11 +24,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Package } from "../Chat/message/types";
-import { ClientSecretVariable, PackageStatus } from "@/server/types";
+import { KeyVariableConfig, Package } from "../Chat/message/types";
+import { ClientSecretPackageType, ClientSecretVariable, PackageStatus } from "@/server/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { IN_DEV } from "@/utils/constants/appInfo";
+import { useClientProject } from "../providers/ClientProjectProvider";
+import { PortalSdk } from "@/utils/services/PortalSdk";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 
 export interface SecretTemplateMetadata {
@@ -77,6 +81,7 @@ export const SecretTemplates = () => {
     });
 
     const { user } = useAuth();
+    const { selectedProject, selectedRequest } = useClientProject();
     // Fetch packages data
     const { data: packages } = useSWR<Package[]>(
         `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.EXTERNAL},${PackageStatus.SEMISTABLE}`,
@@ -301,9 +306,106 @@ export const SecretTemplates = () => {
         generateTemplateId();
     }, []);
 
+    const [connecting, setConnecting] = useState<Record<string, boolean>>({});
+
+    const { data: allSecrets, mutate: mutateSecrets } = useSWR<{
+        clientSecrets: ClientSecret[];
+    }>(
+        formData.templateId
+            ? `/api/client-secrets?clientRequestId=template-${formData.templateId}&packageName=${formData.packageName}&status=FILLED`
+            : null,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch secrets");
+            return res.json();
+        }, {
+        revalidateOnFocus: true,
+        refreshInterval: 1000,
+    }
+    );
+
+    console.log(allSecrets, formData.packageName, formData.templateId);
+
+    useEffect(() => {
+        if (allSecrets?.clientSecrets && allSecrets?.clientSecrets?.length > 0 && formData.variables.length === 0) {
+            const thisClientSecret = allSecrets?.clientSecrets?.find((secret) => secret.clientRequestIds.includes("template-" + formData.templateId));
+            console.log(thisClientSecret);
+            if (thisClientSecret) {
+                console.log("Oauth connection successful");
+                setFormData({
+                    ...formData,
+                    variables: thisClientSecret?.variables as any[] as ClientSecretVariable[],
+                });
+            }
+        }
+    }, [allSecrets, formData.templateId]);
+
+    const connectOauth = async () => {
+        const packageInfo = packagesData?.packages.find((pkg) => pkg.name === formData.packageName);
+        const constructor = packageInfo?.constructors.find((c) => c.name === formData.packageConstructor);
+        const authEndpoint =
+            packageInfo?.constructors.find((c) => c.auth === "oauth2")
+                ?.authEndpoint;
+
+        if (!packageInfo || !constructor || !authEndpoint) {
+            toast.error("No package or constructor found");
+            return;
+        }
+        try {
+
+            setConnecting((prevState: Record<string, boolean>) => ({
+                ...prevState,
+                [packageInfo?.name]: true,
+            }));
+
+
+            // Create empty DB client secret doc
+            const data = await PortalSdk.postData(`/api/client-secrets`, {
+                clientRequestId: "template-" + formData.templateId,
+                botProjectId: selectedProject?.id,
+                name: packageInfo?.title,
+                packageName: packageInfo?.name,
+                packageConstructor: formData.packageConstructor,
+                packageType: ClientSecretPackageType.OAUTH2,
+                userId: user?.id,
+                status: CLIENTSECRETSTATUS.EMPTY,
+                botConfig: [],
+                variables: [
+                    ...constructor.internalKeys.map((key: KeyVariableConfig) => ({
+                        key: key.key,
+                        value: key.defaultValue
+                            ? Array.isArray(key.defaultValue)
+                                ? key.defaultValue.join(",")
+                                : key.defaultValue
+                            : "",
+                        isOptional: false,
+                    })),
+                ] as ClientSecretVariable[],
+            });
+
+            document.cookie = `${authEndpoint.replace(/^\//, "")}=${data.id}; path=/; SameSite=Lax`;
+            localStorage.setItem(authEndpoint.replace(/^\//, ""), data.id);
+
+            const width = 500;
+            const height = 600;
+            const left = window.screenX + (window.outerWidth - width) / 2;
+            const top = window.screenY + (window.outerHeight - height) / 2;
+            const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
+
+            window.open(authEndpoint, "_blank", features);
+        } catch (error) {
+            console.error("Error connecting:", error);
+        } finally {
+            setConnecting((prevState: Record<string, boolean>) => ({
+                ...prevState,
+                [packageInfo.name]: false,
+            }));
+        }
+    };
+
     const [newPermission, setNewPermission] = useState("");
 
-    if (!user?.email?.includes("@themoondevs.com") && !IN_DEV) {
+    if (!user?.isAdmin && !IN_DEV) {
         return (
             <div className="p-6">
                 <h1 className="text-2xl font-bold">Secret Templates</h1>
@@ -460,23 +562,46 @@ export const SecretTemplates = () => {
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="packageName">Package Name</Label>
-                                <Select
-                                    value={formData.packageName as string}
-                                    onValueChange={(value) => {
-                                        setFormData({ ...formData, packageName: value || "", packageConstructor: "" });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a package" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {packagesData?.packages.map((pkg) => (
-                                            <SelectItem key={pkg.name} value={pkg.name}>
-                                                {pkg.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Command className="rounded-lg border shadow-md">
+                                    <CommandInput
+                                        placeholder="Search packages..."
+                                        value={formData.packageName}
+                                        onValueChange={(value) => {
+                                            setFormData({ ...formData, packageName: value, packageConstructor: "" });
+                                        }}
+                                    />
+                                    <CommandEmpty>No package found.</CommandEmpty>
+                                    <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                        {packagesData?.packages
+                                            ?.filter((pkg) =>
+                                                pkg.name.toLowerCase().includes(formData.packageName?.toLowerCase() || "")
+                                            )
+                                            .map((pkg) => (
+                                                <CommandItem
+                                                    key={pkg.name}
+                                                    value={pkg.name}
+                                                    onSelect={(value) => {
+                                                        setFormData({ ...formData, packageName: value, packageConstructor: "" });
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <img
+                                                            src={pkg.icon}
+                                                            alt={pkg.name}
+                                                            className="w-4 h-4"
+                                                        />
+                                                        <span>{pkg.name}</span>
+                                                    </div>
+                                                    <Check
+                                                        className={cn(
+                                                            "ml-auto h-4 w-4",
+                                                            formData.packageName === pkg.name ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                </CommandItem>
+                                            ))}
+                                    </CommandGroup>
+                                </Command>
                             </div>
                             <div className="flex gap-2">
                                 <div className="grid gap-2">
@@ -521,11 +646,16 @@ export const SecretTemplates = () => {
                         <div className="col-span-2">
                             <div className="grid gap-2">
                                 <div className="flex justify-between items-center">
-                                    <Label>Variables</Label>
+                                    <Label>Variables
+                                        {connecting[formData.packageName] && <RefreshCw className="ml-2 h-4 w-4 animate-spin" />}
+                                    </Label>
                                     <Select
                                         value=""
-                                        onValueChange={(value) => {
-                                            if (value === "custom") {
+                                        onValueChange={async (value) => {
+                                            if (value === "connect") {
+                                                await connectOauth();
+                                            }
+                                            else if (value === "custom") {
                                                 setFormData({
                                                     ...formData,
                                                     variables: [
@@ -575,6 +705,12 @@ export const SecretTemplates = () => {
                                                     {variable.displayName || variable.key}
                                                 </SelectItem>
                                             ))}
+                                            <SelectItem value="connect" disabled={connecting[formData.packageName]}>
+                                                <div className="flex items-center">
+                                                    {connecting[formData.packageName] && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Connect via Oauth
+                                                </div>
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

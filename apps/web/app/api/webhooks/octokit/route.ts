@@ -1,8 +1,10 @@
 import { ApiGatewayAdapter } from "@/lib/adapters/api-gateway";
 import { prisma } from "@/prisma/prisma";
 import { OctokitWebhook } from "@microfox/webhook-octokit";
+import { WebhookResponse } from "@microfox/webhook-kit";
 import { NextRequest, NextResponse } from "next/server";
 
+/** FOR INTERNAL USE ONLY  - for syncing deployments & update steps from github */
 export async function POST(req: NextRequest) {
   //const body = await req.json();
   const octokitWebhook = new OctokitWebhook({
@@ -120,8 +122,13 @@ export async function POST(req: NextRequest) {
     }
   });
   //console.log("octokit event triggered", event.body.length);
-  await octokitWebhook.verifyAndReceive(event.body, event.headers);
-  //console.log("payload", payload.event.type, "team_id", payload.team_id);
-  // get botToken from db based on team_id.
-  return NextResponse.json({ message: "Webhook received" }, { status: 200 });
+  const response: WebhookResponse | void = await octokitWebhook.receive({
+    headers: event.headers,
+    body: event.body,
+  });
+  if (response && "statusCode" in response) {
+    return ApiGatewayAdapter.toNextResponse(response);
+  } else {
+    return NextResponse.json({ error: "No response" }, { status: 500 });
+  }
 }

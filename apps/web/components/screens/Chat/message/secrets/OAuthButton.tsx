@@ -1,5 +1,5 @@
 import { ClientSecretPackageType, ClientSecretVariable } from "@/server/types";
-import { TaskIntegrationPlatform } from "@/server/convertfox/types";
+import { TaskIntegrationPlatform } from "@/server/convertfox/helpers/types";
 import { ClientSecret, CLIENTSECRETSTATUS } from "@prisma/client";
 import { Constructor, KeyVariableConfig } from "../types";
 import { Button } from "@/components/ui/button";

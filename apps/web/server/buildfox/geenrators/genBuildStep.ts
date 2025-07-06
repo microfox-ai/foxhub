@@ -6,19 +6,19 @@ import {
   ExtraEnvVariable,
   TaskInstanceMetaType,
   taskRequiredInfo,
-} from "../../convertfox/types";
+} from "../../convertfox/helpers/types";
 import { ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
+import { AiContext } from "@repo/ai-utils/router";
 
 interface BuildStepProps {
-  props: StreamingFucntionProps<any, any>;
+  ctx: AiContext<any, any, any, any>;
   clientRequest: ClientRequest;
   taskInstanceMeta: TaskInstanceMetaType;
   timeStart: dayjs.Dayjs;
 }
 
 export async function genBuildStep({
-  props,
+  ctx,
   clientRequest,
   taskInstanceMeta,
   timeStart,
@@ -46,7 +46,7 @@ export async function genBuildStep({
 
     console.log("envVariablesUsedUnique", envVariablesUsedUnique);
     const envVariables = await genEnvCollector(
-      props,
+      ctx,
       envVariablesUsedUnique,
       taskInstanceMeta,
       clientRequest

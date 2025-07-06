@@ -29,10 +29,11 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import LogoutElement from "@/components/auth/LogoutElement";
 import { ButtonSCN } from "@/components/elements/Button";
 import DeployTrigger from "./DeployTrigger";
+import { useClientProject } from "../providers/ClientProjectProvider";
+import { MinionFlow } from "../hooks/convertors";
 
 interface IChatHeaderProps {
   clientRequest?: ClientRequest;
-  mutate: () => void;
   isLoading: boolean;
   isValidating: boolean;
   activeTab: string;
@@ -47,26 +48,31 @@ const tabList = [
     label: "Chat",
     value: "chat",
     icon: <MessageSquare />,
+    flows: [MinionFlow.ChatFlow, MinionFlow.BuildFlow],
   },
   {
     label: "Dashboard ",
     value: "dashboard",
     icon: <LayoutDashboard />,
+    flows: [MinionFlow.BuildFlow],
   },
   {
     label: "Code",
     value: "code",
     icon: <Code />,
+    flows: [MinionFlow.BuildFlow],
   },
   {
     label: "History",
     value: "history",
     icon: <History />,
+    flows: [MinionFlow.BuildFlow],
   },
   {
     label: "Publish",
     value: "publish",
     icon: <RocketIcon />,
+    flows: [MinionFlow.BuildFlow],
   },
 ];
 
@@ -78,6 +84,9 @@ const ChatHeader = ({
   projectTitle,
 }: IChatHeaderProps) => {
   const { lastKnownMinionType, lastKnownMinionFlow } = useMicrofoxChat();
+  const { selectedRequest } = useClientProject();
+  const currentFlow = selectedRequest?.minionFlow ?? MinionFlow.BuildFlow;
+  const flowTabs = tabList.filter((tab) => tab.flows.includes(currentFlow));
 
   return (
     <div className="grid grid-cols-12 w-full items-start justify-between gap-2 px-4 pt-6 py-2">
@@ -115,9 +124,9 @@ const ChatHeader = ({
       </div>
 
       <div className="col-span-4 flex justify-start">
-        {messages.length > 0 && (
+        {messages.length > 0 && flowTabs.length > 1 && (
           <TabsList className="relative flex bg-gray-100 p-[3px] h-11 rounded-lg">
-            {tabList.map((tab) => (
+            {flowTabs.map((tab) => (
               <TabsTrigger
                 key={`tab-${tab.value}`}
                 value={tab.value}
@@ -152,7 +161,7 @@ const ChatHeader = ({
                 )}
               </TabsTrigger>
             ))}
-            <DeployTrigger />
+            {currentFlow === MinionFlow.BuildFlow && <DeployTrigger />}
           </TabsList>
         )}
       </div>

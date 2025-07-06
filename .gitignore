@@ -4,6 +4,7 @@
 node_modules
 .pnp
 .pnp.js
+.ignore
 
 # Local env files
 .env
@@ -11,6 +12,8 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+
+.ignore
 
 # Testing
 coverage
@@ -41,6 +44,8 @@ yarn-error.log*
 .flaskenv*
 !.env.project
 !.env.vault
+env.json
 
 # cron logs
 apps/cron/logs/*
+.serverless

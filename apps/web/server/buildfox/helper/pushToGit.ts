@@ -5,22 +5,22 @@
 //     branchName: clientRequest.prBranch,
 //     repoName: clientRequest.repoName,
 //   });
-import { ChatUIMessage, ClientRequest } from "@prisma/client";
-import { StreamingFucntionProps } from "@repo/ai-utils/router";
-import { uploadToRepo } from "./uploadToGit";
-import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
-import { Octokit } from "octokit";
-import { TaskInstanceMetaType } from "../../convertfox/types";
-import dayjs from "dayjs";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
+import { ClientRequest } from "@prisma/client";
+import dayjs from "dayjs";
+import { Octokit } from "octokit";
+import { TaskInstanceMetaType } from "../../convertfox/helpers/types";
+import { uploadToRepo } from "./uploadToGit";
+import { AiContext } from "@repo/ai-utils/router";
 
 export const pushToGit = async (
-  props: StreamingFucntionProps<any, any>,
+  ctx: AiContext<any, any, any, any>,
   clientRequest: ClientRequest,
   taskInstanceMeta: TaskInstanceMetaType
 ) => {
-  const { dataStream } = props;
+  const { response } = ctx;
 
   if (
     !clientRequest.repoName ||
@@ -30,9 +30,8 @@ export const pushToGit = async (
     throw new Error("Repo name or request dir or pr branch is required");
   }
 
-  dataStream.writeMessageAnnotation({
-    type: "thinking",
-    content: "Pushing to codebase...",
+  response.writeMessageMetadata({
+    loader: "Pushing to codebase...",
   });
 
   const octo = new Octokit({

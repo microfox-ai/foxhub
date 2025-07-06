@@ -43,11 +43,8 @@ function ChatWindow({
   // Chat state
   const {
     messages,
-    reload: mutate,
     status,
     isLoading,
-    input,
-    handleInputChange,
     serverMessages,
   } = useMicrofoxChat();
 
@@ -128,7 +125,6 @@ function ChatWindow({
             messages={messages}
             projectTitle={projectTitle}
             clientRequest={clientRequest}
-            mutate={mutate}
             isChatLoading={isChatLoading}
             isLoading={isLoading}
             isValidating={isLoading}
@@ -174,7 +170,6 @@ function ChatWindow({
                       stiffness: 300,
                       damping: 30,
                       duration: 0.1,
-                      exit: { duration: 0 },
                     }}
                     style={{
                       WebkitMaskImage:
@@ -203,7 +198,6 @@ function ChatWindow({
                       stiffness: 300,
                       damping: 30,
                       duration: 0.1,
-                      exit: { duration: 0 },
                     }}
                     className=" w-full h-full overflow-y-auto thin-scrollbar"
                   >
@@ -255,10 +249,8 @@ function ChatWindow({
                   <ChatInputBox
                     key={"chat-input"}
                     lastMessage={messages[messages.length - 1]}
-                    input={input}
                     messageStatus={status}
                     userId={userId}
-                    handleInputChange={handleInputChange}
                   />
                 )}
               </motion.div>
@@ -277,10 +269,8 @@ function ChatWindow({
                 I build bots that do complex automations across platforms based on your needs.
               </p>
               <ChatInputBox
-                input={input}
                 messageStatus={status}
                 userId={userId}
-                handleInputChange={handleInputChange}
                 className="relative max-w-[800px]"
               />
             </div>

@@ -3,14 +3,18 @@ import { getServiceName } from "@/server/buildfox/helper/getServiceName";
 import {
   TaskInstanceMetaType,
   TaskStructure,
-} from "@/server/convertfox/types";
+} from "@/server/convertfox/helpers/types";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import {
   deleteEmbedding,
   embedApiEndpoints,
 } from "@/utils/services/embeddings/embedFunctions";
 import { OpenAPIDoc } from "@/utils/services/OpenAPIToolsClient";
-import { parseServerlessLogs } from "@/utils/services/parseServerlessLogs";
+import {
+  FunctionInfo,
+  parseServerlessFunctions,
+  parseServerlessLogs,
+} from "@/utils/services/parseServerlessLogs";
 import {
   MICROFOX_LOGO,
   MySlackChannels,
@@ -23,6 +27,9 @@ import {
   TaskInstanceMeta,
 } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
+import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
+import YAML from "yaml";
+import { Octokit } from "octokit";
 
 // Create ClientDeployment
 export async function POST(req: NextRequest) {
@@ -39,7 +46,14 @@ export async function POST(req: NextRequest) {
       endpoints,
     } = body;
 
-    if (!originClientRequestId || !name || !baseUrl || !type || !stage || !sha) {
+    if (
+      !originClientRequestId ||
+      !name ||
+      !baseUrl ||
+      !type ||
+      !stage ||
+      !sha
+    ) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -63,18 +77,61 @@ export async function POST(req: NextRequest) {
 
     const { userId, botProjectId } = clientRequest;
 
-    const serverlessLog = metadata.serverless?.output;
-    const serviceName = getServiceName(
+    if (
+      !clientRequest.prBranch ||
+      !clientRequest.requestDir ||
+      !clientRequest.repoName
+    ) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const githubSdk = new Octokit({
+      auth: GITHUB_TOKEN,
+    });
+
+    let serviceName = getServiceName(
       clientRequest,
       clientRequest.taskInstanceMeta as unknown as TaskInstanceMetaType
     );
-    const functions = parseServerlessLogs(serverlessLog);
+    let region = clientRequest.awsRegion;
+    let functionBase = serviceName + "-" + stage?.toLowerCase();
+    let functions: FunctionInfo[] = [];
+    try {
+      const serverlessYmlPath = `${clientRequest.requestDir}/serverless.yml`;
+      const fileContentResponse = await githubSdk.rest.repos.getContent({
+        owner: PROJECT_REPO_OWNER,
+        repo: clientRequest.repoName,
+        path: serverlessYmlPath,
+        ref: clientRequest.prBranch,
+      });
+      if ("content" in fileContentResponse.data) {
+        const decodedContent = Buffer.from(
+          fileContentResponse.data.content,
+          "base64"
+        ).toString("utf-8");
+        const serverlessConfig = YAML.parse(decodedContent);
+        functions = parseServerlessFunctions(
+          serverlessConfig,
+          functionBase,
+          metadata.serverless?.output
+        );
+        serviceName = serverlessConfig.service;
+        region = serverlessConfig.provider.region;
+      }
+    } catch (e) {
+      console.log("Error fetching or parsing serverless.yml", e);
+      const serverlessLog = metadata.serverless?.output;
+      functions = parseServerlessLogs(serverlessLog);
+    }
+
     let newMetadata = { ...metadata };
     newMetadata.serverless.functions = functions;
     newMetadata.serverless.serviceName = serviceName;
-    newMetadata.serverless.functionBase =
-      serviceName + "-" + stage?.toLowerCase();
-    console.log("newMetadata", newMetadata);
+    newMetadata.serverless.functionBase = functionBase;
+    newMetadata.serverless.region = region;
 
     // Create the ClientDeployment with awsRegion from clientRequest
     // VSWJT TODO - in future, we should use id: originClientRequestId+stage as a means to identify the deployments of different stages (when bothe deployments need to exist),
@@ -143,7 +200,11 @@ export async function POST(req: NextRequest) {
     //     createdAt: new Date(),
     //   },
     // });
-    if (taskInstanceMeta && newMetadata?.docData?.paths?.length > 0) {
+    if (
+      taskInstanceMeta &&
+      newMetadata?.docData?.paths &&
+      Object.keys(newMetadata?.docData?.paths).length > 0
+    ) {
       await embedApiEndpoints({
         taskStructure: taskInstanceMeta?.taskStructure as TaskStructure,
         docData: newMetadata?.docData as OpenAPIDoc,
@@ -259,7 +320,10 @@ export async function DELETE(req: NextRequest) {
       });
 
       return NextResponse.json(
-        { message: "Function archived successfully", function: archivedFunction },
+        {
+          message: "Function archived successfully",
+          function: archivedFunction,
+        },
         { status: 200 }
       );
     } else {

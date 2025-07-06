@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { generateWidgetCode } from "./generateWidgetCode";
+import { WhatsAppVerificationSdk } from "@/utils/services/WhatsAppVerification";
 
 const whatsappRequiredKeys = {
     businessAccountId: "WHATSAPP_BUSINESS_ACCOUNT_ID",
@@ -43,6 +44,9 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
     const form = useFormContext();
     const [imagePreview, setImagePreview] = useState<Record<string, string>>({});
     const [isUploading, setIsUploading] = useState<Record<string, boolean>>({});
+    const [isRegisteringBusiness, setIsRegisteringBusiness] = useState(false);
+    const [isSetupHandshakeLoading, setIsSetupHandshakeLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<string>("for_agents");
     const [currentStep, setCurrentStep] = useState(1);
@@ -104,12 +108,23 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
         }
     };
 
-    const handleSave = () => {
-        toast.success(`Step ${currentStep} configuration saved successfully`);
+    const handleSave = async () => {
+        try {
+            setIsSaving(true);
+            // Simulate save operation
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            toast.success(`Step ${currentStep} configuration saved successfully`);
+        } catch (error) {
+            console.error("Save error:", error);
+            toast.error("Failed to save configuration");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleSetupHandshake = async () => {
         try {
+            setIsSetupHandshakeLoading(true);
             const handshake = {
                 "WHATSAPP_BUSINESS_ACCOUNT_ID": form.getValues("keys.WHATSAPP_BUSINESS_ACCOUNT_ID"),
                 "WHATSAPP_BUSINESS_ACCESS_TOKEN": form.getValues("keys.WHATSAPP_BUSINESS_ACCESS_TOKEN"),
@@ -137,6 +152,8 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
         } catch (error) {
             console.error("Setup handshake failed:", error);
             toast.error("Setup handshake failed");
+        } finally {
+            setIsSetupHandshakeLoading(false);
         }
     }
 
@@ -174,6 +191,24 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
 
     if (!botToEdit?.id) {
         return null;
+    }
+
+    const RegisterBusinessNumber = async () => {
+        try {
+            setIsRegisteringBusiness(true);
+            const whatsappVerficiation = new WhatsAppVerificationSdk();
+            const response = await whatsappVerficiation.registerBusinessNumber(
+                form.getValues("keys.WHATSAPP_BUSINESS_ACCESS_TOKEN"),
+                form.getValues("keys.WHATSAPP_BUSINESS_PHONE_NUMBER_ID")
+            );
+            console.log(response);
+            toast.success("Business number registration initiated successfully");
+        } catch (error) {
+            console.error("Business number registration failed:", error);
+            toast.error("Failed to register business number");
+        } finally {
+            setIsRegisteringBusiness(false);
+        }
     }
 
     const isWhatsappWebhookVerified = botToEdit?.botConfigMapped?.WHATSAPP_WEBHOOK_VERIFIED;
@@ -378,9 +413,19 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                             onClick={handleSetupHandshake}
                                             size="lg"
                                             className="gap-2"
+                                            disabled={isSetupHandshakeLoading}
                                         >
-                                            <Check className="h-5 w-5" />
-                                            Activate Webhook
+                                            {isSetupHandshakeLoading ? (
+                                                <>
+                                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                                    Activating...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Check className="h-5 w-5" />
+                                                    Activate Webhook
+                                                </>
+                                            )}
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -525,6 +570,20 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                                 )}
                                             />
 
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={RegisterBusinessNumber}
+                                                disabled={isRegisteringBusiness}>
+                                                {isRegisteringBusiness ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Registering...
+                                                    </>
+                                                ) : (
+                                                    "Try Registering Business Number"
+                                                )}
+                                            </Button>
 
                                         </div>
                                     </div>
@@ -671,14 +730,25 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                     variant="outline"
                                     onClick={handleSave}
                                     type="submit"
+                                    disabled={isSaving}
                                 >
-                                    <Check className="mr-2 h-4 w-4" />
-                                    Save Progress
+                                    {isSaving ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="mr-2 h-4 w-4" />
+                                            Save Progress
+                                        </>
+                                    )}
                                 </Button>
                                 {currentStep < totalSteps ? (
                                     <Button
                                         onClick={handleNext}
                                         type="submit"
+                                        disabled={isSaving}
                                     >
                                         Next
                                         <ArrowRight className="ml-2 h-4 w-4" />
@@ -687,9 +757,19 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                                     <Button
                                         onClick={handleSave}
                                         variant="default"
+                                        disabled={isSaving}
                                     >
-                                        <Check className="mr-2 h-4 w-4" />
-                                        Complete Setup
+                                        {isSaving ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Completing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="mr-2 h-4 w-4" />
+                                                Complete Setup
+                                            </>
+                                        )}
                                     </Button>
                                 )}
                             </div>
@@ -698,6 +778,7 @@ export const WhatsAppBotConfig = ({ config, packageConstructor }: { config: Clie
                 </TabsContent>
                 <TabsContent value="configuration">
                     {/* Add your general configuration content here */}
+
                 </TabsContent>
             </Tabs>
         </div>

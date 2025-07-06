@@ -149,6 +149,13 @@ export const addClientSecretToClientRequest = async (
   let updatedClientSecret = null;
   let updatedClientRequest = null;
 
+  if (!clientSecretId || !clientRequestId) {
+    return {
+      clientSecret: null,
+      clientRequest: null,
+    };
+  }
+
   // Find the client secret by ID
   const clientSecret = await prisma.clientSecret.findUnique({
     where: { id: clientSecretId },

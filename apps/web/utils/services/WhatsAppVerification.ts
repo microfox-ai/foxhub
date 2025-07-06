@@ -232,7 +232,7 @@ export class WhatsAppVerificationSdk {
       `https://graph.facebook.com/v22.0/${phoneNumberId}/register`,
       {
         method: "POST",
-        body: JSON.stringify({ pin: "123456" }),
+        body: JSON.stringify({ pin: "123456", messaging_product: "whatsapp" }),
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,

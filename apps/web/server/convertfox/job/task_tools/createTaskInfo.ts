@@ -84,8 +84,6 @@ export const createTaskInfo: AiToolFactory<
             You need to re-create a task info based on the previous Info and the user query.
             ----
             ${getMicrofoxCapabilities()}
-            Packages/Platforms we support:
-            ${packageList.map((pkg) => pkg.package_name).join(", ")}
             `
           : `
             You are a task expert and also have developer experience.
@@ -94,11 +92,9 @@ export const createTaskInfo: AiToolFactory<
             Make sure you read task summary, platforms properly, & our capabilities before you can generate the task details
             ----
             ${getMicrofoxCapabilities()}
-                    Packages/Platforms we support:
-            ${packageList.map((pkg) => pkg.package_name).join(", ")}
             ----
             webhooks, api calls, ai tools, etcs are all done via lambda functions.
-            schedueld tasks, background jobs, etcs are all done via cron jobs.
+            scheduled tasks, background jobs, etcs are all done via cron jobs.
         `,
         schema: taskInfo,
         prompt: modification

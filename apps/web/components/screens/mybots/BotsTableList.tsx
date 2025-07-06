@@ -141,7 +141,7 @@ export const BotsTableList = () => {
             <div className="text-center py-12 h-screen flex flex-col items-center justify-center">
                 <h3 className="text-lg font-semibold mb-2">No bots found</h3>
                 <p className="text-muted-foreground mb-4">Create your first bot to get started with automation.</p>
-                <Button onClick={() => router.push(`${pathname}/create`)}>
+                <Button onClick={() => router.push(`${pathname}/new-bot`)}>
                     Create Bot
                 </Button>
             </div>

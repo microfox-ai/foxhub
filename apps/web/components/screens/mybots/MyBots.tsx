@@ -19,14 +19,11 @@ import { BotsCardsGrid } from "./BotsCardsGrid";
 import { BotsTableList } from "./BotsTableList";
 
 const MyBots = ({ uiType = "bots" }: { uiType?: "bots" | "connections" }) => {
-  const [isAddBotDialogOpen, setIsAddBotDialogOpen] = useState(false);
+
   const router = useRouter();
   const pathname = usePathname();
   const { bots, isLoading, error, stableBotPackages } = useBots();
 
-  const handleAddBot = () => {
-    setIsAddBotDialogOpen(true);
-  };
 
   if (error) {
     return (
@@ -61,12 +58,6 @@ const MyBots = ({ uiType = "bots" }: { uiType?: "bots" | "connections" }) => {
           <BotsTableList />
         )}
       </div>
-
-      <AddBotDialog
-        isOpen={isAddBotDialogOpen}
-        onOpenChange={setIsAddBotDialogOpen}
-        stableBotPackages={stableBotPackages}
-      />
     </TooltipProvider>
   );
 };

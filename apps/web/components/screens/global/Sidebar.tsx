@@ -119,7 +119,7 @@ const navigationConfig: NavigationConfig[] = [
     collapsedIcon: (
       <KeyRound strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
     ),
-    label: "My Data",
+    label: "Connections",
     href: "/my-data",
     requiresProject: true,
   },

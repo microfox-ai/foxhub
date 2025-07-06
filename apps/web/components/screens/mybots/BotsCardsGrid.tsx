@@ -5,10 +5,13 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronRight, Plus } from "lucide-react";
 import { Identity } from "@microfox/oauth-kit";
 import { usePathname, useRouter } from "next/navigation";
+import AddBotDialog from "./AddBotDialog";
+import { useState } from "react";
 
 
 export const BotsCardsGrid = () => {
 
+    const [isAddBotDialogOpen, setIsAddBotDialogOpen] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -17,7 +20,7 @@ export const BotsCardsGrid = () => {
     };
 
     const handleAddBot = () => {
-        router.push(`${pathname}/create`);
+        setIsAddBotDialogOpen(true);
     };
 
     const { bots, isLoading, error, stableBotPackages } = useBots();
@@ -25,15 +28,14 @@ export const BotsCardsGrid = () => {
     console.log("bots", bots);
 
     if (isLoading) {
-        return (
-            <>
-                {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="flex flex-col items-center">
-                        <Skeleton className="w-full aspect-square rounded-3xl" />
-                        <Skeleton className="mt-3 h-4 w-16" />
-                    </div>
-                ))}
-            </>
+        return (<div className="grid mt-8 px-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex flex-col items-center">
+                    <Skeleton className="w-full aspect-square rounded-3xl" />
+                    <Skeleton className="mt-3 h-4 w-16" />
+                </div>
+            ))}
+        </div>
         )
     }
     return (
@@ -107,6 +109,12 @@ export const BotsCardsGrid = () => {
                     </div>
                 )
             })}
+
+            <AddBotDialog
+                isOpen={isAddBotDialogOpen}
+                onOpenChange={setIsAddBotDialogOpen}
+                stableBotPackages={stableBotPackages}
+            />
         </div>
     )
 }

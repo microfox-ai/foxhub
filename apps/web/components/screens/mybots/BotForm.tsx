@@ -133,11 +133,11 @@ const BotForm = ({ mode }: BotFormProps) => {
               className="w-24 h-24 object-cover"
             />
           </div>
-          <h3 className="text-sm font-medium text-neutral-900">
+          <h3 className="text-sm font-medium text-neutral-900 max-w-[125px] truncate">
             {botName}
           </h3>
 
-          <div className="flex gap-2 ml-auto">
+          <div className="flex gap-2">
             {(form.formState.isDirty || mode === "create") && (
               <Button
                 type="submit"

@@ -150,4 +150,61 @@ const searchPublicApis = async ({
     }
 }
 
-export { searchProjectApis, searchPublicApis };
+export interface QueryApisParams {
+    query: string;
+    api_type?: string | null;
+    package_name?: string | null;
+    match_count?: number;
+    match_threshold?: number;
+}
+
+export interface QueryApisResult {
+    id: string;
+    name: string;
+    package_name: string;
+    base_url: string;
+    endpoint_path: string;
+    http_method: string;
+    similarity: number;
+    api_type: string;
+    schema_path: string;
+    created_at: string;
+    updated_at: string;
+}
+
+const queryApis = async ({
+    query,
+    api_type = null,
+    package_name = null,
+    match_count = 5,
+    match_threshold = 0.5
+}: QueryApisParams): Promise<QueryApisResult[]> => {
+    try {
+        const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
+        const query_embedding = await embed(query);
+
+        const { data: apiResults, error } = await supabase.rpc('match_api_embeddings', {
+            query_embedding,
+            api_type,
+            package_name,
+            match_count,
+            match_threshold
+        });
+        if (error) {
+            console.error('Error querying Supabase:', error);
+            throw new Error(`Error finding similar packages: ${error.message}`);
+        }
+
+        if (!apiResults || apiResults.length === 0) {
+            console.log('No similar packages found.');
+            return [];
+        }
+
+        return apiResults;
+    } catch (err) {
+        console.error('An unexpected error occurred:', err);
+        throw err;
+    }
+}
+
+export { searchProjectApis, searchPublicApis, queryApis };

@@ -30,7 +30,7 @@ import { getServiceName } from "./helper/getServiceName";
 import { octokitSdk } from "./helper/gitHelpers";
 import { pushToGit } from "./helper/pushToGit";
 import { deleteAllGenFiles } from "./tool/writeToFile";
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
 import { findLastMessageWith } from "@repo/ai-utils/helper";
 import { uiTool } from "../ui/uiTool";
@@ -39,7 +39,7 @@ import { uiTool } from "../ui/uiTool";
 //TODO: embedding data contextualisation
 //TODO: (Requires further thought) shared scripts or files, using a tool call to check if said shared file exists, & fetchit/createit as needed.
 
-const buildFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
+const buildFoxAgent = new AiRouter<DefaultMessageMetadata, any, any, any>();
 
 // Tight control required on this route as this burns MOOOOOOOONEEEEEEY
 buildFoxAgent.agent("/", async (ctx) => {

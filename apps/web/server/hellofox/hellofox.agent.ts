@@ -15,11 +15,11 @@ import { getMicrofoxCapabilities } from "./_prompts";
 import { guideUserToDoableGoal } from "./query/query.guideUserToDoableGoal";
 import { isTaskBuildable } from "./query/query.isTaskBuildable";
 import { confirmSpecifics } from "./query/query.confirmSpecifics";
-import { AiAgentKit, AiHandler, AiMiddleware } from "@repo/ai-utils/router";
+import { AiRouter, AiHandler, AiMiddleware } from "@microfox/ai-router";
 import hellofoxQueryAgent from "./query/query.agent";
 import casualHelloFoxAgent from "./casual/casual.agent";
 
-const helloFoxAgent = new AiAgentKit<any, any, any, any>();
+const helloFoxAgent = new AiRouter<any, any, any, any>();
 
 helloFoxAgent.use("/", (ctx, next) => {
   const { request, state, response } = ctx;

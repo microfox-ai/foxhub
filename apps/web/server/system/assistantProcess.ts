@@ -1,5 +1,5 @@
 import { StreamWriter } from "@repo/ai-utils/helper";
-import { AiHandler, AiMiddleware } from "@repo/ai-utils/router";
+import { AiHandler, AiMiddleware } from "@microfox/ai-router";
 
 export const assistantMessageProcessor: AiMiddleware<any, any, any> = async (
   props,

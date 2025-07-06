@@ -14,7 +14,7 @@ import {
   taskInstance,
   TaskInstanceMetaType,
 } from "../../helpers/types";
-import { AiToolFactory } from "@repo/ai-utils/router";
+import { AiToolFactory } from "@microfox/ai-router";
 import { uiTool } from "@/server/ui/uiTool";
 
 type CreateTaskInfoToolMetadata = {

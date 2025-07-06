@@ -2,7 +2,7 @@ import {
   MinionFlow,
   MinionTypeType,
 } from "@/components/screens/hooks/convertors";
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { usageTrackerRouter } from "./analytics/_usageTrackerRouter";
 import { buildManager } from "./flows/buildFlow";
 import { assistantMessageProcessor } from "./system/assistantProcess";
@@ -21,7 +21,7 @@ export interface DefaultMessageMetadata {
   error?: string;
 }
 
-const microfoxRouter = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
+const microfoxRouter = new AiRouter<DefaultMessageMetadata, any, any, any>();
 
 microfoxRouter.use("/", assistantMessageProcessor);
 microfoxRouter.use("/", usageTrackerRouter);

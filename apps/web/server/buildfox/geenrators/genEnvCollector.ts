@@ -6,7 +6,7 @@ import {
 } from "@/server/convertfox/helpers/types";
 import { models } from "@/server/models";
 import { ClientRequest } from "@prisma/client";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 import { generateObject } from "ai";
 import { z } from "zod";
 import {

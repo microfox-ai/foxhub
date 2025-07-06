@@ -22,7 +22,7 @@ import { getServiceName } from "../buildfox/helper/getServiceName";
 import { MinionType } from "@/components/screens/hooks/convertors";
 import { getClientSecretsFromTemplateEnvs } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 import { addTemplateSecretsToClientRequest } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
 import { uiTool } from "../ui/uiTool";
 
@@ -35,7 +35,7 @@ interface ClientRequestMeta {
   metadata: any;
 }
 
-const installFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
+const installFoxAgent = new AiRouter<DefaultMessageMetadata, any, any, any>();
 
 installFoxAgent.agent("/installfox", async (ctx) => {
   const { request, response } = ctx;

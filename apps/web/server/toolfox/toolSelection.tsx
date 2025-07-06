@@ -10,36 +10,37 @@ import { queryApis, QueryApisResult } from "../slsfox/queryApis";
 const toolSelectionAgent = new AiRouter<any>();
 
 toolSelectionAgent.use("/", async (ctx, next) => {
-  const { request, state, response } = ctx;
-  response.writeMessageMetadata({
-    MinionType: MinionType.ToolFox,
-  });
-  return next();
+    const { request, state, response } = ctx;
+    response.writeMessageMetadata({
+        MinionType: MinionType.ToolFox,
+    });
+    response.writeMessageMetadata({
+        loader: "Searching for the best tools...",
+    });
+    return next();
 });
 
 toolSelectionAgent.agent("/", async (ctx) => {
-  const { request, state, response } = ctx;
+    const { request, state, response } = ctx;
 
-  console.log("toolSelectionAgent", request.messages);
+    const lastUserMessage = findLastElementWith(
+        request.messages,
+        (message: any) => message.role === "user"
+    );
 
-  const lastUserMessage = findLastElementWith(
-    request.messages,
-    (message: any) => message.role === "user"
-  );
+    if (!lastUserMessage) {
+        throw new Error("No user message found");
+    }
 
-  if (!lastUserMessage) {
-    throw new Error("No user message found");
-  }
+    const userMessage = getTextPartsContent(lastUserMessage);
 
-  const userMessage = getTextPartsContent(lastUserMessage);
+    console.log("last userMessage", userMessage);
 
-  console.log("last userMessage", userMessage);
+    // 1. generate a list of RAG search query to find the best package/agent
 
-  // 1. generate a list of RAG search query to find the best package/agent
-
-  const searchQueriesResult = await generateObject({
-    model: models.googleGeminiTwoFive,
-    system: `
+    const searchQueriesResult = await generateObject({
+        model: models.googleGeminiTwoFive,
+        system: `
           You are an expert software architect and a senior full-stack developer. Your primary goal is to deconstruct a user's request into a series of platforms/packages that are most likely to be used to accomplish the request.
 
           ---
@@ -84,66 +85,69 @@ toolSelectionAgent.agent("/", async (ctx) => {
 
           Now, begin your process for the following request.
         `,
-    schema: z.array(
-      z.object({
-        platform: z
-          .string()
-          .describe(
-            "The platform/package that is most likely to be used to accomplish the request"
-          ),
-        alternativePlatforms: z
-          .array(z.string())
-          .describe(
-            "Array of probable platforms/packages related to user request "
-          ),
-        searchQuery: z
-          .string()
-          .describe(
-            "A concise and fully detailed search query which factors the user's request and finds the most relevant platform/package. Do not include any other information in the search query."
-          ),
-      })
-    ),
-    prompt: `
+        schema: z.array(
+            z.object({
+                platform: z
+                    .string()
+                    .describe(
+                        "The platform/package that is most likely to be used to accomplish the request"
+                    ),
+                alternativePlatforms: z
+                    .array(z.string())
+                    .describe(
+                        "Array of probable platforms/packages related to user request "
+                    ),
+                searchQuery: z
+                    .string()
+                    .describe(
+                        "A concise and fully detailed search query which factors the user's request and finds the most relevant platform/package. Do not include any other information in the search query."
+                    ),
+            })
+        ),
+        prompt: `
             User's Request: ${userMessage}
         `,
-  });
-
-  console.log("searchQueriesResult", searchQueriesResult);
-
-  // {mcpSearchQuery: "search query to find the correct API/MCP/Agent",
-  const platforms = searchQueriesResult.object;
-  console.log("platforms", platforms);
-  let ragResults: ApiMcp[] = [];
-  for (const platform of platforms) {
-    const similarPackages = await findApiMcps({
-      query: `Platform: ${platform.platform} - Search Query: ${platform.searchQuery}`,
-      match_threshold: 0.5,
-      match_count: 5,
     });
-    ragResults.push(...similarPackages);
-  }
-  ragResults = ragResults.filter(
-    (item, index, self) => index === self.findIndex((t) => t.id === item.id)
-  );
-  ragResults.sort((a, b) => b.similarity - a.similarity);
-  console.log("ragResults", ragResults);
 
-  // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
-  const toolPopulatedMcps: (ApiMcp & { tools: QueryApisResult[] })[] = [];
-  for (const ragResult of ragResults) {
-    const toolsResults = await queryApis({
-      query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
-      package_name: ragResult.package_name,
-      match_threshold: 0.5,
-      match_count: 10,
-    });
-    toolPopulatedMcps.push({
-      ...ragResult,
-      tools: toolsResults,
-    });
-  }
+    console.log("searchQueriesResult", searchQueriesResult.object);
 
-  console.log("toolPopulatedMcps", toolPopulatedMcps);
+    // {mcpSearchQuery: "search query to find the correct API/MCP/Agent",
+    const platforms = searchQueriesResult.object;
+    console.log("platforms", platforms);
+    let ragResults: ApiMcp[] = [];
+    for (const platform of platforms) {
+        const similarPackages = await findApiMcps({
+            query: `Platform: ${platform.platform} - Search Query: ${platform.searchQuery}`,
+            match_threshold: 0.5,
+            match_count: 5,
+        });
+        ragResults.push(...similarPackages);
+    }
+    ragResults = ragResults.filter(
+        (item, index, self) => index === self.findIndex((t) => t.id === item.id)
+    );
+    ragResults.sort((a, b) => b.similarity - a.similarity);
+    console.log("ragResults", ragResults);
 
-  //3. call the next agent with the tools passed in. (Leave this to me.)
+    // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
+    const toolPopulatedMcps: (ApiMcp & { tools: QueryApisResult[] })[] = [];
+    for (const ragResult of ragResults) {
+        const toolsResults = await queryApis({
+            query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
+            package_name: ragResult.package_name,
+            match_threshold: 0.5,
+            match_count: 10,
+        });
+        console.log("toolsResults", toolsResults.map((tool) => tool.metadata.openApiSchema));
+        toolPopulatedMcps.push({
+            ...ragResult,
+            tools: toolsResults,
+        });
+    }
+
+    console.log("toolPopulatedMcps", toolPopulatedMcps);
+
+    //3. call the next agent with the tools passed in. (Leave this to me.)
 });
+
+export { toolSelectionAgent };

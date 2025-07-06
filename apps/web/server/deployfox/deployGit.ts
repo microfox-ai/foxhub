@@ -19,7 +19,7 @@ import { Octokit } from "octokit";
 import { TaskInstanceMetaType } from "../convertfox/helpers/types";
 import { cloneTemplate } from "./cloneTemplate";
 import { UIMessageStreamWriter } from "ai";
-import { AiStreamWriter } from "@repo/ai-utils/router";
+import { AiStreamWriter } from "@microfox/ai-router";
 import { UITools } from "@repo/ai-utils/types";
 
 export const deployViaGit = async (

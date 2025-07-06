@@ -17,7 +17,7 @@ import {
   AiMiddleware,
   AiToolFactory,
   AiToolHandler,
-} from "@repo/ai-utils/router";
+} from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../../microfoxRouter";
 import { uiTool } from "@/server/ui/uiTool";
 

@@ -17,7 +17,7 @@ import {
   taskIntegrations,
 } from "../../helpers/types";
 import { IN_STAGING } from "@/utils/constants/appInfo";
-import { AiToolFactory } from "@repo/ai-utils/router";
+import { AiToolFactory } from "@microfox/ai-router";
 import { uiTool } from "@/server/ui/uiTool";
 
 type CreateTaskIntegrationsToolMetadata = {
@@ -52,12 +52,12 @@ export const createTaskIntegrations: AiToolFactory<
     inputSchema:
       classification === "modification"
         ? z.object({
-          taskInstanceMeta: taskInstance.or(z.any()),
-          modification: z.string().optional(),
-        })
+            taskInstanceMeta: taskInstance.or(z.any()),
+            modification: z.string().optional(),
+          })
         : z.object({
-          taskInstanceMeta: taskInstance.or(z.any()),
-        }),
+            taskInstanceMeta: taskInstance.or(z.any()),
+          }),
     execute: async (
       { taskInstanceMeta, modification },
       { messages, toolCallId }
@@ -76,10 +76,10 @@ export const createTaskIntegrations: AiToolFactory<
       const packageList = await PackageInfoHelper.getAllPackages({
         statuses: IN_STAGING
           ? [
-            PackageStatus.STABLE,
-            PackageStatus.SEMISTABLE,
-            PackageStatus.EXTERNAL,
-          ]
+              PackageStatus.STABLE,
+              PackageStatus.SEMISTABLE,
+              PackageStatus.EXTERNAL,
+            ]
           : [PackageStatus.STABLE, PackageStatus.EXTERNAL],
       });
 
@@ -139,10 +139,23 @@ export const createTaskIntegrations: AiToolFactory<
         `,
         schema: z.array(
           z.object({
-            platform: z.string().describe("The platform/package that is most likely to be used to accomplish the task/request"),
-            alternativePlatforms: z.array(z.string()).describe("Array of probable platforms/packages related to user request "),
-            searchQuery: z.string().describe("A concise and fully detailed search query which factors the user's task/request and finds the most relevant platform/package. Do not include any other information in the search query."),
-          })),
+            platform: z
+              .string()
+              .describe(
+                "The platform/package that is most likely to be used to accomplish the task/request"
+              ),
+            alternativePlatforms: z
+              .array(z.string())
+              .describe(
+                "Array of probable platforms/packages related to user request "
+              ),
+            searchQuery: z
+              .string()
+              .describe(
+                "A concise and fully detailed search query which factors the user's task/request and finds the most relevant platform/package. Do not include any other information in the search query."
+              ),
+          })
+        ),
         prompt: `
           Name: ${taskInfo.name}
           Goal: ${taskInfo.goal}
@@ -184,9 +197,9 @@ export const createTaskIntegrations: AiToolFactory<
               pkg.status === PackageStatus.EXTERNAL
                 ? [`all functionalities of ${pkg.package_name} package`]
                 : pkg.constructors
-                  ?.map((c: any) => c.functionalities)
-                  .flat()
-                  .filter(Boolean) || [];
+                    ?.map((c: any) => c.functionalities)
+                    .flat()
+                    .filter(Boolean) || [];
             return { ...pkg, functionalities };
           });
 
@@ -215,15 +228,15 @@ export const createTaskIntegrations: AiToolFactory<
         text: dedent`
         Based on the requirements, the intitial search results and the available packages, the following packages are found:\n\n
         ${ragResults
-            .map(
-              (r) => `
+          .map(
+            (r) => `
           Platform: ${r.bestMatch?.package_title || "None"}\n
           Requirement: ${r.searchQueryUsed}\n
           Alternatives: ${r.alternatives.map((a) => a.package_title).join(", ") || "None"}\n\n
           ---
         `
-            )
-            .join("\n\n")}
+          )
+          .join("\n\n")}
         `,
       });
 
@@ -283,19 +296,21 @@ export const createTaskIntegrations: AiToolFactory<
         ---
         SEARCH RESULTS:
         ${ragResults
-            .map(
-              (r) => `
+          .map(
+            (r) => `
           Query: "${r.searchQueryUsed}"
           Results: ${r.bestMatch?.package_name || ""}, ${r.alternatives.map((a) => a.package_name).join(", ") || ""}
-        `).join("\n")}
+        `
+          )
+          .join("\n")}
         ---
         AVAILABLE PACKAGE FUNCTIONALITIES:
         ${Object.values(allFoundPackages)
-            .map(
-              (pkg) =>
-                `Package: ${pkg.package_name}\nStatus: ${pkg.status}\nFunctionalities it provides: ${pkg.functionalities.join(", ")}`
-            )
-            .join("\n")}
+          .map(
+            (pkg) =>
+              `Package: ${pkg.package_name}\nStatus: ${pkg.status}\nFunctionalities it provides: ${pkg.functionalities.join(", ")}`
+          )
+          .join("\n")}
         `,
       });
 

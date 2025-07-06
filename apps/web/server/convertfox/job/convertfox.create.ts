@@ -1,5 +1,5 @@
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
-import { AiMiddleware } from "@repo/ai-utils/router";
+import { AiMiddleware } from "@microfox/ai-router";
 
 export const convertfoxCreate: AiMiddleware<any, any, any, any> = async (
   ctx

@@ -8,7 +8,7 @@ import {
   taskRequiredInfo,
 } from "../../convertfox/helpers/types";
 import { ClientRequest } from "@prisma/client";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 
 interface BuildStepProps {
   ctx: AiContext<any, any, any, any>;

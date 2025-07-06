@@ -1,6 +1,6 @@
 import { TokenUsageAnalyticsTracker } from "./helper";
 import { models } from "../models";
-import { AiMiddleware } from "@repo/ai-utils/router";
+import { AiMiddleware } from "@microfox/ai-router";
 import { StreamWriter } from "@repo/ai-utils/helper";
 
 type UsageTrackerMetadata = {};
@@ -34,6 +34,10 @@ export const usageTrackerRouter: AiMiddleware<
   console.log("usageTrackerRouter", state);
   response.writeMessageMetadata({
     loader: "Thinking...",
+  });
+
+  response.writeMessageMetadata({
+    routerRequestId: request.requestId,
   });
 
   const userUsagesGeminiPro =

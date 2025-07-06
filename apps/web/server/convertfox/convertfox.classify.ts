@@ -6,7 +6,7 @@ import {
   getClientRequest,
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
-import { AiMiddleware } from "@repo/ai-utils/router";
+import { AiMiddleware } from "@microfox/ai-router";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { createPullRequest } from "../buildfox/createPullRequest";
 import { models } from "../models";

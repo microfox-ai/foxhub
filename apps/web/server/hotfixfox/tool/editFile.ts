@@ -1,5 +1,5 @@
 import { ClientRequest } from "@prisma/client";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 import { tool } from "ai";
 import { z } from "zod";
 import { PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";

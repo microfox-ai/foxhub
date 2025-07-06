@@ -3,7 +3,7 @@ import {
   codeTemplateType,
   TaskInstanceMetaType,
 } from "@/server/convertfox/helpers/types";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 import { genDbRedisHelper } from "./genDbRedisHelper";
 import { ClientRequest } from "@prisma/client";
 import {

@@ -31,10 +31,12 @@ export const cleanUiMessageParts = (
     parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
   }));
 
+  //processedMessages = processedMessages.filter((m) => );
+
   if (options?.removeToolCalls) {
     processedMessages = processedMessages.map((m) => ({
       ...m,
-      parts: m.parts.filter((p) => p.type !== "tool-call"),
+      parts: m.parts.filter((p) => !p.type?.startsWith("tool-")),
     }));
   }
 

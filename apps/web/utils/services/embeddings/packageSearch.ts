@@ -2,7 +2,7 @@ import { Package } from "@/components/screens/Chat/message/types";
 import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
-import { QueryApisResult } from "@/server/slsfox/queryApis";
+import { QueryApisResult } from "@/server/toolfox/helpers/queryApis";
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;

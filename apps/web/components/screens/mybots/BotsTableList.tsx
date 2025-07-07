@@ -26,7 +26,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useMemo } from "react";
 import { Bot } from "./providers/types";
-import { clubUniqueBots } from "@/server/slsfox/fetchVariables";
+import { clubUniqueBots } from "@/server/toolfox/helpers/fetchVariables";
 
 // Import the clubUniqueSecrets function
 

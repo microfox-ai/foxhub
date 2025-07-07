@@ -5,9 +5,18 @@ import { models } from "../models";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { findApiMcps, ApiMcp } from "@/utils/services/embeddings/packageSearch";
-import { queryApis, QueryApisResult } from "../slsfox/queryApis";
+import { queryApis, QueryApisResult } from "./helpers/queryApis";
 
-const toolSelectionAgent = new AiRouter<any>();
+// mounted at /chatFlow/toolSelection
+const toolSelectionAgent = new AiRouter<any, any, any, any>();
+
+toolSelectionAgent.actAsTool("/", {
+    description: "Select the best tools for the user's request",
+    inputSchema: z.object({
+        userRequest: z.string().describe("The actual user's request"),
+    }),
+});
+
 
 toolSelectionAgent.use("/", async (ctx, next) => {
     const { request, state, response } = ctx;
@@ -23,35 +32,37 @@ toolSelectionAgent.use("/", async (ctx, next) => {
 toolSelectionAgent.agent("/", async (ctx) => {
     const { request, state, response } = ctx;
 
-    const lastUserMessage = findLastElementWith(
-        request.messages,
-        (message: any) => message.role === "user"
-    );
+    let userMessage = ctx.request.params?.userRequest
+    if (!userMessage) {
+        const lastUserMessage = findLastElementWith(
+            request.messages,
+            (message: any) => message.role === "user"
+        );
 
-    if (!lastUserMessage) {
-        throw new Error("No user message found");
+        if (!lastUserMessage) {
+            throw new Error("No user message found");
+        }
+        userMessage = getTextPartsContent(lastUserMessage);
     }
-
-    const userMessage = getTextPartsContent(lastUserMessage);
-
-    console.log("last userMessage", userMessage);
 
     // 1. generate a list of RAG search query to find the best package/agent
 
+    // ---
+    // **Process Flow:**
+    //   -   You run in a loop of Thought, Action, PAUSE, Observation.
+    //   -   At the end of the loop you output an Answer.
+    //   -   Use Thought to describe your thoughts about the question you have been asked.
+    //   -   Use Action to run one of the actions available to you - then return PAUSE.
+    //   -   Observation will be the result of running those actions.
+    //   -   At the end of the loop you output an Answer.
+    // ---
+    response.writeMessageMetadata({
+        loader: "Deep-Thinking the best fit.",
+    });
     const searchQueriesResult = await generateObject({
         model: models.googleGeminiTwoFive,
         system: `
           You are an expert software architect and a senior full-stack developer. Your primary goal is to deconstruct a user's request into a series of platforms/packages that are most likely to be used to accomplish the request.
-
-          ---
-          **Process Flow:**
-            -   You run in a loop of Thought, Action, PAUSE, Observation.
-            -   At the end of the loop you output an Answer.
-            -   Use Thought to describe your thoughts about the question you have been asked.
-            -   Use Action to run one of the actions available to you - then return PAUSE.
-            -   Observation will be the result of running those actions.
-            -   At the end of the loop you output an Answer.
-          ---
 
           **Steps:**
           1.  **Deconstruction (Thought)**:
@@ -114,6 +125,10 @@ toolSelectionAgent.agent("/", async (ctx) => {
     // {mcpSearchQuery: "search query to find the correct API/MCP/Agent",
     const platforms = searchQueriesResult.object;
     console.log("platforms", platforms);
+
+    response.writeMessageMetadata({
+        loader: `Searching for the best tools for ${platforms.length} platforms...`,
+    });
     let ragResults: ApiMcp[] = [];
     for (const platform of platforms) {
         const similarPackages = await findApiMcps({
@@ -130,8 +145,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
     console.log("ragResults", ragResults);
 
     // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
-    const toolPopulatedMcps: (ApiMcp)[] = [];
-    for (const ragResult of ragResults) {
+    const toolPopulatedMcpsPromises = ragResults.map(async (ragResult) => {
         const toolsResults = await queryApis({
             query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
             package_name: ragResult.package_name,
@@ -140,19 +154,20 @@ toolSelectionAgent.agent("/", async (ctx) => {
         });
         // CONSTRUCT A TOOL BASED MCP WITH ONLY THE PROVIDED TOOLS (in the array in future).    
         //console.log("toolsResults", toolsResults.map((tool) => tool.metadata.openApiSchema));
-        toolPopulatedMcps.push({
+        return {
             ...ragResult,
             //tools: toolsResults,
             openApiSchema: toolsResults?.[0]?.metadata.openApiSchema,
-        });
-    }
+        };
+    });
+
+    const toolPopulatedMcps: (ApiMcp)[] = await Promise.all(toolPopulatedMcpsPromises);
 
     console.log("toolPopulatedMcps", toolPopulatedMcps);
 
-    ctx.next.callAgent("@/chatFlow/toolExecution", {
+    await ctx.next.callAgent("@/chatFlow/toolExecution", {
         toolPopulatedMcps,
     })
-
     //3. call the next agent with the tools passed in. (Leave this to me.)
 });
 

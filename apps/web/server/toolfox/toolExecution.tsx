@@ -1,9 +1,9 @@
 import { MinionType } from "@/components/screens/hooks/convertors";
 import { cleanUiMessageParts, findLastElementWith } from "@/utils/helpers/array";
 import { AiRouter, findLastElement, getTextParts, getTextPartsContent } from "@microfox/ai-router";
-import { AuthOptions, createOpenApiToolset } from "@microfox/tool-kit";
+import { AuthObject, AuthOptions, createOpenApiToolset } from "@microfox/tool-kit";
 import docData from "../slsfox/test_openapi.json";
-import { fetchAuthSecrets } from "../slsfox/fetchVariables";
+import { cleanSecretsForAuthObject, fetchAuthSecrets, getVariablesForAuthObject } from "./helpers/fetchVariables";
 import { codeTemplateType } from "../convertfox/helpers/types";
 import { ClientRequest } from "@prisma/client";
 import { templateEnvsFromTaskIntegrations } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
@@ -17,7 +17,8 @@ const toolExecutionAgent = new AiRouter<any, any, any, any>();
 toolExecutionAgent.use("/", async (ctx, next) => {
     const { request, state, response } = ctx;
     console.log(ctx.executionContext.currentPath, "currentPath");
-    if (request.revalidatePath) {
+    // if tool continuation is requested, we need to reconstruct the toolPopulatedMcps from the last known state.
+    if (request.loadedRevalidatePath) {
         const lastKnownState = await prisma.chatAgenticState.findUnique({
             where: {
                 originClientRequestId: request.clientRequestId,
@@ -25,6 +26,7 @@ toolExecutionAgent.use("/", async (ctx, next) => {
         });
         ctx.state.toolPopulatedMcps = (lastKnownState?.state as any).toolPopulatedMcps;
     }
+    // else if forced tool is set, we need to reconstruc the toolPopulatedMCPS.
     if (!ctx.state.clientRequest) {
         ctx.state.clientRequest = await prisma.clientRequest.findUnique({
             where: {
@@ -75,23 +77,21 @@ toolExecutionAgent.agent("/", async (ctx) => {
         return {
             schema: mcp.openApiSchema as any,
             baseUrl: mcp.base_url,
-            name: mcp.name,
+            name: mcp.package_name,
             getAuth: async (options: AuthOptions) => {
                 const output = await fetchAuthSecrets(
-                    options,
+                    options, {
                     clientRequest,
-                    undefined,
-                    true
-                );
-                if (clientRequest) {
-                    const envs = await templateEnvsFromTaskIntegrations(
-                        codeTemplateType.enum.upstash_sls,
-                        clientRequest
-                    );
-                    output.variables = output.variables?.concat(envs) ?? envs;
-                }
-                return output;
+                    fillEncryptionKey: true,
+                    fillVariables: true
+                });
+                const authFilledOutput = await getVariablesForAuthObject(output, {
+                    clientRequest,
+                    refetchFromDb: false,
+                });
+                return authFilledOutput;
             },
+            cleanAuth: cleanSecretsForAuthObject,
         }
     }));
 
@@ -102,18 +102,30 @@ toolExecutionAgent.agent("/", async (ctx) => {
     console.log("toolSet", Object.keys(toolSet.tools));
     //return;
 
-    const processedMessages = await client.processToolResult(
-        cleanUiMessageParts(ctx.request.messages)
+    const processedMessages = await client.parseHitl(
+        cleanUiMessageParts(ctx.request.messages),
+        ctx.response,
+        async (_authObject) => {
+            const authFilledOutput = await getVariablesForAuthObject(_authObject, {
+                clientRequest,
+                refetchFromDb: true,
+            });
+            return authFilledOutput;
+        }
     );
 
     const stream = streamText({
-        model: models.claudeHaiku,
+        model: models.claude35Sonnet,
         messages: convertToModelMessages(cleanUiMessageParts(processedMessages)),
         tools: toolSet.tools,
         toolChoice: "auto",
         system:
-            "You are called Microfox, a helpful assistant that can user with his tasks.",
-        stopWhen: client.createHitlStopStep(),
+            `You are called Microfox, a helpful assistant that can user with his tasks.
+            You are given the following tools which you can call as you see fit.
+            
+            ${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
+            `,
+        stopWhen: client.isHitlStep(),
         onStepFinish: async (step) => {
             console.log("step", step.usage);
         }
@@ -127,3 +139,4 @@ toolExecutionAgent.agent("/", async (ctx) => {
 export { toolExecutionAgent };
 // 2. enable revalidation for tool processing
 // 3. streamText.
+

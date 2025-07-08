@@ -35,6 +35,24 @@ export async function POST(req: NextRequest) {
         return;
       }
       console.log("client request found", clientRequest.id);
+
+      if (commitMessage.includes("deployagent")) {
+        const stageMatch = commitMessage.match(/^(.*?): deployagent:/);
+        let stage = stageMatch ? stageMatch[1] : null;
+        console.log(`Detected stage from commit message: ${stage}`);
+        if (!stage) {
+          stage = "PROD";
+        }
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_CICD_BASE_URL}/api/deployments/new-agent?sha=${sha}&stage=${stage}`
+        );
+        if (response.ok) {
+          console.log("Agent Deployment Triggered");
+        } else {
+          console.log("Agent deployment failed");
+        }
+      }
+
       if (commitMessage.includes("deployfox")) {
         const stageMatch = commitMessage.match(/^(.*?): deployfox:/);
         let stage = stageMatch ? stageMatch[1] : null;

@@ -1,7 +1,7 @@
 import { findLastElementWith } from "@/utils/helpers/array";
 import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClientRequest";
 import { getTextParts, getTextPartsContent } from "@repo/ai-utils/helper";
-import { AiMiddleware } from "@repo/ai-utils/router";
+import { AiMiddleware } from "@microfox/ai-router";
 
 export const convertfoxModify: AiMiddleware<any, any, any, any> = async (
   ctx

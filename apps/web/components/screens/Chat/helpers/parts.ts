@@ -30,7 +30,7 @@ export const getUiParts = (message: UIMessage<any, any, any>) => {
 
 export const getStickyUiParts = (parts: ToolUIPart<any>[]) => {
   return parts?.filter(
-    (part) =>
+    (part, _index) =>
       part.state === "output-available" &&
       ((part as any).output?.props?.isUISticky ||
         part.output?._humanIntervention)

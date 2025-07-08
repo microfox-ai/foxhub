@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { EnvVariablesDialog } from "../../../../configuration/EnvVariablesDialog";
-import { Markdown } from "../../../text/markdown";
+import { InternalMarkdown } from "../../../text/markdown";
 import {
   Tooltip,
   TooltipContent,

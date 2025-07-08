@@ -2,6 +2,7 @@
 import { cn } from "@/lib/utils";
 import { UIMessage } from "ai";
 import {
+  ChevronRight,
   FileText,
   Plus,
   RefreshCw,
@@ -14,6 +15,8 @@ import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { MinionFlow, MinionType, MinionTypeType } from "../hooks/convertors";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { constructAutoSubmitBody, constructAutoSubmitMessage } from "./message/messageHelpers";
+import { TabsList } from "@/components/ui/tabs";
+import { ToolSpeed } from "./input/ToolSpeed";
 interface ChatInputBoxProps {
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
   userId: string;
@@ -31,7 +34,7 @@ export default function ChatInputBox({
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
   const { selectedRequest, submitMetadata, setSubmitMetadata, autoSubmit, setAutoSubmit } = useClientProject();
-  const { handleSubmit, messages, status, append, input, setInput } = useMicrofoxChat();
+  const { handleSubmit, messages, status, append, input, setInput, toolMode } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     //console.log("textareaRef", textareaRef.current);
@@ -79,6 +82,7 @@ export default function ChatInputBox({
       body: {
         minionFlow: minionFlow,
         minionType: minionType,
+        toolMode: toolMode,
         ...extraBody
       }
     });
@@ -162,6 +166,7 @@ export default function ChatInputBox({
             <Plus className="h-5 w-5" />
           </button> */}
           <div className="flex flex-row gap-2 px-2">
+            <ToolSpeed />
             {apiErrors?.value?.length > 0 && (
               <div className="text-sm flex flex-row gap-2 items-center bg-gray-100 rounded-full px-4 py-[2px] text-gray-500">
                 {apiErrors?.value?.length} Logs attached
@@ -190,14 +195,14 @@ export default function ChatInputBox({
               mediaUploadStatus === "UPLOADING" ||
               mediaUploadStatus === "ERROR"
             }
-            className="rounded-full mr-2 bg-black p-2 text-white disabled:bg-gray-400  hover:bg-black/80"
+            className="rounded-full mr-2 bg-black p-2 text-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-black/80"
           >
             {!(
               messageStatus === "streaming" ||
               messageStatus === "pending" ||
               mediaUploadStatus === "UPLOADING"
             ) ? (
-              <Send className="h-5 w-5" />
+              <ChevronRight className="h-5 w-5" />
             ) : (
               <RefreshCw className="h-5 w-5 animate-spin" />
             )}

@@ -154,6 +154,12 @@ model TaskInstanceMeta {
   originClientRequest   ClientRequest @relation(fields: [originClientRequestId], references: [id])
 }
 
+model ChatAgenticState {
+  id                    String        @id @default(uuid())
+  originClientRequestId String        @unique
+  state                 Json?
+}
+
 model UsageAnalytics {
   id               String  @id @unique @default(uuid())
   matchId          String  @unique
@@ -561,5 +567,18 @@ model EventWatcher {
   @@index([taskId])
   @@index(map: "idx_event_watchers_keys", fields: [microfoxId, providerName, eventType])
   @@map("event_watchers")
+}
+
+model SubdomainRedirect {
+  id          String      @id @default(cuid())
+  subdomain   String      @unique
+  rewritePath String
+  rewriteType String
+  hostedOn    String
+  description String?
+  enabled     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String?
 }
 

@@ -33,6 +33,9 @@ export async function POST(req: NextRequest) {
       templateId,
       tokenResponse,
       identityMetadata,
+      identityOrgId,
+      identityTeamId,
+      identityUserId,
     } = body;
 
     if (!botProjectId || !userId || !variables) {
@@ -212,7 +215,9 @@ export async function PUT(req: NextRequest) {
       //&& addToClientRequest
     ) {
       const updates = await addClientSecretToClientRequest(id, clientRequestId);
-      updatedSecret = updates.clientSecret!;
+      if (updates.clientSecret) {
+        updatedSecret = updates.clientSecret;
+      }
     }
 
     if (updateDeployments) {

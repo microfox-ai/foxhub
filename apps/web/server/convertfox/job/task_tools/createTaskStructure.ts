@@ -21,7 +21,7 @@ import { TokenUsageAnalyticsTracker } from "../../../analytics/helper";
 import { getMicrofoxCapabilities } from "../../../hellofox/_prompts";
 import { getServiceName } from "../../../buildfox/helper/getServiceName";
 import { getFunctionNameFromKebabCase } from "../../../buildfox/prompt.coding";
-import { AiToolFactory } from "@repo/ai-utils/router";
+import { AiToolFactory } from "@microfox/ai-router";
 import { tool } from "ai";
 import { z } from "zod";
 import { uiTool } from "@/server/ui/uiTool";

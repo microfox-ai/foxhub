@@ -19,6 +19,10 @@ const mapWebhookSecret = {
     appName: "Microfox",
     appMentionId: "microfox-read-only-staging",
   },
+  whatsapp: {
+    secret: process.env.WHATSAPP_WEBHOOK_SECRET ?? "",
+    appName: "Microfox",
+  },
 };
 export async function POST(
   req: NextRequest,

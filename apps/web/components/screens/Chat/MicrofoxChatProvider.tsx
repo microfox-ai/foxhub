@@ -40,6 +40,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
   const { selectedRequest, mutateSelectedClientRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
+  const [toolMode, setToolMode] = useState<("fast" | "deep")>("fast");
 
   const { user } = useAuth();
 
@@ -104,7 +105,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
         const postDataPayload = {
           context: "on-finish",
-          id: message.id + "-" + _clientRequestId,
+          id: message.id?.endsWith(_clientRequestId) ? message.id : message.id + "-" + _clientRequestId,
           attachments: message.metadata?.attachments,
           minionType: _minionType,
           minionFlow: _minionFlow,
@@ -193,7 +194,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
       try {
         const payload = {
           ...message,
-          id: clientRequest.id + "-" + message.id,
+          id: message.id?.endsWith(clientRequest.id) ? message.id : message.id + "-" + clientRequest.id,
           originClientRequestId: clientRequest.id,
           userId: clientRequest?.userId,
           minionType: _minionType,
@@ -374,6 +375,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     lastKnownMinionFlow,
     input,
     setInput,
+    toolMode,
+    setToolMode,
   };
 }
 

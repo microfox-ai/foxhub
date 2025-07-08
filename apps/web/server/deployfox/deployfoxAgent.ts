@@ -9,13 +9,13 @@ import {
   slackBotSdk,
 } from "@/utils/services/slackBotSdk";
 import { DEPLOY_STAGE } from "@prisma/client";
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { z } from "zod";
 import { deployViaGit } from "./deployGit";
 import { IN_STAGING } from "@/utils/constants/appInfo";
 import { uiTool } from "../ui/uiTool";
 
-const deployfoxAgent = new AiAgentKit<any, any, any, any>();
+const deployfoxAgent = new AiRouter<any, any, any, any>();
 
 // Register Middlewares
 deployfoxAgent.use("/", (ctx, next) => {

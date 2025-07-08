@@ -1,4 +1,4 @@
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { convertToModelMessages, streamText } from "ai";
 import { getMicrofoxCharacter } from "../_prompts";
 import { models } from "../../models";
@@ -6,7 +6,7 @@ import { aboutMicrofoxInfo } from "../_prompts";
 import { getMicrofoxCapabilities } from "../_prompts";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 
-const casualHelloFoxAgent = new AiAgentKit<any, any, any, any>();
+const casualHelloFoxAgent = new AiRouter<any, any, any, any>();
 
 casualHelloFoxAgent.use("/", async (ctx, next) => {
   const { request, state, response } = ctx;

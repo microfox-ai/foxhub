@@ -6,7 +6,7 @@ import {
   writeToFile,
 } from "../../tool/writeToFile";
 import { ClientRequest } from "@prisma/client";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 import path from "path";
 import fs from "fs/promises";

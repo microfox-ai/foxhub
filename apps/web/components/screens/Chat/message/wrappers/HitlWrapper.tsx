@@ -31,11 +31,13 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     const { auth: stateAuth, setAuth, selectSecret, refetchHitlAuth } = useHitl();
     const [popoverOpen, setPopoverOpen] = useState(false);
 
-    const { data: packageInfos, mutate: mutatePackageInfos } = useSWR<Package[]>(`/api/packages/infos?packageNames=${auth.secrets.map(s => s.packageName).join(",")}`, async (url: string) => {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch packages");
-        return res.json();
-    }, {
+    const { data: packageInfos, mutate: mutatePackageInfos } = useSWR<Package[]>(
+        auth ? `/api/packages/infos?packageNames=${auth.secrets.map(s => s.packageName).join(",")}` : null,
+        async (url: string) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Failed to fetch packages");
+            return res.json();
+        }, {
         revalidateOnFocus: false,
     });
 
@@ -50,7 +52,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
         if (auth) {
             setAuth(auth);
         }
-    }, [auth.secrets]);
+    }, [auth?.secrets]);
 
     if (!stateAuth) {
         return <div>{children}</div>

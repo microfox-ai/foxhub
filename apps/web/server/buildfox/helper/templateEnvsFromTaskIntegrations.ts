@@ -1,63 +1,69 @@
 import {
+  codeTemplateType,
   CodeTemplateType,
-  TaskIntegrations,
 } from "@/server/convertfox/helpers/types";
-import { fetchTemplateDir } from "../tool/writeToFile";
-import path from "path";
-import { readFile } from "fs/promises";
+import {
+  addClientSecretToClientRequest,
+  clientSecretExists,
+  createNewClientSecret,
+  updateClientSecret,
+} from "@/utils/services/db_functions/secrets_helper";
 import { ClientRequest, CLIENTSECRETSTATUS } from "@prisma/client";
-import { createNewClientSecret } from "@/utils/services/db_functions/secrets_helper";
-import { addClientSecretToClientRequest } from "@/utils/services/db_functions/secrets_helper";
-import { updateClientSecret } from "@/utils/services/db_functions/secrets_helper";
-import { clientSecretExists } from "@/utils/services/db_functions/secrets_helper";
+import upstashEnvs from "../templates/serverless/upstash/envs.json";
 
 export interface InternalTemplateEnv {
   key: string;
   package: string;
   value: string;
-  description: string;
+  description?: string;
   constructorFunction: string;
+  isOptional?: boolean;
 }
 
 export const templateEnvsFromTaskIntegrations = async (
   template_type: CodeTemplateType,
   clientRequest: ClientRequest
 ) => {
-  const envsJSON = await readFile(
-    path.join(process.cwd(), fetchTemplateDir(template_type), "envs.json"),
-    "utf8"
-  );
-  let templatedEnvs = JSON.parse(envsJSON);
-  templatedEnvs = templatedEnvs.concat([
-    {
+  let templatedEnvs: InternalTemplateEnv[] = [];
+  if (template_type === codeTemplateType.enum.upstash_sls) {
+    templatedEnvs = upstashEnvs;
+  }
+  if (clientRequest.id) {
+    templatedEnvs.push({
       key: "MICROFOX_CLIENT_REQUEST_ID",
       package: "ids-internal",
       constructorFunction: "microfox",
       value: clientRequest.id,
       isOptional: false,
-    },
-    {
+    });
+  }
+  if (clientRequest.botProjectId) {
+    templatedEnvs.push({
       key: "MICROFOX_BOT_PROJECT_ID",
       package: "ids-internal",
       constructorFunction: "microfox",
       value: clientRequest.botProjectId,
       isOptional: false,
-    },
-    {
+    });
+  }
+  if (process.env.MICROFOX_REDIS_URL_TRACKER) {
+    templatedEnvs.push({
       key: "MICROFOX_REDIS_URL_TRACKER",
       package: "ids-internal",
       constructorFunction: "microfox",
       value: process.env.MICROFOX_REDIS_URL_TRACKER,
       isOptional: false,
-    },
-    {
+    });
+  }
+  if (process.env.MICROFOX_REDIS_TOKEN_TRACKER) {
+    templatedEnvs.push({
       key: "MICROFOX_REDIS_TOKEN_TRACKER",
       package: "ids-internal",
       constructorFunction: "microfox",
       value: process.env.MICROFOX_REDIS_TOKEN_TRACKER,
       isOptional: false,
-    },
-  ]);
+    });
+  }
   return templatedEnvs as InternalTemplateEnv[];
 };
 

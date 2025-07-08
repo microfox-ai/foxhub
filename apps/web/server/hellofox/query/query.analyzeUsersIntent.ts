@@ -2,7 +2,7 @@ import { streamText, tool } from "ai";
 import { z } from "zod";
 import { models } from "../../models";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-import { AiToolFactory } from "@repo/ai-utils/router";
+import { AiToolFactory } from "@microfox/ai-router";
 
 type AnalyzeUserIntentToolMetadata = {
   loader?: string;

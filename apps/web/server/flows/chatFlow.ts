@@ -1,22 +1,28 @@
-import { AiAgentKit } from "@repo/ai-utils/router";
 import { MinionFlow } from "@/components/screens/hooks/convertors";
-import { DefaultMessageMetadata } from "../microfoxRouter";
-import { convertToModelMessages, streamText } from "ai";
-import { models } from "../models";
-import { cleanUiMessageParts } from "@/utils/helpers/array";
-import { createOpenApiToolset } from "@microfox/tool-kit";
-import docData from "../slsfox/test_openapi.json";
-import { fetchAuthSecrets } from "../slsfox/fetchVariables";
-import { codeTemplateType } from "../convertfox/helpers/types";
-import { templateEnvsFromTaskIntegrations } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 import { prisma } from "@/prisma/prisma";
+import { cleanUiMessageParts } from "@/utils/helpers/array";
+import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
+import { AiRouter, getTextParts } from "@microfox/ai-router";
+import { convertToModelMessages, generateText, streamText } from "ai";
+import {
+  getMicrofoxCharacter,
+  getMicrofoxPersonality,
+} from "../hellofox/_prompts";
+import { DefaultMessageMetadata } from "../microfoxRouter";
+import { models } from "../models";
+import { toolExecutionAgent } from "../toolfox/toolExecution";
+import { toolSelectionAgent } from "../toolfox/toolSelection";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
-const chatManager = new AiAgentKit<any, any, any, any>();
+const chatManager = new AiRouter<any, any, any, any>();
 
 chatManager.use("/", async (ctx, next) => {
   const { response } = ctx;
   response.writeMessageMetadata({
     minionFlow: MinionFlow.ChatFlow,
+  });
+  response.writeMessageMetadata({
+    toolMode: ctx.request.toolMode || "fast",
   });
   return next();
 });
@@ -28,51 +34,105 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
     },
   });
 
-  const client = await createOpenApiToolset({
-    schema: docData as any,
-    baseUrl: "http://localhost:4000",
-    name: "slack-web-tiny",
-    getAuth: async (options) => {
-      const output = await fetchAuthSecrets(
-        options,
-        clientRequest,
-        undefined,
-        true
-      );
-      if (clientRequest) {
-        const envs = await templateEnvsFromTaskIntegrations(
-          codeTemplateType.enum.upstash_sls,
-          clientRequest
-        );
-        output.variables = output.variables?.concat(envs) ?? envs;
-      }
-      return output;
+  ctx.state.clientRequest = clientRequest;
+  if (
+    clientRequest &&
+    (!clientRequest?.title ||
+      clientRequest?.title?.trim()?.length === 0 ||
+      clientRequest?.title === "Untitled") &&
+    ctx.request.messages.length > 3
+  ) {
+    console.log("generating title", clientRequest);
+    const cleanedMessages = cleanUiMessageParts(ctx.request.messages, {
+      removeToolCalls: true,
+    });
+    const textParts = cleanedMessages.map(getTextParts).flat().join("\n");
+
+    const text = await generateText({
+      model: models.claudeHaiku,
+      system: `
+        You are a helpful assistant that can generate a title for a chat session.
+        Generate a 2-5 word title for the chat session.
+        Only output the title, no other text.
+        `,
+      prompt: `
+        Generate a title for the following chat session:
+        ${textParts}
+        `,
+    });
+
+    const updatedClientRequest = await updateClientRequest({
+      clientRequestId: clientRequest.id,
+      title: text.text,
+    });
+
+    ctx.state.clientRequest = updatedClientRequest;
+  }
+
+  if (ctx.request.toolMode == "fast") {
+    console.log("calling toolSelection", ctx.request.toolMode);
+    await ctx.next.callAgent("/toolSelection");
+    return;
+  }
+
+  console.log("calling toolSelection", ctx.request.params, ctx.request);
+  const result = streamText({
+    model: models.googleGeminiPro,
+    system: `
+      ${getMicrofoxCharacter()}
+      ${getMicrofoxPersonality()}
+      Converse with the user before calling any tools, 
+      
+      if user is asking to perform a task, tell the user you are looking for the best possible platforms/agents to perform the task
+      call the toolSelection tool. If the toolSelection tool is triggered, do not respond to anythign else.
+
+      if the user is not asking for a task, just conversing, and you believe there is no need for any extra tools,
+      just respond back normally in text.
+    `,
+    // stopWhen: (step) => {
+    //   const lastStep = step.steps[step.steps.length - 1];
+    //   const lastToolResult =
+    //     lastStep?.toolResults && lastStep?.toolResults?.length > 0
+    //       ? lastStep?.toolResults[0]
+    //       : null;
+    //   if (lastToolResult?.toolName === "toolSelection") {
+    //     return true;
+    //   }
+    //   return false;
+    // },
+    tools: {
+      toolSelection: ctx.next.agentAsTool("/toolSelection"),
+    },
+    //toolChoice: "auto",
+    messages: convertToModelMessages(
+      cleanUiMessageParts(ctx.request.messages, {
+        removeToolCalls: true,
+      })
+    ),
+    onStepFinish: (step) => {
+      console.log("step", step);
+    },
+    onFinish: (step) => {
+      console.log("FULL USAGE", step.usage);
+      TokenUsageAnalyticsTracker.trackUsage({
+        clientRequestId: ctx.request.clientRequestId,
+        model: models.googleGeminiPro.modelId,
+        userId: ctx.request.userId,
+        usage: step.usage,
+      });
     },
   });
 
-  const toolSet = await client.tools({
-    disableAllExecutions: true,
-  });
+  ctx.response.merge(result.toUIMessageStream());
 
-  console.log("toolSet", Object.keys(toolSet.tools));
-  //return;
+  const out = await result.text;
 
-  const processedMessages = await client.processToolResult(
-    cleanUiMessageParts(ctx.request.messages)
-  );
-
-  const stream = streamText({
-    model: models.claudeHaiku,
-    messages: convertToModelMessages(cleanUiMessageParts(processedMessages)),
-    tools: toolSet.tools,
-    toolChoice: "auto",
-    system:
-      "You are called Microfox, a helpful assistant that can user with his tasks.",
-    stopWhen: client.createHitlStopStep(),
-  });
-
-  ctx.response.merge(stream.toUIMessageStream());
+  //console.log("calling toolSelection", ctx.request.params, ctx.request);
+  //ctx.next.callAgent("/toolSelection");
 });
+
+chatManager.agent("/toolSelection", toolSelectionAgent);
+chatManager.agent("/toolExecution", toolExecutionAgent);
 
 export { chatManager };
 

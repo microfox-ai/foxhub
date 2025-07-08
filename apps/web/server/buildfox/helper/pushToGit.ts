@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import { Octokit } from "octokit";
 import { TaskInstanceMetaType } from "../../convertfox/helpers/types";
 import { uploadToRepo } from "./uploadToGit";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 
 export const pushToGit = async (
   ctx: AiContext<any, any, any, any>,

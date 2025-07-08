@@ -1,4 +1,4 @@
-// import { StreamingFucntionProps } from "@repo/ai-utils/router";
+// import { StreamingFucntionProps } from "@microfox/ai-router";
 // import { TaskInstanceMetaType } from "../convertfox/types";
 // import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
 // import { Octokit } from "octokit";
@@ -142,14 +142,14 @@
 //             type: "section",
 //             text: {
 //               type: "mrkdwn",
-//               text: dedent`Workflow run failed for ${clientRequest.title}. 
+//               text: dedent`Workflow run failed for ${clientRequest.title}.
 //               # Stats
 //               - Workflow ID: ${latestRun.workflow_id}
 //               - Conclusion: ${latestRun.conclusion}
 //               - Run ID: ${latestRun.id}
 //               - Run Started At: ${latestRun.run_started_at}
 //               - Run Updated At: ${latestRun.updated_at}
-              
+
 //               # Logs
 //               Logs can be seen at ${latestRun.html_url}`,
 //             },

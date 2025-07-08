@@ -19,15 +19,15 @@ export async function POST(req: Request) {
   const minionType = lastMessage?.metadata?.minionType ?? restOfBody.minionType;
   const clientRequestId =
     lastMessage?.metadata?.clientRequestId ?? restOfBody?.clientRequestId;
-  console.log(
-    "minionFlow",
-    "/" + minionFlow + "/" + minionType,
-    restOfBody,
-    messages[messages.length - 1]
-  );
+  // console.log(
+  //   "minionFlow",
+  //   "/" + minionFlow + "/" + minionType,
+  //   restOfBody,
+  //   messages[messages.length - 1]
+  // );
   const revalidatePath = lastMessage?.metadata?.revalidatePath;
 
-  return microfoxRouter.handle(
+  const response = microfoxRouter.handle(
     revalidatePath ? revalidatePath : "/" + minionFlow,
     {
       request: {
@@ -36,7 +36,9 @@ export async function POST(req: Request) {
         clientRequestId,
         minionType,
         minionFlow,
+        loadedRevalidatePath: revalidatePath,
       },
     }
   );
+  return response;
 }

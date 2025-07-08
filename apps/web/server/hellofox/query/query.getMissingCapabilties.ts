@@ -3,7 +3,7 @@ import { z } from "zod";
 import { models } from "../../models";
 import { getMicrofoxCapabilities } from "../_prompts";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-import { AiToolFactory } from "@repo/ai-utils/router";
+import { AiToolFactory } from "@microfox/ai-router";
 
 type GetMissingCapabilitiesToolMetadata = {
   loader?: string;

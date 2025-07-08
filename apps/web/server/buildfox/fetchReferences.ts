@@ -10,7 +10,7 @@ import {
 import path from "path";
 import { Octokit } from "octokit";
 import { GITHUB_TOKEN, PROJECT_REPO_OWNER } from "@/utils/constants/githubInfo";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 
 const githubSdk = new Octokit({
   auth: GITHUB_TOKEN,

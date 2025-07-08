@@ -30,7 +30,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeftIcon, Check, ChevronDown, Clock, Copy, ExternalLink, Monitor, Play, RefreshCw, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { useApiDoc } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
@@ -384,6 +384,64 @@ const PreviewWindow = () => {
     );
   };
 
+  const ArrayOfObjectsInput = ({ name, schema }: { name: string, schema: OpenAPISchema }) => {
+    const { fields, append, remove } = useFieldArray<any, any, any, any>({
+      control: form.control,
+      name: name
+    });
+
+    const handleAppend = () => {
+      const newObject: Record<string, any> = {};
+      if (schema.items?.properties) {
+        Object.keys(schema.items.properties).forEach((propKey) => {
+          newObject[propKey] = undefined;
+        });
+      }
+      append(newObject);
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <FormLabel className="-mb-1 text-sm text-neutral-700">
+            {schema.description || name.replace(/^(body)_/, "")}
+          </FormLabel>
+          <Button type="button" variant="outline" size="sm" onClick={handleAppend}>
+            Add Item
+          </Button>
+        </div>
+
+        {fields.map((field, index) => (
+          <div key={field.id} className="relative space-y-3 rounded-lg border p-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 h-6 w-6"
+              onClick={() => remove(index)}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Remove</span>
+            </Button>
+
+            <h5 className="text-sm font-medium text-neutral-600">Item #{index + 1}</h5>
+
+            {schema.items?.properties && Object.entries(schema.items.properties).map(([propKey, propSchema]) => (
+              <div key={propKey}>
+                {renderFormField(
+                  `${name}.${index}.${propKey}`,
+                  propSchema as OpenAPISchema,
+                  schema.items?.required?.includes(propKey) || false,
+                  (propSchema as OpenAPISchema).description
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderFormField = (
     key: string,
     schema: OpenAPISchema,
@@ -632,17 +690,10 @@ const PreviewWindow = () => {
         );
       case "array":
         const description = schema.description;
-        if (schema.items?.type === "object") {
+        if (schema.items?.type === "object" && schema.items.properties) {
           return (
-            <div className="grid gap-2">
-              <h4 className="text-sm font-medium text-neutral-700">
-                {description}
-              </h4>
-              {Object.entries(schema.items).map(([_key, value], _index) => {
-                return renderFormField(key + "[" + _index + "]" + "." + _key, value, schema.required?.includes(_key) || false, value.description);
-              })}
-            </div>
-          )
+            <ArrayOfObjectsInput name={key} schema={schema} />
+          );
         }
         if (schema.items?.type === "string") {
           return (
@@ -655,7 +706,7 @@ const PreviewWindow = () => {
                   {renderLabelAndDescription()}
                   <div className="space-y-4">
                     <div className="flex flex-wrap gap-2">
-                      {field.value ? field.value.split(",").map((item: string, index: number) => (
+                      {(field.value && typeof field.value === "string") ? field.value.split(",").map((item: string, index: number) => (
                         <Badge
                           key={`${item}-${index}`}
                           variant="secondary"

@@ -20,6 +20,7 @@ export type MinionFlowType = (typeof MinionFlow)[keyof typeof MinionFlow];
 export const MinionType = {
   Unknown: "unknown",
   HelloFox: "hellofox",
+  ToolFox: "toolfox",
   ConvertFox: "convertfox",
   BuildFox: "buildfox",
   DeployFox: "deployfox",
@@ -39,6 +40,7 @@ export const MinionSupports = {
   [MinionType.ConvertFox]: ["intent-observor"] as string[],
   [MinionType.BuildFox]: [] as string[],
   [MinionType.TestFox]: [] as string[],
+  [MinionType.ToolFox]: [] as string[],
   [MinionType.DeployFox]: [] as string[],
   [MinionType.HotFixFox]: ["intent-observor"] as string[],
   [MinionType.ReviewFox]: [] as string[],

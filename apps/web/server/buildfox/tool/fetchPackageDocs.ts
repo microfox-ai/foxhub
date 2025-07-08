@@ -10,7 +10,7 @@ import {
 import { models } from "@/server/models";
 import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 import { ClientRequest, ClientSecret } from "@prisma/client";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 import { generateText, tool } from "ai";
 import dedent from "dedent";
 import fs from "fs/promises";

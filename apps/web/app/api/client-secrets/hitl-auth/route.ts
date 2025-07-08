@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
-import { fetchAuthSecrets } from "@/server/slsfox/fetchVariables";
+import { fetchAuthSecrets } from "@/server/toolfox/helpers/fetchVariables";
 import { AuthOptions } from "@microfox/tool-kit";
 import { ClientRequest } from "@prisma/client";
 
@@ -29,11 +29,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const hitlAuthObject = await fetchAuthSecrets(
-      authOptions,
+    const hitlAuthObject = await fetchAuthSecrets(authOptions, {
       clientRequest,
-      userId
-    );
+      userId,
+      fillEncryptionKey: true,
+      fillVariables: false,
+    });
 
     return NextResponse.json(hitlAuthObject);
   } catch (error: any) {

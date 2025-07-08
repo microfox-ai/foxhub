@@ -20,11 +20,11 @@ import { cloneTemplate } from "../deployfox/cloneTemplate";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { publishShard } from "@/utils/services/db_functions/publishShard";
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
 import { uiTool } from "../ui/uiTool";
 
-const publishFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
+const publishFoxAgent = new AiRouter<DefaultMessageMetadata, any, any, any>();
 
 publishFoxAgent.agent("/", async (ctx) => {
   const { request, response } = ctx;

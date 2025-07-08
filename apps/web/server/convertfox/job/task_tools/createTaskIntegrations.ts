@@ -17,7 +17,7 @@ import {
   taskIntegrations,
 } from "../../helpers/types";
 import { IN_STAGING } from "@/utils/constants/appInfo";
-import { AiToolFactory } from "@repo/ai-utils/router";
+import { AiToolFactory } from "@microfox/ai-router";
 import { uiTool } from "@/server/ui/uiTool";
 
 type CreateTaskIntegrationsToolMetadata = {
@@ -87,56 +87,75 @@ export const createTaskIntegrations: AiToolFactory<
         "packageList",
         packageList.map((pkg) => pkg.package_name)
       );
+      console.log("taskInfo", JSON.stringify(taskInfo, null, 2));
 
       // Step 1: Generate search queries
       const searchQueriesResult = await generateObject({
-        model: models.googleGeminiPro,
+        model: models.googleGeminiTwoFive,
         system: `
-          You are an expert software architect and a senior full-stack developer. Your primary goal is to deconstruct a user's task into a series of actionable, function-level search queries. These queries will be used to find specific code libraries and functions to accomplish the task.
+          You are an expert software architect and a senior full-stack developer. Your primary goal is to deconstruct a user's task/request into a series of platforms/packages that are most likely to be used to accomplish the task.
 
-          Follow this multi-step process:
+          ---
+          **Process Flow:**
+            -   You run in a loop of Thought, Action, PAUSE, Observation.
+            -   At the end of the loop you output an Answer.
+            -   Use Thought to describe your thoughts about the question you have been asked.
+            -   Use Action to run one of the actions available to you - then return PAUSE.
+            -   Observation will be the result of running those actions.
+            -   At the end of the loop you output an Answer.
+          ---
 
+          **Steps:**
           1.  **Deconstruction (Thought)**:
               -   Analyze the user's request (Name, Goal, Summary).
               -   Break down the goal into smaller, concrete programming steps or functions that would be needed.
-              -   Consider the available internal packages. Can any of these packages fulfill the required steps?
 
-          2.  **Initial Query Generation (Action)**:
-              -   Based on your deconstruction, generate a list of precise search queries. Each query should target a specific function, library, or implementation pattern needed to solve one of the programming steps.
+          2.  **Initial Platform Selection (Action)**:
+              -   Based on your deconstruction, generate a list of precise platforms/packages. Each platform/package should target a specific platform/package that is most likely to be used to accomplish the task.
 
-          3.  **Introspection and Refinement (Self-Correction)**:
-              -   Critically review your generated queries. Ask yourself:
-                  -   Is this query specific enough to yield a concrete function or library, not just a tutorial? (e.g., "npm library for parsing multipart/form-data" is better than "how to handle file uploads").
-                  -   Does this query ask for something that should be handled by our internal infrastructure (like databases or deployment)? If so, discard it.
-                  -   Is this query for a generic architectural pattern (like "webhook listener" or "REST API") that is not a searchable package? If so, discard it.
-                  -   Is this query truly essential for the user's goal?
+          3.  **Introspection and Refinement (Observation)**:
+              -   Critically review your generated platforms. Ask yourself:
+                  -   Is this platform relevant for the user's task/request?
+                  -   Is there any other platform that is more likely to be used to accomplish the task?
+                  -   Is there any important requirement/service/feature from the user's task/request that is not covered by any of the platforms/packages?
 
           4.  **Final Answer (Output)**:
-              -   After refining your list, provide the final, high-quality, and meaningful search queries in the specified JSON format.
+              -   After refining your list, provide the final, high-quality, and meaningful platforms/packages in the specified JSON format:
+                -   platform: The platform/package that is most likely to be used to accomplish the task/request
+                -   alternativePlatforms: Array of probable platforms/packages which can also be used to accomplish the task/request.
+                -   searchQuery: A concise and fully detailed search query which factors the user's task/request and finds the most relevant platform/package
 
           ---
-          **Exclusion Criteria for Final Queries:**
-          Your final list of queries MUST NOT include searches for:
-          -   Deployment services (e.g., AWS Lambda, Vercel). This is handled internally.
-          -   Database services (e.g., Postgres, Redis, Supabase). This is handled internally.
-          -   Generic, non-package patterns (e.g., "HTTP Server", "Webhook pattern", "REST API design", "API Validation & Throttling", "API Rate Limiting"). Focus on specific, searchable libraries or functions.
-          -   Overly broad or tutorial-like questions (e.g., "how to build a chat app").
-          -   Cron jobs (as it is not a package but a pattern of code)
-
-          ---
-          AVAILABLE INTERNAL PACKAGES:
-          ${packageList.map((p) => p.package_name).join(", ")}
+          **CRITICAL EXCLUSION LIST**:
+          Your final output MUST NOT include platforms/packages for:
+          -   **Deployment Services** (e.g., AWS Lambda, Vercel).
+          -   **Database Services** (e.g., Postgres, Redis, Supabase).
+          -   **Generic Architectural Patterns** (e.g., Webhooks, HTTP Server, Cron Jobs, API Design).
+          Acknowledge these in your thought process if necessary, but EXCLUDE them from the final JSON output.
+          Do not duplicate platforms/packages. If a platform/package is already in the list, do not add it again.
           ---
 
           Now, begin your process for the following task.
         `,
-        schema: z.object({
-          searchQueries: z
-            .array(z.string())
-            .describe(
-              "Array of actionable, package-level search queries mentioning the required functionality needed for the task."
-            ),
-        }),
+        schema: z.array(
+          z.object({
+            platform: z
+              .string()
+              .describe(
+                "The platform/package that is most likely to be used to accomplish the task/request"
+              ),
+            alternativePlatforms: z
+              .array(z.string())
+              .describe(
+                "Array of probable platforms/packages related to user request "
+              ),
+            searchQuery: z
+              .string()
+              .describe(
+                "A concise and fully detailed search query which factors the user's task/request and finds the most relevant platform/package. Do not include any other information in the search query."
+              ),
+          })
+        ),
         prompt: `
           Name: ${taskInfo.name}
           Goal: ${taskInfo.goal}
@@ -144,7 +163,7 @@ export const createTaskIntegrations: AiToolFactory<
           ${modification ? `The user specifically mentioned: ${modification}` : ""}
         `,
       });
-      const searchQueries = searchQueriesResult.object.searchQueries;
+      const platforms1 = searchQueriesResult.object;
       TokenUsageAnalyticsTracker.trackUsage({
         userId: ctx.request.userId,
         clientRequestId: ctx.request.clientRequestId,
@@ -153,11 +172,11 @@ export const createTaskIntegrations: AiToolFactory<
         usage: searchQueriesResult.usage,
       });
 
-      console.log("searchQueries", searchQueries);
+      console.log("platforms1", platforms1);
 
       // Step 2: RAG search for each query
       ctx.response.writeMessageMetadata({
-        loader: `Finding best packages for ${searchQueries.length} search queries...`,
+        loader: `Finding best packages...`,
       });
 
       const ragResults = [];
@@ -166,9 +185,9 @@ export const createTaskIntegrations: AiToolFactory<
         PackageDbInfo & { functionalities: string[] }
       > = {};
 
-      for (const query of searchQueries) {
+      for (const platform of platforms1) {
         const rawSimilarPackages: PackageDbInfo[] = await findSimilarPackages(
-          query,
+          `Platform: ${platform.platform} - Search Query: ${platform.searchQuery}`,
           0.5,
           5
         );
@@ -176,7 +195,7 @@ export const createTaskIntegrations: AiToolFactory<
           const similarPackages = rawSimilarPackages.map((pkg) => {
             const functionalities =
               pkg.status === PackageStatus.EXTERNAL
-                ? [`anything related to ${pkg.package_name}`]
+                ? [`all functionalities of ${pkg.package_name} package`]
                 : pkg.constructors
                     ?.map((c: any) => c.functionalities)
                     .flat()
@@ -187,7 +206,7 @@ export const createTaskIntegrations: AiToolFactory<
           const bestMatch = similarPackages[0];
           const alternatives = similarPackages.slice(1);
           ragResults.push({
-            searchQueryUsed: query,
+            searchQueryUsed: platform.searchQuery,
             bestMatch: bestMatch,
             alternatives: alternatives,
           });
@@ -229,35 +248,46 @@ export const createTaskIntegrations: AiToolFactory<
       const packageResult = await generateObject({
         model: models.googleGeminiPro,
         system: `
-          You are a lead software architect. Your primary goal is to act as the final decision-maker for selecting the correct software packages for a development task. You will be given the task summary, a list of search queries, and the results from a semantic package search.
+          You are a lead software architect. Your primary goal is to act as the final decision-maker for selecting the correct software platforms/packages for a development task. You will be given the task summary, a list of search queries, and the results from a semantic platform/package search.
 
-          Follow this rigorous analysis process:
+          ---
+          **Process Flow:**
+            -   You run in a loop of Thought, Action, PAUSE, Observation.
+            -   At the end of the loop you output an Answer.
+            -   Use Thought to describe your thoughts about the question you have been asked.
+            -   Use Action to run one of the actions available to you - then return PAUSE.
+            -   Observation will be the result of running those actions.
+            -   At the end of the loop you output an Answer.
+          ---
 
-          1.  **Holistic Review (Thought)**:
+          **Steps:**
+          1.  **Deconstruction (Thought)**:
               -   First, deeply understand the **TASK SUMMARY**.
-              -   Then, for each **SEARCH QUERY** and its results, analyze the \`bestMatch\` and \`alternatives\`.
-              -   Cross-reference these packages with the **AVAILABLE PACKAGE FUNCTIONALITIES** list to understand what each package can *actually* do. Note the \`status\` of each package.
+              -   For this task, you will be given a list of search queries. Analyze the search queries and understand the underlying need.
+              -   If there are multiple search queries which point to the same underlying need, consolidate them into a single, best-fit platform/package.
 
-          2.  **Critical Evaluation & Self-Correction**:
-              -   When evaluating packages, prioritize them in this order: **STABLE > SEMISTABLE > EXTERNAL**. Only choose a lower-status package if it provides critical functionality that a higher-status one lacks.
-              -   For each query's results, ask yourself:
-                  -   Is the \`bestMatch\` truly the best fit, or does an \`alternative\` offer better functionality for this specific task?
-                  -   Do multiple search queries point to the same underlying need? If so, consolidate them into a single, best-fit package. Do not include redundant packages.
-                  -   Is a suggested package a generic tool when a more specialized internal package exists?
-                  -   If no suitable package is found for a specific, necessary part of the task, you MUST specify "@microfox/null" for that platform and provide a clear reason.
+          2.  **Initial Platform Selection (Action)**:
+              -   For each search query, compare all the resultant packages with their **AVAILABLE PACKAGE FUNCTIONALITIES** list to understand which package can *actually* do what is required for the task.
+              -   If multiple packages have common functionalities required for the task, first select the one which covers maximum requirements and then choose the one with the highest status. (STABLE > SEMISTABLE > EXTERNAL)
+              -   If there are no packages with the required functionalities, you MUST specify "@microfox/null" for that platform/package and provide a clear reason.
 
-          3.  **Final Selection (Action & Output)**:
-              -   Based on your analysis, construct the final, definitive list of platforms required.
+          3.  **Critical Evaluation & Self-Correction (Observation)**:
+              -   For each query's final selection, ask yourself:
+                  -   Is a suggested platform/package a generic tool when a more specialized internal platform/package exists?
+                  -   If no suitable platform/package is found for a specific, necessary part of the task, you MUST specify "@microfox/null" for that platform/package and provide a clear reason.
+
+          3.  **Final Selection (Output)**:
+              -   Based on your analysis, construct the final, definitive list of platforms/packages required.
               -   Return your final answer in the specified JSON schema format.
 
           ---
           **CRITICAL EXCLUSION LIST**:
-          Your final output MUST NOT include platforms for:
+          Your final output MUST NOT include platforms/packages for:
           -   **Deployment Services** (e.g., AWS Lambda, Vercel).
           -   **Database Services** (e.g., Postgres, Redis, Supabase).
-          -   **Generic Architectural Patterns** (e.g., Webhooks, HTTP Server, Cron Jobs).
+          -   **Generic Architectural Patterns** (e.g., Webhooks, HTTP Server, Cron Jobs, API Design).
           Acknowledge these in your thought process if necessary, but EXCLUDE them from the final JSON output.
-          Do not duplicate packages. If a package is already in the list, do not add it again.
+          Do not duplicate platforms/packages. If a platform/package is already in the list, do not add it again.
           ---
         `,
         schema: taskIntegrations,
@@ -269,8 +299,7 @@ export const createTaskIntegrations: AiToolFactory<
           .map(
             (r) => `
           Query: "${r.searchQueryUsed}"
-          Best Match: ${r.bestMatch?.package_name || "None"}
-          Alternatives: ${r.alternatives.map((a) => a.package_name).join(", ") || "None"}
+          Results: ${r.bestMatch?.package_name || ""}, ${r.alternatives.map((a) => a.package_name).join(", ") || ""}
         `
           )
           .join("\n")}
@@ -279,7 +308,7 @@ export const createTaskIntegrations: AiToolFactory<
         ${Object.values(allFoundPackages)
           .map(
             (pkg) =>
-              `Package: ${pkg.package_name}\nStatus: ${pkg.status}\nFunctionalities: ${pkg.functionalities.join(", ")}`
+              `Package: ${pkg.package_name}\nStatus: ${pkg.status}\nFunctionalities it provides: ${pkg.functionalities.join(", ")}`
           )
           .join("\n")}
         `,

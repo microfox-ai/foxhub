@@ -7,14 +7,14 @@ import { z } from "zod";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 import { models } from "../models";
 import { editFile, readFile } from "./tool/editFile";
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
 import { uiTool } from "../ui/uiTool";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
 // it also has to update the taskInstanceMeta
-const hotfixFoxAgent = new AiAgentKit<DefaultMessageMetadata, any, any, any>();
+const hotfixFoxAgent = new AiRouter<DefaultMessageMetadata, any, any, any>();
 
 hotfixFoxAgent.agent("/", async (ctx) => {
   const { request, response } = ctx;

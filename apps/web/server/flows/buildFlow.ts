@@ -10,7 +10,7 @@ import {
 } from "@/components/screens/hooks/convertors";
 import { prisma } from "@/prisma/prisma";
 import { TaskStructure } from "../convertfox/helpers/types";
-import { AiAgentKit, AiHandler, AiMiddleware } from "@repo/ai-utils/router";
+import { AiRouter, AiHandler, AiMiddleware } from "@microfox/ai-router";
 import helloFoxAgent from "../hellofox/hellofox.agent";
 import convertfoxAgent from "../convertfox/_router";
 import deployfoxAgent from "../deployfox/deployfoxAgent";
@@ -23,7 +23,7 @@ import { installFoxAgent } from "../installfox/_installFoxRouter";
 import { taskQueryAgent } from "../taskqueryfox/_taskQueryRouter";
 
 // hellofox, convertfox, buildfox, deployfox, testfox.
-const buildManager = new AiAgentKit<any, any, any, any>();
+const buildManager = new AiRouter<any, any, any, any>();
 
 buildManager.use("/", async (ctx, next) => {
   const { request, state, response } = ctx;

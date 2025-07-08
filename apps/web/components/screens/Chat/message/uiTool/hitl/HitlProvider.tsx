@@ -13,7 +13,7 @@ import {
 import { useMicrofoxChat } from "../../../MicrofoxChatProvider";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import { PortalSdk } from "@/utils/services/PortalSdk";
-import { fetchSecretVariables, removeVariables, replaceVariables } from "@/server/slsfox/fetchVariables";
+import { fetchSecretVariables, removeVariables, replaceVariables } from "@/server/toolfox/helpers/fetchVariables";
 
 type HitlContextType = ReturnType<typeof useHitlContext>;
 
@@ -33,12 +33,12 @@ function useHitlContext() {
             let updatedVariables = as?.variables ? as.variables : [];
             if (index !== -1 && newAuthSecrets[index]) {
                 // first remove the variables of the old secret
-                const oldSecret = newAuthSecrets[index].secrets.find((s) => s.id === newAuthSecrets[index]?.selectedSecretId);
-                if (oldSecret) {
-                    updatedVariables = removeVariables(updatedVariables, oldSecret);
-                }
-                // next carefully add the new variables (while overwriting if any)
-                updatedVariables = replaceVariables(updatedVariables, secret);
+                // const oldSecret = newAuthSecrets[index].secrets.find((s) => s.id === newAuthSecrets[index]?.selectedSecretId);
+                // if (oldSecret) {
+                //     updatedVariables = removeVariables(updatedVariables, oldSecret);
+                // }
+                // // next carefully add the new variables (while overwriting if any)
+                // updatedVariables = replaceVariables(updatedVariables, secret);
                 newAuthSecrets[index] = {
                     ...newAuthSecrets[index],
                     packageName,
@@ -48,7 +48,7 @@ function useHitlContext() {
             return {
                 ...as,
                 secrets: newAuthSecrets,
-                variables: updatedVariables,
+                //variables: updatedVariables,
             };
         })
     }

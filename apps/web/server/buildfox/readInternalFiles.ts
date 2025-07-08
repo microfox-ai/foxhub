@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import { z } from "zod";
 import { ClientRequest } from "@prisma/client";
 import path from "path";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 
 /** Read multiple files from the project */
 export const readInternalFiles = (

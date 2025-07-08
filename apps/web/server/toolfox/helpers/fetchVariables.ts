@@ -1,9 +1,12 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientRequest, ClientSecret } from "@prisma/client";
-import { ClientSecretVariable } from "../types";
+import { ClientSecretVariable } from "../../types";
 import { AuthObject, AuthOptions } from "@microfox/tool-kit";
-import { HitlAuthObject } from "../ui/uiTool";
+import { HitlAuthObject } from "../../ui/uiTool";
 import { Bot } from "@/components/screens/mybots/providers/types";
+import { templateEnvsFromTaskIntegrations } from "@/server/buildfox/helper/templateEnvsFromTaskIntegrations";
+import { codeTemplateType } from "@/server/convertfox/helpers/types";
+import { UIMessage } from "ai";
 
 export const fetchSecretVariables = (
   secret: ClientSecret
@@ -80,7 +83,7 @@ const pickSecrets = (
         const uniqueId = `${secret.botProjectId}-${secret.identityOrgId}-${secret.identityTeamId}-${secret.identityUserId}-${secret.packageType}-${secret.packageName}-${secret.packageConstructor}`;
         //console.log("uniqueId", uniqueId);
         if (!acc[uniqueId]) {
-          acc[uniqueId] = secret;
+          acc[uniqueId] = { ...secret, variables: [], botConfig: [] };
         }
         return acc;
       },
@@ -106,15 +109,74 @@ const pickSecrets = (
   };
 };
 
+export const cleanSecretsForAuthObject = (authObject: AuthObject) => {
+  const output = { ...authObject };
+  for (const secret of output.secrets) {
+    secret.secrets = secret.secrets.map((s: ClientSecret) => {
+      return {
+        ...s,
+        variables: [],
+        botConfig: [],
+      };
+    });
+  }
+  output.encryptionKey = "REDACTED";
+  output.variables = [];
+  return output;
+};
+
+export const getVariablesForAuthObject = async (
+  authObject: AuthObject,
+  {
+    clientRequest,
+    refetchFromDb,
+  }: {
+    clientRequest?: ClientRequest;
+    refetchFromDb?: boolean;
+  }
+) => {
+  const output = { ...authObject };
+  for (const secret of output.secrets) {
+    if (secret.selectedSecretId) {
+      let selectedSecret = secret.secrets.find(
+        (s: ClientSecret) => s.id === secret.selectedSecretId
+      );
+      if (refetchFromDb) {
+        selectedSecret = await prisma.clientSecret.findUnique({
+          where: { id: secret.selectedSecretId },
+        });
+      }
+      if (selectedSecret) {
+        const selectedSecretVariables = fetchSecretVariables(selectedSecret);
+        output.variables =
+          output.variables?.concat(selectedSecretVariables) ??
+          selectedSecretVariables;
+      }
+    }
+  }
+  if (clientRequest) {
+    const envs = await templateEnvsFromTaskIntegrations(
+      codeTemplateType.enum.upstash_sls,
+      clientRequest
+    );
+    output.variables = output.variables?.concat(envs) ?? envs;
+  }
+  output.encryptionKey = process.env.OPEN_API_ENCRYPTION_KEY ?? "";
+  return output;
+};
+
 export const fetchAuthSecrets = async (
   options: AuthOptions,
-  clientRequest?: ClientRequest | null,
-  userId?: string,
-  fillEncryptionKey?: boolean
+  configuration: {
+    clientRequest?: ClientRequest | null;
+    userId?: string;
+    fillEncryptionKey?: boolean;
+    fillVariables?: boolean;
+  }
 ): Promise<AuthObject> => {
   if (!options.packages) {
     return {
-      encryptionKey: fillEncryptionKey
+      encryptionKey: configuration.fillEncryptionKey
         ? (process.env.OPEN_API_ENCRYPTION_KEY ?? "")
         : "",
       variables: [],
@@ -125,8 +187,10 @@ export const fetchAuthSecrets = async (
       packageName: {
         in: options.packages?.map((p) => p.packageName) ?? [],
       },
-      ...(clientRequest ? { botProjectId: clientRequest.botProjectId } : {}),
-      ...(userId ? { userId: userId } : {}),
+      ...(configuration.clientRequest
+        ? { botProjectId: configuration.clientRequest.botProjectId }
+        : {}),
+      ...(configuration.userId ? { userId: configuration.userId } : {}),
     },
     orderBy: {
       updatedAt: "desc",
@@ -134,7 +198,7 @@ export const fetchAuthSecrets = async (
   });
   const output: HitlAuthObject = {
     variables: [],
-    encryptionKey: fillEncryptionKey
+    encryptionKey: configuration.fillEncryptionKey
       ? (process.env.OPEN_API_ENCRYPTION_KEY ?? "")
       : "",
     secrets: [],
@@ -146,8 +210,8 @@ export const fetchAuthSecrets = async (
     if (_secrets.length > 0 && _secrets[0]?.id) {
       const { pickedSecret, uniqueClubbedSecrets } = pickSecrets(
         _secrets,
-        clientRequest,
-        userId
+        configuration.clientRequest,
+        configuration.userId
       );
       const variables = fetchSecretVariables(pickedSecret);
       output.secrets.push({
@@ -165,6 +229,9 @@ export const fetchAuthSecrets = async (
         secrets: [],
       });
     }
+  }
+  if (!configuration.fillVariables) {
+    output.variables = [];
   }
   return output;
 };

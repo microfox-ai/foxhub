@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { findLastElement } from "@repo/ai-utils/helper";
-import { AiToolFactory } from "@repo/ai-utils/router";
+import { AiToolFactory } from "@microfox/ai-router";
 
 type SendStruckLogsToolMetadata = {
   struckpoint?: string;

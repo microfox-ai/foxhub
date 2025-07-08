@@ -9,7 +9,7 @@ import { codingFunctionPrompt, codingSystemPrompt } from "../prompt.coding";
 import { writeToFile } from "../tool/writeToFile";
 import { fetchPackageDocs } from "../tool/fetchPackageDocs";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 
 // IMPORTANT TODO: decide to fetch package Info or fetch example based on previous builds (& then, only then required info is fetched)
 export const genLambdaCode = async (

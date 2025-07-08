@@ -9,14 +9,14 @@ import {
 import { createOpenApiToolset } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
 import { StreamWriter } from "@repo/ai-utils/helper";
-import { AiAgentKit, AiHandler, AiMiddleware } from "@repo/ai-utils/router";
+import { AiRouter, AiHandler, AiMiddleware } from "@microfox/ai-router";
 import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file
 // it also has to update the taskInstanceMeta
-const taskQueryAgent = new AiAgentKit<any, any, any, any>();
+const taskQueryAgent = new AiRouter<any, any, any, any>();
 
 taskQueryAgent.use("/", async (ctx, next) => {
   const { request, state, response } = ctx;
@@ -123,7 +123,7 @@ taskQueryAgent.agent("/", async (ctx) => {
       },
     });
 
-    let processedMessages = await client.processToolResult(request.messages);
+    let processedMessages = await client.parseHitl(request.messages);
     processedMessages = processedMessages.map((m) => ({
       ...m,
       parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
@@ -160,7 +160,7 @@ taskQueryAgent.agent("/", async (ctx) => {
       messages: convertToModelMessages(processedMessages),
       tools: toolSet.tools,
       toolChoice: "auto",
-      stopWhen: (s) => client.createHitlStopStep()(s),
+      stopWhen: (s) => client.isHitlStep()(s),
     });
 
     response.merge(result.toUIMessageStream());

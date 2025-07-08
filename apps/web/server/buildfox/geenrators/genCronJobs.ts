@@ -1,5 +1,5 @@
 import { ClientRequest, ClientSecret } from "@prisma/client";
-import { AiContext } from "@repo/ai-utils/router";
+import { AiContext } from "@microfox/ai-router";
 import { generateText, stepCountIs } from "ai";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 import {

@@ -1,4 +1,4 @@
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { models } from "../../models";
 import { getMicrofoxCapabilities } from "../_prompts";
@@ -8,7 +8,7 @@ import { confirmSpecifics } from "./query.confirmSpecifics";
 import { TokenUsageAnalyticsTracker } from "../../analytics/helper";
 import { guideUserToDoableGoal } from "./query.guideUserToDoableGoal";
 
-const hellofoxQueryAgent = new AiAgentKit<any, any, any, any>();
+const hellofoxQueryAgent = new AiRouter<any, any, any, any>();
 
 hellofoxQueryAgent.use("/", async (ctx, next) => {
   const { request, state, response } = ctx;

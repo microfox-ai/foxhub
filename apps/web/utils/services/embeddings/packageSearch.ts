@@ -2,6 +2,7 @@ import { Package } from "@/components/screens/Chat/message/types";
 import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
+import { QueryApisResult } from "@/server/toolfox/helpers/queryApis";
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
@@ -10,8 +11,9 @@ const PACKAGE_INFO_TABLE = "package_infos";
 
 const MATCH_THRESHOLD = 0.78;
 const MATCH_COUNT = 10;
-const TABLE_NAME = 'package_infos';
-const RPC_FUNCTION_NAME = 'match_package_infos';
+const TABLE_NAME = "package_infos";
+const MATCH_PACKAGE_RPC = "match_package_infos";
+const MATCH_MCP_RPC = "match_mcps";
 
 export interface PackageDbInfo {
   id: string;
@@ -290,25 +292,25 @@ async function getAllPackages({
 export async function findSimilarPackages(
   query: string,
   match_threshold: number = MATCH_THRESHOLD,
-  match_count: number = MATCH_COUNT,
+  match_count: number = MATCH_COUNT
 ) {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     const embedding = await embed(query);
 
-    const { data: packages, error } = await supabase.rpc(RPC_FUNCTION_NAME, {
+    const { data: packages, error } = await supabase.rpc(MATCH_PACKAGE_RPC, {
       query_embedding: embedding,
       match_threshold: match_threshold,
       match_count: match_count,
     });
 
     if (error) {
-      console.error('Error querying Supabase:', error);
+      console.error("Error querying Supabase:", error);
       throw new Error(`Error finding similar packages: ${error.message}`);
     }
 
     if (!packages || packages.length === 0) {
-      console.log('No similar packages found.');
+      console.log("No similar packages found.");
       return [];
     }
 
@@ -323,7 +325,63 @@ export async function findSimilarPackages(
 
     return packagesWithFunctionalities;
   } catch (err) {
-    console.error('An unexpected error occurred:', err);
+    console.error("An unexpected error occurred:", err);
+    throw err;
+  }
+}
+
+export interface ApiMcp {
+  id: number;
+  name: string;
+  package_name: string;
+  base_url: string;
+  stage: string;
+  api_type: string;
+  type: string;
+  similarity: number;
+  created_at: string;
+  updated_at: string;
+  openApiSchema?: any;
+  metadata?: any;
+  tools?: QueryApisResult[];
+}
+
+export async function findApiMcps({
+  query,
+  match_threshold = MATCH_THRESHOLD,
+  match_count = MATCH_COUNT,
+  api_type,
+}: {
+  query: string;
+  match_threshold?: number;
+  match_count?: number;
+  api_type?: string;
+}): Promise<ApiMcp[]> {
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("Embedding query", query);
+    const embedding = await embed(query);
+
+    const { data: packages, error } = await supabase.rpc(MATCH_MCP_RPC, {
+      query_embedding: embedding,
+      ...(api_type && { api_type }), // package-sls, micro-agent
+      match_count: match_count,
+      match_threshold: match_threshold,
+    });
+
+    if (error) {
+      console.error("Error querying Supabase:", error);
+      throw new Error(`Error finding similar packages: ${error.message}`);
+    }
+
+    if (!packages || packages.length === 0) {
+      console.log("No similar packages found.");
+      return [];
+    }
+
+    return packages;
+  } catch (err) {
+    console.error("An unexpected error occurred:", err);
     throw err;
   }
 }
@@ -337,4 +395,5 @@ export const PackageInfoHelper = {
   getPackageInfos,
   getPackageInfo,
   findSimilarPackages,
+  findApiMcps,
 };

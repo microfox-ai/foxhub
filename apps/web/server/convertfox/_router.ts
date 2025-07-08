@@ -1,4 +1,4 @@
-import { AiAgentKit } from "@repo/ai-utils/router";
+import { AiRouter } from "@microfox/ai-router";
 import { z } from "zod";
 import { convertfoxClassify } from "./convertfox.classify";
 import { convertfoxCreate } from "./job/convertfox.create";
@@ -9,7 +9,7 @@ import { createTaskStructure } from "./job/task_tools/createTaskStructure";
 
 // TaskCreator - Convert to IntelligentTieringAccessTier, Goal, Summary & List of platforms, isControllableOnFrontend, rquiresInjectionOnWeb, clientSecrets, more specific details.
 
-const convertfoxAgent = new AiAgentKit<any, any, any, any>();
+const convertfoxAgent = new AiRouter<any, any, any, any>();
 
 // Register Middlewares
 convertfoxAgent.use("/", (ctx, next) => {

@@ -84,10 +84,7 @@ export async function subdomainRerouting(
       if (SUPPORTED_VERCEL_SUBDOMAINS.includes(subdomain)) {
         console.log("rewriting to:", `https://${subdomain}.vercel.app`);
         return NextResponse.rewrite(
-          new URL(
-            `${request.nextUrl.protocol}//${subdomain}.vercel.app${path}`,
-            request.url
-          )
+          new URL(`https://${subdomain}.vercel.app${path}`, request.url)
         );
       }
 

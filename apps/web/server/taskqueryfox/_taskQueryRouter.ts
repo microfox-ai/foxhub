@@ -123,7 +123,7 @@ taskQueryAgent.agent("/", async (ctx) => {
       },
     });
 
-    let processedMessages = await client.processToolResult(request.messages);
+    let processedMessages = await client.parseHitl(request.messages);
     processedMessages = processedMessages.map((m) => ({
       ...m,
       parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
@@ -160,7 +160,7 @@ taskQueryAgent.agent("/", async (ctx) => {
       messages: convertToModelMessages(processedMessages),
       tools: toolSet.tools,
       toolChoice: "auto",
-      stopWhen: (s) => client.createHitlStopStep()(s),
+      stopWhen: (s) => client.isHitlStep()(s),
     });
 
     response.merge(result.toUIMessageStream());

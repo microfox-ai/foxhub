@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { subdomain: string } }
+  { params }: { params: Promise<{ subdomain: string }> }
 ) {
-  const subdomain = params.subdomain;
+  const { subdomain } = await params;
 
   if (!subdomain) {
     return NextResponse.json(

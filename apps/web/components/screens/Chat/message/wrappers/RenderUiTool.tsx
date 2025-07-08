@@ -1,5 +1,5 @@
 import { UiComponentProps } from "@/server/ui/UiComponentProps"
-import { MyUiTool } from "@/server/ui/uiTool"
+import { HitlOutput, MyUiTool } from "@/server/ui/uiTool"
 import { ActionButtons } from "../uiTool/buttons_list/ActionButtons"
 import { TaskInfo } from "../uiTool/card/info/TaskInfo"
 import { TaskIntegrations } from "../uiTool/card/task_integrations/TaskIntegrations"
@@ -45,23 +45,36 @@ export const RenderUiTool = ({ tool, lastMessage, lastAnnotationIndices, message
                 }
             }
         }
-        return (
-            <HitlProvider>
-                <HitlAuthWrapper
-                    tool={tool}
-                    lastMessage={lastMessage}
-                    lastAnnotationIndices={lastAnnotationIndices}
-                    messageIndex={messageIndex}
-                >
-                    <RenderHiltTool
-                        tool={manipulated_tool}
+
+        if ((tool.output as HitlOutput).auth?.secrets?.length > 0) {
+            return (
+                <HitlProvider>
+                    <HitlAuthWrapper
+                        tool={tool}
                         lastMessage={lastMessage}
                         lastAnnotationIndices={lastAnnotationIndices}
                         messageIndex={messageIndex}
+                    >
+                        <RenderHiltTool
+                            tool={manipulated_tool}
+                            lastMessage={lastMessage}
+                            lastAnnotationIndices={lastAnnotationIndices}
+                            messageIndex={messageIndex}
+                        />
+                    </HitlAuthWrapper>
+                </HitlProvider>
+            )
+        }
+        else {
+            return (
+                <HitlProvider>
+                    <AcceptHitl
+                        tool={tool as ToolUIPart}
+                        lastMessage={lastMessage}
                     />
-                </HitlAuthWrapper>
-            </HitlProvider>
-        )
+                </HitlProvider>
+            )
+        }
     }
     switch (tool.output?.props?.uiType) {
         case "buttons_list":

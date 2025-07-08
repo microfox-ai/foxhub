@@ -132,13 +132,20 @@ toolExecutionAgent.agent("/", async (ctx) => {
             
             ${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
             `,
-        stopWhen: client.isHitlStep(),
+        stopWhen: (s) => {
+            if (s.steps.length > 0) {
+                console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults);
+            }
+            return client.isHitlStep()(s);
+        },
         onStepFinish: async (step) => {
             console.log("step", step.usage);
         }
     });
 
     ctx.response.merge(stream.toUIMessageStream());
+
+    await stream.text;
 
 });
 

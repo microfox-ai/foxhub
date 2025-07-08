@@ -126,14 +126,14 @@ taskQueryAgent.agent("/", async (ctx) => {
     //   },
     // });
 
-    request.messages =
+    const last7Messages =
       request.messages.length > 7
         ? request.messages.slice(-7)
         : request.messages;
 
-    console.log(cleanUiMessageParts(request.messages), "request.messages");
+    console.log(cleanUiMessageParts(last7Messages), "last7Messages");
     let processedMessages = await client.parseHitl(
-      cleanUiMessageParts(request.messages),
+      cleanUiMessageParts(last7Messages),
       ctx.response,
       async (_authObject) => {
         return _authObject;

@@ -55,10 +55,11 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     async (url: string) => {
       const res = await PortalSdk.getData(url, {});
       return res;
-    }
+    }, {
+    revalidateOnMount: true,
+    revalidateOnFocus: true,
+  }
   )
-
-
 
   const { ...chatOptions } = useChat<UIMessage<any, any, any>>({
     transport: new DefaultChatTransport({
@@ -81,6 +82,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         }
       }
     }),
+    resume: true,
     messages: (serverMessages as any[]) || [],
     ...userChatOptions,
     id: clientRequest?.id,
@@ -137,15 +139,17 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   });
 
   useEffect(() => {
-    if (serverMessages?.length && serverMessages.length > 0) {
-      console.log("serverMessages", serverMessages);
+    if (serverMessages && chatOptions.messages.length === 0 && chatOptions.status === "ready") {
       chatOptions.setMessages(serverMessages as any);
     }
-  }, [serverMessages]);
+  }, [serverMessages, chatOptions.messages, chatOptions.status]);
 
   //-----------LISTENING-------------
   const lastKnownMinionType = useMemo(() => {
     if (chatOptions.messages.length === 0) {
+      return MinionType.Unknown;
+    }
+    if (chatOptions.status !== "ready") {
       return MinionType.Unknown;
     }
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
@@ -156,6 +160,9 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     if (chatOptions.messages.length === 0) {
       return MinionFlow.Unknown;
     }
+    if (chatOptions.status !== "ready") {
+      return MinionFlow.Unknown;
+    }
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
     const minionFlowAnnotation: any = lastMessage?.metadata?.minionFlow;
     return minionFlowAnnotation ?? MinionFlow.Unknown;
@@ -164,12 +171,12 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
   useEffect(() => {
     console.log("messages", chatOptions.messages);
-    const lastMessage = chatOptions.messages?.[chatOptions.messages.length - 1];
-    const isClientRequestTitle: any = lastMessage?.metadata?.clientRequestTitle;
-    if (isClientRequestTitle) {
-      mutateSelectedClientRequest();
-    }
-  }, [chatOptions.messages]);
+    // const lastMessage = chatOptions.messages?.[chatOptions.messages.length - 1];
+    // const isClientRequestTitle: any = lastMessage?.metadata?.clientRequestTitle;
+    // if (isClientRequestTitle && isClientRequestTitle !== selectedRequest?.title) {
+    //   mutateSelectedClientRequest();
+    // }
+  }, [chatOptions.messages, selectedRequest?.title]);
 
   // useEffect(() => {
   //   //console.log("data", chatOptions.data);

@@ -17,7 +17,6 @@ toolSelectionAgent.actAsTool("/", {
     }),
 });
 
-
 toolSelectionAgent.use("/", async (ctx, next) => {
     const { request, state, response } = ctx;
     response.writeMessageMetadata({
@@ -56,12 +55,15 @@ toolSelectionAgent.agent("/", async (ctx) => {
     //   -   Observation will be the result of running those actions.
     //   -   At the end of the loop you output an Answer.
     // ---
-    response.writeMessageMetadata({
-        loader: "Deep-Thinking the best fit.",
-    });
-    const searchQueriesResult = await generateObject({
-        model: models.googleGeminiTwoFive,
-        system: `
+
+    let ragResults: ApiMcp[] = [];
+    if (ctx.request.toolMode == "deep") {
+        response.writeMessageMetadata({
+            loader: "Deep-Thinking the best fit.",
+        });
+        const searchQueriesResult = await generateObject({
+            model: models.googleGeminiTwoFive,
+            system: `
           You are an expert software architect and a senior full-stack developer. Your primary goal is to deconstruct a user's request into a series of platforms/packages that are most likely to be used to accomplish the request.
 
           **Steps:**
@@ -96,72 +98,95 @@ toolSelectionAgent.agent("/", async (ctx) => {
 
           Now, begin your process for the following request.
         `,
-        schema: z.array(
-            z.object({
-                platform: z
-                    .string()
-                    .describe(
-                        "The platform/package that is most likely to be used to accomplish the request"
-                    ),
-                alternativePlatforms: z
-                    .array(z.string())
-                    .describe(
-                        "Array of probable platforms/packages related to user request "
-                    ),
-                searchQuery: z
-                    .string()
-                    .describe(
-                        "A concise and fully detailed search query which factors the user's request and finds the most relevant platform/package. Do not include any other information in the search query."
-                    ),
-            })
-        ),
-        prompt: `
+            schema: z.array(
+                z.object({
+                    platform: z
+                        .string()
+                        .describe(
+                            "The platform/package that is most likely to be used to accomplish the request"
+                        ),
+                    alternativePlatforms: z
+                        .array(z.string())
+                        .describe(
+                            "Array of probable platforms/packages related to user request "
+                        ),
+                    searchQuery: z
+                        .string()
+                        .describe(
+                            "A concise and fully detailed search query which factors the user's request and finds the most relevant platform/package. Do not include any other information in the search query."
+                        ),
+                })
+            ),
+            prompt: `
             User's Request: ${userMessage}
         `,
-    });
+        });
 
-    console.log("searchQueriesResult", searchQueriesResult.object);
+        console.log("searchQueriesResult", searchQueriesResult.object);
 
-    // {mcpSearchQuery: "search query to find the correct API/MCP/Agent",
-    const platforms = searchQueriesResult.object;
-    console.log("platforms", platforms);
+        // {mcpSearchQuery: "search query to find the correct API/MCP/Agent",
+        const platforms = searchQueriesResult.object;
+        console.log("platforms", platforms);
 
-    response.writeMessageMetadata({
-        loader: `Searching for the best tools for ${platforms.length} platforms...`,
-    });
-    let ragResults: ApiMcp[] = [];
-    for (const platform of platforms) {
-        const similarPackages = await findApiMcps({
-            query: `Platform: ${platform.platform} - Search Query: ${platform.searchQuery}`,
+        response.writeMessageMetadata({
+            loader: `Searching for the best tools for ${platforms.length} platforms...`,
+        });
+        for (const platform of platforms) {
+            const similarPackages = await findApiMcps({
+                query: `Platform: ${platform.platform} - Search Query: ${platform.searchQuery}`,
+                match_threshold: 0.5,
+                match_count: 5,
+            });
+            ragResults.push(...similarPackages);
+        }
+        ragResults = ragResults.filter(
+            (item, index, self) => index === self.findIndex((t) => t.id === item.id)
+        );
+        ragResults.sort((a, b) => b.similarity - a.similarity);
+        console.log("ragResults", ragResults);
+    }
+    if (ctx.request.toolMode == "fast") {
+        response.writeMessageMetadata({
+            loader: "Fast-search based on user's request...",
+        });
+        ragResults = await findApiMcps({
+            query: `User's Request: ${userMessage}`,
             match_threshold: 0.5,
             match_count: 5,
         });
-        ragResults.push(...similarPackages);
     }
-    ragResults = ragResults.filter(
-        (item, index, self) => index === self.findIndex((t) => t.id === item.id)
-    );
-    ragResults.sort((a, b) => b.similarity - a.similarity);
-    console.log("ragResults", ragResults);
 
-    // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
-    const toolPopulatedMcpsPromises = ragResults.map(async (ragResult) => {
-        const toolsResults = await queryApis({
-            query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
-            package_name: ragResult.package_name,
-            match_threshold: 0.5,
-            match_count: 10,
+
+    let toolPopulatedMcps: (ApiMcp)[] = [];
+
+    if (ragResults.length > 0 && ctx.request.toolMode == "deep") {
+        // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
+        const toolPopulatedMcpsPromises = ragResults.map(async (ragResult) => {
+            const toolsResults = await queryApis({
+                query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
+                package_name: ragResult.package_name,
+                match_threshold: 0.5,
+                match_count: 10,
+            });
+            // CONSTRUCT A TOOL BASED MCP WITH ONLY THE PROVIDED TOOLS (in the array in future).    
+            //console.log("toolsResults", toolsResults.map((tool) => tool.metadata.openApiSchema));
+            return {
+                ...ragResult,
+                //tools: toolsResults,
+                openApiSchema: toolsResults?.[0]?.metadata.openApiSchema,
+            };
         });
-        // CONSTRUCT A TOOL BASED MCP WITH ONLY THE PROVIDED TOOLS (in the array in future).    
-        //console.log("toolsResults", toolsResults.map((tool) => tool.metadata.openApiSchema));
-        return {
-            ...ragResult,
-            //tools: toolsResults,
-            openApiSchema: toolsResults?.[0]?.metadata.openApiSchema,
-        };
-    });
+        toolPopulatedMcps = await Promise.all(toolPopulatedMcpsPromises);
+    }
 
-    const toolPopulatedMcps: (ApiMcp)[] = await Promise.all(toolPopulatedMcpsPromises);
+    if (ragResults.length > 0 && ctx.request.toolMode == "fast") {
+        toolPopulatedMcps = ragResults.map((ragResult) => {
+            return {
+                ...ragResult,
+                openApiSchema: ragResult.metadata.docs_data,
+            };
+        });
+    }
 
     console.log("toolPopulatedMcps", toolPopulatedMcps);
 

@@ -16,7 +16,7 @@ import useSWR from "swr";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ActionButtons } from "../../buttons_list/ActionButtons";
 import { EnvVariablesDialog } from "../../../../configuration/EnvVariablesDialog";
-import { Markdown } from "../../../text/markdown";
+import { InternalMarkdown } from "../../../text/markdown";
 import {
     Tooltip,
     TooltipContent,

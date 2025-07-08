@@ -1,5 +1,5 @@
 import { FC, ReactNode, useRef, useEffect, useState } from 'react';
-import Markdown from 'react-markdown';
+import { InternalMarkdown } from './markdown';
 
 interface MessageThoughtWrapperProps {
     children: string;
@@ -34,11 +34,11 @@ export const MessageMarkdown: FC<MessageThoughtWrapperProps> = ({ children, isSt
                     onClick={() => !isStreaming && setIsCollapsed(!isCollapsed)}
                     style={{ cursor: !isStreaming ? 'pointer' : 'default' }}
                 >
-                    <Markdown>{children}</Markdown>
+                    <InternalMarkdown>{children}</InternalMarkdown>
                 </div>
             </div>
         );
     }
 
-    return <Markdown>{children}</Markdown>;
+    return <InternalMarkdown>{children}</InternalMarkdown>;
 };

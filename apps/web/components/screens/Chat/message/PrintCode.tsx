@@ -1,10 +1,10 @@
-import { Markdown } from "./text/markdown";
+import { InternalMarkdown } from "./text/markdown";
 
 
 export const PrintCode = ({ code }: { code: string }) => {
     return (
-        <Markdown>
+        <InternalMarkdown>
             {code}
-        </Markdown>
+        </InternalMarkdown>
     );
 };

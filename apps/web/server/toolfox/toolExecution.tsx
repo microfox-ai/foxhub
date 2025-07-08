@@ -11,6 +11,7 @@ import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
 import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 import { prisma } from "@/prisma/prisma";
+import { getMicrofoxCharacter, getMicrofoxPersonality } from "../hellofox/_prompts";
 
 const toolExecutionAgent = new AiRouter<any, any, any, any>();
 
@@ -122,6 +123,12 @@ toolExecutionAgent.agent("/", async (ctx) => {
         system:
             `You are called Microfox, a helpful assistant that can user with his tasks.
             You are given the following tools which you can call as you see fit.
+            ${getMicrofoxCharacter()}
+            ${getMicrofoxPersonality()}
+
+            Output:
+            If its a small conversation, respond in small concise sentences.
+            If its a task, respond in a detailed manner (output a markdown formatted response, include tables whene necessary).
             
             ${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
             `,

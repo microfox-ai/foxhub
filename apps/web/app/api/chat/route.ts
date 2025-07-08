@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   // );
   const revalidatePath = lastMessage?.metadata?.revalidatePath;
 
-  return microfoxRouter.handle(
+  const response = microfoxRouter.handle(
     revalidatePath ? revalidatePath : "/" + minionFlow,
     {
       request: {
@@ -40,4 +40,5 @@ export async function POST(req: Request) {
       },
     }
   );
+  return response;
 }

@@ -125,7 +125,7 @@ const ChatHeader = ({
 
       <div className="col-span-4 flex justify-start">
         {messages.length > 0 && flowTabs.length > 1 && (
-          <TabsList className="relative flex bg-gray-100 p-[3px] h-11 rounded-lg">
+          <TabsList className="relative  flex bg-gray-100 p-[3px] h-11 rounded-lg">
             {flowTabs.map((tab) => (
               <TabsTrigger
                 key={`tab-${tab.value}`}

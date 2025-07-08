@@ -40,6 +40,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
   const { selectedRequest, mutateSelectedClientRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
+  const [toolMode, setToolMode] = useState<("fast" | "deep")>("fast");
 
   const { user } = useAuth();
 
@@ -374,6 +375,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     lastKnownMinionFlow,
     input,
     setInput,
+    toolMode,
+    setToolMode,
   };
 }
 

@@ -342,6 +342,7 @@ export interface ApiMcp {
   created_at: string;
   updated_at: string;
   openApiSchema?: any;
+  metadata?: any;
   tools?: QueryApisResult[];
 }
 
@@ -358,6 +359,7 @@ export async function findApiMcps({
 }): Promise<ApiMcp[]> {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log("Embedding query", query);
     const embedding = await embed(query);
 
     const { data: packages, error } = await supabase.rpc(MATCH_MCP_RPC, {

@@ -569,3 +569,16 @@ model EventWatcher {
   @@map("event_watchers")
 }
 
+model SubdomainRedirect {
+  id          String      @id @default(cuid())
+  subdomain   String      @unique
+  rewritePath String
+  rewriteType String
+  hostedOn    String
+  description String?
+  enabled     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String?
+}
+

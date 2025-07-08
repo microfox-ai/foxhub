@@ -1,16 +1,10 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
+import { chain } from "./utils/middleware/chain";
+import { subdomainRerouting } from "./utils/middleware/subdomain";
+import { mainMiddleware } from "./utils/middleware/main";
 
-export async function middleware(request: NextRequest) {
-  // Skip auth check for policy pages
-  if (
-    request.nextUrl.pathname.startsWith("/policies/") ||
-    request.nextUrl.pathname.startsWith("/blog")
-  ) {
-    return;
-  }
-  return await updateSession(request);
-}
+export const middleware = chain([mainMiddleware, subdomainRerouting]);
 
 export const config = {
   matcher: [

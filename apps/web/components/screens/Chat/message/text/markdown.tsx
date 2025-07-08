@@ -25,23 +25,26 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
     ol: ({ node, children, ...props }: any) => {
       return (
-        <ol className="list-decimal list-inside ml-4" {...props}>
+        <ol className="list-decimal list-outside ml-4 my-2" {...props}>
           {children}
         </ol>
       );
     },
     li: ({ node, children, ...props }: any) => {
-      return (
-        <li className="py-1" {...props}>
-          {children}
-        </li>
-      );
+      return <li {...props}>{children}</li>;
     },
     ul: ({ node, children, ...props }: any) => {
       return (
-        <ul className="list-decimal list-inside ml-4" {...props}>
+        <ul className="list-disc list-outside ml-4 my-2" {...props}>
           {children}
         </ul>
+      );
+    },
+    p: ({ node, children, ...props }: any) => {
+      return (
+        <p className="my-1" {...props}>
+          {children}
+        </p>
       );
     },
     strong: ({ node, children, ...props }: any) => {
@@ -59,12 +62,12 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       rehypePlugins={[rehypeRaw]}
       components={components}
     >
-      {children.replace(/\n/g, "\n")}
+      {children}
     </ReactMarkdown>
   );
 };
 
-export const Markdown = React.memo(
+export const InternalMarkdown = React.memo(
   NonMemoizedMarkdown,
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );

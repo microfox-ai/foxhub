@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { FileText, Target, TextQuote, Edit } from "lucide-react";
 import { useState } from "react";
 import { ActionButtons } from "../../buttons_list/ActionButtons";
-import { Markdown } from "../../../text/markdown";
+import { InternalMarkdown } from "../../../text/markdown";
 import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskInstanceMetaProvider";
 import { Button } from "@/components/ui/button";
 import { EditTaskInfoDialog } from "./EditTaskInfoDialog";
@@ -88,9 +88,9 @@ export const TaskInfo = ({
                                 }}>
                                     {isExpanded ? (
                                         <div className="pl-7 text-sm text-gray-600">
-                                            <Markdown>
+                                            <InternalMarkdown>
                                                 {taskInfo?.[key] || ""}
-                                            </Markdown>
+                                            </InternalMarkdown>
                                         </div>
                                     ) : (
                                         <span className="tracking-base pl-7 text-sm text-gray-600 line-clamp-2">

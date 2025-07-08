@@ -22,7 +22,7 @@ chatManager.use("/", async (ctx, next) => {
     minionFlow: MinionFlow.ChatFlow,
   });
   response.writeMessageMetadata({
-    loader: "Thinking..",
+    toolMode: ctx.request.toolMode || "fast",
   });
   return next();
 });
@@ -37,7 +37,9 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
   ctx.state.clientRequest = clientRequest;
   if (
     clientRequest &&
-    !clientRequest?.title &&
+    (!clientRequest?.title ||
+      clientRequest?.title?.trim()?.length === 0 ||
+      clientRequest?.title === "Untitled") &&
     ctx.request.messages.length > 3
   ) {
     console.log("generating title", clientRequest);
@@ -51,6 +53,7 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
       system: `
         You are a helpful assistant that can generate a title for a chat session.
         Generate a 2-5 word title for the chat session.
+        Only output the title, no other text.
         `,
       prompt: `
         Generate a title for the following chat session:
@@ -64,6 +67,12 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
     });
 
     ctx.state.clientRequest = updatedClientRequest;
+  }
+
+  if (ctx.request.toolMode == "fast") {
+    console.log("calling toolSelection", ctx.request.toolMode);
+    await ctx.next.callAgent("/toolSelection");
+    return;
   }
 
   console.log("calling toolSelection", ctx.request.params, ctx.request);

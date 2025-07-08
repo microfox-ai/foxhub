@@ -32,7 +32,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     const [popoverOpen, setPopoverOpen] = useState(false);
 
     const { data: packageInfos, mutate: mutatePackageInfos } = useSWR<Package[]>(
-        auth ? `/api/packages/infos?packageNames=${auth.secrets.map(s => s.packageName).join(",")}` : null,
+        auth ? `/api/packages/infos?packageNames=${auth?.secrets?.map(s => s.packageName).join(",")}` : null,
         async (url: string) => {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Failed to fetch packages");
@@ -41,12 +41,12 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
         revalidateOnFocus: false,
     });
 
-    const isSinglePackage = stateAuth?.secrets.length === 1;
+    const isSinglePackage = stateAuth?.secrets?.length === 1;
     const singlePackageSecret = stateAuth?.secrets[0];
     const singlePackage = packageInfos?.find(p => p.name === singlePackageSecret?.packageName);
     const selectedSinglePackageSecret = singlePackageSecret?.secrets.find(s => s.id === singlePackageSecret?.selectedSecretId);
 
-    const missingSecrets = stateAuth?.secrets.filter(s => !s.selectedSecretId);
+    const missingSecrets = stateAuth?.secrets?.filter(s => !s.selectedSecretId);
 
     useEffect(() => {
         if (auth) {

@@ -1,6 +1,9 @@
 import { MinionType } from "@/components/screens/hooks/convertors";
 import { prisma } from "@/prisma/prisma";
-import { findLastElementWith } from "@/utils/helpers/array";
+import {
+  cleanUiMessageParts,
+  findLastElementWith,
+} from "@/utils/helpers/array";
 import {
   getClientRequest,
   getTaskInstanceMeta,
@@ -38,26 +41,26 @@ taskQueryAgent.agent("/", async (ctx) => {
   }
   const { clientRequestId } = request;
   // get all taskQuery messages + this 1 last message in the queue (hopefully the user message)
-  request.messages = request.messages.filter((m, index: number) => {
-    const minion = (m.metadata as any)?.minion;
-    return (
-      minion?.value === MinionType.TaskQueryFox ||
-      index === request.messages.length - 1
-    );
-  });
+  // request.messages = request.messages.filter((m, index: number) => {
+  //   const minion = (m.metadata as any)?.minion;
+  //   return (
+  //     minion?.value === MinionType.TaskQueryFox ||
+  //     index === request.messages.length - 1
+  //   );
+  // });
 
-  request.messages = request.messages.map((m, index: number) => ({
-    ...m,
-    parts:
-      index === request.messages.length - 1
-        ? m.parts
-        : [
-            findLastElementWith(m.parts, (p: any) => p.type === "text") ?? {
-              type: "text",
-              text: "",
-            },
-          ],
-  }));
+  // request.messages = request.messages.map((m, index: number) => ({
+  //   ...m,
+  //   parts:
+  //     index === request.messages.length - 1
+  //       ? m.parts
+  //       : [
+  //           findLastElementWith(m.parts, (p: any) => p.type === "text") ?? {
+  //             type: "text",
+  //             text: "",
+  //           },
+  //         ],
+  // }));
 
   try {
     response.writeMessageMetadata({
@@ -109,25 +112,39 @@ taskQueryAgent.agent("/", async (ctx) => {
     );
     //console.log(toolSet.tools, "client");
 
-    response.writeCustomTool({
-      toolName: "toolsRequiringConfirmation",
-      input: {
-        list: [],
-        allMetadata: toolSet.metadata,
-      },
-      output: {
-        type: "ui",
-        objectType: "toolsRequiringConfirmation",
-        persona: "taskQueryFox",
-        text: "Tools Requiring Confirmation",
-      },
-    });
+    // response.writeCustomTool({
+    //   toolName: "toolsRequiringConfirmation",
+    //   input: {
+    //     list: [],
+    //     allMetadata: toolSet.metadata,
+    //   },
+    //   output: {
+    //     type: "ui",
+    //     objectType: "toolsRequiringConfirmation",
+    //     persona: "taskQueryFox",
+    //     text: "Tools Requiring Confirmation",
+    //   },
+    // });
 
-    let processedMessages = await client.parseHitl(request.messages);
+    request.messages =
+      request.messages.length > 7
+        ? request.messages.slice(-7)
+        : request.messages;
+
+    console.log(cleanUiMessageParts(request.messages), "request.messages");
+    let processedMessages = await client.parseHitl(
+      cleanUiMessageParts(request.messages),
+      ctx.response,
+      async (_authObject) => {
+        return _authObject;
+      }
+    );
+
     processedMessages = processedMessages.map((m) => ({
       ...m,
       parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
     }));
+
     // console.log(
     //   request.messages[0],
     //   JSON.stringify(processedMessages[processedMessages.length - 1]?.parts),
@@ -157,7 +174,7 @@ taskQueryAgent.agent("/", async (ctx) => {
 
       If the tool has a lot of information, output into a neat markdown format.
     `,
-      messages: convertToModelMessages(processedMessages),
+      messages: convertToModelMessages(cleanUiMessageParts(processedMessages)),
       tools: toolSet.tools,
       toolChoice: "auto",
       stopWhen: (s) => client.isHitlStep()(s),

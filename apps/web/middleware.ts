@@ -17,6 +17,7 @@ export const config = {
      * Feel free to modify this pattern to include more paths.
      */
     //"//",
-    "/((?!_next/static|_next/image|favicon.ico|widget|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)",
+    //"/((?!_next/static|_next/image|favicon.ico|widget|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)",
+    "/((?!widget).*)",
   ],
 };

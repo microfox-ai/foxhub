@@ -41,5 +41,13 @@ export const mainMiddleware = async (
     return next();
   }
 
+  if (
+    request.nextUrl.href.match(
+      /((?!_next\/static|_next\/image|favicon\.ico|widget|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)/
+    )
+  ) {
+    return NextResponse.next();
+  }
+
   return updateSession(request);
 };

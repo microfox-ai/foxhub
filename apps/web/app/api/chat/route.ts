@@ -2,7 +2,7 @@ import { MinionFlow, MinionType } from "@/components/screens/hooks/convertors";
 import { microfoxRouter } from "@/server/microfoxRouter";
 import { UIMessage } from "ai";
 
-export const maxDuration = 600;
+export const maxDuration = 6000;
 
 export async function POST(req: Request) {
   const body = await req.json();

@@ -149,18 +149,12 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     if (chatOptions.messages.length === 0) {
       return MinionType.Unknown;
     }
-    if (chatOptions.status !== "ready") {
-      return MinionType.Unknown;
-    }
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];
     const minionTypeAnnotation: any = lastMessage?.metadata?.minionType;
     return minionTypeAnnotation ?? MinionType.Unknown;
   }, [chatOptions.messages]);
   const lastKnownMinionFlow = useMemo(() => {
     if (chatOptions.messages.length === 0) {
-      return MinionFlow.Unknown;
-    }
-    if (chatOptions.status !== "ready") {
       return MinionFlow.Unknown;
     }
     const lastMessage = chatOptions.messages[chatOptions.messages.length - 1];

@@ -12,6 +12,7 @@ import { models } from "../models";
 import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 import { prisma } from "@/prisma/prisma";
 import { getMicrofoxCharacter, getMicrofoxPersonality } from "../hellofox/_prompts";
+import { insertUiHitl } from "../ui/uiHitl";
 
 const toolExecutionAgent = new AiRouter<any, any, any, any>();
 
@@ -74,12 +75,14 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 }
             });
         }
+        toolPopulatedMcps = toolPopulatedMcps.filter((mcp: ApiMcp) => mcp?.openApiSchema != null && mcp?.openApiSchema != undefined && mcp?.openApiSchema?.paths != null && mcp?.openApiSchema?.paths != undefined && Object.keys(mcp?.openApiSchema?.paths).length > 0 && mcp.api_type === "package-sls");
 
+        console.log("toolPopulatedMcps", toolPopulatedMcps);
         const client = await createOpenApiToolset(toolPopulatedMcps?.map((mcp: ApiMcp) => {
             return {
                 schema: mcp.openApiSchema as any,
                 baseUrl: mcp.base_url,
-                name: mcp.package_name,
+                name: "pkg-" + mcp.package_name,
                 getAuth: async (options: AuthOptions) => {
                     const output = await fetchAuthSecrets(
                         options, {
@@ -106,13 +109,18 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
         const processedMessages = await client.parseHitl(
             cleanUiMessageParts(ctx.request.messages),
-            ctx.response,
-            async (_authObject) => {
-                const authFilledOutput = await getVariablesForAuthObject(_authObject, {
-                    clientRequest,
-                    refetchFromDb: true,
-                });
-                return authFilledOutput;
+            {
+                dataStream: ctx.response,
+                inserAuthVariables: async (_authObject: AuthObject) => {
+                    const authFilledOutput = await getVariablesForAuthObject(_authObject, {
+                        clientRequest,
+                        refetchFromDb: true,
+                    });
+                    return authFilledOutput;
+                },
+                mutateOutput: async (output, { part }) => {
+                    return await insertUiHitl(output, part);
+                }
             }
         );
 

@@ -56,7 +56,7 @@ export const ToolSpeed = () => {
                                         layoutId="activeTab"
                                         className="absolute -z-[1] inset-0 bg-white rounded-lg"
                                         animate={{
-                                            translateX: (toolMode === tab.value && toolMode === tab.value) ? 10 : 0
+                                            translateX: (toolMode === tab.value && toolMode === tab.value) ? 0 : 0
                                         }}
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                     />

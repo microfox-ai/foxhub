@@ -75,7 +75,7 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
     return;
   }
 
-  console.log("calling toolSelection", ctx.request.params, ctx.request);
+  console.log("calling toolSelection", ctx.request.params);
   const result = streamText({
     model: models.googleGeminiPro,
     system: `
@@ -110,7 +110,7 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
       })
     ),
     onStepFinish: (step) => {
-      console.log("step", step);
+      console.log("step", step.usage);
     },
     onFinish: (step) => {
       console.log("FULL USAGE", step.usage);

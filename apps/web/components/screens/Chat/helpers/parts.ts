@@ -20,6 +20,14 @@ export const getDisplayParts = (message: UIMessage<any, any, any>) => {
   });
 };
 
+export const getToolParts = (message: UIMessage<any, any, any>) => {
+  return message?.parts?.filter((part) => {
+    if (part.type.startsWith("tool-")) {
+      return true;
+    }
+  }) as ToolUIPart<any>[];
+};
+
 export const getUiParts = (message: UIMessage<any, any, any>) => {
   return message?.parts?.filter(
     (part) =>
@@ -35,4 +43,38 @@ export const getStickyUiParts = (parts: ToolUIPart<any>[]) => {
       ((part as any).output?.props?.isUISticky ||
         part.output?._humanIntervention)
   );
+};
+export const getLastActiveToolPart = (
+  message: import("ai").UIMessage<any, any, any>,
+  activePart: number
+): import("ai").ToolUIPart<any> | undefined => {
+  const displayParts = getDisplayParts(message);
+
+  if (!displayParts || displayParts.length === 0) {
+    return undefined;
+  }
+
+  if (activePart === displayParts.length - 1) {
+    const lastDisplayPart = displayParts[activePart];
+
+    if (lastDisplayPart && message.parts) {
+      const originalIndexOfLastDisplayPart =
+        message.parts.lastIndexOf(lastDisplayPart);
+
+      if (originalIndexOfLastDisplayPart > 0) {
+        for (let i = originalIndexOfLastDisplayPart - 1; i >= 0; i--) {
+          const part = message.parts[i];
+          if (
+            part &&
+            part.type.startsWith("tool-") &&
+            !part.type.startsWith("tool-ui-")
+          ) {
+            return part as import("ai").ToolUIPart<any>;
+          }
+        }
+      }
+    }
+  }
+
+  return undefined;
 };

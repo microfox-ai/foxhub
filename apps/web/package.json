@@ -44,7 +44,7 @@
     "@microfox/serverless-yml": "^1.1.0",
     "@microfox/slack-oauth": "^1.2.0",
     "@microfox/slack-web-tiny": "^1.4.2",
-    "@microfox/tool-kit": "^1.1.4",
+    "@microfox/tool-kit": "*",
     "@microfox/usage-pricing": "^0.2.0",
     "@microfox/usage-tracker": "^0.2.0",
     "@microfox/webhook-core": "^0.1.5",

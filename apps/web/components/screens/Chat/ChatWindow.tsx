@@ -22,6 +22,7 @@ import PublishTab from "./publish/PublishTab";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
+import { MessageProvider } from "./MessageProvider";
 
 export type AttachedMedia = {
   file: File;
@@ -273,9 +274,7 @@ export default function ChatWindowWithProvider() {
   return (
     <MicrofoxChatProvider clientRequest={selectedRequest}>
       <ChatUIProvider>
-        <ErrorBoundary>
-          <ChatWindow />
-        </ErrorBoundary>
+        <ChatWindow />
       </ChatUIProvider>
     </MicrofoxChatProvider>
   );

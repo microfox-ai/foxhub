@@ -6,6 +6,7 @@ import { MessageWrapper } from "./message/MessageWrapper";
 import { useChatUI } from "./ChatUiProvider";
 import { useMicrofoxChat } from "./MicrofoxChatProvider";
 import { getUiParts } from "./helpers/parts";
+import { MessageProvider } from "./MessageProvider";
 
 interface TabMessagesProps {
   isLoading: boolean;
@@ -54,21 +55,23 @@ export default function MessageList({
               key={update.id + index}
               className={`${index === messages.length - 1 ? "min-h-[calc(85vh-258px)]" : ""}`}
             >
-              <MessageWrapper
-                message={update}
-                index={index}
-                length={messages.length}
-                lastAnnotationIndices={lastAnnotationIndices}
-                renderDateSeperator={(currDate) =>
-                  renderDateSeparator(
-                    currDate,
-                    index > 0
-                      ?
-                      messages?.[index - 1]?.metadata?.createdAt
-                      : ""
-                  )
-                }
-              />
+              <MessageProvider message={update}>
+                <MessageWrapper
+                  message={update}
+                  index={index}
+                  length={messages.length}
+                  lastAnnotationIndices={lastAnnotationIndices}
+                  renderDateSeperator={(currDate) =>
+                    renderDateSeparator(
+                      currDate,
+                      index > 0
+                        ?
+                        messages?.[index - 1]?.metadata?.createdAt
+                        : ""
+                    )
+                  }
+                />
+              </MessageProvider>
             </div>
           );
         })

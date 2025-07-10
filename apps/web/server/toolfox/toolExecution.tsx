@@ -47,81 +47,82 @@ toolExecutionAgent.use("/", async (ctx, next) => {
 toolExecutionAgent.agent("/", async (ctx) => {
     const { request, state, response } = ctx;
 
-    const clientRequest = state.clientRequest as ClientRequest;
+    try {
+        const clientRequest = state.clientRequest as ClientRequest;
 
-    if (!clientRequest) {
-        throw new Error("Client request not found");
-    }
+        if (!clientRequest) {
+            throw new Error("Client request not found");
+        }
 
-    let toolPopulatedMcps = state.toolPopulatedMcps;
-    if (ctx.request.params?.toolPopulatedMcps) {
-        toolPopulatedMcps = ctx.request.params?.toolPopulatedMcps as ApiMcp[];
-        await prisma.chatAgenticState.upsert({
-            where: {
-                originClientRequestId: clientRequest.id,
-            },
-            update: {
-                state: {
-                    toolPopulatedMcps: toolPopulatedMcps,
+        let toolPopulatedMcps = state.toolPopulatedMcps;
+        if (ctx.request.params?.toolPopulatedMcps) {
+            toolPopulatedMcps = ctx.request.params?.toolPopulatedMcps as ApiMcp[];
+            await prisma.chatAgenticState.upsert({
+                where: {
+                    originClientRequestId: clientRequest.id,
+                },
+                update: {
+                    state: {
+                        toolPopulatedMcps: toolPopulatedMcps,
+                    }
+                },
+                create: {
+                    originClientRequestId: clientRequest.id,
+                    state: {
+                        toolPopulatedMcps: toolPopulatedMcps,
+                    }
                 }
-            },
-            create: {
-                originClientRequestId: clientRequest.id,
-                state: {
-                    toolPopulatedMcps: toolPopulatedMcps,
-                }
+            });
+        }
+
+        const client = await createOpenApiToolset(toolPopulatedMcps?.map((mcp: ApiMcp) => {
+            return {
+                schema: mcp.openApiSchema as any,
+                baseUrl: mcp.base_url,
+                name: mcp.package_name,
+                getAuth: async (options: AuthOptions) => {
+                    const output = await fetchAuthSecrets(
+                        options, {
+                        clientRequest,
+                        fillEncryptionKey: true,
+                        fillVariables: true
+                    });
+                    const authFilledOutput = await getVariablesForAuthObject(output, {
+                        clientRequest,
+                        refetchFromDb: false,
+                    });
+                    return authFilledOutput;
+                },
+                cleanAuth: cleanSecretsForAuthObject,
             }
-        });
-    }
+        }));
 
-    const client = await createOpenApiToolset(toolPopulatedMcps?.map((mcp: ApiMcp) => {
-        return {
-            schema: mcp.openApiSchema as any,
-            baseUrl: mcp.base_url,
-            name: mcp.package_name,
-            getAuth: async (options: AuthOptions) => {
-                const output = await fetchAuthSecrets(
-                    options, {
+        const toolSet = await client.tools({
+            disableAllExecutions: true,
+        });
+
+        console.log("toolSet", Object.keys(toolSet.tools));
+        //return;
+
+        const processedMessages = await client.parseHitl(
+            cleanUiMessageParts(ctx.request.messages),
+            ctx.response,
+            async (_authObject) => {
+                const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                     clientRequest,
-                    fillEncryptionKey: true,
-                    fillVariables: true
-                });
-                const authFilledOutput = await getVariablesForAuthObject(output, {
-                    clientRequest,
-                    refetchFromDb: false,
+                    refetchFromDb: true,
                 });
                 return authFilledOutput;
-            },
-            cleanAuth: cleanSecretsForAuthObject,
-        }
-    }));
+            }
+        );
 
-    const toolSet = await client.tools({
-        disableAllExecutions: true,
-    });
-
-    console.log("toolSet", Object.keys(toolSet.tools));
-    //return;
-
-    const processedMessages = await client.parseHitl(
-        cleanUiMessageParts(ctx.request.messages),
-        ctx.response,
-        async (_authObject) => {
-            const authFilledOutput = await getVariablesForAuthObject(_authObject, {
-                clientRequest,
-                refetchFromDb: true,
-            });
-            return authFilledOutput;
-        }
-    );
-
-    const stream = streamText({
-        model: models.claude35Sonnet,
-        messages: convertToModelMessages(cleanUiMessageParts(processedMessages)),
-        tools: toolSet.tools,
-        toolChoice: "auto",
-        system:
-            `You are called Microfox, a helpful assistant that can user with his tasks.
+        const stream = streamText({
+            model: models.claude35Sonnet,
+            messages: convertToModelMessages(cleanUiMessageParts(processedMessages)),
+            tools: toolSet.tools,
+            toolChoice: "auto",
+            system:
+                `You are called Microfox, a helpful assistant that can user with his tasks.
             You are given the following tools which you can call as you see fit.
             ${getMicrofoxCharacter()}
             ${getMicrofoxPersonality()}
@@ -129,24 +130,36 @@ toolExecutionAgent.agent("/", async (ctx) => {
             Output:
             If its a small conversation, respond in small concise sentences.
             If its a task, respond in a detailed manner (output a markdown formatted response, include tables whene necessary).
-            
-            ${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
             `,
-        stopWhen: (s) => {
-            if (s.steps.length > 0) {
-                console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults);
+            //${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
+            stopWhen: (s) => {
+                if (s.steps.length > 0) {
+                    console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults);
+                }
+                return client.isHitlStep()(s);
+            },
+            onStepFinish: async (step) => {
+                console.log("step", step.usage);
+            },
+            onError: (error) => {
+                console.log("error", error);
             }
-            return client.isHitlStep()(s);
-        },
-        onStepFinish: async (step) => {
-            console.log("step", step.usage);
-        }
-    });
+        });
 
-    ctx.response.merge(stream.toUIMessageStream());
+        ctx.response.merge(stream.toUIMessageStream({ sendFinish: false, sendStart: false }));
 
-    await stream.text;
 
+        // ctx.response.writeMessageMetadata({
+        //     loader: "Done !",
+        // })
+
+        //console.log("strem closed", text);
+    } catch (error) {
+        console.log("error", error);
+        ctx.response.writeMessageMetadata({
+            error: error instanceof Error ? error.message : "Unknown error",
+        })
+    }
 });
 
 

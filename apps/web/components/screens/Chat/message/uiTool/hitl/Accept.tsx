@@ -37,8 +37,8 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
             </div> */}
             {Object.keys(tool.input)?.length > 0 &&
                 (showJson ? (
-                    <div className="relative">
-                        <pre className="font-mono bg-gray-100 p-2 rounded-xl text-xs overflow-x-auto">
+                    <div className="relative max-w-[380px] self-stretch">
+                        <pre className="font-mono bg-gray-100 p-2 max-w-full w-full max-h-[200px] overflow-y-auto rounded-xl text-xs whitespace-pre-wrap">
                             {JSON.stringify(tool.input, null, 2)}
                         </pre>
                         <Button

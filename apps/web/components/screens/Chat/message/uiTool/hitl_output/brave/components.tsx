@@ -27,7 +27,7 @@ export const BraveSourceBanner = ({
         if (scope.current) {
             const controls = animate(
                 scope.current,
-                { x: ["0%", "-50%"] },
+                { x: ["0%", "-200%"] },
                 {
                     ease: "linear",
                     duration: 20,
@@ -98,7 +98,7 @@ export const BraveSourceBanner = ({
                             </p>
                         )}
 
-                        <Link href={source.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-start gap-1 pt-1 border-t border-neutral-200 mt-1">
+                        <Link href={source.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-start gap-1 pt-3 border-t border-neutral-200 mt-1 hover:underline">
                             <span className="text-xs text-neutral-500">
                                 {new URL(source.url).hostname}
                             </span>

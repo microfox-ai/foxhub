@@ -139,7 +139,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   });
 
   useEffect(() => {
-    if (serverMessages && chatOptions.messages.length === 0 && chatOptions.status === "ready") {
+    if (serverMessages && chatOptions.messages.length === 0) {
       chatOptions.setMessages(serverMessages as any);
     }
   }, [serverMessages, chatOptions.messages, chatOptions.status]);

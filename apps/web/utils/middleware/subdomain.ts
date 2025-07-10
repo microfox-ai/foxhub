@@ -59,16 +59,18 @@ export async function subdomainRerouting(
       !subdomain ||
       subdomain.length <= 3 || // www. or axy.
       hostname === APP_DOMAIN || // aidouse.com
-      subdomain === APP_DOMAIN
+      subdomain === APP_DOMAIN ||
+      subdomain === "staging"
       //hostname.includes('vercel.app') ||
       //path.includes('/api/')
     ) {
-      if (request.nextUrl.pathname.startsWith("/sites")) {
-        return updateSession(request);
-      } else if (path === "/") {
-        return NextResponse.redirect(`${APP_BASE_URL}/home`);
-      }
-      return next();
+      // if (request.nextUrl.pathname.startsWith("/sites")) {
+      //   return updateSession(request);
+      // } else if (path === "/") {
+      //   return NextResponse.redirect(`${APP_BASE_URL}/home`);
+      // }
+      return updateSession(request);
+      //return next();
     }
 
     /// ---- SUBDOMAIN ROUTING ---- ///

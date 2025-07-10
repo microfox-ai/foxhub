@@ -8,6 +8,7 @@ export const InfiniteMovingCards = ({
     items,
     direction = 'left',
     speed = 'fast',
+    speedDuration,
     pauseOnHover = true,
     className,
 }: {
@@ -16,6 +17,7 @@ export const InfiniteMovingCards = ({
     speed?: 'fast' | 'normal' | 'slow';
     pauseOnHover?: boolean;
     className?: string;
+    speedDuration?: number;
 }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const scrollerRef = React.useRef<HTMLUListElement>(null);
@@ -26,18 +28,6 @@ export const InfiniteMovingCards = ({
     const [start, setStart] = useState(false);
     function addAnimation() {
         if (containerRef.current && scrollerRef.current) {
-            const scrollerContent = Array.from(scrollerRef.current.children);
-
-            scrollerContent.forEach((item) => {
-                const duplicatedItem = item.cloneNode(true);
-                if (duplicatedItem instanceof Element) {
-                    duplicatedItem.setAttribute('aria-hidden', 'true'); //for screen readers
-                }
-                if (scrollerRef.current) {
-                    scrollerRef.current.appendChild(duplicatedItem);
-                }
-            });
-
             getDirection();
             getSpeed();
             setStart(true);
@@ -60,7 +50,9 @@ export const InfiniteMovingCards = ({
     };
     const getSpeed = () => {
         if (containerRef.current) {
-            if (speed === 'fast') {
+            if (speedDuration) {
+                containerRef.current.style.setProperty('--animation-duration', `${speedDuration}s`);
+            } else if (speed === 'fast') {
                 containerRef.current.style.setProperty('--animation-duration', '20s');
             } else if (speed === 'normal') {
                 containerRef.current.style.setProperty('--animation-duration', '40s');
@@ -85,6 +77,7 @@ export const InfiniteMovingCards = ({
                     pauseOnHover && 'hover:[animation-play-state:paused]',
                 )}
             >
+                {items}
                 {items}
             </ul>
         </div>

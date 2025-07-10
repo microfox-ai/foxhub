@@ -40,19 +40,26 @@ export const mainMiddleware = async (
     subdomain &&
     subdomain.length > 3 &&
     subdomain !== "staging" &&
-    subdomain !== "microfox"
+    subdomain !== "microfox" &&
+    subdomain !== "localhost:3000"
   ) {
     console.log("bypassing for subdomain", subdomain);
     return next();
   }
 
+  const { pathname } = request.nextUrl;
+
   if (
-    request.nextUrl.href.match(
-      /((?!_next\/static|_next\/image|favicon\.ico|widget|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$).*)/
-    )
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.includes("widget") ||
+    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$/.test(pathname)
   ) {
     return NextResponse.next();
   }
+
+  console.log("updating session for", request.nextUrl.href);
 
   return updateSession(request);
 };

@@ -27,14 +27,16 @@ const ActionButton = ({
     <TooltipProvider>
         <Tooltip>
             <TooltipTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onClick}
-                    className={cn("hover:bg-gray-100", className)}
-                >
-                    {icon}
-                </Button>
+                <div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onClick}
+                        className={cn("hover:bg-gray-100", className)}
+                    >
+                        {icon}
+                    </Button>
+                </div>
             </TooltipTrigger>
             <TooltipContent>
                 <p>{tooltip}</p>

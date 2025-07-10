@@ -6,7 +6,7 @@ const EXCLUDED_PARTS = ["tool-", "step-start"];
 const MUST_INCLUDE_PARTS = ["tool-ui-"];
 
 export const getDisplayParts = (message: UIMessage<any, any, any>) => {
-  return message.parts?.filter((part) => {
+  return message?.parts?.filter((part) => {
     if (part.type.startsWith("tool-ui-")) {
       if ((part as any).output?.props?.isUISticky) {
         return false;
@@ -21,7 +21,7 @@ export const getDisplayParts = (message: UIMessage<any, any, any>) => {
 };
 
 export const getUiParts = (message: UIMessage<any, any, any>) => {
-  return message.parts?.filter(
+  return message?.parts?.filter(
     (part) =>
       part.type.startsWith("tool-ui-") ||
       (part as any).output?._humanIntervention

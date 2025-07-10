@@ -82,7 +82,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         }
       }
     }),
-    resume: true,
+    resume: false,
     messages: (serverMessages as any[]) || [],
     ...userChatOptions,
     id: clientRequest?.id,
@@ -95,7 +95,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         let _minionType;
         //add this message to the db
         if (
-          message.parts?.length === 0 || !message.role || !message.parts || !message.parts[0]
+          message?.parts?.length === 0 || !message.role || !message.parts || !message.parts[0]
         ) {
           console.log("[onFinish] Message has no parts, returning.");
           return;

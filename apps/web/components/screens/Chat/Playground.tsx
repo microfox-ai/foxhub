@@ -8,5 +8,5 @@ export const PlaygroundPage = () => {
   if (!user) {
     return null;
   }
-  return <ChatWindow userId={user.id} isLoading={false} />;
+  return <ChatWindow />;
 };

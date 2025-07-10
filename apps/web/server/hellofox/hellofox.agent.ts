@@ -48,7 +48,7 @@ helloFoxAgent.agent("/", async (ctx) => {
   request.messages = request.messages
     .map((m: any) => {
       const lastTextPart = findLastElementWith(
-        m.parts,
+        m?.parts,
         (p: any) => p?.type === "text"
       );
       if (!lastTextPart) return null; // Return null if no text part is found

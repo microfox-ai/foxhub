@@ -1,4 +1,5 @@
 "use client";
+
 import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -13,7 +14,6 @@ import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider"
 import { TabUiProvider } from "../providers/TabUiProvider";
 
 export const RequestPage = () => {
-  const [tab, setTab] = useState("requests");
   const { user } = useAuth();
   const {
     isLeftCollapsed,
@@ -61,12 +61,6 @@ export const RequestPage = () => {
           <ResizablePanel defaultSize={84}>
             <div className="h-full">
               <ChatWindow
-                userId={user.id}
-                onCollapse={handleLeftCollapse}
-                isCollapsed={isLeftCollapsed}
-                isLoading={isLoading}
-                clientRequest={selectedRequest ?? undefined}
-                projectTitle={selectedProject?.name}
               />
             </div>
           </ResizablePanel>

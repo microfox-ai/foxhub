@@ -121,8 +121,8 @@ export const MessageWrapper = ({
               </div>
             )} */}
 
-            {message.parts &&
-              message.parts.length > 0 &&
+            {message?.parts &&
+              message?.parts?.length > 0 &&
               displayParts.length === 1 && (
                 <DisplayPart
                   part={displayParts?.[0] as any}

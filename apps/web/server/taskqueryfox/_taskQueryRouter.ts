@@ -142,7 +142,7 @@ taskQueryAgent.agent("/", async (ctx) => {
 
     processedMessages = processedMessages.map((m) => ({
       ...m,
-      parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
+      parts: m?.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
     }));
 
     // console.log(

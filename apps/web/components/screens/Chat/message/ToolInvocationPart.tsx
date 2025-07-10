@@ -38,7 +38,7 @@ export const ToolInvocationPart = ({
         if (m.id === messageId) {
           return {
             ...m,
-            parts: m.parts?.filter(
+            parts: m?.parts?.filter(
               (p: any) => JSON.stringify(p) !== JSON.stringify(part)
             ),
           };

@@ -17,20 +17,20 @@ import { useClientProject } from "../providers/ClientProjectProvider";
 import { constructAutoSubmitBody, constructAutoSubmitMessage } from "./message/messageHelpers";
 import { TabsList } from "@/components/ui/tabs";
 import { ToolSpeed } from "./input/ToolSpeed";
+import { useAuth } from "@/components/auth/AuthProvider";
 interface ChatInputBoxProps {
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
-  userId: string;
   className?: string;
   lastMessage?: UIMessage;
 }
 
 export default function ChatInputBox({
   messageStatus,
-  userId,
   lastMessage,
   className,
 }: ChatInputBoxProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
   const { selectedRequest, submitMetadata, setSubmitMetadata, autoSubmit, setAutoSubmit } = useClientProject();
@@ -50,7 +50,7 @@ export default function ChatInputBox({
     if (e.target.files) {
       await handleFileChange(
         e.target.files,
-        userId,
+        user?.id ?? "",
         "customBots/clientMessages"
       );
       e.target.value = "";

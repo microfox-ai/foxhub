@@ -36,7 +36,12 @@ export const mainMiddleware = async (
   const { subdomain } = await fetchSubdomain(request);
 
   // bypass for all subdomain with length > 3 routes i.e public hosted pages or subdomain hosted pages.
-  if (subdomain && subdomain.length > 3) {
+  if (
+    subdomain &&
+    subdomain.length > 3 &&
+    subdomain !== "staging" &&
+    subdomain !== "microfox"
+  ) {
     console.log("bypassing for subdomain", subdomain);
     return next();
   }

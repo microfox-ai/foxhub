@@ -84,7 +84,7 @@ export const RequestPage = () => {
           >
             <div className="h-full py-4 px-2">
               <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
-                <PreviewWindow />
+                {/* <PreviewWindow /> */}
               </div>
             </div>
           </ResizablePanel>

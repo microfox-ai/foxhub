@@ -2,27 +2,23 @@
 
 import { ButtonSCN } from "@/components/elements/Button";
 import { Tabs } from "@/components/ui/tabs";
-import { ClientRequest } from "@prisma/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronsRight, Loader2, PanelRightIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { ChatUIProvider, useChatUI } from "./ChatUiProvider";
+import { useClientProject } from "../providers/ClientProjectProvider";
 import { useLayout } from "../providers/LayoutProvider";
-import { MicrofoxChatProvider, useMicrofoxChat } from "./MicrofoxChatProvider";
-import { TabUiProvider, useTabUi } from "../providers/TabUiProvider";
+import { useTabUi } from "../providers/TabUiProvider";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
+import { ChatUIProvider, useChatUI } from "./ChatUiProvider";
 import MessageList from "./MessageList";
-import ConfigureTab from "./dashboard/ConfigureTab";
+import { MicrofoxChatProvider, useMicrofoxChat } from "./MicrofoxChatProvider";
 import CodeStudio from "./code/CodeStudio";
-import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import ConfigureTab from "./dashboard/ConfigureTab";
 import { HistoryTab } from "./history/HistoryTab";
-import { useRouter } from "next/navigation";
 import PublishTab from "./publish/PublishTab";
-import { useClientProject } from "../providers/ClientProjectProvider";
-import { useAuth } from "@/components/auth/AuthProvider";
-import ErrorBoundary from "@/components/common/ErrorBoundary";
-import { MessageProvider } from "./MessageProvider";
 
 export type AttachedMedia = {
   file: File;

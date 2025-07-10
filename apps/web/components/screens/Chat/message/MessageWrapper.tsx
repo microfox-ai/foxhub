@@ -120,9 +120,6 @@ export const MessageWrapper = ({
             {displayParts.length > 1 && (
               <div className={`${message.role === "user" ? "w-[400px]" : "w-[500px]"} p-0 bg-transparent`}>
                 <StepBanner />
-                {toolParts && toolParts?.length > 0 && (
-                  <RenderToolBanner />
-                )}
                 {displayParts?.[activePart] && (
                   <DisplayPart
                     part={displayParts?.[activePart]}
@@ -131,6 +128,9 @@ export const MessageWrapper = ({
                     lastAnnotationIndices={lastAnnotationIndices}
                     messageIndex={index}
                   />
+                )}
+                {toolParts && toolParts?.length > 0 && (
+                  <RenderToolBanner />
                 )}
                 {/* {message.customTools?.map((toolInvocation, idx) => (
                   <ToolInvocationPart

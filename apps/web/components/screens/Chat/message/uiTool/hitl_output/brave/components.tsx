@@ -111,7 +111,7 @@ export const BraveSourceBanner = ({
 
         return (
             <div
-                className="w-full overflow-x-hidden [mask-image:linear-gradient(to_right,transparent,white_10%,white_90%,transparent)]"
+                className="w-full my-4 mb-8 overflow-x-hidden [mask-image:linear-gradient(to_right,transparent,white_10%,white_90%,transparent)]"
                 onMouseEnter={() => animationControls?.pause()}
                 onMouseLeave={() => animationControls?.play()}
             >

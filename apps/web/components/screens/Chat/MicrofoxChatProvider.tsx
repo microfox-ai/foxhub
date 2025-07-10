@@ -128,12 +128,12 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     onError: (error) => {
       console.error("[onError] Chat error:", error);
       if (!IN_DEV) {
-        slackBotSdk.sendMessage({
-          text: `Reporting Error in Chat: ${error}`,
-          channel: MySlackChannels.microfox_updates,
-          username: "Microfox",
-          icon_url: MICROFOX_LOGO,
-        })
+        // slackBotSdk.sendMessage({
+        //   text: `Reporting Error in Chat: ${error}`,
+        //   channel: MySlackChannels.microfox_updates,
+        //   username: "Microfox",
+        //   icon_url: MICROFOX_LOGO,
+        // })
       }
     },
   });

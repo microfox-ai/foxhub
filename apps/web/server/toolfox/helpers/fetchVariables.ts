@@ -7,6 +7,7 @@ import { Bot } from "@/components/screens/mybots/providers/types";
 import { templateEnvsFromTaskIntegrations } from "@/server/buildfox/helper/templateEnvsFromTaskIntegrations";
 import { codeTemplateType } from "@/server/convertfox/helpers/types";
 import { UIMessage } from "ai";
+import { PackageInfoHelper } from "@/utils/services/embeddings/packageSearch";
 
 export const fetchSecretVariables = (
   secret: ClientSecret
@@ -182,7 +183,12 @@ export const fetchAuthSecrets = async (
       variables: [],
     };
   }
-  const dbSecrets = await prisma.clientSecret.findMany({
+
+  // check if package is even needs the secrets (by check the package-info)
+  const packageInfosPromise = PackageInfoHelper.getPackageInfos(
+    options.packages.map((p) => p.packageName)
+  );
+  const dbSecretsPromise = prisma.clientSecret.findMany({
     where: {
       packageName: {
         in: options.packages?.map((p) => p.packageName) ?? [],
@@ -196,6 +202,35 @@ export const fetchAuthSecrets = async (
       updatedAt: "desc",
     },
   });
+  const [packageInfos, dbSecrets] = await Promise.all([
+    packageInfosPromise,
+    dbSecretsPromise,
+  ]);
+  const finalPackages = options.packages.filter((p) => {
+    const packageInfo = packageInfos.find((pi) => pi.name === p.packageName);
+    const reqVariables: any[] | undefined = packageInfo?.constructors?.reduce(
+      (acc, c) => {
+        if (
+          c.auth === "oauth2" &&
+          c.internalKeys &&
+          c.internalKeys?.length > 0
+        ) {
+          acc = acc.concat(c.internalKeys);
+        }
+        if (
+          c.auth === "apikey" &&
+          c.requiredKeys &&
+          c.requiredKeys?.length > 0
+        ) {
+          acc = acc.concat(c.requiredKeys);
+        }
+        return acc;
+      },
+      [] as any[]
+    );
+    return reqVariables && reqVariables.length > 0;
+  });
+
   const output: HitlAuthObject = {
     variables: [],
     encryptionKey: configuration.fillEncryptionKey
@@ -203,10 +238,21 @@ export const fetchAuthSecrets = async (
       : "",
     secrets: [],
   };
+
   for (const _package of options.packages) {
     const _secrets = dbSecrets.filter(
       (s) => s.packageName === _package.packageName
     );
+    if (!finalPackages.find((p) => p.packageName === _package.packageName)) {
+      output.secrets.push({
+        packageName: _package.packageName,
+        packageConstructor: _package.packageConstructor,
+        isAuthNeeded: false,
+        selectedSecretId: undefined,
+        secrets: [],
+      });
+      continue;
+    }
     if (_secrets.length > 0 && _secrets[0]?.id) {
       const { pickedSecret, uniqueClubbedSecrets } = pickSecrets(
         _secrets,
@@ -219,6 +265,7 @@ export const fetchAuthSecrets = async (
         packageConstructor: _package.packageConstructor,
         selectedSecretId: pickedSecret.id,
         secrets: uniqueClubbedSecrets,
+        isAuthNeeded: true,
       });
       output.variables = output.variables?.concat(variables) ?? variables;
     } else {
@@ -227,6 +274,7 @@ export const fetchAuthSecrets = async (
         packageConstructor: _package.packageConstructor,
         selectedSecretId: undefined,
         secrets: [],
+        isAuthNeeded: true,
       });
     }
   }

@@ -18,6 +18,7 @@ import { constructAutoSubmitBody, constructAutoSubmitMessage } from "./message/m
 import { TabsList } from "@/components/ui/tabs";
 import { ToolSpeed } from "./input/ToolSpeed";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { McpSelect } from "./input/McpSelect";
 interface ChatInputBoxProps {
   messageStatus: "pending" | "streaming" | "submitted" | "ready" | "error";
   className?: string;
@@ -34,7 +35,7 @@ export default function ChatInputBox({
   const { attachedMedia, mediaUploadStatus, handleFileChange, removeMedia } =
     useFileUpload();
   const { selectedRequest, submitMetadata, setSubmitMetadata, autoSubmit, setAutoSubmit } = useClientProject();
-  const { handleSubmit, messages, status, append, input, setInput, toolMode } = useMicrofoxChat();
+  const { handleSubmit, messages, status, append, input, setInput, toolMode, selectedMcps } = useMicrofoxChat();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     //console.log("textareaRef", textareaRef.current);
@@ -83,6 +84,7 @@ export default function ChatInputBox({
         minionFlow: minionFlow,
         minionType: minionType,
         toolMode: toolMode,
+        selectedMcps: selectedMcps.map((mcp) => mcp.id),
         ...extraBody
       }
     });
@@ -181,32 +183,35 @@ export default function ChatInputBox({
               </div>
             )}
           </div>
-          <button
-            onClick={() => handleSend()}
-            disabled={
-              // (
-              //   lastMessage?.annotations?.[
-              //   lastMessage.annotations.length - 1
-              //   ] as any
-              // )?.type === "ui" ||
-              (!input?.trim() && attachedMedia.length === 0) ||
-              messageStatus === "pending" ||
-              messageStatus === "streaming" ||
-              mediaUploadStatus === "UPLOADING" ||
-              mediaUploadStatus === "ERROR"
-            }
-            className="rounded-full mr-2 bg-black p-2 text-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-black/80"
-          >
-            {!(
-              messageStatus === "streaming" ||
-              messageStatus === "pending" ||
-              mediaUploadStatus === "UPLOADING"
-            ) ? (
-              <ChevronRight className="h-5 w-5" />
-            ) : (
-              <RefreshCw className="h-5 w-5 animate-spin" />
-            )}
-          </button>
+          <div className="flex flex-row gap-2">
+            <McpSelect />
+            <button
+              onClick={() => handleSend()}
+              disabled={
+                // (
+                //   lastMessage?.annotations?.[
+                //   lastMessage.annotations.length - 1
+                //   ] as any
+                // )?.type === "ui" ||
+                (!input?.trim() && attachedMedia.length === 0) ||
+                messageStatus === "pending" ||
+                messageStatus === "streaming" ||
+                mediaUploadStatus === "UPLOADING" ||
+                mediaUploadStatus === "ERROR"
+              }
+              className="rounded-full mr-2 bg-black p-2 text-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-black/80"
+            >
+              {!(
+                messageStatus === "streaming" ||
+                messageStatus === "pending" ||
+                mediaUploadStatus === "UPLOADING"
+              ) ? (
+                <ChevronRight className="h-5 w-5" />
+              ) : (
+                <RefreshCw className="h-5 w-5 animate-spin" />
+              )}
+            </button>
+          </div>
         </div>
         <input
           type="file"

@@ -55,7 +55,6 @@ export const RequestPage = () => {
         className="cursor-pointer hidden"
         onClick={handleLeftResizeHandleClick}
       />
-
       <TabUiProvider>
         <ApiDocProvider>
           <ResizablePanel defaultSize={84}>

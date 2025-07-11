@@ -13,6 +13,13 @@ export const getDisplayParts = (message: UIMessage<any, any, any>) => {
       }
       return true;
     }
+    if (
+      part.type.startsWith("tool-") &&
+      (part as any).state == "output-available" &&
+      (part as any).output?.ui
+    ) {
+      return true;
+    }
     if (EXCLUDED_PARTS.some((excluded) => part.type.startsWith(excluded))) {
       return false;
     }
@@ -45,9 +52,9 @@ export const getStickyUiParts = (parts: ToolUIPart<any>[]) => {
   );
 };
 export const getLastActiveToolPart = (
-  message: import("ai").UIMessage<any, any, any>,
+  message: UIMessage<any, any, any>,
   activePart: number
-): import("ai").ToolUIPart<any> | undefined => {
+): ToolUIPart<any> | undefined => {
   const displayParts = getDisplayParts(message);
 
   if (!displayParts || displayParts.length === 0) {
@@ -69,7 +76,7 @@ export const getLastActiveToolPart = (
             part.type.startsWith("tool-") &&
             !part.type.startsWith("tool-ui-")
           ) {
-            return part as import("ai").ToolUIPart<any>;
+            return part as ToolUIPart<any>;
           }
         }
       }

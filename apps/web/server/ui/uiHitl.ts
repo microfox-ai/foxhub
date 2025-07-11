@@ -1,5 +1,5 @@
 import { ToolUIPart } from "ai";
-import { HitlOutput } from "./uiTool";
+import { HitlInput } from "./uiTool";
 import { BraveMcp } from "./brave/types";
 import { mapBraveMcp } from "./brave/mapper";
 
@@ -7,7 +7,7 @@ export type uiHitlMap = {
   brave: BraveMcp;
 };
 
-export const insertUiHitl = async (output: any, part: ToolUIPart) => {
+export const insertUiHitlOutput = async (output: any, part: ToolUIPart) => {
   const toolTypeParts = part.type.split("-");
   let mcpType = toolTypeParts?.[1];
   let mcpName = toolTypeParts?.[2];

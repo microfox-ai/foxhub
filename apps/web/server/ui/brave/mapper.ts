@@ -5,6 +5,7 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
   let output: BraveWebSearchOutput = {
     video_sources: [],
     web_sources: [],
+    image_sources: [],
   };
   if (data.videos) {
     output.video_sources = data.videos.results
@@ -17,6 +18,8 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
         thumbnail: {
           src: video?.thumbnail?.src,
           originalSrc: video?.thumbnail?.original,
+          srcHeight: video?.thumbnail?.height,
+          srcWidth: video?.thumbnail?.width,
         },
         meta_media: {
           creator: video.video?.creator,
@@ -27,7 +30,7 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
           favicon: video.meta_url?.favicon,
           hostname: video.meta_url?.hostname,
           domain: video.meta_url?.domain,
-          breadcrumb: video.meta_url?.breadcrumb,
+          breadcrumb: video.meta_url?.path,
         },
         url: video.url,
       }));
@@ -45,6 +48,8 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
             ? {
                 src: web.thumbnail?.src,
                 originalSrc: web.thumbnail?.original,
+                srcHeight: web.thumbnail?.height,
+                srcWidth: web.thumbnail?.width,
               }
             : undefined,
         icon: web.thumbnail?.logo
@@ -58,9 +63,41 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
           favicon: web.meta_url?.favicon,
           hostname: web.meta_url?.hostname,
           domain: web.meta_url?.domain,
-          breadcrumb: web.meta_url?.breadcrumb,
+          breadcrumb: web.meta_url?.path,
         },
         url: web.url,
+      }));
+  }
+  return output;
+};
+
+const mapBraveImageSearch = (data: any, part?: ToolUIPart) => {
+  let output: BraveWebSearchOutput = {
+    image_sources: [],
+    web_sources: [],
+    video_sources: [],
+  };
+  if (data.results) {
+    output.image_sources = data.results
+      ?.filter((image: any) => image)
+      .map((image: any) => ({
+        timestamp: image.page_age,
+        description: image.description,
+        displayDate: image.age,
+        title: image.title,
+        thumbnail: {
+          src: image.thumbnail?.src,
+          originalSrc: image.thumbnail?.original,
+          srcHeight: image.thumbnail?.height,
+          srcWidth: image.thumbnail?.width,
+        },
+        meta_url: {
+          favicon: image.meta_url?.favicon,
+          hostname: image.meta_url?.hostname,
+          domain: image.meta_url?.domain,
+          breadcrumb: image.meta_url?.path,
+        },
+        url: image.url,
       }));
   }
   return output;
@@ -78,7 +115,13 @@ export const mapBraveMcp = (
           webSearch: mapBraveWebSearch(output.data, part),
         };
       }
+    case "imageSearch":
+      if (output.contentType === "application/json" && output.data) {
+        return {
+          imageSearch: mapBraveImageSearch(output.data, part),
+        };
+      }
     default:
-      return output;
+      return {};
   }
 };

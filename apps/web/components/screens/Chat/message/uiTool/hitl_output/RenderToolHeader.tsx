@@ -1,11 +1,11 @@
 import { ToolUIPart } from "ai"
-import { Package } from "../types";
+import { Package } from "../../types";
 import useSWR from "swr";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronRight } from "lucide-react";
-import { useMessageParts } from "../../MessageProvider";
-import { getLastActiveToolPart } from "../../helpers/parts";
-import { BraveSourceBanner } from "../uiTool/hitl_output/brave/components";
+import { useMessageParts } from "../../../MessageProvider";
+import { getLastActiveToolPart } from "../../../helpers/parts";
+import { BraveSourceBanner, BraveSourceHeader } from "./brave/components";
 import { UiComponentProps } from "@/server/ui/UiComponentProps";
 
 
@@ -15,7 +15,7 @@ import { UiComponentProps } from "@/server/ui/UiComponentProps";
  * usually all hitl or sticky parts (but better make a seperation by them having tool-hitl-)
  * @returns 
  */
-export const RenderToolBanner = () => {
+export const RenderToolHeader = () => {
     const { activePart, setActivePart, displayParts, message } = useMessageParts();
     const lastActiveToolPart = getLastActiveToolPart(message, activePart) as ToolUIPart;
     // const lastActiveToolWithPackage = lastActiveToolPart?.type.startsWith("tool-pkg-") ? lastActiveToolPart : null;
@@ -35,9 +35,9 @@ export const RenderToolBanner = () => {
 
     // 1. check for the tooLPart that is last & display its banner.
 
-    console.log("lastActiveToolPart", lastActiveToolPart);
+    //console.log("lastActiveToolPart", lastActiveToolPart);
     if (lastActiveToolPart?.type.startsWith("tool-pkg-brave") && lastActiveToolPart.state == "output-available") {
-        return <BraveSourceBanner toolName={lastActiveToolPart.type.split("-")[3]} output={((lastActiveToolPart.output as any)?.ui as UiComponentProps["hitl_output"])?.object?.brave} />
+        return <BraveSourceHeader toolName={lastActiveToolPart.type.split("-")[3]} output={((lastActiveToolPart.output as any)?.ui as UiComponentProps["hitl_output"])?.object?.brave} />
     }
 
     return (

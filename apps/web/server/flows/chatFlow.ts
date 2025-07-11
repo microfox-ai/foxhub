@@ -69,7 +69,7 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
     ctx.state.clientRequest = updatedClientRequest;
   }
 
-  if (ctx.request.toolMode == "fast") {
+  if (ctx.request.toolMode == "fast" || ctx.request.selectedMcps?.length > 0) {
     console.log("calling toolSelection", ctx.request.toolMode);
     await ctx.next.callAgent("/toolSelection");
     return;

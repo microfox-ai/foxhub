@@ -8,17 +8,19 @@ export type HitlAuthObject = AuthObject & {
     packageConstructor?: string;
     secrets: ClientSecret[];
     selectedSecretId?: string;
+    isAuthNeeded: boolean;
   }[];
 };
 
-export type HitlOutput = {
+export type HitlInput = {
   uiComponent: string;
-  props: UiComponentProps[keyof UiComponentProps];
   _humanIntervention: true;
   args: any;
   metadata: ToolMetadata;
   auth: HitlAuthObject;
+  props: UiComponentProps[keyof UiComponentProps];
 };
+
 export type MyUiTool = {
   input: {
     uiType: string;
@@ -33,7 +35,7 @@ export type MyUiTool = {
         props: UiComponentProps[keyof UiComponentProps];
         _humanIntervention?: boolean;
       }
-    | HitlOutput;
+    | HitlInput;
 };
 export const uiTool = {
   construct: <P extends keyof UiComponentProps>(

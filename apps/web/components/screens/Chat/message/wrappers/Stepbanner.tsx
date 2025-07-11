@@ -8,7 +8,7 @@ import useSWR from "swr";
 import { Package } from "../types";
 
 export const StepBanner = () => {
-    const { activePart, setActivePart, displayParts, message } = useMessageParts();
+    const { activePart, setActivePart, displayParts, message, setActivePartByToolCallId } = useMessageParts();
     const toolPackages = message?.parts?.map((p) => {
         const toolTypeParts = p.type.split("-");
         const mcpType = toolTypeParts?.[1];
@@ -38,7 +38,11 @@ export const StepBanner = () => {
             <ChevronLeft
                 className={`h-4 w-4 text-gray-500 cursor-pointer ${activePart > 0 ? "opacity-100" : "opacity-50"
                     }`}
-                onClick={() => setActivePart(activePart - 1)}
+                onClick={() => {
+                    if (activePart > 0) {
+                        setActivePart(activePart - 1)
+                    }
+                }}
             />
             <div
                 className={`text-xs align-items-center p-0 bg-transparent hover:text-black cursor-pointer line-height-[0.5em]`}
@@ -50,19 +54,27 @@ export const StepBanner = () => {
                     ? "opacity-100"
                     : "opacity-50"
                     }`}
-                onClick={() => setActivePart(activePart + 1)}
+                onClick={() => {
+                    if (activePart < displayParts?.length - 1) {
+                        setActivePart(activePart + 1)
+                    }
+                }}
             />
             <div className="flex flex-row gap-2 border border-neutral-200 rounded-xl px-2 -mt-1">
                 {toolPackages.map((p, _index) => {
                     const packageInfo = packageInfos?.find((pi) => pi.name === p.packageName);
                     return (
-                        <div key={p.type + _index} className="flex items-center gap-2">
+                        <div
+                            onClick={() => {
+                                setActivePartByToolCallId((p as any).toolCallId);
+                            }}
+                            key={p.type + _index} className="flex items-center gap-2">
                             <Tooltip>
                                 <TooltipTrigger>
                                     <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-4 h-4 rounded-full" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    {packageInfo?.title}
+                                    {p.toolName} in {packageInfo?.title}
                                 </TooltipContent>
                             </Tooltip>
                             {_index === toolPackages.length - 1 && (

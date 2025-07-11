@@ -12,7 +12,7 @@ import { models } from "../models";
 import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 import { prisma } from "@/prisma/prisma";
 import { getMicrofoxCharacter, getMicrofoxPersonality } from "../hellofox/_prompts";
-import { insertUiHitl } from "../ui/uiHitl";
+import { insertUiHitlOutput } from "../ui/uiHitl";
 
 const toolExecutionAgent = new AiRouter<any, any, any, any>();
 
@@ -119,7 +119,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                     return authFilledOutput;
                 },
                 mutateOutput: async (output, { part }) => {
-                    return await insertUiHitl(output, part);
+                    return await insertUiHitlOutput(output, part);
                 }
             }
         );

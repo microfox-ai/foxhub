@@ -4,7 +4,7 @@ import { AiRouter, getTextPartsContent } from "@microfox/ai-router";
 import { models } from "../models";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { findApiMcps, ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { findApiMcps, ApiMcp, getApiMcpById } from "@/utils/services/embeddings/packageSearch";
 import { queryApis, QueryApisResult } from "./helpers/queryApis";
 
 // mounted at /chatFlow/toolSelection
@@ -57,7 +57,10 @@ toolSelectionAgent.agent("/", async (ctx) => {
     // ---
 
     let ragResults: ApiMcp[] = [];
-    if (ctx.request.toolMode == "deep") {
+    if (ctx.request.selectedMcps && ctx.request.selectedMcps.length > 0) {
+        ragResults = await getApiMcpById(ctx.request.selectedMcps);
+    }
+    else if (ctx.request.toolMode == "deep") {
         response.writeMessageMetadata({
             loader: "Deep-Thinking the best fit.",
         });
@@ -151,7 +154,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
         ragResults.sort((a, b) => b.similarity - a.similarity);
         console.log("ragResults", ragResults);
     }
-    if (ctx.request.toolMode == "fast") {
+    else if (ctx.request.toolMode == "fast") {
         response.writeMessageMetadata({
             loader: "Fast-search based on user's request...",
         });
@@ -167,7 +170,23 @@ toolSelectionAgent.agent("/", async (ctx) => {
 
     let toolPopulatedMcps: (ApiMcp)[] = [];
 
-    if (ragResults.length > 0 && ctx.request.toolMode == "deep") {
+    if (ragResults.length > 0 && ctx.request.selectedMcps && ctx.request.selectedMcps.length > 0) {
+        toolPopulatedMcps = ragResults.map((ragResult) => {
+            return {
+                ...ragResult,
+                openApiSchema: ragResult.metadata.docs_data,
+            };
+        });
+    }
+    else if (ragResults.length > 0 && ctx.request.toolMode == "fast") {
+        toolPopulatedMcps = ragResults.map((ragResult) => {
+            return {
+                ...ragResult,
+                openApiSchema: ragResult.metadata.docs_data,
+            };
+        });
+    }
+    else if (ragResults.length > 0 && ctx.request.toolMode == "deep") {
         // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
         console.time("Deep Search: RAG - queryApis for all ragResults");
         const toolPopulatedMcpsPromises = ragResults.map(async (ragResult) => {
@@ -189,14 +208,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
         console.timeEnd("Deep Search: RAG - queryApis for all ragResults");
     }
 
-    if (ragResults.length > 0 && ctx.request.toolMode == "fast") {
-        toolPopulatedMcps = ragResults.map((ragResult) => {
-            return {
-                ...ragResult,
-                openApiSchema: ragResult.metadata.docs_data,
-            };
-        });
-    }
+
 
     console.log("toolPopulatedMcps", toolPopulatedMcps);
 

@@ -35,6 +35,16 @@ export const useMessageContext = ({ message }: { message: UIMessage }) => {
         }
     }, [displayParts, status]);
 
+    const setActivePartByToolCallId = (toolCallId?: string) => {
+        if (!toolCallId) {
+            return;
+        }
+        const part = displayParts.findIndex((p) => (p as any).toolCallId === toolCallId);
+        if (part !== -1) {
+            setActivePart(part);
+        }
+    }
+
     return {
         activePart,
         setActivePart,
@@ -43,6 +53,7 @@ export const useMessageContext = ({ message }: { message: UIMessage }) => {
         toolParts,
         stickyUiParts,
         message,
+        setActivePartByToolCallId,
     };
 };
 

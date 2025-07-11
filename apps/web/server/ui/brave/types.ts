@@ -11,11 +11,16 @@ export type WebSearchSource = {
   thumbnail?: {
     src: string;
     originalSrc?: string;
+    srcHeight?: number;
+    srcWidth?: number;
   };
   meta_media?: {
     creator?: string;
     duration?: string;
     views?: number;
+    placeholder?: string;
+    height?: number;
+    width?: number;
   };
   meta_url?: {
     favicon?: string;
@@ -29,8 +34,10 @@ export type WebSearchSource = {
 export type BraveWebSearchOutput = {
   video_sources: WebSearchSource[];
   web_sources: WebSearchSource[];
+  image_sources: WebSearchSource[];
 };
 
 export type BraveMcp = {
   webSearch: BraveWebSearchOutput;
+  imageSearch: BraveWebSearchOutput;
 };

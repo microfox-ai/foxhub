@@ -35,21 +35,21 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
     ul: ({ node, children, ...props }: any) => {
       return (
-        <ul className="list-disc list-outside ml-4 my-2" {...props}>
+        <ul className="list-disc list-outside ml-4 my-2 text-md" {...props}>
           {children}
         </ul>
       );
     },
     p: ({ node, children, ...props }: any) => {
       return (
-        <p className="my-1" {...props}>
+        <p className="my-1 text-md" {...props}>
           {children}
         </p>
       );
     },
     strong: ({ node, children, ...props }: any) => {
       return (
-        <span className="font-semibold" {...props}>
+        <span className="font-semibold text-md" {...props}>
           {children}
         </span>
       );

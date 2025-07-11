@@ -9,9 +9,10 @@ import { LoadingIndicator } from "./LoadingIndicator";
 import { DisplayPart } from "./wrappers/DisplayPart";
 import { RenderUiTool } from "./wrappers/RenderUiTool";
 import { StickyUiPartsWrapper } from "./wrappers/StickyUiPartsWrapper";
-import { RenderToolBanner } from "./wrappers/RenderToolBanner";
+import { RenderToolFooter } from "./uiTool/hitl_output/RenderToolFooter";
 import { useMessageParts } from "../MessageProvider";
 import { StepBanner } from "./wrappers/Stepbanner";
+import { RenderToolHeader } from "./uiTool/hitl_output/RenderToolHeader";
 
 // Define types for annotations
 export type ThinkingAnnotation = {
@@ -120,6 +121,9 @@ export const MessageWrapper = ({
             {displayParts.length > 1 && (
               <div className={`${message.role === "user" ? "w-[400px]" : "w-[500px]"} p-0 bg-transparent`}>
                 <StepBanner />
+                {toolParts && toolParts?.length > 0 && (
+                  <RenderToolHeader />
+                )}
                 {displayParts?.[activePart] && (
                   <DisplayPart
                     part={displayParts?.[activePart]}
@@ -130,7 +134,7 @@ export const MessageWrapper = ({
                   />
                 )}
                 {toolParts && toolParts?.length > 0 && (
-                  <RenderToolBanner />
+                  <RenderToolFooter />
                 )}
                 {/* {message.customTools?.map((toolInvocation, idx) => (
                   <ToolInvocationPart

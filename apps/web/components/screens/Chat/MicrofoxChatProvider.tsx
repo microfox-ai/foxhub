@@ -23,6 +23,7 @@ import { useClientProject } from "../providers/ClientProjectProvider";
 import { useLayout } from "../providers/LayoutProvider";
 import { getTextParts } from "@repo/ai-utils/helper";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 
 type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 
@@ -361,6 +362,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
 
   const [input, setInput] = useState("");
+  const [selectedMcps, setSelectedMcps] = React.useState<ApiMcp[]>([]);
 
   return {
     ...chatOptions,
@@ -378,6 +380,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     setInput,
     toolMode,
     setToolMode,
+    selectedMcps,
+    setSelectedMcps,
   };
 }
 

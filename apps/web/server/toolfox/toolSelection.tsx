@@ -61,8 +61,9 @@ toolSelectionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             loader: "Deep-Thinking the best fit.",
         });
+        console.time("Deep Search: AI - Generate Search Queries");
         const searchQueriesResult = await generateObject({
-            model: models.googleGeminiTwoFive,
+            model: models.googleGeminiPro,
             system: `
           You are an expert software architect and a senior full-stack developer. Your primary goal is to deconstruct a user's request into a series of platforms/packages that are most likely to be used to accomplish the request.
 
@@ -121,6 +122,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
             User's Request: ${userMessage}
         `,
         });
+        console.timeEnd("Deep Search: AI - Generate Search Queries");
 
         console.log("searchQueriesResult", searchQueriesResult.object);
 
@@ -131,14 +133,18 @@ toolSelectionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             loader: `Searching for the best tools for ${platforms.length} platforms...`,
         });
-        for (const platform of platforms) {
-            const similarPackages = await findApiMcps({
+        console.time("Deep Search: RAG - findApiMcps for all platforms");
+        const similarPackagesPromises = platforms.map((platform) =>
+            findApiMcps({
                 query: `Platform: ${platform.platform} - Search Query: ${platform.searchQuery}`,
                 match_threshold: 0.5,
                 match_count: 5,
-            });
-            ragResults.push(...similarPackages);
-        }
+            })
+        );
+        const similarPackagesResults = await Promise.all(similarPackagesPromises);
+        ragResults = similarPackagesResults.flat();
+        console.timeEnd("Deep Search: RAG - findApiMcps for all platforms");
+
         ragResults = ragResults.filter(
             (item, index, self) => index === self.findIndex((t) => t.id === item.id)
         );
@@ -149,11 +155,13 @@ toolSelectionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             loader: "Fast-search based on user's request...",
         });
+        console.time("Fast Search: RAG - findApiMcps");
         ragResults = await findApiMcps({
             query: `User's Request: ${userMessage}`,
             match_threshold: 0.5,
             match_count: 5,
         });
+        console.timeEnd("Fast Search: RAG - findApiMcps");
     }
 
 
@@ -161,6 +169,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
 
     if (ragResults.length > 0 && ctx.request.toolMode == "deep") {
         // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
+        console.time("Deep Search: RAG - queryApis for all ragResults");
         const toolPopulatedMcpsPromises = ragResults.map(async (ragResult) => {
             const toolsResults = await queryApis({
                 query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
@@ -177,6 +186,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
             };
         });
         toolPopulatedMcps = await Promise.all(toolPopulatedMcpsPromises);
+        console.timeEnd("Deep Search: RAG - queryApis for all ragResults");
     }
 
     if (ragResults.length > 0 && ctx.request.toolMode == "fast") {

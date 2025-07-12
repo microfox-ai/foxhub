@@ -1,19 +1,13 @@
+import { ImageSet } from "../types";
+
 export type WebSearchSource = {
   timestamp?: string;
   description?: string;
   displayDate?: string;
   title?: string;
   subType?: string; // article, generic
-  icon?: {
-    src: string;
-    originalSrc?: string;
-  };
-  thumbnail?: {
-    src: string;
-    originalSrc?: string;
-    srcHeight?: number;
-    srcWidth?: number;
-  };
+  icon?: Partial<ImageSet>;
+  thumbnail?: Partial<ImageSet>;
   meta_media?: {
     creator?: string;
     duration?: string;

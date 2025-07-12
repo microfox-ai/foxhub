@@ -6,15 +6,12 @@ import { TooltipTrigger } from "@/components/ui/tooltip";
 import { TooltipContent } from "@/components/ui/tooltip";
 import useSWR from "swr";
 import { Package } from "../types";
+import { parseMcpType } from "@/server/ui/uiHitl";
 
 export const StepBanner = () => {
     const { activePart, setActivePart, displayParts, message, setActivePartByToolCallId } = useMessageParts();
     const toolPackages = message?.parts?.map((p) => {
-        const toolTypeParts = p.type.split("-");
-        const mcpType = toolTypeParts?.[1];
-        const mcpName = toolTypeParts?.[2];
-        const toolName = toolTypeParts?.[3];
-
+        const { mcpType, mcpName, toolName } = parseMcpType(p.type as `tool-${string}`);
         if (mcpType === "pkg") {
             return { packageName: mcpName?.startsWith("@microfox") ? mcpName : `@microfox/${mcpName}`, toolName, ...p };
         }

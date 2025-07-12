@@ -50,6 +50,8 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
                 originalSrc: web.thumbnail?.original,
                 srcHeight: web.thumbnail?.height,
                 srcWidth: web.thumbnail?.width,
+                imagePageUrl: web.url,
+                pageUrl: web.url,
               }
             : undefined,
         icon: web.thumbnail?.logo
@@ -105,7 +107,7 @@ const mapBraveImageSearch = (data: any, part?: ToolUIPart) => {
 
 export const mapBraveMcp = (
   output: any,
-  toolName?: string,
+  toolName?: keyof BraveMcp,
   part?: ToolUIPart
 ) => {
   switch (toolName) {

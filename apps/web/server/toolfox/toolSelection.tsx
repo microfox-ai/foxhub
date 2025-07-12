@@ -210,7 +210,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
 
 
 
-    console.log("toolPopulatedMcps", toolPopulatedMcps);
+    //console.log("toolPopulatedMcps", toolPopulatedMcps);
 
     await ctx.next.callAgent("@/chatFlow/toolExecution", {
         toolPopulatedMcps,

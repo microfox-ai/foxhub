@@ -28,6 +28,7 @@ export const mainMiddleware = async (
   if (
     request.nextUrl.pathname.startsWith("/policies/") ||
     request.nextUrl.pathname.startsWith("/blog") ||
+    request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/api/subdomain-redirect")
   ) {
     return NextResponse.next();

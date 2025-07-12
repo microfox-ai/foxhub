@@ -6,19 +6,14 @@ import {
     HoverCardContent,
     HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogPortal,
-} from "@/components/ui/dialog";
 import { motion, useAnimate, AnimationPlaybackControls } from "framer-motion";
 import React, { useEffect, useState } from "react";
 import { InternalMarkdown } from "../../../text/markdown";
 import Link from "next/link";
-import { ExternalLinkIcon, ExternalLink, Expand, CrossIcon, XIcon } from "lucide-react";
-import { DialogOverlay } from "@radix-ui/react-dialog";
+import { ExternalLinkIcon, ExternalLink, Expand } from "lucide-react";
 import { WebSearchSource } from "@/server/ui/brave/types";
+import { ImageSet } from "@/server/ui/types";
+import { MediaGrid, MediaImageDialog } from "../common/media";
 
 export const HoverSourcePopup = ({ source }: { source: WebSearchSource }) => {
     return (
@@ -154,49 +149,21 @@ export const BraveMediaGrid = ({
     output: uiHitlMap["brave"] | undefined;
     toolName?: string;
 }) => {
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
     if (!output || !toolName) {
         return null;
     }
 
     const data = toolName in output ? output[toolName as keyof typeof output] : undefined;
     if (data && data.image_sources.length > 0) {
-        return (<>
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
-                {data.image_sources.map((source, idx) => (
-                    <div
-                        onClick={() => setSelectedImage(source.thumbnail?.originalSrc ?? source.thumbnail?.src ?? "")}
-                        key={idx} className="relative group/media bg-neutral-900 rounded-lg overflow-hidden">
-                        <img src={source.thumbnail?.src ?? ""} alt={source.title} className="w-full h-auto object-cover transition-transform duration-300 group-hover/media:scale-110" />
-                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3">
-                            <div className="flex items-center gap-2 transform scale-75 group-hover/media:scale-100 transition-transform duration-300">
-                                <a href={source.url} target="_blank" rel="noopener noreferrer" className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="View Source">
-                                    <ExternalLink className="w-4 h-4 text-neutral-800" />
-                                </a>
-                                <button onClick={() => setSelectedImage(source.thumbnail?.originalSrc ?? source.thumbnail?.src ?? "")} className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="Expand Image">
-                                    <Expand className="w-4 h-4 text-neutral-800" />
-                                </button>
-                            </div>
+        const images: ImageSet[] = data.image_sources.map((source: WebSearchSource) => ({
+            src: source.thumbnail?.src ?? "",
+            originalSrc: source.thumbnail?.originalSrc,
+            title: source.title,
+            url: source.url,
+            description: source.description,
+        }));
 
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-                <DialogPortal>
-                    <DialogOverlay className="fixed inset-0 bg-black/50 backdrop-blur-xl    " />
-                    <DialogContent
-
-                        className="max-w-3xl bg-transparent border-none shadow-none">
-                        {selectedImage && <img src={selectedImage} alt="Expanded view" className="w-auto h-auto object-contain rounded-2xl mx-auto" />}
-                        <DialogClose className="bg-black/50 rounded-full p-2 absolute top-2 right-2">
-                            <XIcon className="w-4 h-4 text-white" />
-                        </DialogClose>
-                    </DialogContent>
-
-                </DialogPortal>
-            </Dialog>
-        </>);
+        return <MediaGrid images={images} />;
     }
 
     return null;
@@ -253,20 +220,7 @@ export const BraveSourceHeader = ({
                     </div>
                 ))}
             </div>
-            <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-                <DialogPortal>
-                    <DialogOverlay className="fixed inset-0 bg-black/50 backdrop-blur-xl    " />
-                    <DialogContent
-
-                        className="max-w-3xl bg-transparent border-none shadow-none">
-                        {selectedImage && <img src={selectedImage} alt="Expanded view" className="w-auto h-auto object-contain rounded-2xl mx-auto" />}
-                        <DialogClose className="bg-black/50 rounded-full p-2 absolute top-2 right-2">
-                            <XIcon className="w-4 h-4 text-white" />
-                        </DialogClose>
-                    </DialogContent>
-
-                </DialogPortal>
-            </Dialog>
+            <MediaImageDialog selectedImage={selectedImage} setSelectedImage={setSelectedImage} />
         </>);
     }
 

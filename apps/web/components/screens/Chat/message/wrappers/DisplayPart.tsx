@@ -3,6 +3,7 @@ import { MessageMarkdown } from "../text/MessageThoughtWrapper";
 import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 import { RenderUiTool } from "./RenderUiTool";
 import { RenderToolOutput } from "../uiTool/hitl_output/RenderToolOutput";
+import { parseMcpType } from "@/server/ui/uiHitl";
 
 
 type MessagePartType = UIMessage["parts"][number];
@@ -43,9 +44,10 @@ export const DisplayPart = ({ part, messageId, lastMessage, lastAnnotationIndice
         return <RenderUiTool tool={part as any} lastMessage={lastMessage} lastAnnotationIndices={lastAnnotationIndices} messageIndex={messageIndex} />
     }
     if (part.type.startsWith("tool-") && (part as any).state == "output-available" && (part as any).output?.ui) {
+        const { mcpType, mcpName, toolName } = parseMcpType(part.type as `tool-${string}`);
         return <RenderToolOutput uiOutput={(part as any).output?.ui}
-            mcpName={(part as any).type.split("-")[2]}
-            toolName={(part as any).type.split("-")[3]}
+            mcpName={mcpName}
+            toolName={toolName}
             part={part as ToolUIPart<any>}
         />
     }

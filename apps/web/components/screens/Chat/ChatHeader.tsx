@@ -110,7 +110,7 @@ const ChatHeader = ({
             </BreadcrumbList>
           </Breadcrumb>
         )}
-        {IN_DEV && (
+        {/* {IN_DEV && (
           <>
             <p className="text-xs text-gray-500">
               Request ID: {clientRequest?.id}
@@ -120,7 +120,7 @@ const ChatHeader = ({
               {clientRequest?.archiveStatus} Region: {clientRequest?.awsRegion}
             </p>
           </>
-        )}
+        )} */}
       </div>
 
       <div className="col-span-4 flex justify-start">

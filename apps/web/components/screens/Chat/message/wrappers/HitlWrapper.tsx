@@ -1,6 +1,6 @@
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider"
 import { UiComponentProps } from "@/server/ui/UiComponentProps"
-import { HitlOutput, MyUiTool } from "@/server/ui/uiTool"
+import { HitlInput, MyUiTool } from "@/server/ui/uiTool"
 import useSWR from "swr"
 import { Package } from "../types"
 import { Button } from "@mui/material"
@@ -27,7 +27,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     children: React.ReactNode
 }) => {
     const { selectedProject } = useClientProject();
-    const auth = (tool.output as HitlOutput).auth;
+    const auth = (tool.output as HitlInput).auth;
     const { auth: stateAuth, setAuth, selectSecret, refetchHitlAuth } = useHitl();
     const [popoverOpen, setPopoverOpen] = useState(false);
 
@@ -46,7 +46,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     const singlePackage = packageInfos?.find(p => p.name === singlePackageSecret?.packageName);
     const selectedSinglePackageSecret = singlePackageSecret?.secrets.find(s => s.id === singlePackageSecret?.selectedSecretId);
 
-    const missingSecrets = stateAuth?.secrets?.filter(s => !s.selectedSecretId);
+    const missingSecrets = stateAuth?.secrets?.filter(s => !s.selectedSecretId && s.isAuthNeeded);
 
     useEffect(() => {
         if (auth) {
@@ -168,56 +168,58 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
 
 
     return <div className="flex flex-col my-2 bg-white shadow-md rounded-xl border border-gray-200">
-        {isSinglePackage && selectedSinglePackageSecret && (
+        {isSinglePackage && (
             <div className="flex flex-row items-start justify-between gap-2 border-b border-gray-200 py-3 px-3">
                 <div className="flex flex-row gap-2">
                     <img src={singlePackage?.icon ?? "/favicon_io/favicon.ico"} alt="Project Logo" className="w-6 h-6 rounded-full" />
                     <h3 className="text-md">{singlePackage?.title}</h3>
                 </div>
-                <div className="flex flex-row gap-2 items-center">
-                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                        <PopoverTrigger asChild>
-                            <div className="flex flex-row gap-2 text-black border border-gray-200 rounded-xl px-3 py-0 items-center cursor-pointer">
-                                <img src={fetchDisplayIcon(selectedSinglePackageSecret)} alt="Secret Icon" className="w-6 h-6 rounded-full" />
-                                <h3 className="text-md">{fetchDisplayName(selectedSinglePackageSecret)}</h3>
-                                <ChevronDown className="min-w-4 min-h-4 text-gray-500 mr-2" />
-                            </div>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 rounded-xl">
-                            <div className="flex flex-col max-h-[250px] overflow-y-auto rounded-xl">
-                                {singlePackageSecret?.secrets.map(s => (
-                                    <div
-                                        onClick={() => {
-                                            selectSecret(s, singlePackageSecret.packageName);
-                                            setPopoverOpen(false);
-                                        }}
-                                        key={s.id} className={cn("flex flex-row gap-2 items-center hover:bg-gray-100 p-2 rounded-xl cursor-pointer", s.id === singlePackageSecret.selectedSecretId && "bg-gray-100")}>
-                                        <img src={fetchDisplayIcon(s)} alt="Secret Icon" className="w-6 h-6 rounded-full" />
-                                        <h3 className="text-md">{fetchDisplayName(s)}</h3>
-                                        <Badge variant="outline" className="ml-2">
-                                            <span className="text-[0.8em]">{s.packageType === "oauth2" ? "Connected" : "API Key"}</span>
-                                        </Badge>
-                                        {
-                                            s.id === singlePackageSecret.selectedSecretId && (
-                                                <Check className="ml-auto w-4 h-4 text-green-500" />
-                                            )
-                                        }
-                                    </div>
-                                ))}
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <HelpCircleIcon className="w-4 h-4 text-gray-500 cursor-pointer" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-[300px]">
-                                <p>{fetchTooltipContent(selectedSinglePackageSecret)}</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
+                {selectedSinglePackageSecret && (
+                    <div className="flex flex-row gap-2 items-center">
+                        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <div className="flex flex-row gap-2 text-black border border-gray-200 rounded-xl px-3 py-0 items-center cursor-pointer">
+                                    <img src={fetchDisplayIcon(selectedSinglePackageSecret)} alt="Secret Icon" className="w-6 h-6 rounded-full" />
+                                    <h3 className="text-md">{fetchDisplayName(selectedSinglePackageSecret)}</h3>
+                                    <ChevronDown className="min-w-4 min-h-4 text-gray-500 mr-2" />
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0 rounded-xl">
+                                <div className="flex flex-col max-h-[250px] overflow-y-auto rounded-xl">
+                                    {singlePackageSecret?.secrets.map(s => (
+                                        <div
+                                            onClick={() => {
+                                                selectSecret(s, singlePackageSecret.packageName);
+                                                setPopoverOpen(false);
+                                            }}
+                                            key={s.id} className={cn("flex flex-row gap-2 items-center hover:bg-gray-100 p-2 rounded-xl cursor-pointer", s.id === singlePackageSecret.selectedSecretId && "bg-gray-100")}>
+                                            <img src={fetchDisplayIcon(s)} alt="Secret Icon" className="w-6 h-6 rounded-full" />
+                                            <h3 className="text-md">{fetchDisplayName(s)}</h3>
+                                            <Badge variant="outline" className="ml-2">
+                                                <span className="text-[0.8em]">{s.packageType === "oauth2" ? "Connected" : "API Key"}</span>
+                                            </Badge>
+                                            {
+                                                s.id === singlePackageSecret.selectedSecretId && (
+                                                    <Check className="ml-auto w-4 h-4 text-green-500" />
+                                                )
+                                            }
+                                        </div>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <HelpCircleIcon className="w-4 h-4 text-gray-500 cursor-pointer" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-[300px]">
+                                    <p>{fetchTooltipContent(selectedSinglePackageSecret)}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                )}
             </div>
         )}
         {/* <h4 className="text-lg font-bold">{auth.metadata.summary}</h4>

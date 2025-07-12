@@ -1,5 +1,5 @@
 import { UiComponentProps } from "@/server/ui/UiComponentProps"
-import { HitlOutput, MyUiTool } from "@/server/ui/uiTool"
+import { HitlInput, MyUiTool } from "@/server/ui/uiTool"
 import { ActionButtons } from "../uiTool/buttons_list/ActionButtons"
 import { TaskInfo } from "../uiTool/card/info/TaskInfo"
 import { TaskIntegrations } from "../uiTool/card/task_integrations/TaskIntegrations"
@@ -46,7 +46,7 @@ export const RenderUiTool = ({ tool, lastMessage, lastAnnotationIndices, message
             }
         }
 
-        if ((tool.output as HitlOutput).auth?.secrets?.length > 0) {
+        if ((tool.output as HitlInput).auth?.secrets?.length > 0) {
             return (
                 <HitlProvider>
                     <HitlAuthWrapper

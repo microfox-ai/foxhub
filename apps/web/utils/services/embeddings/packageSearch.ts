@@ -346,6 +346,64 @@ export interface ApiMcp {
   tools?: QueryApisResult[];
 }
 
+export async function plainSearchMcps({
+  query,
+  match_count = 10,
+  api_type,
+}: {
+  query: string;
+  match_count?: number;
+  api_type?: string;
+}): Promise<ApiMcp[]> {
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let queryBuilder = supabase
+      .from("api_mcps")
+      .select("*")
+      .like("package_name", `%${query}%`)
+      .limit(match_count);
+
+    if (api_type) {
+      queryBuilder = queryBuilder.eq("api_type", api_type);
+    }
+
+    const { data: packages, error } = await queryBuilder;
+
+    if (error) {
+      console.error("Error querying Supabase:", error);
+      throw new Error(`Error finding similar packages: ${error.message}`);
+    }
+
+    if (!packages || packages.length === 0) {
+      console.log("No similar packages found.");
+      return [];
+    }
+
+    return packages;
+  } catch (err) {
+    console.error("An unexpected error occurred:", err);
+    throw err;
+  }
+}
+
+export async function getApiMcpById(ids: number[]): Promise<ApiMcp[]> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data, error } = await supabase
+    .from("api_mcps")
+    .select("*")
+    .in("id", ids);
+  if (error) {
+    console.error("Error querying Supabase:", error);
+    throw new Error(`Error finding similar packages: ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    console.log("No similar packages found.");
+    return [];
+  }
+  return data;
+}
+
 export async function findApiMcps({
   query,
   match_threshold = MATCH_THRESHOLD,
@@ -396,4 +454,5 @@ export const PackageInfoHelper = {
   getPackageInfo,
   findSimilarPackages,
   findApiMcps,
+  plainSearchMcps,
 };

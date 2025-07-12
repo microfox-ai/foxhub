@@ -4,6 +4,7 @@ import {
   TaskInstanceMetaType,
   TaskIntegrationPlatform,
 } from "../convertfox/helpers/types";
+import { uiHitlMap } from "./uiHitl";
 
 export interface Button {
   type: "confirm" | "deny";
@@ -82,5 +83,11 @@ export interface UiComponentProps {
   };
   hitl: {
     uiType: "hitl";
+  };
+  hitl_output: {
+    uiType: "hitl_output";
+    object?: {
+      [key in keyof uiHitlMap]?: uiHitlMap[key];
+    };
   };
 }

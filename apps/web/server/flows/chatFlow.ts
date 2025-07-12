@@ -69,13 +69,13 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
     ctx.state.clientRequest = updatedClientRequest;
   }
 
-  if (ctx.request.toolMode == "fast") {
+  if (ctx.request.toolMode == "fast" || ctx.request.selectedMcps?.length > 0) {
     console.log("calling toolSelection", ctx.request.toolMode);
     await ctx.next.callAgent("/toolSelection");
     return;
   }
 
-  console.log("calling toolSelection", ctx.request.params, ctx.request);
+  console.log("calling toolSelection", ctx.request.params);
   const result = streamText({
     model: models.googleGeminiPro,
     system: `
@@ -110,7 +110,7 @@ chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
       })
     ),
     onStepFinish: (step) => {
-      console.log("step", step);
+      console.log("step", step.usage);
     },
     onFinish: (step) => {
       console.log("FULL USAGE", step.usage);

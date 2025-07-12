@@ -2,22 +2,22 @@
 
 import { ButtonSCN } from "@/components/elements/Button";
 import { Tabs } from "@/components/ui/tabs";
-import { ClientRequest } from "@prisma/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronsRight, Loader2, PanelRightIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { ChatUIProvider, useChatUI } from "./ChatUiProvider";
+import { useClientProject } from "../providers/ClientProjectProvider";
 import { useLayout } from "../providers/LayoutProvider";
-import { MicrofoxChatProvider, useMicrofoxChat } from "./MicrofoxChatProvider";
-import { TabUiProvider, useTabUi } from "../providers/TabUiProvider";
+import { useTabUi } from "../providers/TabUiProvider";
+import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
 import ChatHeader from "./ChatHeader";
 import ChatInputBox from "./ChatInputBox";
+import { ChatUIProvider, useChatUI } from "./ChatUiProvider";
 import MessageList from "./MessageList";
-import ConfigureTab from "./dashboard/ConfigureTab";
+import { MicrofoxChatProvider, useMicrofoxChat } from "./MicrofoxChatProvider";
 import CodeStudio from "./code/CodeStudio";
-import { useTaskInstanceMetaContext } from "../providers/TaskInstanceMetaProvider";
+import ConfigureTab from "./dashboard/ConfigureTab";
 import { HistoryTab } from "./history/HistoryTab";
-import { useRouter } from "next/navigation";
 import PublishTab from "./publish/PublishTab";
 
 export type AttachedMedia = {
@@ -25,21 +25,7 @@ export type AttachedMedia = {
   preview: string;
 };
 
-function ChatWindow({
-  userId,
-  clientRequest,
-  isCollapsed,
-  onCollapse,
-  projectTitle,
-  isChatLoading,
-}: {
-  userId: string;
-  clientRequest?: ClientRequest;
-  isCollapsed?: boolean;
-  onCollapse?: (collapsed: boolean) => void;
-  projectTitle?: string;
-  isChatLoading: boolean;
-}) {
+function ChatWindow() {
   // Chat state
   const {
     messages,
@@ -47,6 +33,8 @@ function ChatWindow({
     isLoading,
     serverMessages,
   } = useMicrofoxChat();
+  const { isLeftCollapsed: isCollapsed, handleLeftCollapse: onCollapse } = useLayout();
+  const { selectedRequest: clientRequest, isLoading: isClientRequestLoading } = useClientProject();
 
   const {
     activeTab,
@@ -123,9 +111,9 @@ function ChatWindow({
           )}
           <ChatHeader
             messages={messages}
-            projectTitle={projectTitle}
+            projectTitle={clientRequest?.title}
             clientRequest={clientRequest}
-            isChatLoading={isChatLoading}
+            isChatLoading={isClientRequestLoading}
             isLoading={isLoading}
             isValidating={isLoading}
             activeTab={activeTab}
@@ -146,118 +134,115 @@ function ChatWindow({
           )}
         </div>
 
-        {(isChatLoading || isLoading) && (
+        {(isClientRequestLoading || isLoading) && (
           <div className="w-full flex justify-center h-full items-center">
             <Loader2 className="w-full h-6 animate-spin" />
           </div>
         )}
 
-        {!isChatLoading &&
+        {!isClientRequestLoading &&
           !isLoading &&
           ((serverMessages && serverMessages.length > 0) ||
             messages.length > 0) /* Chat Tabs */ ? (
-          <>
-            <AnimatePresence mode="sync" initial={false}>
-              <div className="relative flex-1 overflow-hidden">
-                {activeTab === "chat" && (
-                  <motion.div
-                    key="chat"
-                    initial={{ x: getSlideDirection("chat") }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                      duration: 0.1,
-                    }}
-                    style={{
-                      WebkitMaskImage:
-                        "linear-gradient(to bottom, transparent, white 4%, white 96%, transparent)",
-                      maskImage:
-                        "linear-gradient(to bottom, transparent, white 4%, white 96%, transparent)",
-                    }}
-                    className={`w-full h-full overflow-y-auto ${hasScrolled ? "thin-scrollbar" : "scrollbar-hidden"}`}
-                    onScroll={handleScroll}
-                  >
-                    <div className="w-full max-w-[800px] pr-3 mx-auto pt-10">
-                      <MessageList
-                        isLoading={false}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-                {activeTab === "dashboard" && (
-                  <motion.div
-                    key="dashboard"
-                    initial={{ x: getSlideDirection("dashboard") }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                      duration: 0.1,
-                    }}
-                    className=" w-full h-full overflow-y-auto thin-scrollbar"
-                  >
-                    <div className="p-4 h-full mx-auto">
-                      <ConfigureTab />
-                    </div>
-                  </motion.div>
-                )}
-                {activeTab === "code" && (
-                  <motion.div
-                    key="code"
-                    className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
-                  >
-                    <div className="p-4 h-full mx-auto">
-                      <CodeStudio />
-                    </div>
-                  </motion.div>
-                )}
-                {activeTab === "history" && (
-                  <motion.div
-                    key="history"
-                    className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
-                  >
-                    <div className="p-4 h-full mx-auto">
-                      <HistoryTab />
-                    </div>
-                  </motion.div>
-                )}
-                {activeTab === "publish" && (
-                  <motion.div
-                    key="publish"
-                    className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
-                  >
-                    <div className="p-4 h-full mx-auto">
-                      <PublishTab />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+          <AnimatePresence mode="sync" initial={false}>
+            <div className="relative flex-1 overflow-hidden">
+              {activeTab === "chat" && (
+                <motion.div
+                  key="chat"
+                  initial={{ x: getSlideDirection("chat") }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30,
+                    duration: 0.1,
+                  }}
+                  style={{
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, transparent, white 4%, white 96%, transparent)",
+                    maskImage:
+                      "linear-gradient(to bottom, transparent, white 4%, white 96%, transparent)",
+                  }}
+                  className={`w-full h-full overflow-y-auto ${hasScrolled ? "thin-scrollbar" : "scrollbar-hidden"}`}
+                  onScroll={handleScroll}
+                >
+                  <div className="w-full max-w-[800px] pr-3 mx-auto pt-10">
+                    <MessageList
+                      isLoading={false}
+                    />
+                  </div>
+                </motion.div>
+              )}
+              {activeTab === "dashboard" && (
+                <motion.div
+                  key="dashboard"
+                  initial={{ x: getSlideDirection("dashboard") }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30,
+                    duration: 0.1,
+                  }}
+                  className=" w-full h-full overflow-y-auto thin-scrollbar"
+                >
+                  <div className="p-4 h-full mx-auto">
+                    <ConfigureTab />
+                  </div>
+                </motion.div>
+              )}
+              {activeTab === "code" && (
+                <motion.div
+                  key="code"
+                  className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
+                >
+                  <div className="p-4 h-full mx-auto">
+                    <CodeStudio />
+                  </div>
+                </motion.div>
+              )}
+              {activeTab === "history" && (
+                <motion.div
+                  key="history"
+                  className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
+                >
+                  <div className="p-4 h-full mx-auto">
+                    <HistoryTab />
+                  </div>
+                </motion.div>
+              )}
+              {activeTab === "publish" && (
+                <motion.div
+                  key="publish"
+                  className="w-full h-[90vh] overflow-y-auto thin-scrollbar"
+                >
+                  <div className="p-4 h-full mx-auto">
+                    <PublishTab />
+                  </div>
+                </motion.div>
+              )}
+            </div>
 
-              <motion.div
-                key={"chat-input"}
-                className="bottom-0 pb-4 z-50 mx-auto left-0 right-0 w-full max-w-[800px] overflow-visible"
-                initial={{ x: getSlideDirection("chat"), opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.1 }}
-              >
-                {activeTab === "chat" && (
-                  <ChatInputBox
-                    key={"chat-input"}
-                    lastMessage={messages[messages.length - 1]}
-                    messageStatus={status}
-                    userId={userId}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </>
+            <motion.div
+              key={"chat-input"}
+              className="bottom-0 pb-4 z-50 mx-auto left-0 right-0 w-full max-w-[800px] overflow-visible"
+              initial={{ x: getSlideDirection("chat"), opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.1 }}
+            >
+              {activeTab === "chat" && (
+                <ChatInputBox
+                  key={"chat-input"}
+                  lastMessage={messages[messages.length - 1]}
+                  messageStatus={status}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         ) : (
-          !isChatLoading &&
+          !isClientRequestLoading &&
           !isLoading &&
           messages.length === 0 &&
           (!serverMessages || serverMessages.length === 0) && (
@@ -270,7 +255,6 @@ function ChatWindow({
               </p>
               <ChatInputBox
                 messageStatus={status}
-                userId={userId}
                 className="relative max-w-[800px]"
               />
             </div>
@@ -281,32 +265,12 @@ function ChatWindow({
   );
 }
 
-export default function ChatWindowWithProvider({
-  userId,
-  clientRequest,
-  isCollapsed,
-  onCollapse,
-  projectTitle,
-  isLoading,
-}: {
-  userId: string;
-  clientRequest?: ClientRequest;
-  isCollapsed?: boolean;
-  onCollapse?: (collapsed: boolean) => void;
-  projectTitle?: string;
-  isLoading: boolean;
-}) {
+export default function ChatWindowWithProvider() {
+  const { selectedRequest, isLoading } = useClientProject();
   return (
-    <MicrofoxChatProvider clientRequest={clientRequest}>
+    <MicrofoxChatProvider clientRequest={selectedRequest}>
       <ChatUIProvider>
-        <ChatWindow
-          userId={userId}
-          clientRequest={clientRequest}
-          isCollapsed={isCollapsed}
-          onCollapse={onCollapse}
-          projectTitle={projectTitle}
-          isChatLoading={isLoading}
-        />
+        <ChatWindow />
       </ChatUIProvider>
     </MicrofoxChatProvider>
   );

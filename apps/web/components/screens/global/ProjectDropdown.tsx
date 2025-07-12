@@ -117,19 +117,21 @@ export const ProjectDropdown = ({
                 </Link>
               </div>
             ) : (
-              <Tooltip>
-                <TooltipTrigger className="w-full hover:bg-gray-100 rounded-md flex items-center justify-center py-2">
-                  <ChevronRight className="h-4 w-4" />
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="bg-white !text-black border border-gray-300 text-xs rounded-full"
-                  sideOffset={10}
-                  showArrow={false}
-                >
-                  <p>Select Project</p>
-                </TooltipContent>
-              </Tooltip>
+              <div className="flex items-center justify-between gap-2">
+                <Tooltip>
+                  <TooltipTrigger className="w-full hover:bg-gray-100 rounded-md flex items-center justify-center py-2">
+                    <ChevronRight className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="bg-white !text-black border border-gray-300 text-xs rounded-full"
+                    sideOffset={10}
+                    showArrow={false}
+                  >
+                    <p>Select Project</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             )}
           </PopoverTrigger>
           <PopoverContent

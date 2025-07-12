@@ -23,6 +23,7 @@ import { useClientProject } from "../providers/ClientProjectProvider";
 import { useLayout } from "../providers/LayoutProvider";
 import { getTextParts } from "@repo/ai-utils/helper";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 
 type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 
@@ -82,7 +83,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         }
       }
     }),
-    resume: true,
+    resume: false,
     messages: (serverMessages as any[]) || [],
     ...userChatOptions,
     id: clientRequest?.id,
@@ -95,7 +96,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
         let _minionType;
         //add this message to the db
         if (
-          message.parts?.length === 0 || !message.role || !message.parts || !message.parts[0]
+          message?.parts?.length === 0 || !message.role || !message.parts || !message.parts[0]
         ) {
           console.log("[onFinish] Message has no parts, returning.");
           return;
@@ -139,7 +140,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
   });
 
   useEffect(() => {
-    if (serverMessages && chatOptions.messages.length === 0) {
+    if (serverMessages && chatOptions.messages.length === 0 && serverMessages.length > 0) {
       chatOptions.setMessages(serverMessages as any);
     }
   }, [serverMessages, chatOptions.messages, chatOptions.status]);
@@ -361,6 +362,7 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
 
 
   const [input, setInput] = useState("");
+  const [selectedMcps, setSelectedMcps] = React.useState<ApiMcp[]>([]);
 
   return {
     ...chatOptions,
@@ -378,6 +380,8 @@ export const useMicrofoxContext = (clientRequest?: ClientRequest, userChatOption
     setInput,
     toolMode,
     setToolMode,
+    selectedMcps,
+    setSelectedMcps,
   };
 }
 

@@ -1,4 +1,5 @@
 "use client";
+
 import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -13,7 +14,6 @@ import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider"
 import { TabUiProvider } from "../providers/TabUiProvider";
 
 export const RequestPage = () => {
-  const [tab, setTab] = useState("requests");
   const { user } = useAuth();
   const {
     isLeftCollapsed,
@@ -55,18 +55,11 @@ export const RequestPage = () => {
         className="cursor-pointer hidden"
         onClick={handleLeftResizeHandleClick}
       />
-
       <TabUiProvider>
         <ApiDocProvider>
           <ResizablePanel defaultSize={84}>
             <div className="h-full">
               <ChatWindow
-                userId={user.id}
-                onCollapse={handleLeftCollapse}
-                isCollapsed={isLeftCollapsed}
-                isLoading={isLoading}
-                clientRequest={selectedRequest ?? undefined}
-                projectTitle={selectedProject?.name}
               />
             </div>
           </ResizablePanel>
@@ -90,7 +83,7 @@ export const RequestPage = () => {
           >
             <div className="h-full py-4 px-2">
               <div className="h-full bg-zinc-100 rounded-xl relative border border-zinc-200 overflow-hidden">
-                <PreviewWindow />
+                {/* <PreviewWindow /> */}
               </div>
             </div>
           </ResizablePanel>

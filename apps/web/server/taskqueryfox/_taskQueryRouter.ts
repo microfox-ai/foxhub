@@ -9,7 +9,7 @@ import {
   getTaskInstanceMeta,
 } from "@/utils/services/db_functions/getClientRequest";
 //import { getToolsRequiringConfirmation } from "@/utils/services/ToolHumanLayer";
-import { createOpenApiToolset } from "@microfox/tool-kit";
+import { AuthObject, createOpenApiToolset } from "@microfox/tool-kit";
 import { DEPLOY_STAGE } from "@prisma/client";
 import { StreamWriter } from "@repo/ai-utils/helper";
 import { AiRouter, AiHandler, AiMiddleware } from "@microfox/ai-router";
@@ -134,15 +134,21 @@ taskQueryAgent.agent("/", async (ctx) => {
     console.log(cleanUiMessageParts(last7Messages), "last7Messages");
     let processedMessages = await client.parseHitl(
       cleanUiMessageParts(last7Messages),
-      ctx.response,
-      async (_authObject) => {
-        return _authObject;
+      {
+        dataStream: ctx.response,
+        inserAuthVariables: async (_authObject: AuthObject) => {
+          return _authObject;
+        },
+        mutateOutput: async (output) => {
+          console.log("mutateOutput", output);
+          return output;
+        },
       }
     );
 
     processedMessages = processedMessages.map((m) => ({
       ...m,
-      parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
+      parts: m?.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
     }));
 
     // console.log(

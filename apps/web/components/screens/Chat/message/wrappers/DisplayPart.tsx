@@ -1,7 +1,9 @@
-import { UIMessage, UIMessagePart } from "ai";
+import { ToolUIPart, UIMessage, UIMessagePart } from "ai";
 import { MessageMarkdown } from "../text/MessageThoughtWrapper";
 import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 import { RenderUiTool } from "./RenderUiTool";
+import { RenderToolOutput } from "../uiTool/hitl_output/RenderToolOutput";
+import { parseMcpType } from "@/server/ui/uiHitl";
 
 
 type MessagePartType = UIMessage["parts"][number];
@@ -40,6 +42,14 @@ export const DisplayPart = ({ part, messageId, lastMessage, lastAnnotationIndice
     }
     if (part.type.startsWith("tool-ui-")) {
         return <RenderUiTool tool={part as any} lastMessage={lastMessage} lastAnnotationIndices={lastAnnotationIndices} messageIndex={messageIndex} />
+    }
+    if (part.type.startsWith("tool-") && (part as any).state == "output-available" && (part as any).output?.ui) {
+        const { mcpType, mcpName, toolName } = parseMcpType(part.type as `tool-${string}`);
+        return <RenderToolOutput uiOutput={(part as any).output?.ui}
+            mcpName={mcpName}
+            toolName={toolName}
+            part={part as ToolUIPart<any>}
+        />
     }
     return null;
 }

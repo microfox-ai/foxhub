@@ -4,7 +4,7 @@ import { AiRouter, getTextPartsContent } from "@microfox/ai-router";
 import { models } from "../models";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { findApiMcps, ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { findApiMcps, ApiMcp, getApiMcpById } from "@/utils/services/embeddings/packageSearch";
 import { queryApis, QueryApisResult } from "./helpers/queryApis";
 
 // mounted at /chatFlow/toolSelection
@@ -57,12 +57,16 @@ toolSelectionAgent.agent("/", async (ctx) => {
     // ---
 
     let ragResults: ApiMcp[] = [];
-    if (ctx.request.toolMode == "deep") {
+    if (ctx.request.selectedMcps && ctx.request.selectedMcps.length > 0) {
+        ragResults = await getApiMcpById(ctx.request.selectedMcps);
+    }
+    else if (ctx.request.toolMode == "deep") {
         response.writeMessageMetadata({
             loader: "Deep-Thinking the best fit.",
         });
+        console.time("Deep Search: AI - Generate Search Queries");
         const searchQueriesResult = await generateObject({
-            model: models.googleGeminiTwoFive,
+            model: models.googleGeminiPro,
             system: `
           You are an expert software architect and a senior full-stack developer. Your primary goal is to deconstruct a user's request into a series of platforms/packages that are most likely to be used to accomplish the request.
 
@@ -121,6 +125,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
             User's Request: ${userMessage}
         `,
         });
+        console.timeEnd("Deep Search: AI - Generate Search Queries");
 
         console.log("searchQueriesResult", searchQueriesResult.object);
 
@@ -131,36 +136,59 @@ toolSelectionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             loader: `Searching for the best tools for ${platforms.length} platforms...`,
         });
-        for (const platform of platforms) {
-            const similarPackages = await findApiMcps({
+        console.time("Deep Search: RAG - findApiMcps for all platforms");
+        const similarPackagesPromises = platforms.map((platform) =>
+            findApiMcps({
                 query: `Platform: ${platform.platform} - Search Query: ${platform.searchQuery}`,
                 match_threshold: 0.5,
                 match_count: 5,
-            });
-            ragResults.push(...similarPackages);
-        }
+            })
+        );
+        const similarPackagesResults = await Promise.all(similarPackagesPromises);
+        ragResults = similarPackagesResults.flat();
+        console.timeEnd("Deep Search: RAG - findApiMcps for all platforms");
+
         ragResults = ragResults.filter(
             (item, index, self) => index === self.findIndex((t) => t.id === item.id)
         );
         ragResults.sort((a, b) => b.similarity - a.similarity);
         console.log("ragResults", ragResults);
     }
-    if (ctx.request.toolMode == "fast") {
+    else if (ctx.request.toolMode == "fast") {
         response.writeMessageMetadata({
             loader: "Fast-search based on user's request...",
         });
+        console.time("Fast Search: RAG - findApiMcps");
         ragResults = await findApiMcps({
             query: `User's Request: ${userMessage}`,
             match_threshold: 0.5,
             match_count: 5,
         });
+        console.timeEnd("Fast Search: RAG - findApiMcps");
     }
 
 
     let toolPopulatedMcps: (ApiMcp)[] = [];
 
-    if (ragResults.length > 0 && ctx.request.toolMode == "deep") {
+    if (ragResults.length > 0 && ctx.request.selectedMcps && ctx.request.selectedMcps.length > 0) {
+        toolPopulatedMcps = ragResults.map((ragResult) => {
+            return {
+                ...ragResult,
+                openApiSchema: ragResult.metadata.docs_data,
+            };
+        });
+    }
+    else if (ragResults.length > 0 && ctx.request.toolMode == "fast") {
+        toolPopulatedMcps = ragResults.map((ragResult) => {
+            return {
+                ...ragResult,
+                openApiSchema: ragResult.metadata.docs_data,
+            };
+        });
+    }
+    else if (ragResults.length > 0 && ctx.request.toolMode == "deep") {
         // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
+        console.time("Deep Search: RAG - queryApis for all ragResults");
         const toolPopulatedMcpsPromises = ragResults.map(async (ragResult) => {
             const toolsResults = await queryApis({
                 query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
@@ -177,18 +205,12 @@ toolSelectionAgent.agent("/", async (ctx) => {
             };
         });
         toolPopulatedMcps = await Promise.all(toolPopulatedMcpsPromises);
+        console.timeEnd("Deep Search: RAG - queryApis for all ragResults");
     }
 
-    if (ragResults.length > 0 && ctx.request.toolMode == "fast") {
-        toolPopulatedMcps = ragResults.map((ragResult) => {
-            return {
-                ...ragResult,
-                openApiSchema: ragResult.metadata.docs_data,
-            };
-        });
-    }
 
-    console.log("toolPopulatedMcps", toolPopulatedMcps);
+
+    //console.log("toolPopulatedMcps", toolPopulatedMcps);
 
     await ctx.next.callAgent("@/chatFlow/toolExecution", {
         toolPopulatedMcps,

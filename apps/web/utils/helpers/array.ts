@@ -28,7 +28,7 @@ export const cleanUiMessageParts = (
 ) => {
   let processedMessages = messages.map((m) => ({
     ...m,
-    parts: m.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
+    parts: m?.parts.map((p) => ("input" in p ? p : { ...p, input: {} })),
   }));
 
   //processedMessages = processedMessages.filter((m) => );
@@ -36,7 +36,7 @@ export const cleanUiMessageParts = (
   if (options?.removeToolCalls) {
     processedMessages = processedMessages.map((m) => ({
       ...m,
-      parts: m.parts.filter((p) => !p.type?.startsWith("tool-")),
+      parts: m?.parts.filter((p) => !p.type?.startsWith("tool-")),
     }));
   }
 
@@ -44,7 +44,7 @@ export const cleanUiMessageParts = (
     processedMessages = processedMessages.map((m) => ({
       ...m,
       parts: [
-        findLastElementWith(m.parts, (p) => p.type === "text") || {
+        findLastElementWith(m?.parts, (p) => p.type === "text") || {
           type: "text",
           text: "",
           input: {},

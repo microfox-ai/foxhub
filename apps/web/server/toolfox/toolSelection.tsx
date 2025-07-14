@@ -14,7 +14,7 @@ toolSelectionAgent.actAsTool("/", {
     description: "Select the best tools for the user's request",
     inputSchema: z.object({
         userRequest: z.string().optional().describe("The actual user's request"),
-        mcpIds: z.array(z.string()).describe("The ids of the agents to use"),
+        selectedMcps: z.array(z.string()).describe("The ids of the agents to use"),
         toolMode: z.enum(["fast", "deep"]).optional().describe("The mode to use for tool selection"),
     }),
 });
@@ -47,26 +47,35 @@ toolSelectionAgent.agent("/", async (ctx) => {
     }
 
     let thisToolMode = ctx.state.toolMode;
+    // if a toolMode is set in the passed in params (either generate or called via code), use it.
     if (ctx.request.params?.toolMode) {
         thisToolMode = ctx.request.params.toolMode;
         ctx.state.toolMode = thisToolMode;
     }
+    // if a toolMode is set in the request (from the client side - either userMessage or reumeOfAssistanMessage), use it.
     else if (ctx.request?.toolMode) {
         thisToolMode = ctx.request.toolMode;
         ctx.state.toolMode = thisToolMode;
     }
+    // if no toolMode is set, use fast mode.
     else if (!thisToolMode) {
         thisToolMode = "fast";
         ctx.state.toolMode = thisToolMode;
     }
 
     let selectedMcps = ctx.state.selectedMcps;
-    if (ctx.request.params?.mcpIds) {
-        selectedMcps = ctx.request.params.mcpIds;
+    console.log("selectedMcps - checking for selectedMcps", ctx.request.params?.selectedMcps, ctx.request?.selectedMcps);
+    // if selectedMcps are set in the passed in params, use them.
+    if (ctx.request.params?.selectedMcps) {
+        selectedMcps = ctx.request.params.selectedMcps;
+        ctx.state.selectedMcps = selectedMcps;
     }
-    else if (ctx.request?.mcpIds) {
-        selectedMcps = ctx.request.mcpIds;
+    // if selectedMcps are set in the request (from the client side - either userMessage or reumeOfAssistanMessage), use them.
+    else if (ctx.request?.selectedMcps) {
+        selectedMcps = ctx.request.selectedMcps;
+        ctx.state.selectedMcps = selectedMcps;
     }
+    // if no selectedMcps are set, dont set anthing.
 
     // 1. generate a list of RAG search query to find the best package/agent
 
@@ -195,6 +204,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
                 ...tool,
                 id: _index,
                 metadata: undefined,
+                embedding: undefined,
                 openApiSchema: {
                     ...restOpenApiSchema,
                     paths: {
@@ -219,6 +229,8 @@ toolSelectionAgent.agent("/", async (ctx) => {
         toolPopulatedMcps = ragResults.map((ragResult) => {
             return {
                 ...ragResult,
+                embedding: undefined,
+                metadata: undefined,
                 openApiSchema: ragResult.metadata.docs_data,
             };
         });

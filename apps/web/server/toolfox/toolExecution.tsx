@@ -126,7 +126,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
             const [processedMessagesResponse, searchForToolsResponse] = await Promise.all([processedMessagesPromise, searchForToolsPromise]);
             //console.log("searchForToolsResponse", searchForToolsResponse);
-            processedMessages = processedMessagesResponse;
+            processedMessages = [...processedMessagesResponse];
             console.log("re-updating tools", ctx.state.toolPopulatedMcps.length, ctx.state.toolPopulatedMcps.map((mcp: ApiMcp) => mcp.package_name));
             client = await createToolsetForExecution(ctx.state.toolPopulatedMcps, clientRequest);
         }
@@ -157,7 +157,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 //     description: "Select the next best tools for the user's request",
                 //     inputSchema: z.object({
                 //         userRequest: z.string().optional().describe("The actual user's request"),
-                //         mcpIds: z.array(z.string()).describe("The ids of the agents to use"),
+                //         selectedMcps: z.array(z.string()).describe("The ids of the agents to use"),
                 //         toolMode: z.enum(["fast", "deep"]).optional().describe("The mode to use for tool selection"),
                 //     }),
                 // }),

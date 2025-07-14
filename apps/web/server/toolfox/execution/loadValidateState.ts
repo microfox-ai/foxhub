@@ -17,13 +17,21 @@ export const restoreLastKnownState: AiMiddleware<any, any, any, any> = async (
     ctx.response.writeMessageMetadata({
       loader: "Restoring the tools.",
     });
+    let originMessageId = ctx.state?.originMessageId;
+    console.log("restoreLastKnownState - originMessageId", originMessageId);
+    let uniqueId = originMessageId
+      ? originMessageId?.endsWith(ctx.request.clientRequestId)
+        ? originMessageId
+        : `${originMessageId}-${ctx.request.clientRequestId}`
+      : ctx.request.clientRequestId;
     const lastKnownState = await prisma.chatAgenticState.findUnique({
       where: {
-        originClientRequestId: ctx.request.clientRequestId,
+        originClientRequestId: uniqueId,
       },
     });
     ctx.state.toolMode = (lastKnownState?.state as any).toolMode;
     ctx.state.toolExecType = (lastKnownState?.state as any).toolExecType;
+    ctx.state.selectedMcps = (lastKnownState?.state as any).selectedMcps;
     ctx.state.toolPopulatedMcps = (
       lastKnownState?.state as any
     ).toolPopulatedMcps;
@@ -45,30 +53,41 @@ export const restoreLastKnownState: AiMiddleware<any, any, any, any> = async (
 export const savePassedInTools = async (ctx: AiContext<any, any, any, any>) => {
   let toolPopulatedMcps = ctx.state.toolPopulatedMcps;
   let clientRequest = ctx.state.clientRequest;
+  let selectedMcps = ctx.state?.selectedMcps;
+  let originMessageId = ctx.state?.originMessageId;
   console.log(
     "saving chatAgenticState",
     ctx.state.toolMode,
     ctx.state.toolExecType,
     toolPopulatedMcps?.[0]?.package_name,
-    toolPopulatedMcps?.[0]
+    toolPopulatedMcps?.[0],
+    originMessageId
   );
+  let uniqueId = originMessageId
+    ? originMessageId?.endsWith(clientRequest.id)
+      ? originMessageId
+      : `${originMessageId}-${clientRequest.id}`
+    : clientRequest.id;
+  console.log("uniqueId", uniqueId);
   await prisma.chatAgenticState.upsert({
     where: {
-      originClientRequestId: clientRequest.id,
+      originClientRequestId: uniqueId,
     },
     update: {
       state: {
         toolMode: ctx.state.toolMode,
         toolExecType: ctx.state.toolExecType,
         toolPopulatedMcps: toolPopulatedMcps,
+        selectedMcps: selectedMcps,
       },
     },
     create: {
-      originClientRequestId: clientRequest.id,
+      originClientRequestId: uniqueId,
       state: {
         toolMode: ctx.state.toolMode,
         toolExecType: ctx.state.toolExecType,
         toolPopulatedMcps: toolPopulatedMcps,
+        selectedMcps: selectedMcps,
       },
     },
   });

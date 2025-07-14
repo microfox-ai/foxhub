@@ -4,4 +4,5 @@ export const SUPPORTED_VERCEL_SUBDOMAINS = [
   "reverie-web",
   "think-bold",
   "rbrowse",
+  "markitapp",
 ];

@@ -20,9 +20,15 @@ export const assistantMessageProcessor: AiMiddleware<any, any, any> = async (
       let extraData: Record<string, any> = {};
       returnRequestBody = {
         minionContinue: true,
+        originMessageId:
+          messages[messages.length - 1]?.metadata?.originMessageId,
         ...request,
         ...extraData,
       };
+      props.state.originMessageId =
+        messages[messages.length - 1]?.metadata?.originMessageId;
+    } else {
+      props.state.originMessageId = messages[messages.length - 1]?.id;
     }
 
     response.writeMessageMetadata({
@@ -30,7 +36,13 @@ export const assistantMessageProcessor: AiMiddleware<any, any, any> = async (
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       minionType: returnRequestBody.minionType,
+      originMessageId: props.state.originMessageId,
     });
+
+    console.log(
+      "assistantMessageProcessor - originMessageId",
+      props.state.originMessageId
+    );
 
     return next();
   } catch (error) {

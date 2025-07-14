@@ -54,7 +54,7 @@ const useBotsContextInternal = (packageTypes?: ClientSecretPackageType[]) => {
     stablePackages?.filter((pkg: any) =>
       pkg.constructors.some(
         (constructor: Constructor) =>
-          constructor.auth.toLowerCase() === ClientSecretPackageType.APIKEY
+          constructor.auth?.toLowerCase() === ClientSecretPackageType.APIKEY
       )
     ) ?? [];
 

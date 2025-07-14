@@ -18,3 +18,13 @@ export type ImageSet = {
     srcWidth?: number;
   }[];
 };
+
+export type VideoSet = {
+  src: string;
+  creator?: string;
+  duration?: string;
+  views?: number;
+  placeholder?: string;
+  height?: number;
+  width?: number;
+};

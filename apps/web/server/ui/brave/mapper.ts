@@ -22,6 +22,7 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
           srcWidth: video?.thumbnail?.width,
         },
         meta_media: {
+          src: video.url,
           creator: video.video?.creator,
           duration: video.video?.duration,
           views: video.video?.views,
@@ -33,6 +34,7 @@ const mapBraveWebSearch = (data: any, part?: ToolUIPart) => {
           breadcrumb: video.meta_url?.path,
         },
         url: video.url,
+        media_type: "video",
       }));
   }
   if (data.web) {
@@ -99,6 +101,7 @@ const mapBraveImageSearch = (data: any, part?: ToolUIPart) => {
           domain: image.meta_url?.domain,
           breadcrumb: image.meta_url?.path,
         },
+        media_type: "image",
         url: image.url,
       }));
   }

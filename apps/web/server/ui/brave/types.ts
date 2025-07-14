@@ -1,4 +1,4 @@
-import { ImageSet } from "../types";
+import { ImageSet, VideoSet } from "../types";
 
 export type WebSearchSource = {
   timestamp?: string;
@@ -8,14 +8,7 @@ export type WebSearchSource = {
   subType?: string; // article, generic
   icon?: Partial<ImageSet>;
   thumbnail?: Partial<ImageSet>;
-  meta_media?: {
-    creator?: string;
-    duration?: string;
-    views?: number;
-    placeholder?: string;
-    height?: number;
-    width?: number;
-  };
+  meta_media?: Partial<VideoSet>;
   meta_url?: {
     favicon?: string;
     hostname?: string;
@@ -23,6 +16,7 @@ export type WebSearchSource = {
     breadcrumb?: string;
   };
   url: string;
+  media_type?: "video" | "image" | "audio";
 };
 
 export type BraveWebSearchOutput = {

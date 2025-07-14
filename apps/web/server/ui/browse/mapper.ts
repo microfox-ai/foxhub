@@ -11,17 +11,19 @@ const mapBrowseImageSearch = (data: any, part?: ToolUIPart) => {
       .map((image: any) => {
         const originalSrc =
           image.responsiveImages && image.responsiveImages.length > 0
-            ? image.responsiveImages[0].src
+            ? image.responsiveImages?.[image.responsiveImages.length - 1]
             : undefined;
         const webSearchSource: BrowseOutput["image_sources"][number] = {
           title: image.alt,
           description: image.description,
           src: image.src,
-          originalSrc,
+          originalSrc: originalSrc?.url,
           imagePageUrl: image.imgPermalink,
           pageUrl: image.pagePermalink,
+          srcHeight: originalSrc?.height ?? image.height,
+          srcWidth: originalSrc?.width ?? image.width,
           set: image.responsiveImages?.map((img: any) => ({
-            src: img.src,
+            src: img.url,
             originalSrc: img.src,
             size: img.size,
             srcHeight: img.height,
@@ -46,7 +48,7 @@ export const mapBrowseMcp = (
     case "extractImagesFromURL":
       if (output.contentType === "application/json" && output.data) {
         return {
-          image: mapBrowseImageSearch(output.data, part),
+          extractImagesFromURL: mapBrowseImageSearch(output.data, part),
         };
       }
     default:

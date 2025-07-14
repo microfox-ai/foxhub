@@ -13,7 +13,10 @@ export const StepBanner = () => {
     const toolPackages = message?.parts?.map((p) => {
         const { mcpType, mcpName, toolName } = parseMcpType(p.type as `tool-${string}`);
         if (mcpType === "pkg") {
-            return { packageName: mcpName?.startsWith("@microfox") ? mcpName : `@microfox/${mcpName}`, toolName, ...p };
+            return {
+                mcpName,
+                packageName: mcpName?.startsWith("@microfox") ? mcpName : `@microfox/${mcpName}`, toolName, ...p
+            };
         }
         return null;
     }).filter((p) => p !== null);
@@ -71,7 +74,7 @@ export const StepBanner = () => {
                                     <img src={packageInfo?.icon} alt={packageInfo?.name} className="w-4 h-4 rounded-full" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    {p.toolName} in {packageInfo?.title}
+                                    {p.toolName} in {packageInfo?.title ?? p.mcpName}
                                 </TooltipContent>
                             </Tooltip>
                             {_index === toolPackages.length - 1 && (

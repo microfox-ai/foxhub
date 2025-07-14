@@ -96,6 +96,9 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
         let content = "";
         if (secret.packageType === "oauth2") {
             const identity = secret.identityMetadata as Identity;
+            if (!identity) {
+                return "No identity is selected. Please select a secret to proceed.";
+            }
             const name = identity.teamInfo?.name ?? identity.organisationInfo?.name ?? identity.userInfo?.name;
             if (identity.teamInfo?.name && identity?.userInfo?.name) {
                 content += `This will use the connected account for team "${identity.teamInfo?.name}" which was first made by user "${identity.userInfo?.name}".`;

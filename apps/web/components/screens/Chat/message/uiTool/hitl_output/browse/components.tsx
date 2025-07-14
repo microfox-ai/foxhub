@@ -11,20 +11,18 @@ export const BrowseMediaGrid = ({
     output: uiHitlMap["puppeteer-sls"] | undefined;
     toolName?: string;
 }) => {
+    console.log("output", output);
     if (!output || !toolName) {
         return null;
     }
 
-    const data = toolName in output ? output[toolName as keyof typeof output] : undefined;
-    if (data && data.image_sources.length > 0) {
-        const images = data.image_sources.map((source: ImageSet) => ({
-            src: source.src ?? "",
-            originalSrc: source.originalSrc,
-            title: source.title ?? "",
-            url: source.url,
-            description: source.description,
-        }));
+    let data = toolName in output ? output[toolName as keyof typeof output] : undefined;
+    // if (!data && "image" in output) {
+    //     data = output.image;
+    // }
 
+    if (data && data.image_sources.length > 0) {
+        const images = data.image_sources;
         return <MediaGrid images={images} />;
     }
 

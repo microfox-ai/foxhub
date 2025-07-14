@@ -144,7 +144,7 @@ export const getVariablesForAuthObject = async (
       );
       if (refetchFromDb) {
         selectedSecret = await prisma.clientSecret.findUnique({
-          where: { id: secret.selectedSecretId },
+          where: { id: secret.selectedSecretId, status: "FILLED" },
         });
       }
       if (selectedSecret) {
@@ -193,6 +193,7 @@ export const fetchAuthSecrets = async (
       packageName: {
         in: options.packages?.map((p) => p.packageName) ?? [],
       },
+      status: "FILLED",
       ...(configuration.clientRequest
         ? { botProjectId: configuration.clientRequest.botProjectId }
         : {}),

@@ -16,18 +16,20 @@ export type uiHitlMap = {
 // toolName: webSearch
 
 export const parseMcpType = (type: `tool-${string}`) => {
-  const mcpType = type.startsWith("tool-pkg")
+  const mcpType = type.startsWith("tool-pkgAgent")
     ? "pkg"
-    : type.startsWith("tool-agent")
+    : type.startsWith("tool-microAgent")
       ? "agent"
-      : undefined;
+      : "";
 
-  const restOfType = type.replace("tool-pkg-", "").replace("tool-agent-", "");
+  const restOfType = type
+    .replace("tool-pkgAgent", "")
+    .replace("tool-microAgent", "");
 
-  const lastSplitter = restOfType.lastIndexOf("-");
+  const lastSplitter = restOfType.lastIndexOf("AsTool");
 
   const mcpName = restOfType.substring(0, lastSplitter);
-  const toolName = restOfType.substring(lastSplitter + 1);
+  const toolName = restOfType.substring(lastSplitter + 6);
 
   return { mcpType, mcpName, toolName };
 };

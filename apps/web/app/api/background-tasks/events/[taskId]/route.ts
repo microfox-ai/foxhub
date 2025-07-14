@@ -2,12 +2,12 @@ import { getTaskChannel } from "@/lib/background-tasks-sse";
 import { createResponse } from "better-sse";
 import { type NextRequest } from "next/server";
 
-export function GET(
+export async function GET(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
-  const { taskId } = params;
-
+  const { taskId } = await params;
+  console.log("taskId", taskId);
   return createResponse(request, (session) => {
     const channel = getTaskChannel(taskId);
     channel.register(session);

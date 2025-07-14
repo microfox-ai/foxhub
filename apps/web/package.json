@@ -89,6 +89,7 @@
     "@uiw/react-codemirror": "^4.21.9",
     "@upstash/redis": "^1.35.0",
     "ai": "^5.0.0-alpha.15",
+    "better-sse": "^0.15.1",
     "cheerio": "^1.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

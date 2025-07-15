@@ -24,6 +24,7 @@ function useHitlContext() {
     const { addToolResult } = useMicrofoxChat();
     const { selectedRequest } = useClientProject();
     const [auth, setAuth] = useState<HitlAuthObject | undefined>(undefined);
+    const [mutatedInput, setMutatedInput] = useState<any | undefined>(undefined);
 
     const selectSecret = (secret: ClientSecret, packageName: string) => {
         setAuth((as) => {
@@ -59,6 +60,7 @@ function useHitlContext() {
             ...toolResult,
             output: {
                 ...toolResult.output,
+                ...(mutatedInput && { mutatedInput }),
                 auth: {
                     ...toolResult.output.auth,
                     ...auth,
@@ -85,12 +87,17 @@ function useHitlContext() {
         });
     }
 
+    const mutateInput = (_input: any) => {
+        setMutatedInput(_input);
+    }
+
     return {
         auth,
         selectSecret,
         setAuth,
         addHitlToolResult,
         refetchHitlAuth,
+        mutateInput,
     };
 }
 

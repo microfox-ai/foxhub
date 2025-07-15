@@ -91,7 +91,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
         let processedMessages = trimMessagesForModel(ctx.request.messages);
         if (ctx.request.loadedRevalidatePath) {
             console.log("re-processing messages", ctx.request.loadedRevalidatePath);
-            const processedMessagesPromise = client.parseHitl(
+            const processedMessagesPromise = client.processHitlToolResult(
                 cleanUiMessageParts(processedMessages),
                 {
                     dataStream: ctx.response,
@@ -146,6 +146,9 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
+        console.log("Inserted tool set", Object.keys(toolSet.tools), JSON.stringify(convertToModelMessages(cleanUiMessageParts(processedMessages, {
+            removeAllToolCallsExceptLast: true,
+        })), null, 2));
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
@@ -190,7 +193,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
             Output:
             If its a small conversation, respond in small concise sentences.
-            parse audio outputs wrapped with <audio> tags. & Audio is must for every text output.
             DO NOT WASTE WORDS, always be concise & get to the point.
             Make sure to put citations to sources when necessary.
             If its a task, respond in a detailed manner
@@ -198,9 +200,11 @@ toolExecutionAgent.agent("/", async (ctx) => {
              - include tables when necessary.
 
             Tools
-            - if a toll call results in "User denied access", simply skip to an alternative tool or just continue.
+            - You MUST MUST MUST make tool calls to answer the user with the latest possible information.
+            - if a tool call results in "User denied access", simply skip to an alternative tool or just continue.
             - You must never call a tool called "pkg" - there is no such tool.
-            - Always start with a simple convesation of what you are about to do before calling a tool.
+            - Do not assume or hallucinate about the answer from the tool. If you are making a toolcall, respond based on the result from the toolcall.
+
 
             microfoxAnnotationAudio - a short audio annotation that is lively & engaging that speaks to the user in short & compact scenetences.
 

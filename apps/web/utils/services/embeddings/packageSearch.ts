@@ -387,6 +387,25 @@ export async function plainSearchMcps({
   }
 }
 
+export async function getApiMcpsByPackageName(
+  packageNames: string[]
+): Promise<ApiMcp[]> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data, error } = await supabase
+    .from("api_mcps")
+    .select("*")
+    .in("package_name", packageNames);
+  if (error) {
+    console.error("Error querying Supabase:", error);
+    throw new Error(`Error finding similar packages: ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    console.log("No similar packages found.");
+    return [];
+  }
+  return data;
+}
+
 export async function getApiMcpById(ids: number[]): Promise<ApiMcp[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const { data, error } = await supabase

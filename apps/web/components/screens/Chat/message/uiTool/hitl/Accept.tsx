@@ -4,19 +4,47 @@ import { useMicrofoxChat } from "../../../MicrofoxChatProvider";
 import { ToolMetadata } from "@microfox/tool-kit";
 import { useHitl } from "./HitlProvider";
 import { CheckIcon, XIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import isEqual from 'lodash.isequal';
 
 export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastMessage: boolean }) => {
-    const { messages } = useMicrofoxChat();
-    const { addHitlToolResult } = useHitl();
+    const { addHitlToolResult, mutateInput } = useHitl();
     if (tool.state !== "output-available") {
         return null;
     }
     const toolMetadata = tool.output.metadata;
-    const lastMessageInChat = messages[messages.length - 1];
 
     const [expanded, setExpanded] = useState(false);
     const [showJson, setShowJson] = useState(true);
+
+    const [jsonString, setJsonString] = useState(JSON.stringify(tool.input, null, 2));
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        mutateInput(undefined);
+    }, [mutateInput]);
+
+    const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const newJsonString = e.target.value;
+        setJsonString(newJsonString);
+
+        try {
+            const parsedJson = JSON.parse(newJsonString);
+            setError(null);
+            if (isEqual(parsedJson, tool.input)) {
+                mutateInput(undefined);
+            } else {
+                mutateInput(parsedJson);
+            }
+        } catch (err: any) {
+            setError("Invalid JSON: " + err.message);
+            mutateInput(undefined);
+        }
+    }
+
+
     return (
         <div className="flex flex-col gap-2 p-4 rounded-xl">
             <h4 className="text-lg font-bold">{toolMetadata?.summary}</h4>
@@ -32,15 +60,19 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
             >
                 {expanded ? "Read less" : "Read more"}
             </button>
-            {/* <div className="text-sm text-gray-500">
-                So, can i call the tool {Object.keys(tool.input)?.length > 0 ? "with the below args?" : "?"}
-            </div> */}
             {Object.keys(tool.input)?.length > 0 &&
                 (showJson ? (
                     <div className="relative max-w-[380px] self-stretch">
-                        <pre className="font-mono bg-gray-100 p-2 max-w-full w-full max-h-[200px] overflow-y-auto rounded-xl text-xs whitespace-pre-wrap">
-                            {JSON.stringify(tool.input, null, 2)}
-                        </pre>
+                        <Textarea
+                            value={jsonString}
+                            onChange={handleJsonChange}
+                            className={cn(
+                                "font-mono bg-gray-100 p-2 max-w-full w-full max-h-[200px] overflow-y-auto rounded-xl text-xs whitespace-pre-wrap",
+                                error && "border-red-500"
+                            )}
+                            rows={10}
+                        />
+                        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
                         <Button
                             variant="ghost"
                             size="icon"
@@ -85,6 +117,7 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
                             }
                         })
                     }}
+                    disabled={!!error}
                 >
                     <CheckIcon className="w-4 h-4" />
                     Yes

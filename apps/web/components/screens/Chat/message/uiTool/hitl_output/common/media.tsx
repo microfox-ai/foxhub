@@ -6,7 +6,7 @@ import {
     DialogContent,
     DialogPortal,
 } from "@/components/ui/dialog";
-import { DialogOverlay } from "@radix-ui/react-dialog";
+import { DialogOverlay, DialogTitle } from "@radix-ui/react-dialog";
 import { Expand, ExternalLink, Film, User, View, XIcon } from "lucide-react";
 import { ImageSet, VideoSet } from "@/server/ui/types";
 
@@ -66,10 +66,11 @@ export const MediaDialog = ({
         <Dialog open={!!media} onOpenChange={(open) => !open && setMedia(null)}>
             <DialogPortal>
                 <DialogOverlay className="fixed inset-0 bg-black/50 backdrop-blur-xl" />
-                <DialogContent className="min-w-4xl bg-transparent border-none shadow-none flex flex-col items-stretch gap-4">
+                <DialogContent className="w-full max-w-4xl max-h-[90vh] bg-transparent border-none shadow-none flex flex-col items-stretch gap-4 overflow-y-auto">
+                    <DialogTitle title="Expanded view" hidden />
                     <div className="flex-1">
                         {media?.type === 'image' &&
-                            <img src={media.image.originalSrc ?? media.image.src} alt={media.image.title ?? "Expanded view"} className="w-full h-auto object-contain rounded-2xl mx-auto" />
+                            <img src={media.image.originalSrc ?? media.image.src} alt={media.image.title ?? "Expanded view"} className="w-auto h-auto object-contain rounded-2xl mx-auto" />
                         }
                         {media?.type === 'video' &&
                             <VideoEmbed video={media.video} />
@@ -87,7 +88,16 @@ export const MediaDialog = ({
                             </a>
                         </div>
                     </div>}
-                    <DialogClose className="bg-black/50 rounded-full p-2 absolute top-2 right-2">
+                    {item && media?.type === "image" && <div className=" w-full bg-neutral-900/80 p-2 rounded-3xl text-white flex flex-col gap-2">
+                        <div className="px-2 py-2 text-xs text-neutral-400 flex flex-row items-center gap-2 mt-auto">
+                            <p className="font-bold text-white text-sm">{media?.image?.title}</p>
+                            <a href={media.image?.src} target="_blank" rel="noopener noreferrer" className="bg-white/50 text-black ml-auto hover:bg-white p-2 rounded-full transition-colors flex flex-row gap-2" title="View Source" onClick={(e) => e.stopPropagation()}>
+                                <ExternalLink className="w-4 h-4 text-neutral-800" />
+                                Source
+                            </a>
+                        </div>
+                    </div>}
+                    <DialogClose className="bg-black/50 rounded-full p-2 absolute top-4 right-4">
                         <XIcon className="w-4 h-4 text-white" />
                     </DialogClose>
                 </DialogContent>

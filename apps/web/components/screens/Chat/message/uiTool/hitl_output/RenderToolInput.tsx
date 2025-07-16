@@ -32,7 +32,6 @@ export const RenderToolInput = ({ tool }: {
     });
     const agentInfo = agentInfos?.find(a => a.agentName === mcpName);
 
-    console.log("hitlInput", hitlInput);
     const title = hitlOutput?.toolSummary || `${agentInfo?.title ?? mcpName}: ${toolName}`;
     const description = hitlInput?.microfoxReasoning || hitlInput?.body?.microfoxReasoning;
 

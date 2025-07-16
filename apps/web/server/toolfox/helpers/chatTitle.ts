@@ -2,7 +2,8 @@ import { models } from "@/server/models";
 import { cleanUiMessageParts } from "@/utils/helpers/array";
 import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
 import { AiContext, AiMiddleware, getTextParts } from "@microfox/ai-router";
-import { generateText } from "ai";
+import { generateObject, generateText } from "ai";
+import { z } from "zod";
 
 export const slugify = (text: string) => {
   return text
@@ -27,31 +28,37 @@ export const generateChatTitle: AiMiddleware<any, any, any, any> = async (
       clientRequest?.title === "Untitled") &&
     ctx.request.messages.length > 0
   ) {
-    console.log("generating title", clientRequest);
     const cleanedMessages = cleanUiMessageParts(ctx.request.messages, {
       removeToolCalls: true,
     });
     const textParts = cleanedMessages.map(getTextParts).flat().join("\n");
 
-    const text = await generateText({
+    const text = await generateObject({
       model: models.claudeHaiku,
       system: `
             You are a helpful assistant that can generate a title for a chat session.
             Generate a 2-5 word title for the chat session.
-            Only output the title, no other text.
+            Only generate the title, no other text.
             `,
+      schema: z.object({
+        title: z
+          .string()
+          .describe("A 4 letter compact title of the chat session"),
+      }),
       prompt: `
             Generate a title for the following chat session:
             ${textParts}
             `,
     });
 
-    const slug = slugify(text.text) + "-" + crypto.randomUUID().slice(0, 8);
+    const slug =
+      slugify(text.object.title) + "-" + crypto.randomUUID().slice(0, 8);
     const updatedClientRequest = await updateClientRequest({
       clientRequestId: clientRequest.id,
-      title: text.text,
+      title: text.object.title,
       slug: slug,
     });
+    console.log("generating title", clientRequest, slug);
 
     ctx.state.clientRequest = updatedClientRequest;
   }

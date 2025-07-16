@@ -89,6 +89,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
         });
 
         let processedMessages = trimMessagesForModel(ctx.request.messages);
+        let lastToolCallName: string | null = null;
         if (ctx.request.loadedRevalidatePath) {
             console.log("re-processing messages", ctx.request.loadedRevalidatePath);
             const processedMessagesPromise = client.processHitlToolResult(
@@ -119,10 +120,91 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 }
                 userMessage = getTextPartsContent(lastUserMessage);
             }
-            const searchForToolsPromise = ctx.next.callAgent("@/chatFlow/toolSelection", {
-                userRequest: `User Asked: ${userMessage}`,
+            let executionHistory = `
+              }"--- Execution History ---\n`;
+
+            const lastMessage =
+              processedMessages?.[processedMessages.length - 1];
+            if (lastMessage) {
+              const messageParts = lastMessage.parts
+                .map((p: any) => {
+                  if (p.type === "text") {
+                    return { type: "text", text: p.text };
+                  } else if (p.type?.startsWith("tool-")) {
+                    const toolName = p.type.substring("tool-".length);
+                    const reasoning =
+                      p.input?.body?.microfoxReasoning ||
+                      p.input?.microfoxReasoning;
+                    const toolSummary = p.output?.metadata?.summary;
+                    return { type: "tool", toolName, reasoning, toolSummary };
+                  }
+                  return null;
+                })
+                .filter(Boolean);
+
+              if (messageParts.length > 0) {
+                let stepCounter = 1;
+                messageParts.forEach((part: any) => {
+                  if (part.type === "text" && part.text?.trim()) {
+                    executionHistory += `\nStep ${stepCounter++}: Assistant Message\n`;
+                    executionHistory += `> ${part.text.trim()}\n`;
+                  } else if (part.type === "tool") {
+                    executionHistory += `\nStep ${stepCounter++}: Tool Call: ${
+                      part.toolName
+                    }\n`;
+                    executionHistory += `  - Summary: ${
+                      part.toolSummary || "No summary provided."
+                    }\n`;
+                    executionHistory += `  - Reasoning: ${
+                      part.reasoning || "No reasoning provided."
+                    }\n`;
+                  }
+                });
+              }
+            }
+            console.log("executionHistory", executionHistory);
+            
+            let lastToolPart: any = null;
+            let lastTextPart: any = null;
+
+            if (lastMessage?.parts) {
+              for (let i = lastMessage.parts.length - 1; i >= 0; i--) {
+                const part = lastMessage.parts[i];
+                if (part) {
+                  if (!lastToolPart && part.type?.startsWith("tool-")) {
+                    lastToolPart = part;
+                  }
+                  if (!lastTextPart && part.type === "text") {
+                    lastTextPart = part;
+                  }
+                  if (lastToolPart && lastTextPart) {
+                    break;
+                  }
+                }
+              }
+            }
+
+            lastToolCallName = lastToolPart
+              ? lastToolPart.type.replace("tool-", "")
+              : null;
+
+            let microfoxNextToolQuery = lastToolPart
+              ? lastToolPart.input?.body?.microfoxNextToolQuery ||
+                lastToolPart.input?.microfoxNextToolQuery
+              : null;
+            console.log("microfoxNextToolQuery", microfoxNextToolQuery);
+
+            const searchForToolsPromise = ctx.next.callAgent(
+              "@/chatFlow/toolSelection",
+              {
+                userRequest: `${userMessage}\n
+                ${lastToolCallName ? `Last tool call: ${lastToolCallName}\n` : ""}
+                ${lastTextPart ? `${lastTextPart?.text}\n` : ""}
+                ${microfoxNextToolQuery ? `Find tool for: ${microfoxNextToolQuery}\n` : ""}`,
+                // userRequest: `${userMessage}\n\n${microfoxNextToolQuery ? `Current task: ${microfoxNextToolQuery}` : (executionHistory ?? "")}${lastToolCallName ? `\n\nLast tool call: ${lastToolCallName}` : ""}`,
                 toolMode: "fast",
-            });
+              }
+            );
 
             const [processedMessagesResponse, searchForToolsResponse] = await Promise.all([processedMessagesPromise, searchForToolsPromise]);
             //console.log("searchForToolsResponse", searchForToolsResponse);
@@ -134,6 +216,9 @@ toolExecutionAgent.agent("/", async (ctx) => {
             loader: "Processing the task...",
         });
 
+        const combinedToolsSystemPromtps = client.generateSystemPrompt();
+
+        console.log("combinedToolsSystemPromtps", combinedToolsSystemPromtps);
         // ---
         // **Process Flow:**
         // -   You run in a loop of Thought, Action, PAUSE, Observation.
@@ -191,6 +276,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
             ${getMicrofoxCharacter()}
             ${getMicrofoxPersonality()}
 
+            ${combinedToolsSystemPromtps ?? `The Following are some of the tools guidelines which you need to follow to execute the respective tool: \n${combinedToolsSystemPromtps}`}
+
+            ${lastToolCallName ? `The last tool call was: ${lastToolCallName}` : ""}
+            
             Output:
             If its a small conversation, respond in small concise sentences.
             DO NOT WASTE WORDS, always be concise & get to the point.

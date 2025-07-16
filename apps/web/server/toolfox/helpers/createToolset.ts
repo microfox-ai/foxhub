@@ -51,6 +51,7 @@ export async function createToolsetForExecution(
               .describe(
                 "The text to be spoken to the user to explain whats happening"
               ),
+            microfoxNextToolQuery: z.string().optional().describe("The query to find the next tool. ALWAYS add this."),
           });
         },
       } as OpenAPIToolsClientOptions;

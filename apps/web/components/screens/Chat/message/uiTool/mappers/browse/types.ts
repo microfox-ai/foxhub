@@ -1,7 +1,7 @@
-import { ImageSet } from "../types";
+import { UiCommonTypes } from "@microfox/types";
 
 export type BrowseOutput = {
-  image_sources: ImageSet[];
+  image_sources: UiCommonTypes["ImageSet"][];
 };
 
 export type BrowseMcp = {

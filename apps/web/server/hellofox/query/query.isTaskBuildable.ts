@@ -19,7 +19,7 @@ import {
   AiToolHandler,
 } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../../microfoxRouter";
-import { uiTool } from "@/server/ui/uiTool";
+import { uiTool } from "@/components/screens/Chat/message/uiTool/mappers/uiTool";
 
 type TaskBuildableToolMetadata = {
   loader?: string;

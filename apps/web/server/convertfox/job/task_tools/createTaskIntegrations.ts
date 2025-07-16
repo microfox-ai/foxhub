@@ -18,7 +18,7 @@ import {
 } from "../../helpers/types";
 import { IN_STAGING } from "@/utils/constants/appInfo";
 import { AiToolFactory } from "@microfox/ai-router";
-import { uiTool } from "@/server/ui/uiTool";
+import { uiTool } from "@/components/screens/Chat/message/uiTool/mappers/uiTool";
 
 type CreateTaskIntegrationsToolMetadata = {
   loader?: string;

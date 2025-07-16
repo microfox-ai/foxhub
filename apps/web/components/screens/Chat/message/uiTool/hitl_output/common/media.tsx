@@ -8,20 +8,20 @@ import {
 } from "@/components/ui/dialog";
 import { DialogOverlay, DialogTitle } from "@radix-ui/react-dialog";
 import { Expand, ExternalLink, Film, User, View, XIcon } from "lucide-react";
-import { ImageSet, VideoSet } from "@/server/ui/types";
+import { UiCommonTypes } from "@microfox/types";
 
 
 export type MediaDialogItem = {
     type: "image";
-    image: ImageSet;
+    image: UiCommonTypes["ImageSet"];
     video?: never;
 } | {
     type: "video";
-    video: VideoSet;
+    video: UiCommonTypes["VideoSet"];
     image?: never;
 }
 
-const VideoEmbed = ({ video }: { video: VideoSet }) => {
+const VideoEmbed = ({ video }: { video: UiCommonTypes["VideoSet"] }) => {
     const getEmbedUrl = (url: string) => {
         if (url.includes("youtube.com/watch?v=")) {
             const videoId = url.split("v=")[1]?.split("&")[0];
@@ -106,7 +106,7 @@ export const MediaDialog = ({
     )
 }
 
-export const MediaGrid = ({ images }: { images: ImageSet[] }) => {
+export const MediaGrid = ({ images }: { images: UiCommonTypes["ImageSet"][] }) => {
     const [selectedMedia, setSelectedMedia] = useState<MediaDialogItem | null>(null);
 
     if (!images || images.length === 0) {
@@ -116,14 +116,14 @@ export const MediaGrid = ({ images }: { images: ImageSet[] }) => {
     let filteredImages = images.filter((image) => image.srcWidth ? image.srcWidth > 50 : true);
     return (
         <>
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
+            <div className="columns-2 md:columns-3 gap-2 md:gap-4">
                 {filteredImages.map((source, idx) => (
                     <div
                         onClick={() => setSelectedMedia({ type: "image", image: source })}
                         key={source.src + idx}
-                        className="relative group/media bg-neutral-900 rounded-lg overflow-hidden cursor-pointer"
+                        className="relative group/media bg-neutral-900 rounded-lg overflow-hidden cursor-pointer break-inside-avoid mb-4"
                     >
-                        <img src={source.src ?? ""} alt={source.title ?? ""} className="w-full h-auto object-cover transition-transform duration-300 group-hover/media:scale-110" />
+                        <img src={source.src ?? ""} alt={source.title ?? ""} className="w-full h-auto transition-transform duration-300 group-hover/media:scale-110" />
                         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3">
                             <div className="flex items-center gap-2 transform scale-75 group-hover/media:scale-100 transition-transform duration-300">
                                 <a href={source.imagePageUrl ?? source.pageUrl ?? source.url ?? undefined} target="_blank" rel="noopener noreferrer" className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="View Source" onClick={(e) => e.stopPropagation()}>

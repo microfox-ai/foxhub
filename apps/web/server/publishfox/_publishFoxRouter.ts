@@ -22,7 +22,7 @@ import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { publishShard } from "@/utils/services/db_functions/publishShard";
 import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
-import { uiTool } from "../ui/uiTool";
+import { uiTool } from "../../components/screens/Chat/message/uiTool/mappers/uiTool";
 
 const publishFoxAgent = new AiRouter<DefaultMessageMetadata, any, any, any>();
 

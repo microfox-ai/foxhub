@@ -8,7 +8,7 @@ import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskI
 import { Button } from "@/components/ui/button";
 import { EditTaskInfoDialog } from "./EditTaskInfoDialog";
 import { TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 
 

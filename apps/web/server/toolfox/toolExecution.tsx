@@ -11,7 +11,7 @@ import { models } from "../models";
 import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 import { prisma } from "@/prisma/prisma";
 import { getMicrofoxCharacter, getMicrofoxPersonality } from "../hellofox/_prompts";
-import { insertUiHitlOutput } from "../ui/uiHitl";
+import { insertUiHitlOutput } from "../../components/screens/Chat/message/uiTool/mappers/uiHitl";
 import { z } from "zod";
 import { restoreLastKnownState, savePassedInTools } from "./execution/loadValidateState";
 import { loadClientRequest } from "./helpers/loadClientRequest";
@@ -103,8 +103,8 @@ toolExecutionAgent.agent("/", async (ctx) => {
                         });
                         return authFilledOutput;
                     },
-                    mutateOutput: async (output, { part }) => {
-                        return await insertUiHitlOutput(output, part);
+                    mutateOutput: async (output, { part, uiMapper }) => {
+                        return await insertUiHitlOutput(output, { part, uiMapper });
                     }
                 }
             );

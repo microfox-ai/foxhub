@@ -7,7 +7,7 @@ import {
     constructShiftMinionMessage,
 } from "../../messageHelpers";
 import { useMicrofoxChat } from "../../../MicrofoxChatProvider";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 type ActionButtonsProps = Omit<UiComponentProps["buttons_list"], "uiType"> & {
     areKeysRequired?: boolean;

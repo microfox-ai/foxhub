@@ -1,7 +1,6 @@
 "use client";
 
-import { uiHitlMap } from "@/server/ui/uiHitl";
-import { ImageSet } from "@/server/ui/types";
+import { uiHitlMap } from "@/components/screens/Chat/message/uiTool/mappers/uiHitl";
 import { MediaGrid } from "../common/media";
 
 export const BrowseMediaGrid = ({

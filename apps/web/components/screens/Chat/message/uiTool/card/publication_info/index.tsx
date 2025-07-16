@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle } from "lucide-react";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 type PublicationInfoProps = Omit<UiComponentProps["card"], "uiType"> & {
   isLastInQueue?: boolean;

@@ -37,6 +37,7 @@ export const cleanUiMessageParts = (
   messages: UIMessage<any, any>[],
   options?: {
     removeAllToolCallsExceptLast?: boolean;
+    keepUIinLastMessage?: boolean;
     removeToolCalls?: boolean;
     onlyLastText?: boolean;
   }
@@ -60,7 +61,14 @@ export const cleanUiMessageParts = (
       ...m,
       parts:
         index === processedMessages.length - 1
-          ? m?.parts
+          ? options?.keepUIinLastMessage
+            ? m?.parts
+            : m?.parts?.map((p) => ({
+                ...p,
+                ...((("output" in p) as any)
+                  ? { output: { ...(p as any).output, ui: undefined } }
+                  : {}),
+              }))
           : m?.parts.filter((p) => !p.type?.startsWith("tool-")),
     }));
   }

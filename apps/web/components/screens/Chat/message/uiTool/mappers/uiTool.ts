@@ -9,6 +9,8 @@ export type HitlAuthObject = AuthObject & {
     secrets: ClientSecret[];
     selectedSecretId?: string;
     isAuthNeeded: boolean;
+    scopes?: string[];
+    reason?: string;
   }[];
 };
 

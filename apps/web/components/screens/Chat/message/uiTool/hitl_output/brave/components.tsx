@@ -1,6 +1,6 @@
 "use client";
 
-import { uiHitlMap } from "@/server/ui/uiHitl";
+import { uiHitlMap } from "@/components/screens/Chat/message/uiTool/mappers/uiHitl";
 import {
     HoverCard,
     HoverCardContent,
@@ -11,10 +11,10 @@ import React, { useEffect, useState } from "react";
 import { InternalMarkdown } from "../../../text/markdown";
 import Link from "next/link";
 import { ExternalLinkIcon, ExternalLink, Expand } from "lucide-react";
-import { WebSearchSource } from "@/server/ui/brave/types";
-import { ImageSet, VideoSet } from "@/server/ui/types";
+import { WebSearchSource } from "@/components/screens/Chat/message/uiTool/mappers/brave/types";
 import { MediaDialog, MediaGrid, MediaDialogItem } from "../common/media";
 import { prettyPrintDateAndTime, prettyPrintDateInMMMDD } from "@/utils/helpers/prettyprint";
+import { UiCommonTypes } from "@microfox/types";
 
 export const HoverSourcePopup = ({ source }: { source: WebSearchSource }) => {
     return (
@@ -156,7 +156,7 @@ export const BraveMediaGrid = ({
 
     const data = toolName in output ? output[toolName as keyof typeof output] : undefined;
     if (data && data.image_sources.length > 0) {
-        const images: ImageSet[] = data.image_sources.map((source: WebSearchSource) => ({
+        const images: UiCommonTypes["ImageSet"][] = data.image_sources.map((source: WebSearchSource) => ({
             src: source.thumbnail?.src ?? "",
             originalSrc: source.thumbnail?.originalSrc,
             title: source.title,

@@ -24,7 +24,7 @@ import { getClientSecretsFromTemplateEnvs } from "../buildfox/helper/templateEnv
 import { addTemplateSecretsToClientRequest } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
-import { uiTool } from "../ui/uiTool";
+import { uiTool } from "../../components/screens/Chat/message/uiTool/mappers/uiTool";
 
 interface ClientRequestMeta {
   repoName: string;

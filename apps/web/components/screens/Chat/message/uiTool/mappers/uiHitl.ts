@@ -1,13 +1,14 @@
 import { ToolUIPart } from "ai";
-import { HitlInput } from "./uiTool";
-import { BraveMcp } from "./brave/types";
 import { mapBraveMcp } from "./brave/mapper";
-import { BrowseMcp } from "./browse/types";
+import { BraveMcp } from "./brave/types";
 import { mapBrowseMcp } from "./browse/mapper";
+import { BrowseMcp } from "./browse/types";
+import { UiCommonTypes, AgentUi } from "@microfox/types";
 
 export type uiHitlMap = {
   brave: BraveMcp;
   "puppeteer-sls": BrowseMcp;
+  common: UiCommonTypes;
 };
 
 // tool-pkg-puppeteer-sls-webSearch | tool-agent-brave-searchWeb | tool-pkg-maximus-getStokPrice
@@ -34,7 +35,10 @@ export const parseMcpType = (type: `tool-${string}`) => {
   return { mcpType, mcpName, toolName };
 };
 
-export const insertUiHitlOutput = async (output: any, part: ToolUIPart) => {
+export const insertUiHitlOutput = async (
+  output: any,
+  { part, uiMapper }: { part: ToolUIPart; uiMapper?: AgentUi }
+) => {
   const { mcpType, mcpName, toolName } = parseMcpType(part.type);
 
   switch (mcpName) {
@@ -65,6 +69,14 @@ export const insertUiHitlOutput = async (output: any, part: ToolUIPart) => {
         },
       };
     default:
+      if (uiMapper?.outputUi?.namespace === "common") {
+        return {
+          ...output,
+          ui: {
+            outputUi: uiMapper?.outputUi,
+          },
+        };
+      }
       return output;
   }
 };

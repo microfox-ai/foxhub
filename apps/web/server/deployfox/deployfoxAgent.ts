@@ -13,7 +13,7 @@ import { AiRouter } from "@microfox/ai-router";
 import { z } from "zod";
 import { deployViaGit } from "./deployGit";
 import { IN_STAGING } from "@/utils/constants/appInfo";
-import { uiTool } from "../ui/uiTool";
+import { uiTool } from "../../components/screens/Chat/message/uiTool/mappers/uiTool";
 
 const deployfoxAgent = new AiRouter<any, any, any, any>();
 

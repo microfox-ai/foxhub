@@ -50,6 +50,9 @@ export async function GET(request: NextRequest) {
     // Example:
     const results = await prisma.clientRequest.findMany({
       where: { ...conditions },
+      orderBy: {
+        updatedAt: "desc",
+      },
       skip: (parseInt(page) - 1) * parseInt(limit),
       take: parseInt(limit),
       include: {

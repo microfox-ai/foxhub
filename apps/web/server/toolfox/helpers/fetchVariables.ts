@@ -2,7 +2,7 @@ import { prisma } from "@/prisma/prisma";
 import { ClientRequest, ClientSecret } from "@prisma/client";
 import { ClientSecretVariable } from "../../types";
 import { AuthObject, AuthOptions } from "@microfox/tool-kit";
-import { HitlAuthObject } from "../../ui/uiTool";
+import { HitlAuthObject } from "../../../components/screens/Chat/message/uiTool/mappers/uiTool";
 import { Bot } from "@/components/screens/mybots/providers/types";
 import { templateEnvsFromTaskIntegrations } from "@/server/buildfox/helper/templateEnvsFromTaskIntegrations";
 import { codeTemplateType } from "@/server/convertfox/helpers/types";

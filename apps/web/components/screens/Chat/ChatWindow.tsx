@@ -99,7 +99,7 @@ function ChatWindow() {
         className="relative h-screen gap-0"
       >
         <div className="flex items-start w-full">
-          {isCollapsed && (
+          {/* {isCollapsed && (
             <ButtonSCN
               variant="ghost"
               size="icon"
@@ -108,7 +108,7 @@ function ChatWindow() {
             >
               <PanelRightIcon style={{ height: "1rem", width: "1rem" }} />
             </ButtonSCN>
-          )}
+          )} */}
           <ChatHeader
             messages={messages}
             projectTitle={clientRequest?.title}

@@ -19,7 +19,7 @@ import { useTaskInstanceMetaContext } from "@/components/screens/providers/TaskI
 import { EditTaskIntegrationsDialog } from "./EditTaskIntegrationsDialog";
 import { Button } from "@/components/ui/button";
 import { useMicrofoxChat } from "../../../../MicrofoxChatProvider";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 type TaskIntegrationsProps = Omit<UiComponentProps['card'], 'uiType'> & {
     lastMessage?: boolean;

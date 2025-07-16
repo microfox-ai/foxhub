@@ -1,6 +1,6 @@
 "use client";
 
-import { HitlAuthObject } from "@/server/ui/uiTool";
+import { HitlAuthObject } from "@/components/screens/Chat/message/uiTool/mappers/uiTool";
 import { ClientSecret } from "@prisma/client";
 import {
     createContext,

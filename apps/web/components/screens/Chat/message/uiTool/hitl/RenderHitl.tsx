@@ -1,5 +1,5 @@
-import { UiComponentProps } from "@/server/ui/UiComponentProps"
-import { MyUiTool } from "@/server/ui/uiTool"
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps"
+import { MyUiTool } from "@/components/screens/Chat/message/uiTool/mappers/uiTool"
 import { AcceptHitl } from "./Accept"
 import { ToolUIPart } from "ai"
 

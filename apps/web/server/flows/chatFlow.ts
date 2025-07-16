@@ -1,20 +1,10 @@
 import { MinionFlow } from "@/components/screens/hooks/convertors";
-import { prisma } from "@/prisma/prisma";
-import { cleanUiMessageParts } from "@/utils/helpers/array";
-import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
-import { AiRouter, getTextParts } from "@microfox/ai-router";
-import { convertToModelMessages, generateText, streamText } from "ai";
-import {
-  getMicrofoxCharacter,
-  getMicrofoxPersonality,
-} from "../hellofox/_prompts";
+import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
-import { models } from "../models";
+import { generateChatTitle } from "../toolfox/helpers/chatTitle";
+import { loadClientRequest } from "../toolfox/helpers/loadClientRequest";
 import { toolExecutionAgent } from "../toolfox/toolExecution";
 import { toolSelectionAgent } from "../toolfox/toolSelection";
-import { TokenUsageAnalyticsTracker } from "../analytics/helper";
-import { loadClientRequest } from "../toolfox/helpers/loadClientRequest";
-import { generateChatTitle } from "../toolfox/helpers/chatTitle";
 
 const chatManager = new AiRouter<any, any, any, any>();
 

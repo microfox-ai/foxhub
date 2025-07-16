@@ -3,8 +3,9 @@ import {
   ExtraEnvVariable,
   TaskInstanceMetaType,
   TaskIntegrationPlatform,
-} from "../convertfox/helpers/types";
+} from "../../../../../../server/convertfox/helpers/types";
 import { uiHitlMap } from "./uiHitl";
+import { AgentUi } from "@microfox/types";
 
 export interface Button {
   type: "confirm" | "deny";
@@ -86,6 +87,7 @@ export interface UiComponentProps {
   };
   hitl_output: {
     uiType: "hitl_output";
+    uiOutput?: AgentUi["outputUi"];
     object?: {
       [key in keyof uiHitlMap]?: uiHitlMap[key];
     };

@@ -6,14 +6,13 @@ import { ChevronRight } from "lucide-react";
 import { useMessageParts } from "../../../MessageProvider";
 import { getLastActiveToolPart } from "../../../helpers/parts";
 import { BraveSourceBanner } from "./brave/components";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
-import { parseMcpType } from "@/server/ui/uiHitl";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
+import { parseMcpType } from "@/components/screens/Chat/message/uiTool/mappers/uiHitl";
 
 
 
 /**
- * RenderUiTool is a component that renders a UI tool (tool-ui-<component>) or sticky parts (tool-<component>).
- * usually all hitl or sticky parts (but better make a seperation by them having tool-hitl-)
+ * Render the footer for the previous step / tool call. 
  * @returns 
  */
 export const RenderToolFooter = () => {

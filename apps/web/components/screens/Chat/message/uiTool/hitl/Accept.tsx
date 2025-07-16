@@ -8,19 +8,23 @@ import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import isEqual from 'lodash.isequal';
+import { useChatUI } from "../../../ChatUiProvider";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 
 export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastMessage: boolean }) => {
     const { addHitlToolResult, mutateInput } = useHitl();
+    const { scrollToBottom } = useChatUI();
     if (tool.state !== "output-available") {
         return null;
     }
     const toolMetadata = tool.output.metadata;
 
     const [expanded, setExpanded] = useState(false);
-    const [showJson, setShowJson] = useState(true);
+    const [showJson, setShowJson] = useState(false);
 
     const [jsonString, setJsonString] = useState(JSON.stringify(tool.input, null, 2));
     const [error, setError] = useState<string | null>(null);
+
 
     useEffect(() => {
         mutateInput(undefined);
@@ -54,12 +58,16 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
             >
                 {toolMetadata?.description}
             </div>
-            <button
-                onClick={() => setExpanded(!expanded)}
-                className="text-sm -mt-2 text-gray-400 hover:underline self-start"
-            >
-                {expanded ? "Read less" : "Read more"}
-            </button>
+            {toolMetadata?.description?.length > 100 && (
+
+                <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="text-sm -mt-2 text-gray-400 hover:underline self-start"
+                >
+                    {expanded ? "Read less" : "Read more"}
+                </button>
+
+            )}
             {Object.keys(tool.input)?.length > 0 &&
                 (showJson ? (
                     <div className="relative max-w-[380px] self-stretch">
@@ -83,17 +91,27 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
                         </Button>
                     </div>
                 ) : (
+                    <div></div>
+                ))}
+            <div className="flex gap-2 pt-2 justify-end items-stretch">
+                {!showJson && (
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        onClick={() => setShowJson(true)}
+                        onClick={() => {
+                            setShowJson(true);
+                            setTimeout(() => {
+                                scrollToBottom();
+                            }, 50);
+                        }}
+                        className="flex-1 h-full bg-neutral-100 hover:bg-neutral-200"
                     >
                         Show parameters
                     </Button>
-                ))}
-            <div className="flex gap-2 pt-2">
+                )}
                 <Button
                     variant="outline"
+                    className="h-full"
                     onClick={() => {
                         addHitlToolResult({
                             toolCallId: tool.toolCallId,
@@ -103,25 +121,28 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
                         })
                     }}
                 >
-                    <XIcon className="w-4 h-4" />
                     No
                 </Button>
-                <Button
-                    variant="default"
-                    className="bg-black text-white hover:bg-black/80"
-                    onClick={() => {
-                        addHitlToolResult({
-                            toolCallId: tool.toolCallId,
-                            output: {
-                                approved: true,
-                            }
-                        })
-                    }}
-                    disabled={!!error}
+                <motion.div
+                    className="rounded-md p-[3px]"
                 >
-                    <CheckIcon className="w-4 h-4" />
-                    Yes
-                </Button>
+                    <Button
+                        variant="ghost"
+                        className="bg-black hover:bg-black/70 hover:text-white px-4 text-white p-0"
+                        onClick={() => {
+                            addHitlToolResult({
+                                toolCallId: tool.toolCallId,
+                                output: {
+                                    approved: true,
+                                }
+                            })
+                        }}
+                        disabled={!!error}
+                    >
+                        <CheckIcon className="w-3 h-3" />
+                        <span className="text-sm">Yes</span>
+                    </Button>
+                </motion.div>
             </div>
         </div>
     )

@@ -1,9 +1,28 @@
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 import { ToolUIPart } from "ai";
 import { BraveMediaGrid, BraveSourceBanner, BraveSourceHeader, BraveWebResults } from "./brave/components";
 import { BrowseMediaGrid } from "./browse/components";
+import { UiCommonTypes } from "@microfox/types";
+import { MediaGrid } from "./common/media";
+import { InfoTable } from "./common/info";
+import { PostMapper, TempMapper } from "./temp";
+import { useMessageParts } from "../../../MessageProvider";
+import { useEffect, useState } from "react";
 
-export const RenderToolOutput = ({ uiOutput, mcpName, toolName, part }: { uiOutput: UiComponentProps["hitl_output"], mcpName: string, toolName: string, part: ToolUIPart<any> }) => {
+export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part }: { fullOutput: any, uiOutput: UiComponentProps["hitl_output"], mcpName: string, toolName: string, part: ToolUIPart<any> }) => {
+
+    const [key, setKey] = useState(0);
+    const { activePart } = useMessageParts();
+
+    useEffect(() => {
+        setKey(prev => prev + 1);
+    }, [activePart, part.toolCallId])
+
+
+    const outputUi = uiOutput?.uiOutput;
+    const isMainSupport = uiOutput?.uiOutput?.supports?.find((s) => s.type === "main");
+
+
     switch (mcpName) {
         case "brave":
             switch (toolName) {
@@ -23,6 +42,48 @@ export const RenderToolOutput = ({ uiOutput, mcpName, toolName, part }: { uiOutp
                 case "extractImagesFromURL":
                     return <BrowseMediaGrid toolName={toolName} output={uiOutput.object?.["puppeteer-sls"]} />
             }
+        case "ragreddit":
+            // const uiFunctionString = TempMapper.toString();
+            // const uiFunction = new Function('data', `return (${uiFunctionString})(data);`);
+            // const data = uiFunction(fullOutput.data);
+            //console.log("ragreddit", data, fullOutput.data, toolName);
+            switch (toolName) {
+                case "searchSubreddits":
+                    return <InfoTable data={TempMapper(fullOutput.data)} />
+                case "searchSubredditPosts":
+                    return <InfoTable data={PostMapper(fullOutput.data)} />
+            }
     }
+
+    if (outputUi?.namespace === "common" && isMainSupport) {
+        const uiFunctionString = isMainSupport?.mapperFunction;
+        if (!uiFunctionString) {
+            return null;
+        }
+        const uiFunction = new Function('data', `return (${uiFunctionString})(data);`);
+        if (!uiFunction) {
+            return null;
+        }
+        const uiMappedOutput = uiFunction(fullOutput.data);
+        if (!uiMappedOutput) {
+            return null;
+        }
+        switch (isMainSupport?.mapInNameSpace as keyof UiCommonTypes) {
+            case "MediaGrid": {
+                if (uiMappedOutput) {
+                    return <MediaGrid images={uiMappedOutput.image_sources} />
+                }
+                return null;
+            }
+            case "InfoTable": {
+                if (uiMappedOutput) {
+                    // return <MediaGrid images={uiMappedOutput.image_sources} />
+                    return <InfoTable data={uiMappedOutput} />
+                }
+                return null;
+            }
+        }
+    }
+    // somehow get the uiNamespace from the agentInfo (without builking up the requestCount)
     return null;
 }

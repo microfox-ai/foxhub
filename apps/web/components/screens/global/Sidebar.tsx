@@ -36,6 +36,8 @@ import { useClientProject } from "../providers/ClientProjectProvider";
 import { FeatureBaseLinkAttributes } from "@/components/auth/FeatureBase";
 import { IN_STAGING } from "@/utils/constants/appInfo";
 import { MinionFlow } from "../hooks/convertors";
+import dayjs from "dayjs";
+import React from "react";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -80,15 +82,15 @@ const navigationConfig: NavigationConfig[] = [
     label: "Dashboard",
     href: "/dashboard",
   },
-  {
-    requiresProject: true,
-    icon: <ListIcon strokeWidth={2.5} className={cn("h-4 w-4")} />,
-    collapsedIcon: (
-      <ListIcon strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
-    ),
-    label: "All Running Tasks",
-    hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/tasks`,
-  },
+  // {
+  //   requiresProject: true,
+  //   icon: <ListIcon strokeWidth={2.5} className={cn("h-4 w-4")} />,
+  //   collapsedIcon: (
+  //     <ListIcon strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+  //   ),
+  //   label: "All Running Tasks",
+  //   hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/tasks`,
+  // },
   // {
   //   icon: <Store strokeWidth={2.5} className={cn("h-4 w-4")} />,
   //   collapsedIcon: (
@@ -132,35 +134,35 @@ const navigationConfig: NavigationConfig[] = [
     label: "Settings",
     hrefCallback: (selectedProject: BotProject) => `/project/${selectedProject?.id}/settings`,
   },
-  {
-    requiresProject: true,
-    icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
-    collapsedIcon: (
-      <Flag strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
-    ),
-    label: "Beta-Feedback",
-    href: "/feedback",
-    //attributes: FeatureBaseLinkAttributes,
-    //onClick: ({ setIsFeedbackModalOpen }) => setIsFeedbackModalOpen(true),
-  },
-  {
-    requiresProject: true,
-    icon: (
-      <MessagesSquare
-        strokeWidth={2.2}
-        className={cn("h-[1.1rem] w-[1.1rem]")}
-      />
-    ),
-    collapsedIcon: (
-      <MessageSquare strokeWidth={2.2} className={cn("h-[20px] w-[20px]")} />
-    ),
-    label: "Chat",
-    onClick: ({ isCollapsed, onCollapse }) => {
-      if (isCollapsed) {
-        onCollapse?.(false);
-      }
-    },
-  },
+  // {
+  //   requiresProject: true,
+  //   icon: <Flag strokeWidth={2.5} className={cn("h-4 w-4")} />,
+  //   collapsedIcon: (
+  //     <Flag strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+  //   ),
+  //   label: "Beta-Feedback",
+  //   href: "/feedback",
+  //   //attributes: FeatureBaseLinkAttributes,
+  //   //onClick: ({ setIsFeedbackModalOpen }) => setIsFeedbackModalOpen(true),
+  // },
+  // {
+  //   requiresProject: true,
+  //   icon: (
+  //     <MessagesSquare
+  //       strokeWidth={2.2}
+  //       className={cn("h-[1.1rem] w-[1.1rem]")}
+  //     />
+  //   ),
+  //   collapsedIcon: (
+  //     <MessageSquare strokeWidth={2.2} className={cn("h-[20px] w-[20px]")} />
+  //   ),
+  //   label: "Chat",
+  //   onClick: ({ isCollapsed, onCollapse }) => {
+  //     if (isCollapsed) {
+  //       onCollapse?.(false);
+  //     }
+  //   },
+  // },
 ];
 
 export default function Sidebar({
@@ -365,45 +367,61 @@ const RequestsList = ({
 }) => {
   if (isCollapsed) return null;
 
+  const renderDateSeparator = (currentDate: Date, prevDate?: Date) => {
+    if (!prevDate || !dayjs(currentDate).isSame(prevDate, "day")) {
+      return (
+        <div className="my-2 px-2 text-center text-xs font-semibold text-gray-400">
+          {dayjs(currentDate).format("DD MMM YYYY")}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="my-4 mx-1 space-y-1">
-      <div className="text-xs font-medium mb-2 px-2 text-gray-500">Tasks</div>
+    <div className="my-4 mx-1 space-y-1 max-h-[50vh] overflow-y-auto">
       {clientRequests?.length > 0 ? (
         clientRequests?.map(
-          (request: ClientRequest) => (
-            <Link
-              key={request?.id}
-              href={`/project/${selectedProject?.id}/request/${request?.id}`}
-              className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
-                ? "bg-gray-200 text-black"
-                : "hover:bg-gray-100"
-                }`}
-            >
-              {request.id === requestParamId ? (
-                <ChevronRight
-                  style={{
-                    marginRight: "0.5rem",
-                    height: "1rem",
-                    width: "1rem",
-                  }}
-                />
-              ) : (
-                <MessageSquare
-                  style={{
-                    marginRight: "0.5rem",
-                    height: "1rem",
-                    width: "1rem",
-                    color: "#4c4c4c",
-                  }}
-                />
-              )}
-              <span
-                className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
-              >
-                {request.title}
-              </span>
-            </Link>
-          )
+          (request: ClientRequest, index) => {
+            const prevRequest = clientRequests[index - 1];
+            return (
+              <React.Fragment key={request.id}>
+                {renderDateSeparator(request.updatedAt, prevRequest?.updatedAt)}
+                <Link
+                  key={request?.id}
+                  href={`/project/${selectedProject?.id}/request/${request?.id}`}
+                  className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
+                    ? "bg-gray-200 text-black"
+                    : "hover:bg-gray-100"
+                    }`}
+                >
+                  {request.id === requestParamId ? (
+                    <ChevronRight
+                      style={{
+                        marginRight: "0.5rem",
+                        height: "1rem",
+                        width: "1rem",
+                      }}
+                    />
+                  ) : (
+                    <MessageSquare
+                      style={{
+                        marginRight: "0.5rem",
+                        height: "1rem",
+                        width: "1rem",
+                        color: "#4c4c4c",
+                      }}
+                    />
+                  )}
+                  <span
+                    className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
+                  >
+                    {request.title}
+                  </span>
+                </Link>
+              </React.Fragment>
+            )
+          }
         )
       ) : (
         <div className="px-4 py-2 text-sm text-muted-foreground">

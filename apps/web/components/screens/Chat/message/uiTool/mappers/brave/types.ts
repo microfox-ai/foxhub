@@ -1,4 +1,4 @@
-import { ImageSet, VideoSet } from "../types";
+import { UiCommonTypes } from "@microfox/types";
 
 export type WebSearchSource = {
   timestamp?: string;
@@ -6,9 +6,9 @@ export type WebSearchSource = {
   displayDate?: string;
   title?: string;
   subType?: string; // article, generic
-  icon?: Partial<ImageSet>;
-  thumbnail?: Partial<ImageSet>;
-  meta_media?: Partial<VideoSet>;
+  icon?: Partial<UiCommonTypes["ImageSet"]>;
+  thumbnail?: Partial<UiCommonTypes["ImageSet"]>;
+  meta_media?: Partial<UiCommonTypes["VideoSet"]>;
   meta_url?: {
     favicon?: string;
     hostname?: string;

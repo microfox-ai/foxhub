@@ -21,7 +21,12 @@ export async function createToolsetForExecution(
       return {
         schema: mcp.openApiSchema as any,
         baseUrl: mcp.base_url,
-        name: "pkgAgent" + mcp.package_name,
+        name:
+          mcp.api_type === "package-sls"
+            ? "pkgAgent" + mcp.package_name
+            : mcp.api_type === "micro-agent"
+              ? "microAgent" + mcp.package_name
+              : mcp.api_type,
         getAuth: async (options: AuthOptions) => {
           const output = await fetchAuthSecrets(options, {
             clientRequest,

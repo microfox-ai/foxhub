@@ -4,6 +4,7 @@ import * as React from "react";
 import { Check, ChevronsUpDown, ChevronUp } from "lucide-react";
 import useSWR from "swr";
 import debounce from "lodash/debounce";
+import { AgentInfo } from "@microfox/types";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -98,23 +99,29 @@ export const McpSelect = () => {
                             {isLoading ? "Searching..." : "No MCP found."}
                         </CommandEmpty>
                         <CommandGroup className="max-h-[200px] overflow-y-auto">
-                            {mcps?.map((mcp) => (
-                                <CommandItem
-                                    key={mcp.id}
-                                    value={mcp.name}
-                                    onSelect={() => handleSelect(mcp)}
-                                >
-                                    {mcp.package_name}
-                                    <Check
-                                        className={cn(
-                                            "mr-2 h-4 w-4",
-                                            selectedMcps.some((selected) => selected.id === mcp.id)
-                                                ? "opacity-100"
-                                                : "opacity-0"
+                            {mcps?.map((mcp) => {
+                                const agentInfo = mcp.metadata.docs_data?.info as AgentInfo;
+                                return (
+                                    <CommandItem
+                                        key={mcp.id}
+                                        value={mcp.name}
+                                        onSelect={() => handleSelect(mcp)}
+                                    >
+                                        {agentInfo?.iconUrl && (
+                                            <img src={agentInfo.iconUrl} alt={agentInfo?.title} className="w-4 h-4 rounded-full" />
                                         )}
-                                    />
-                                </CommandItem>
-                            ))}
+                                        {agentInfo?.title ?? mcp.package_name}
+                                        <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                selectedMcps.some((selected) => selected.id === mcp.id)
+                                                    ? "opacity-100"
+                                                    : "opacity-0"
+                                            )}
+                                        />
+                                    </CommandItem>
+                                )
+                            })}
                         </CommandGroup>
                     </CommandList>
                 </Command>

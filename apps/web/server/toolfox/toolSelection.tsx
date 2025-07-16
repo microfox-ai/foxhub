@@ -151,7 +151,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
                 })
             ),
             prompt: `
-            User's Request: ${userMessage}
+            User's Message: ${userMessage}
         `,
         });
         console.timeEnd("Deep Search: AI - Generate Search Queries");
@@ -270,6 +270,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
 
     console.log("final updating to state tools", toolPopulatedMcps.length);
     ctx.state.toolPopulatedMcps = toolPopulatedMcps;
+    console.log("toolPopulatedMcps", ctx.state.toolPopulatedMcps);
     //console.log("toolPopulatedMcps", toolPopulatedMcps);
 
     // await ctx.next.callAgent("@/chatFlow/toolExecution", {

@@ -112,7 +112,7 @@ const pickSecrets = (
 
 export const cleanSecretsForAuthObject = (authObject: AuthObject) => {
   const output = { ...authObject };
-  for (const secret of output.secrets) {
+  for (const secret of output?.secrets) {
     secret.secrets = secret.secrets.map((s: ClientSecret) => {
       return {
         ...s,
@@ -137,7 +137,7 @@ export const getVariablesForAuthObject = async (
   }
 ) => {
   const output = { ...authObject };
-  for (const secret of output.secrets) {
+  for (const secret of output?.secrets) {
     if (secret.selectedSecretId) {
       let selectedSecret = secret.secrets.find(
         (s: ClientSecret) => s.id === secret.selectedSecretId
@@ -245,7 +245,7 @@ export const fetchAuthSecrets = async (
       (s) => s.packageName === _package.packageName
     );
     if (!finalPackages.find((p) => p.packageName === _package.packageName)) {
-      output.secrets.push({
+      output?.secrets?.push({
         packageName: _package.packageName,
         packageConstructor: _package.packageConstructor,
         isAuthNeeded: false,
@@ -261,7 +261,7 @@ export const fetchAuthSecrets = async (
         configuration.userId
       );
       const variables = fetchSecretVariables(pickedSecret);
-      output.secrets.push({
+      output?.secrets.push({
         packageName: _package.packageName,
         packageConstructor: _package.packageConstructor,
         selectedSecretId: pickedSecret.id,
@@ -270,7 +270,7 @@ export const fetchAuthSecrets = async (
       });
       output.variables = output.variables?.concat(variables) ?? variables;
     } else {
-      output.secrets.push({
+      output?.secrets.push({
         packageName: _package.packageName,
         packageConstructor: _package.packageConstructor,
         selectedSecretId: undefined,

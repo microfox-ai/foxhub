@@ -39,7 +39,7 @@
     "@microfox/linkedin-oauth": "^1.2.0",
     "@microfox/notion": "^1.1.1",
     "@microfox/notion-oauth": "^1.1.0",
-    "@microfox/oauth-kit": "^1.1.0",
+    "@microfox/oauth-kit": "^1.1.1",
     "@microfox/reddit-oauth": "^1.4.0",
     "@microfox/serverless-yml": "^1.1.0",
     "@microfox/slack-oauth": "^1.2.0",

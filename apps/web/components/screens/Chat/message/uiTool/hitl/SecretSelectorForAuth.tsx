@@ -1,6 +1,6 @@
 import { ClientSecret } from "@prisma/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronDown, HelpCircleIcon } from "lucide-react";
+import { Check, ChevronDown, HelpCircleIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { Identity } from "@microfox/oauth-kit";
 import { ClientSecretVariable } from "@/server/types";
@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from "@/components/ui/badge";
 import { Package } from "../../types";
 import { prettyPrintDuration, prettySinceTime } from "@/utils/helpers/prettyprint";
+import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
+import { TaskIntegrations } from "../card/task_integrations/TaskIntegrations";
 
 export type AuthSecretRequest = {
     packageName: string;
@@ -23,6 +25,7 @@ interface SecretSelectorForAuthProps {
     packageAuth: AuthSecretRequest;
     packageInfo: Package;
     onSelectSecret: (secret: ClientSecret, packageName: string) => void;
+    refetchSecrets: () => void;
 }
 
 const fetchDisplayName = (secret: ClientSecret | undefined) => {
@@ -86,10 +89,73 @@ const fetchTooltipContent = (secret: ClientSecret | undefined): string => {
     return content;
 }
 
+interface AddNewSecretDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    packageAuth: AuthSecretRequest;
+    packageInfo: Package;
+}
 
-export const SecretSelectorForAuth = ({ packageAuth, packageInfo, onSelectSecret }: SecretSelectorForAuthProps) => {
+const AddNewSecretDialog = ({ isOpen, onClose, packageAuth, packageInfo }: AddNewSecretDialogProps) => {
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <div className="flex flex-col bg-white rounded-xl">
+                    <div className="flex flex-row items-end gap-2 justify-start gap-2 border-b border-gray-200 pt-3 px-3">
+                        <img src="/logo-mini-color.png" alt="Secret Icon" className="w-18 h-18" />
+                        <div className="flex flex-col justify-end py-2 pl-4">
+                            <div className="flex flex-row items-center gap-2 mb-1">
+                                <h2 className="text-xl font-bold">Connect me.</h2>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <HelpCircleIcon className="w-4 h-4 text-gray-500 cursor-pointer" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-[300px]">
+                                            <p>Microfox will always ask you permission before doing any action.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                            <h3 className="text-sm text-gray-500">Hey ! Can you give me access,<br /> i need it to finish your request.</h3>
+                        </div>
+                    </div>
+                    <div className="p-4">
+                        <TaskIntegrations
+                            buttons={[]}
+                            object={{
+                                objectType: "task_integrations",
+                                object: {
+                                    platforms: [{
+                                        name: packageInfo?.title ?? packageAuth.packageName,
+                                        reason: packageAuth.reason ?? "",
+                                        optional: false,
+                                        package: packageAuth.packageName,
+                                        scopes: packageAuth.scopes ?? [],
+                                    }],
+                                },
+                            }}
+                            onAllSecretsFilled={() => {
+                                onClose();
+                            }}
+                            hideMetaInfo={true}
+                            hideButtons={true}
+                            text=""
+                            isLastInQueue={true}
+                            lastMessage={false}
+                        />
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
+export const SecretSelectorForAuth = ({ packageAuth, packageInfo, onSelectSecret, refetchSecrets }: SecretSelectorForAuthProps) => {
     const [popoverOpen, setPopoverOpen] = useState(false);
     const selectedSecret = packageAuth.secrets.find(s => s.id === packageAuth.selectedSecretId);
+    const [addSecretOpen, setAddSecretOpen] = useState(false);
 
     return (
         <div className="flex flex-row items-start justify-between gap-2 border-b border-gray-200 py-3 px-3 w-full">
@@ -128,6 +194,14 @@ export const SecretSelectorForAuth = ({ packageAuth, packageInfo, onSelectSecret
                                         }
                                     </div>
                                 ))}
+                                <div
+                                    onClick={() => {
+                                        setAddSecretOpen(true);
+                                        setPopoverOpen(false);
+                                    }}
+                                    className="flex flex-row gap-2 items-center hover:bg-gray-100 p-2 rounded-xl cursor-pointer">
+                                    <h3 className="text-sm text-muted-foreground">Add new secret</h3>
+                                </div>
                             </div>
                         </PopoverContent>
                     </Popover>
@@ -143,6 +217,15 @@ export const SecretSelectorForAuth = ({ packageAuth, packageInfo, onSelectSecret
                     </TooltipProvider>
                 </div>
             )}
+            <AddNewSecretDialog
+                isOpen={addSecretOpen}
+                onClose={() => {
+                    setAddSecretOpen(false);
+                    refetchSecrets();
+                }}
+                packageAuth={packageAuth}
+                packageInfo={packageInfo}
+            />
         </div>
     )
 } 

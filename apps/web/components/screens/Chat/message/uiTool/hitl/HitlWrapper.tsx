@@ -132,6 +132,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
                 packageAuth={singlePackageSecret}
                 packageInfo={singlePackage}
                 onSelectSecret={selectSecret}
+                refetchSecrets={refetchHitlAuth}
             />
         )}
         {!isSinglePackage && (
@@ -192,6 +193,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
                                     packageAuth={s}
                                     packageInfo={packageInfo}
                                     onSelectSecret={selectSecret}
+                                    refetchSecrets={refetchHitlAuth}
                                 />
                             )
                         })}

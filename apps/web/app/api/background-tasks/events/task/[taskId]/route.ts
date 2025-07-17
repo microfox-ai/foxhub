@@ -34,7 +34,7 @@ export async function POST(
     );
     if (
       request.headers.get("x-task-protection-key") !==
-      process.env.TASK_PROTECTION_KEY
+      process.env.TASK_API_PROTECTION_KEY
     ) {
       console.log("unauthorized");
       return NextResponse.json(

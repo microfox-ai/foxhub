@@ -14,7 +14,7 @@ export async function generateMetadata(
     { params }: Props
 ): Promise<Metadata> {
     const { article_id } = await params;
-    const articleData = await getArticleData(article_id);
+    const articleData = await getArticleData(article_id, process.env.NOTION_MARKIT_TOKEN);
 
     if (!articleData.page) {
         return {

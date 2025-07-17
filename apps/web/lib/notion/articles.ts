@@ -37,6 +37,7 @@ const getBlocksWithChildren = cache(
 // Cache the page retrieval function
 const getNotionPage = cache(async (pageId: string, token?: string) => {
   if (token) {
+    console.log("markit-token", token);
     const notionClient = new NotionClient({
       auth: token,
     });
@@ -44,6 +45,7 @@ const getNotionPage = cache(async (pageId: string, token?: string) => {
       page_id: pageId,
     });
   }
+  console.log("markit-token-2", process.env.NOTION_BOT_TOKEN);
   return await client.pages.retrieve({
     page_id: pageId,
   });

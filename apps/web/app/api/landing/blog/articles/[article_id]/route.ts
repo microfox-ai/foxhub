@@ -10,6 +10,8 @@ export async function GET(
 ) {
   try {
     const { article_id } = await params;
+    const { searchParams } = new URL(request.url);
+    const tokenType = searchParams.get("tokenType");
 
     if (!article_id) {
       return NextResponse.json(
@@ -18,7 +20,14 @@ export async function GET(
       );
     }
 
-    const { page, content } = await getArticleData(article_id);
+    const { page, content } = await getArticleData(
+      article_id,
+      tokenType === "oauth2"
+        ? process.env.NOTION_ACCESS_TOKEN
+        : tokenType === "markit"
+          ? process.env.NOTION_MARKIT_TOKEN
+          : undefined
+    );
 
     const response = NextResponse.json({
       page,

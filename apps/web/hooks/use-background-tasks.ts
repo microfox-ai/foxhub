@@ -22,7 +22,7 @@ export const useBackgroundTasksHook = (url: string | null) => {
 
   const { data, error: swrError } = useSWRSubscription(
     // Only subscribe if taskId is provided
-    url,
+    (process.env.NEXT_PUBLIC_TASK_API_BASE_URL ?? "") + url,
     (key, { next }) => {
       if (!key) {
         return () => {};

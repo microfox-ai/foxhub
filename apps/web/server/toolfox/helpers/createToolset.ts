@@ -28,6 +28,7 @@ export async function createToolsetForExecution(
               ? "microAgent" + mcp.package_name
               : mcp.api_type,
         getAuth: async (options: AuthOptions) => {
+          console.log("inserting auth variables", options);
           const output = await fetchAuthSecrets(options, {
             clientRequest,
             fillEncryptionKey: true,
@@ -56,7 +57,10 @@ export async function createToolsetForExecution(
               .describe(
                 "The text to be spoken to the user to explain whats happening"
               ),
-            microfoxNextToolQuery: z.string().optional().describe("The query to find the next tool. ALWAYS add this."),
+            microfoxNextToolQuery: z
+              .string()
+              .optional()
+              .describe("The query to find the next tool. ALWAYS add this."),
           });
         },
       } as OpenAPIToolsClientOptions;

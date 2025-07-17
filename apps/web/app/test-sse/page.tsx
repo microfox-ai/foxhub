@@ -1,12 +1,12 @@
 "use client";
 
-import { useBackgroundTasks } from "@/hooks/use-background-tasks";
+import { useBackgroundTasksHook } from "@/hooks/use-background-tasks";
 import { useState } from "react";
 
 export default function SseTestPage() {
   const [taskId, setTaskId] = useState("test-task-123");
   const [inputTaskId, setInputTaskId] = useState("test-task-123");
-  const { metadata, response, taskState, isCompleted, error, sseStatus } = useBackgroundTasks(taskId);
+  const { metadata, response, taskState, isCompleted, error, sseStatus } = useBackgroundTasksHook(taskId);
   const [isSending, setIsSending] = useState(false);
 
   const handleSendMessage = async () => {
@@ -32,7 +32,7 @@ export default function SseTestPage() {
       setIsSending(false);
     }
   };
-  
+
   const handleConnect = () => {
     setTaskId(inputTaskId);
   };
@@ -59,14 +59,13 @@ export default function SseTestPage() {
             Connect
           </button>
         </div>
-        
+
         <div className="mb-4 p-4 bg-gray-700 rounded-md">
           <p className="font-semibold">
             Connection Status:{" "}
             <span
-              className={`font-bold ${
-                sseStatus === "connected" ? "text-green-400" : "text-red-400"
-              }`}
+              className={`font-bold ${sseStatus === "connected" ? "text-green-400" : "text-red-400"
+                }`}
             >
               {sseStatus}
             </span>
@@ -89,15 +88,15 @@ export default function SseTestPage() {
             Last Received Message:
           </h2>
           <pre className="text-sm text-gray-200 whitespace-pre-wrap">
-           Task Status: {taskState || "No status"}
-           <br />
-           Error: {JSON.stringify(error) || "No error"}
-           <br />
-           Response: {JSON.stringify(response) || "No response"}
-           <br />
-           Metadata: {JSON.stringify(metadata) || "No metadata"}
-           <br />
-           Is Completed: {isCompleted ? "Yes" : "No"}
+            Task Status: {taskState || "No status"}
+            <br />
+            Error: {JSON.stringify(error) || "No error"}
+            <br />
+            Response: {JSON.stringify(response) || "No response"}
+            <br />
+            Metadata: {JSON.stringify(metadata) || "No metadata"}
+            <br />
+            Is Completed: {isCompleted ? "Yes" : "No"}
           </pre>
         </div>
       </div>

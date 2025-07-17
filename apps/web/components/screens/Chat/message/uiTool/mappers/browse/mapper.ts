@@ -34,7 +34,7 @@ const mapBrowseImageSearch = (data: any, part?: ToolUIPart) => {
         return webSearchSource;
       });
   } else if (!Array.isArray(data)) {
-    console.log("data", data);
+    //console.log("data", data);
   }
   return output as BrowseOutput;
 };

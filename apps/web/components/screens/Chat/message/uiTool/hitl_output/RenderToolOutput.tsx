@@ -8,6 +8,7 @@ import { InfoTable } from "./common/info";
 import { PostMapper, TempMapper } from "./temp";
 import { useMessageParts } from "../../../MessageProvider";
 import { useEffect, useState } from "react";
+import { TaskPlaceholder } from "./TaskPlaceholder";
 
 export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part }: { fullOutput: any, uiOutput: UiComponentProps["hitl_output"], mcpName: string, toolName: string, part: ToolUIPart<any> }) => {
 
@@ -22,6 +23,12 @@ export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part
     const outputUi = uiOutput?.uiOutput;
     const isMainSupport = uiOutput?.uiOutput?.supports?.find((s) => s.type === "main");
 
+
+    // a placeholder UI for taskId type of outputs (if a match is done, update the message both on frontend & backend)
+
+    if (fullOutput.data?.taskId) {
+        return <TaskPlaceholder taskId={fullOutput.data.taskId} mcpName={mcpName} toolName={toolName} />
+    }
 
     switch (mcpName) {
         case "brave":

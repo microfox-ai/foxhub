@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import useSWRSubscription from "swr/subscription";
 
-type TaskStatus = "submitted" | "processing" | "completed" | "failed";
+export type TaskStatus = "submitted" | "processing" | "completed" | "failed";
 
-interface TaskUpdate {
+export interface TaskUpdate {
   // Define the structure of the data you expect to receive
   [key: string]: any;
 }
 
-export const useBackgroundTasks = (taskId: string | null) => {
+export const useBackgroundTasksHook = (url: string | null) => {
   const [metadata, setMetadata] = useState<TaskUpdate | null>(null);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [response, setResponse] = useState<TaskUpdate | null>(null);
@@ -18,29 +18,31 @@ export const useBackgroundTasks = (taskId: string | null) => {
     "connecting" | "connected" | "disconnected"
   >("connecting");
 
+  console.log("task-processing url", url);
+
   const { data, error: swrError } = useSWRSubscription(
     // Only subscribe if taskId is provided
-    taskId ? `/api/background-tasks/events/${taskId}` : null,
+    url,
     (key, { next }) => {
       if (!key) {
-        return () => { };
+        return () => {};
       }
       const eventSource = new EventSource(key);
 
       eventSource.onopen = () => {
         setSseStatus("connected");
-        console.log(`SSE: Connection opened for channel ${taskId}`);
+        console.log(`SSE: Connection opened for channel ${url}`);
       };
 
       eventSource.addEventListener("update", (event: MessageEvent) => {
         try {
           const data: TaskUpdate = JSON.parse(event.data);
-          console.log("update", data)
+          console.log("SSE: update", data);
           setTaskState(data.state);
           setMetadata(data.metadata);
           next(null, data);
         } catch (err) {
-          console.error("Failed to parse SSE message data", err);
+          console.error("SSE: Failed to parse SSE message data", err);
         }
       });
 
@@ -53,7 +55,7 @@ export const useBackgroundTasks = (taskId: string | null) => {
           setIsCompleted(true);
           next(null, data);
         } catch (err) {
-          console.error("Failed to parse SSE message data", err);
+          console.error("SSE: Failed to parse SSE message data", err);
         }
       });
 
@@ -66,10 +68,9 @@ export const useBackgroundTasks = (taskId: string | null) => {
           setIsCompleted(false);
           next(null, data);
         } catch (err) {
-          console.error("Failed to parse SSE message data", err);
+          console.error("SSE: Failed to parse SSE message data", err);
         }
       });
-
 
       eventSource.onerror = (err: Event) => {
         setSseStatus("disconnected");
@@ -80,10 +81,16 @@ export const useBackgroundTasks = (taskId: string | null) => {
       return () => {
         eventSource.close();
         setSseStatus("disconnected");
-        console.log(`SSE: Connection closed for channel ${taskId}`);
+        console.log(`SSE: Connection closed for channel ${url}`);
       };
     }
   );
+
+  useEffect(() => {
+    if (data) {
+      console.log("data", data);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (swrError) {
@@ -99,4 +106,4 @@ export const useBackgroundTasks = (taskId: string | null) => {
     taskState,
     isCompleted,
   };
-}; 
+};

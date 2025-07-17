@@ -97,6 +97,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 {
                     dataStream: ctx.response,
                     inserAuthVariables: async (_authObject: AuthObject) => {
+                        console.log("inserting auth variables", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
                             refetchFromDb: true,
@@ -124,86 +125,83 @@ toolExecutionAgent.agent("/", async (ctx) => {
               }"--- Execution History ---\n`;
 
             const lastMessage =
-              processedMessages?.[processedMessages.length - 1];
+                processedMessages?.[processedMessages.length - 1];
             if (lastMessage) {
-              const messageParts = lastMessage.parts
-                .map((p: any) => {
-                  if (p.type === "text") {
-                    return { type: "text", text: p.text };
-                  } else if (p.type?.startsWith("tool-")) {
-                    const toolName = p.type.substring("tool-".length);
-                    const reasoning =
-                      p.input?.body?.microfoxReasoning ||
-                      p.input?.microfoxReasoning;
-                    const toolSummary = p.output?.metadata?.summary;
-                    return { type: "tool", toolName, reasoning, toolSummary };
-                  }
-                  return null;
-                })
-                .filter(Boolean);
+                const messageParts = lastMessage.parts
+                    .map((p: any) => {
+                        if (p.type === "text") {
+                            return { type: "text", text: p.text };
+                        } else if (p.type?.startsWith("tool-")) {
+                            const toolName = p.type.substring("tool-".length);
+                            const reasoning =
+                                p.input?.body?.microfoxReasoning ||
+                                p.input?.microfoxReasoning;
+                            const toolSummary = p.output?.metadata?.summary;
+                            return { type: "tool", toolName, reasoning, toolSummary };
+                        }
+                        return null;
+                    })
+                    .filter(Boolean);
 
-              if (messageParts.length > 0) {
-                let stepCounter = 1;
-                messageParts.forEach((part: any) => {
-                  if (part.type === "text" && part.text?.trim()) {
-                    executionHistory += `\nStep ${stepCounter++}: Assistant Message\n`;
-                    executionHistory += `> ${part.text.trim()}\n`;
-                  } else if (part.type === "tool") {
-                    executionHistory += `\nStep ${stepCounter++}: Tool Call: ${
-                      part.toolName
-                    }\n`;
-                    executionHistory += `  - Summary: ${
-                      part.toolSummary || "No summary provided."
-                    }\n`;
-                    executionHistory += `  - Reasoning: ${
-                      part.reasoning || "No reasoning provided."
-                    }\n`;
-                  }
-                });
-              }
+                if (messageParts.length > 0) {
+                    let stepCounter = 1;
+                    messageParts.forEach((part: any) => {
+                        if (part.type === "text" && part.text?.trim()) {
+                            executionHistory += `\nStep ${stepCounter++}: Assistant Message\n`;
+                            executionHistory += `> ${part.text.trim()}\n`;
+                        } else if (part.type === "tool") {
+                            executionHistory += `\nStep ${stepCounter++}: Tool Call: ${part.toolName
+                                }\n`;
+                            executionHistory += `  - Summary: ${part.toolSummary || "No summary provided."
+                                }\n`;
+                            executionHistory += `  - Reasoning: ${part.reasoning || "No reasoning provided."
+                                }\n`;
+                        }
+                    });
+                }
             }
             console.log("executionHistory", executionHistory);
-            
+
             let lastToolPart: any = null;
             let lastTextPart: any = null;
 
             if (lastMessage?.parts) {
-              for (let i = lastMessage.parts.length - 1; i >= 0; i--) {
-                const part = lastMessage.parts[i];
-                if (part) {
-                  if (!lastToolPart && part.type?.startsWith("tool-")) {
-                    lastToolPart = part;
-                  }
-                  if (!lastTextPart && part.type === "text") {
-                    lastTextPart = part;
-                  }
-                  if (lastToolPart && lastTextPart) {
-                    break;
-                  }
+                for (let i = lastMessage.parts.length - 1; i >= 0; i--) {
+                    const part = lastMessage.parts[i];
+                    if (part) {
+                        if (!lastToolPart && part.type?.startsWith("tool-")) {
+                            lastToolPart = part;
+                        }
+                        if (!lastTextPart && part.type === "text") {
+                            lastTextPart = part;
+                        }
+                        if (lastToolPart && lastTextPart) {
+                            break;
+                        }
+                    }
                 }
-              }
             }
 
             lastToolCallName = lastToolPart
-              ? lastToolPart.type.replace("tool-", "")
-              : null;
+                ? lastToolPart.type.replace("tool-", "")
+                : null;
 
             let microfoxNextToolQuery = lastToolPart
-              ? lastToolPart.input?.body?.microfoxNextToolQuery ||
+                ? lastToolPart.input?.body?.microfoxNextToolQuery ||
                 lastToolPart.input?.microfoxNextToolQuery
-              : null;
+                : null;
             console.log("microfoxNextToolQuery", microfoxNextToolQuery);
 
             const searchForToolsPromise = ctx.next.callAgent(
-              "@/chatFlow/toolSelection",
-              {
-                userRequest: `${userMessage}\n
+                "@/chatFlow/toolSelection",
+                {
+                    userRequest: `${userMessage}\n
                 ${lastToolCallName ? `Last tool call: ${lastToolCallName}\n` : ""}
                 ${lastTextPart ? `${lastTextPart?.text}\n` : ""}
                 ${microfoxNextToolQuery ? `Find tool for: ${microfoxNextToolQuery}\n` : ""}`,
-                // userRequest: `${userMessage}\n\n${microfoxNextToolQuery ? `Current task: ${microfoxNextToolQuery}` : (executionHistory ?? "")}${lastToolCallName ? `\n\nLast tool call: ${lastToolCallName}` : ""}`,
-                toolMode: "fast",
-              }
+                    // userRequest: `${userMessage}\n\n${microfoxNextToolQuery ? `Current task: ${microfoxNextToolQuery}` : (executionHistory ?? "")}${lastToolCallName ? `\n\nLast tool call: ${lastToolCallName}` : ""}`,
+                    toolMode: "fast",
+                }
             );
 
             const [processedMessagesResponse, searchForToolsResponse] = await Promise.all([processedMessagesPromise, searchForToolsPromise]);
@@ -231,9 +229,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
-        console.log("Inserted tool set", Object.keys(toolSet.tools), JSON.stringify(convertToModelMessages(cleanUiMessageParts(processedMessages, {
-            removeAllToolCallsExceptLast: true,
-        })), null, 2));
+        console.log("Inserted tool set", Object.keys(toolSet.tools));
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
@@ -302,6 +298,12 @@ toolExecutionAgent.agent("/", async (ctx) => {
             stopWhen: (s) => {
                 if (s.steps.length > 0) {
                     console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults, s.steps[s.steps.length - 1]?.finishReason);
+                    const lastStep = s.steps[s.steps.length - 1];
+                    const isBackgroundTask = lastStep?.toolResults?.some((result: any) => result.output?.data?.task_id);
+                    console.log("isBackgroundTask task_ids", lastStep?.toolResults?.map((result: any) => result));
+                    if (isBackgroundTask) {
+                        return true;
+                    }
                 }
                 return client.isHitlStep()(s);
             },

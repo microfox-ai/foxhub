@@ -63,7 +63,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
         console.log("filtering toolPopulatedMcps", toolPopulatedMcps.length, Object.keys(toolPopulatedMcps));
         console.log("state.toolExecType", state.toolExecType);
-        console.log("toolPopulatedMcps", toolPopulatedMcps.length);
+        //console.log("toolPopulatedMcps", toolPopulatedMcps.length);
         toolPopulatedMcps = toolPopulatedMcps.filter((mcp: ApiMcp) =>
             mcp?.openApiSchema != null && mcp?.openApiSchema != undefined &&
             mcp?.openApiSchema?.paths != null && mcp?.openApiSchema?.paths != undefined
@@ -214,6 +214,19 @@ toolExecutionAgent.agent("/", async (ctx) => {
             loader: "Processing the task...",
         });
 
+        // if the last message last tool call has task_id, end the response by saying that.
+        const lastMessage = processedMessages?.[processedMessages.length - 1];
+        if (lastMessage?.parts) {
+            const lastToolPart = findLastElementWith(lastMessage.parts, (part: any) => part.type?.startsWith("tool-"));
+            if ((lastToolPart as any)?.output?.backgroundTask) {
+                return;
+                response.write({
+                    type: "text",
+                    text: "Task is running in the background. Will update you when done.",
+                });
+            }
+        }
+
         const combinedToolsSystemPromtps = client.generateSystemPrompt();
 
         console.log("combinedToolsSystemPromtps", combinedToolsSystemPromtps);
@@ -298,12 +311,12 @@ toolExecutionAgent.agent("/", async (ctx) => {
             stopWhen: (s) => {
                 if (s.steps.length > 0) {
                     console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults, s.steps[s.steps.length - 1]?.finishReason);
-                    const lastStep = s.steps[s.steps.length - 1];
-                    const isBackgroundTask = lastStep?.toolResults?.some((result: any) => result.output?.data?.task_id);
-                    console.log("isBackgroundTask task_ids", lastStep?.toolResults?.map((result: any) => result));
-                    if (isBackgroundTask) {
-                        return true;
-                    }
+                    // const lastStep = s.steps[s.steps.length - 1];
+                    // const isBackgroundTask = lastStep?.toolResults?.some((result: any) => result.output?.data?.task_id);
+                    // //console.log("isBackgroundTask task_ids", lastStep?.toolResults?.map((result: any) => result));
+                    // if (isBackgroundTask) {
+                    //     return true;
+                    // }
                 }
                 return client.isHitlStep()(s);
             },

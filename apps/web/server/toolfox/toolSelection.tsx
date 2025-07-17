@@ -270,7 +270,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
 
     console.log("final updating to state tools", toolPopulatedMcps.length);
     ctx.state.toolPopulatedMcps = toolPopulatedMcps;
-    console.log("toolPopulatedMcps", ctx.state.toolPopulatedMcps);
+    //console.log("toolPopulatedMcps", ctx.state.toolPopulatedMcps);
     //console.log("toolPopulatedMcps", toolPopulatedMcps);
 
     // await ctx.next.callAgent("@/chatFlow/toolExecution", {

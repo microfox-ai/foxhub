@@ -53,7 +53,13 @@ export async function POST(
         { status: 400 }
       );
     }
+    console.log(
+      "isClientUpdate",
+      isClientUpdate,
+      defaultChannel.activeSessions?.length
+    );
     if (isClientUpdate && defaultChannel.activeSessions?.length > 0) {
+      console.log("broadcasting event", data, defaultChannel.activeSessions);
       defaultChannel.broadcast(data, event, {
         filter: (session) =>
           Boolean(

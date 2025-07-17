@@ -73,6 +73,15 @@ export const templateEnvsFromTaskIntegrations = async (
       isOptional: false,
     });
   }
+  if (process.env.TASK_API_BASE_URL) {
+    templatedEnvs.push({
+      key: "TASK_API_BASE_URL",
+      package: "ids-internal",
+      constructorFunction: "microfox",
+      value: process.env.TASK_API_BASE_URL,
+      isOptional: false,
+    });
+  }
   return templatedEnvs as InternalTemplateEnv[];
 };
 

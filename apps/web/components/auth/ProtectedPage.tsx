@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server-client";
 import { redirect } from "next/navigation";
 import { prisma } from "@/prisma/prisma";
 import { APP_BASE_URL, IN_DEV } from "@/utils/constants/appInfo";
+import { WaitlistedInfo } from "./Waitlisted";
 
 export default async function ProtectedPage({
   children,
@@ -29,12 +30,8 @@ export default async function ProtectedPage({
 
   if (isProduction) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h4>
-          This feature is only available in{" "}
-          <a href="https://staging.microfox.app">staging.microfox.app</a> for
-          now.
-        </h4>
+      <div className="flex items-center justify-center h-screen p-4">
+        <WaitlistedInfo />
       </div>
     );
   }

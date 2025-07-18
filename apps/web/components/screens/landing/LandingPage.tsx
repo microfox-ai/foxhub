@@ -10,8 +10,14 @@ import TechnicalSection from './TechnicalSection/TechnicalSection';
 import MicrofoxSection from './MicrofoxSection/MicrofoxSection';
 import { BlogSection } from './Blog/BlogSection';
 import StackSection from './HeroSection/StackSection';
+import { WhatsMicrofox } from './WhatsMcirofox';
 
 export const LandingPage = () => {
+
+
+    return (
+        <WhatsMicrofox />
+    );
 
     return (
         <div>

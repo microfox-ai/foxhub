@@ -25,15 +25,11 @@ export const AcceptHitl = ({ tool, lastMessage }: { tool: ToolUIPart<any>, lastM
     const [jsonString, setJsonString] = useState(JSON.stringify(tool.input, null, 2));
     const [error, setError] = useState<string | null>(null);
 
-
-    useEffect(() => {
-        mutateInput(undefined);
-    }, [mutateInput]);
-
     const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newJsonString = e.target.value;
         setJsonString(newJsonString);
 
+        console.log("handleJsonChange", newJsonString, tool.input);
         try {
             const parsedJson = JSON.parse(newJsonString);
             setError(null);

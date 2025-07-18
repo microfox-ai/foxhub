@@ -55,7 +55,7 @@ function useHitlContext() {
     }
 
     const addHitlToolResult = (toolResult: any) => {
-        console.log("addHitlToolResult", toolResult, "stateAuth", auth);
+        console.log("addHitlToolResult", toolResult, "stateAuth", auth, "mutatedInput", mutatedInput);
         addToolResult({
             ...toolResult,
             output: {

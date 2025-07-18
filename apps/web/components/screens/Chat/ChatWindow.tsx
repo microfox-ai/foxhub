@@ -19,6 +19,7 @@ import CodeStudio from "./code/CodeStudio";
 import ConfigureTab from "./dashboard/ConfigureTab";
 import { HistoryTab } from "./history/HistoryTab";
 import PublishTab from "./publish/PublishTab";
+import { BackgroundTaskProvider } from "./BackgroundTaskProvider";
 
 export type AttachedMedia = {
   file: File;
@@ -270,7 +271,9 @@ export default function ChatWindowWithProvider() {
   return (
     <MicrofoxChatProvider clientRequest={selectedRequest}>
       <ChatUIProvider>
-        <ChatWindow />
+        <BackgroundTaskProvider>
+          <ChatWindow />
+        </BackgroundTaskProvider>
       </ChatUIProvider>
     </MicrofoxChatProvider>
   );

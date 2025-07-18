@@ -140,7 +140,6 @@ taskQueryAgent.agent("/", async (ctx) => {
           return _authObject;
         },
         mutateOutput: async (output) => {
-          console.log("mutateOutput", output);
           return output;
         },
       }

@@ -55,14 +55,14 @@ export const savePassedInTools = async (ctx: AiContext<any, any, any, any>) => {
   let clientRequest = ctx.state.clientRequest;
   let selectedMcps = ctx.state?.selectedMcps;
   let originMessageId = ctx.state?.originMessageId;
-  console.log(
-    "saving chatAgenticState",
-    ctx.state.toolMode,
-    ctx.state.toolExecType,
-    toolPopulatedMcps?.[0]?.package_name,
-    toolPopulatedMcps?.[0],
-    originMessageId
-  );
+  // console.log(
+  //   "saving chatAgenticState",
+  //   ctx.state.toolMode,
+  //   ctx.state.toolExecType,
+  //   toolPopulatedMcps?.[0]?.package_name,
+  //   toolPopulatedMcps?.[0],
+  //   originMessageId
+  // );
   let uniqueId = originMessageId
     ? originMessageId?.endsWith(clientRequest.id)
       ? originMessageId

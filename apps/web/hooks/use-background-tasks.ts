@@ -18,7 +18,10 @@ export const useBackgroundTasksHook = (url: string | null) => {
     "connecting" | "connected" | "disconnected"
   >("connecting");
 
-  console.log("task-processing url", url);
+  console.log(
+    "task-processing url",
+    (process.env.NEXT_PUBLIC_TASK_API_BASE_URL ?? "") + url
+  );
 
   const { data, error: swrError } = useSWRSubscription(
     // Only subscribe if taskId is provided
@@ -27,6 +30,8 @@ export const useBackgroundTasksHook = (url: string | null) => {
       if (!key) {
         return () => {};
       }
+
+      console.log("SSE: subscribing to", key);
       const eventSource = new EventSource(key);
 
       eventSource.onopen = () => {
@@ -74,7 +79,7 @@ export const useBackgroundTasksHook = (url: string | null) => {
 
       eventSource.onerror = (err: Event) => {
         setSseStatus("disconnected");
-        console.error("SSE Error:", err);
+        console.error("SSE Error: ", err);
         // Do not call next(err) for reconnection attempts
       };
 

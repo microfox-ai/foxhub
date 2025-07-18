@@ -9,6 +9,7 @@ import { PostMapper, TempMapper } from "./temp";
 import { useMessageParts } from "../../../MessageProvider";
 import { useEffect, useState } from "react";
 import { TaskPlaceholder } from "./TaskPlaceholder";
+import { mapBrowseImageSearch, mapBrowseMcp } from "../mappers/browse/mapper";
 
 export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part }: { fullOutput: any, uiOutput: UiComponentProps["hitl_output"], mcpName: string, toolName: string, part: ToolUIPart<any> }) => {
 
@@ -47,7 +48,7 @@ export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part
         case "puppeteer-sls":
             switch (toolName) {
                 case "extractImagesFromURL":
-                    return <BrowseMediaGrid toolName={toolName} output={uiOutput.object?.["puppeteer-sls"]} />
+                    return <BrowseMediaGrid toolName={toolName} output={mapBrowseImageSearch(fullOutput.data)} />
             }
         case "ragreddit":
             // const uiFunctionString = TempMapper.toString();

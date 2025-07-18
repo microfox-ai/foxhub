@@ -1,7 +1,7 @@
 import { ToolUIPart } from "ai";
 import { BrowseMcp, BrowseOutput } from "./types";
 
-const mapBrowseImageSearch = (data: any, part?: ToolUIPart) => {
+export const mapBrowseImageSearch = (data: any) => {
   let output: BrowseOutput = {
     image_sources: [],
   };
@@ -48,7 +48,7 @@ export const mapBrowseMcp = (
     case "extractImagesFromURL":
       if (output.contentType === "application/json" && output.data) {
         return {
-          extractImagesFromURL: mapBrowseImageSearch(output.data, part),
+          extractImagesFromURL: mapBrowseImageSearch(output.data),
         };
       }
     default:

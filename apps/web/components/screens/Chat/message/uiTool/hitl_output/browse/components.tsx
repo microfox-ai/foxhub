@@ -7,10 +7,9 @@ export const BrowseMediaGrid = ({
     output,
     toolName,
 }: {
-    output: uiHitlMap["puppeteer-sls"] | undefined;
+    output: uiHitlMap["puppeteer-sls"]["extractImagesFromURL"] | undefined;
     toolName?: string;
 }) => {
-    console.log("output", output);
     if (!output || !toolName) {
         return null;
     }
@@ -20,8 +19,8 @@ export const BrowseMediaGrid = ({
     //     data = output.image;
     // }
 
-    if (data && data.image_sources.length > 0) {
-        const images = data.image_sources;
+    if (data && data.length > 0) {
+        const images = data;
         return <MediaGrid images={images} />;
     }
 

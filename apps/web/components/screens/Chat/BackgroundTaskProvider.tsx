@@ -13,7 +13,7 @@ const BackgroundTaskContext = createContext<
 const useBackgroundTaskProvider = () => {
     const { selectedRequest } = useClientProject();
     const { error, sseStatus, metadata, response, taskState, isCompleted } =
-        useBackgroundTasksHook(selectedRequest?.id ? `/api/background-tasks/events/request/${selectedRequest.id}` : null);
+        useBackgroundTasksHook(selectedRequest?.id ? `/request/${selectedRequest.id}` : null);
 
     return {
         error,

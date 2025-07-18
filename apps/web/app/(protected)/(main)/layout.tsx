@@ -21,36 +21,34 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <FileUploadProvider>
       <ClientProjectProvider>
-        <BackgroundTaskProvider>
-          <LayoutProvider>
-            <main className="relative flex max-h-screen overflow-hidden flex-col bg-background">
-              {/* {!isPlayground && !isProject && <CustomBotsHeader />} */}
-              <Toaster position="top-right" richColors duration={3000} />
-              <FeebackModal />
-              <ResizablePanelGroup
-                direction="horizontal"
-                autoSaveId="request-page"
-                className="!h-screen"
-              >
-                <ResizableSidebar />
-                {!pathname?.includes("request") ? (
-                  <ResizablePanel defaultSize={84}>
-                    {/* {!isProject && <div className="h-16" />} */}
-                    <div className="flex-1">{children}</div>
-                  </ResizablePanel>
-                ) : (
-                  <>{children}</>
-                )}
-              </ResizablePanelGroup>
-              {!routesWithOuLogout.some(route => pathname?.includes(route)) && (
-                <div className="absolute top-10 right-10 z-100">
-                  <LogoutElement />
-                </div>
+        <LayoutProvider>
+          <main className="relative flex max-h-screen overflow-hidden flex-col bg-background">
+            {/* {!isPlayground && !isProject && <CustomBotsHeader />} */}
+            <Toaster position="top-right" richColors duration={3000} />
+            <FeebackModal />
+            <ResizablePanelGroup
+              direction="horizontal"
+              autoSaveId="request-page"
+              className="!h-screen"
+            >
+              <ResizableSidebar />
+              {!pathname?.includes("request") ? (
+                <ResizablePanel defaultSize={84}>
+                  {/* {!isProject && <div className="h-16" />} */}
+                  <div className="flex-1">{children}</div>
+                </ResizablePanel>
+              ) : (
+                <>{children}</>
               )}
-            </main>
-            <FeaturebaseFeedback />
-          </LayoutProvider>
-        </BackgroundTaskProvider>
+            </ResizablePanelGroup>
+            {!routesWithOuLogout.some(route => pathname?.includes(route)) && (
+              <div className="absolute top-10 right-10 z-100">
+                <LogoutElement />
+              </div>
+            )}
+          </main>
+          <FeaturebaseFeedback />
+        </LayoutProvider>
       </ClientProjectProvider>
     </FileUploadProvider>
   );

@@ -6,13 +6,13 @@ import { useState } from "react";
 export default function SseTestPage() {
   const [taskId, setTaskId] = useState("test-task-123");
   const [inputTaskId, setInputTaskId] = useState("test-task-123");
-  const { metadata, response, taskState, isCompleted, error, sseStatus } = useBackgroundTasksHook(taskId);
+  const { metadata, response, taskState, isCompleted, error, sseStatus } = useBackgroundTasksHook(`/request/a8b39b5e-a98d-475b-8d04-e81125486902`);
   const [isSending, setIsSending] = useState(false);
 
   const handleSendMessage = async () => {
     setIsSending(true);
     try {
-      const response = await fetch("/api/background-tasks/trigger", {
+      const response = await fetch("/api/background-tasks/task/a8b39b5e-a98d-475b-8d04-e81125486902", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

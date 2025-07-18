@@ -13,7 +13,9 @@ const toolSelectionAgent = new AiRouter<any, any, any, any>();
 toolSelectionAgent.actAsTool("/", {
     description: "Select the best tools for the user's request",
     inputSchema: z.object({
-        userRequest: z.string().describe("The actual user's request"),
+        userRequest: z.string().optional().describe("The actual user's request"),
+        selectedMcps: z.array(z.string()).describe("The ids of the agents to use"),
+        toolMode: z.enum(["fast", "deep"]).optional().describe("The mode to use for tool selection"),
     }),
 });
 
@@ -44,23 +46,50 @@ toolSelectionAgent.agent("/", async (ctx) => {
         userMessage = getTextPartsContent(lastUserMessage);
     }
 
+    let thisToolMode = ctx.state.toolMode;
+    // if a toolMode is set in the passed in params (either generate or called via code), use it.
+    if (ctx.request.params?.toolMode) {
+        thisToolMode = ctx.request.params.toolMode;
+        ctx.state.toolMode = thisToolMode;
+    }
+    // if a toolMode is set in the request (from the client side - either userMessage or reumeOfAssistanMessage), use it.
+    else if (ctx.request?.toolMode) {
+        thisToolMode = ctx.request.toolMode;
+        ctx.state.toolMode = thisToolMode;
+    }
+    // if no toolMode is set, use fast mode.
+    else if (!thisToolMode) {
+        thisToolMode = "fast";
+        ctx.state.toolMode = thisToolMode;
+    }
+
+    let selectedMcps = ctx.state.selectedMcps;
+    console.log("selectedMcps - checking for selectedMcps", ctx.request.params?.selectedMcps, ctx.request?.selectedMcps);
+    // if selectedMcps are set in the passed in params, use them.
+    if (ctx.request.params?.selectedMcps) {
+        selectedMcps = ctx.request.params.selectedMcps;
+        ctx.state.selectedMcps = selectedMcps;
+    }
+    // if selectedMcps are set in the request (from the client side - either userMessage or reumeOfAssistanMessage), use them.
+    else if (ctx.request?.selectedMcps) {
+        selectedMcps = ctx.request.selectedMcps;
+        ctx.state.selectedMcps = selectedMcps;
+    }
+    // if no selectedMcps are set, dont set anthing.
+
     // 1. generate a list of RAG search query to find the best package/agent
 
-    // ---
-    // **Process Flow:**
-    //   -   You run in a loop of Thought, Action, PAUSE, Observation.
-    //   -   At the end of the loop you output an Answer.
-    //   -   Use Thought to describe your thoughts about the question you have been asked.
-    //   -   Use Action to run one of the actions available to you - then return PAUSE.
-    //   -   Observation will be the result of running those actions.
-    //   -   At the end of the loop you output an Answer.
-    // ---
+
 
     let ragResults: ApiMcp[] = [];
-    if (ctx.request.selectedMcps && ctx.request.selectedMcps.length > 0) {
-        ragResults = await getApiMcpById(ctx.request.selectedMcps);
+    if (selectedMcps && selectedMcps.length > 0) {
+        response.writeMessageMetadata({
+            loader: "Using the selected tools...",
+        });
+        ragResults = await getApiMcpById(selectedMcps);
+        ctx.state.toolExecType = "selected";
     }
-    else if (ctx.request.toolMode == "deep") {
+    else if (thisToolMode == "deep") {
         response.writeMessageMetadata({
             loader: "Deep-Thinking the best fit.",
         });
@@ -122,7 +151,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
                 })
             ),
             prompt: `
-            User's Request: ${userMessage}
+            User's Message: ${userMessage}
         `,
         });
         console.timeEnd("Deep Search: AI - Generate Search Queries");
@@ -153,42 +182,73 @@ toolSelectionAgent.agent("/", async (ctx) => {
         );
         ragResults.sort((a, b) => b.similarity - a.similarity);
         console.log("ragResults", ragResults);
+        ctx.state.toolExecType = "deep";
     }
-    else if (ctx.request.toolMode == "fast") {
+    else if (thisToolMode == "fast") {
         response.writeMessageMetadata({
             loader: "Fast-search based on user's request...",
         });
+        console.log("Fast Search: RAG - Searching for User's Request", userMessage);
         console.time("Fast Search: RAG - findApiMcps");
-        ragResults = await findApiMcps({
+        const toolsResults = await queryApis({
             query: `User's Request: ${userMessage}`,
             match_threshold: 0.5,
-            match_count: 5,
+            match_count: 10,
         });
+        ragResults = toolsResults.map((tool, _index) => {
+            let { openApiSchema, endpointSchema, ...rest } = tool.metadata;
+            let { paths, ...restOpenApiSchema } = openApiSchema || {};
+            return {
+                stage: "PROD",
+                type: "MIXED",
+                ...tool,
+                id: _index,
+                metadata: undefined,
+                embedding: undefined,
+                openApiSchema: {
+                    ...restOpenApiSchema,
+                    paths: {
+                        [tool.endpoint_path]: {
+                            [tool.http_method?.toLowerCase()]: endpointSchema,
+                        },
+                    },
+                },
+            };
+        });
+        response.writeMessageMetadata({
+            loader: "Found " + ragResults.length + " tools...",
+        });
+        //console.log("ragResults", ragResults.map((r) => r.openApiSchema));
         console.timeEnd("Fast Search: RAG - findApiMcps");
+        ctx.state.toolExecType = "fast";
     }
-
 
     let toolPopulatedMcps: (ApiMcp)[] = [];
 
-    if (ragResults.length > 0 && ctx.request.selectedMcps && ctx.request.selectedMcps.length > 0) {
+    if (ragResults.length > 0 && selectedMcps && selectedMcps.length > 0) {
         toolPopulatedMcps = ragResults.map((ragResult) => {
             return {
                 ...ragResult,
+                embedding: undefined,
+                metadata: undefined,
                 openApiSchema: ragResult.metadata.docs_data,
             };
         });
     }
-    else if (ragResults.length > 0 && ctx.request.toolMode == "fast") {
+    else if (ragResults.length > 0 && thisToolMode == "fast") {
         toolPopulatedMcps = ragResults.map((ragResult) => {
             return {
                 ...ragResult,
-                openApiSchema: ragResult.metadata.docs_data,
+                //openApiSchema:  ragResult.metadata.docs_data,
             };
         });
     }
-    else if (ragResults.length > 0 && ctx.request.toolMode == "deep") {
+    else if (ragResults.length > 0 && thisToolMode == "deep") {
         // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
         console.time("Deep Search: RAG - queryApis for all ragResults");
+        response.writeMessageMetadata({
+            loader: "Searching for the best tools for " + ragResults.length + " platforms...",
+        });
         const toolPopulatedMcpsPromises = ragResults.map(async (ragResult) => {
             const toolsResults = await queryApis({
                 query: `Platform: ${ragResult.name} - Search Query: ${ragResult.name} - Type: ${ragResult.type}`,
@@ -208,13 +268,14 @@ toolSelectionAgent.agent("/", async (ctx) => {
         console.timeEnd("Deep Search: RAG - queryApis for all ragResults");
     }
 
-
-
+    console.log("final updating to state tools", toolPopulatedMcps.length);
+    ctx.state.toolPopulatedMcps = toolPopulatedMcps;
+    //console.log("toolPopulatedMcps", ctx.state.toolPopulatedMcps);
     //console.log("toolPopulatedMcps", toolPopulatedMcps);
 
-    await ctx.next.callAgent("@/chatFlow/toolExecution", {
-        toolPopulatedMcps,
-    })
+    // await ctx.next.callAgent("@/chatFlow/toolExecution", {
+    //     toolPopulatedMcps,
+    // })
     //3. call the next agent with the tools passed in. (Leave this to me.)
 });
 

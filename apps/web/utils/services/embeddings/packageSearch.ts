@@ -3,6 +3,7 @@ import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
 import { QueryApisResult } from "@/server/toolfox/helpers/queryApis";
+import { getLocalMcpDocs } from "@/server/toolfox/execution/loadLocalTools";
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
@@ -368,7 +369,12 @@ export async function plainSearchMcps({
       queryBuilder = queryBuilder.eq("api_type", api_type);
     }
 
-    const { data: packages, error } = await queryBuilder;
+    let { data: packages, error } = await queryBuilder;
+
+    const localMcps = await getLocalMcpDocs()
+    if (localMcps.length > 0) {
+      packages = [...(packages as ApiMcp[]), ...localMcps] as ApiMcp[];
+    }
 
     if (error) {
       console.error("Error querying Supabase:", error);
@@ -387,12 +393,37 @@ export async function plainSearchMcps({
   }
 }
 
-export async function getApiMcpById(ids: number[]): Promise<ApiMcp[]> {
+export async function getApiMcpsByPackageName(
+  packageNames: string[]
+): Promise<ApiMcp[]> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   const { data, error } = await supabase
     .from("api_mcps")
     .select("*")
+    .in("package_name", packageNames);
+  if (error) {
+    console.error("Error querying Supabase:", error);
+    throw new Error(`Error finding similar packages: ${error.message}`);
+  }
+  if (!data || data.length === 0) {
+    console.log("No similar packages found.");
+    return [];
+  }
+  return data;
+}
+
+export async function getApiMcpById(ids: number[]): Promise<ApiMcp[]> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  let { data, error } = await supabase
+    .from("api_mcps")
+    .select("*")
     .in("id", ids);
+
+
+  const localMcps = await getLocalMcpDocs()
+  if (localMcps.length > 0) {
+    data = [...(data as ApiMcp[]), ...localMcps];
+  }
   if (error) {
     console.error("Error querying Supabase:", error);
     throw new Error(`Error finding similar packages: ${error.message}`);

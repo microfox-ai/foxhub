@@ -33,7 +33,7 @@ import { deleteAllGenFiles } from "./tool/writeToFile";
 import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
 import { findLastMessageWith } from "@repo/ai-utils/helper";
-import { uiTool } from "../ui/uiTool";
+import { uiTool } from "../../components/screens/Chat/message/uiTool/mappers/uiTool";
 
 //TODO: diffModal to write functions
 //TODO: embedding data contextualisation

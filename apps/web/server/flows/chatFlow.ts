@@ -1,131 +1,80 @@
 import { MinionFlow } from "@/components/screens/hooks/convertors";
-import { prisma } from "@/prisma/prisma";
-import { cleanUiMessageParts } from "@/utils/helpers/array";
-import { updateClientRequest } from "@/utils/services/db_functions/updateClientRequest";
-import { AiRouter, getTextParts } from "@microfox/ai-router";
-import { convertToModelMessages, generateText, streamText } from "ai";
-import {
-  getMicrofoxCharacter,
-  getMicrofoxPersonality,
-} from "../hellofox/_prompts";
+import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
-import { models } from "../models";
+import { generateChatTitle } from "../toolfox/helpers/chatTitle";
+import { loadClientRequest } from "../toolfox/helpers/loadClientRequest";
 import { toolExecutionAgent } from "../toolfox/toolExecution";
 import { toolSelectionAgent } from "../toolfox/toolSelection";
-import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 const chatManager = new AiRouter<any, any, any, any>();
 
-chatManager.use("/", async (ctx, next) => {
-  const { response } = ctx;
-  response.writeMessageMetadata({
-    minionFlow: MinionFlow.ChatFlow,
-  });
-  response.writeMessageMetadata({
-    toolMode: ctx.request.toolMode || "fast",
-  });
-  return next();
-});
+chatManager
+  .use("/", async (ctx, next) => {
+    const { response } = ctx;
+    response.writeMessageMetadata({
+      minionFlow: MinionFlow.ChatFlow,
+    });
+    response.writeMessageMetadata({
+      toolMode: ctx.request.toolMode || "fast",
+    });
+    return next();
+  })
+  .use("/", loadClientRequest)
+  .use("/", generateChatTitle);
 
 chatManager.agent<DefaultMessageMetadata, any, any>("/", async (ctx) => {
-  const clientRequest = await prisma.clientRequest.findUnique({
-    where: {
-      id: ctx.request.clientRequestId,
-    },
-  });
+  await ctx.next.callAgent("/toolExecution");
+  //   console.log("calling toolSelection", ctx.request.params);
+  //   const result = streamText({
+  //     model: models.googleGeminiPro,
+  //     system: `
+  //       ${getMicrofoxCharacter()}
+  //       ${getMicrofoxPersonality()}
+  //       Converse with the user before calling any tools,
 
-  ctx.state.clientRequest = clientRequest;
-  if (
-    clientRequest &&
-    (!clientRequest?.title ||
-      clientRequest?.title?.trim()?.length === 0 ||
-      clientRequest?.title === "Untitled") &&
-    ctx.request.messages.length > 3
-  ) {
-    console.log("generating title", clientRequest);
-    const cleanedMessages = cleanUiMessageParts(ctx.request.messages, {
-      removeToolCalls: true,
-    });
-    const textParts = cleanedMessages.map(getTextParts).flat().join("\n");
+  //       if user is asking to perform a task, tell the user you are looking for the best possible platforms/agents to perform the task
+  //       call the toolSelection tool. If the toolSelection tool is triggered, do not respond to anythign else.
 
-    const text = await generateText({
-      model: models.claudeHaiku,
-      system: `
-        You are a helpful assistant that can generate a title for a chat session.
-        Generate a 2-5 word title for the chat session.
-        Only output the title, no other text.
-        `,
-      prompt: `
-        Generate a title for the following chat session:
-        ${textParts}
-        `,
-    });
+  //       if the user is not asking for a task, just conversing, and you believe there is no need for any extra tools,
+  //       just respond back normally in text.
+  //     `,
+  //     // stopWhen: (step) => {
+  //     //   const lastStep = step.steps[step.steps.length - 1];
+  //     //   const lastToolResult =
+  //     //     lastStep?.toolResults && lastStep?.toolResults?.length > 0
+  //     //       ? lastStep?.toolResults[0]
+  //     //       : null;
+  //     //   if (lastToolResult?.toolName === "toolSelection") {
+  //     //     return true;
+  //     //   }
+  //     //   return false;
+  //     // },
+  //     tools: {
+  //       toolSelection: ctx.next.agentAsTool("/toolSelection"),
+  //     },
+  //     //toolChoice: "auto",
+  //     messages: convertToModelMessages(
+  //       cleanUiMessageParts(ctx.request.messages, {
+  //         removeToolCalls: true,
+  //       })
+  //     ),
+  //     onStepFinish: (step) => {
+  //       console.log("step", step.usage);
+  //     },
+  //     onFinish: (step) => {
+  //       console.log("FULL USAGE", step.usage);
+  //       TokenUsageAnalyticsTracker.trackUsage({
+  //         clientRequestId: ctx.request.clientRequestId,
+  //         model: models.googleGeminiPro.modelId,
+  //         userId: ctx.request.userId,
+  //         usage: step.usage,
+  //       });
+  //     },
+  //   });
 
-    const updatedClientRequest = await updateClientRequest({
-      clientRequestId: clientRequest.id,
-      title: text.text,
-    });
+  //   ctx.response.merge(result.toUIMessageStream());
 
-    ctx.state.clientRequest = updatedClientRequest;
-  }
-
-  if (ctx.request.toolMode == "fast" || ctx.request.selectedMcps?.length > 0) {
-    console.log("calling toolSelection", ctx.request.toolMode);
-    await ctx.next.callAgent("/toolSelection");
-    return;
-  }
-
-  console.log("calling toolSelection", ctx.request.params);
-  const result = streamText({
-    model: models.googleGeminiPro,
-    system: `
-      ${getMicrofoxCharacter()}
-      ${getMicrofoxPersonality()}
-      Converse with the user before calling any tools, 
-      
-      if user is asking to perform a task, tell the user you are looking for the best possible platforms/agents to perform the task
-      call the toolSelection tool. If the toolSelection tool is triggered, do not respond to anythign else.
-
-      if the user is not asking for a task, just conversing, and you believe there is no need for any extra tools,
-      just respond back normally in text.
-    `,
-    // stopWhen: (step) => {
-    //   const lastStep = step.steps[step.steps.length - 1];
-    //   const lastToolResult =
-    //     lastStep?.toolResults && lastStep?.toolResults?.length > 0
-    //       ? lastStep?.toolResults[0]
-    //       : null;
-    //   if (lastToolResult?.toolName === "toolSelection") {
-    //     return true;
-    //   }
-    //   return false;
-    // },
-    tools: {
-      toolSelection: ctx.next.agentAsTool("/toolSelection"),
-    },
-    //toolChoice: "auto",
-    messages: convertToModelMessages(
-      cleanUiMessageParts(ctx.request.messages, {
-        removeToolCalls: true,
-      })
-    ),
-    onStepFinish: (step) => {
-      console.log("step", step.usage);
-    },
-    onFinish: (step) => {
-      console.log("FULL USAGE", step.usage);
-      TokenUsageAnalyticsTracker.trackUsage({
-        clientRequestId: ctx.request.clientRequestId,
-        model: models.googleGeminiPro.modelId,
-        userId: ctx.request.userId,
-        usage: step.usage,
-      });
-    },
-  });
-
-  ctx.response.merge(result.toUIMessageStream());
-
-  const out = await result.text;
+  //   const out = await result.text;
 
   //console.log("calling toolSelection", ctx.request.params, ctx.request);
   //ctx.next.callAgent("/toolSelection");

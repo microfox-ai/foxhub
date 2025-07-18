@@ -44,7 +44,7 @@ import { ClientSecretPackageType } from "@/server/types";
 import { ExtraEnvVariable, TaskInstanceMetaType } from "@/server/convertfox/helpers/types";
 import { FileTree, type BuildFile, type FileTreeNode } from "../../../../code/FileTree";
 import { ActionButtons } from "../../buttons_list/ActionButtons";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 
 interface UIAnnotation {

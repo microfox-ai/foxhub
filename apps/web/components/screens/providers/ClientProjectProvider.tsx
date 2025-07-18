@@ -45,9 +45,11 @@ function useClientProjectContext() {
   const params = useParams<{
     project_id?: string;
     request_id?: string;
+    request_slug?: string;
   }>();
   const projectParamId = params?.project_id;
   const requestParamId = params?.request_id;
+  const requestParamSlug = params?.request_slug;
 
   const {
     data: projects = [],
@@ -56,6 +58,18 @@ function useClientProjectContext() {
     mutate: mutateBotProjects,
   } = useSWR<BotProjectWithRequests[]>(
     user?.id ? `/api/bot-project?userId=${user?.id}` : null,
+    async (url: string) => await fetch(url).then((res) => res.json())
+  );
+
+  const {
+    data: selectedClientRequestBySlug,
+    error: selectedClientRequestBySlugError,
+    isLoading: selectedClientRequestBySlugLoading,
+    mutate: mutateSelectedClientRequestBySlug,
+  } = useSWR(
+    requestParamSlug && !projectParamId
+      ? `/api/client-requests/by-slug/${requestParamSlug}`
+      : null,
     async (url: string) => await fetch(url).then((res) => res.json())
   );
 
@@ -122,6 +136,13 @@ function useClientProjectContext() {
       return null;
     }
   };
+
+  useEffect(() => {
+    if (selectedClientRequestBySlug?.id && !selectedProject) {
+      setSelectedProject(selectedClientRequestBySlug.botProject);
+      mutateSelectedClientRequest(selectedClientRequestBySlug);
+    }
+  }, [selectedClientRequestBySlug?.id]);
 
   useEffect(() => {
     if (selectedClientRequest?.id) {
@@ -231,14 +252,14 @@ function useClientProjectContext() {
   };
 
   return {
-    clientRequestId: requestParamId ?? null,
-    projectId: projectParamId ?? null,
+    clientRequestId: requestParamId ?? selectedClientRequestBySlug?.id ?? null,
+    projectId: projectParamId ?? selectedClientRequestBySlug?.botProject?.id ?? null,
     selectedClientDeployment,
     updateClientDeploymentById,
     selectedProject,
-    selectedRequest: selectedClientRequest,
+    selectedRequest: selectedClientRequest ?? selectedClientRequestBySlug,
     projects,
-    isLoading,
+    isLoading: isLoading || selectedClientRequestBySlugLoading,
     createNewEmptyRequest,
     setSelectedProject,
     setSelectedRequest: mutateSelectedClientRequest,

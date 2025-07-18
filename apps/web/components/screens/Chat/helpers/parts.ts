@@ -1,4 +1,4 @@
-import { MyUiTool } from "@/server/ui/uiTool";
+import { MyUiTool } from "@/components/screens/Chat/message/uiTool/mappers/uiTool";
 import { UIMessage } from "@ai-sdk/react";
 import { Tool, ToolResultPart, ToolUIPart } from "ai";
 
@@ -16,7 +16,7 @@ export const getDisplayParts = (message: UIMessage<any, any, any>) => {
     if (
       part.type.startsWith("tool-") &&
       (part as any).state == "output-available" &&
-      (part as any).output?.ui
+      ((part as any).output?.data || (part as any).output?.ui)
     ) {
       return true;
     }

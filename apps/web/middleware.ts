@@ -1,10 +1,50 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
-import { chain } from "./utils/middleware/chain";
+import { MiddlewareFunction, chain } from "./utils/middleware/chain";
 import { subdomainRerouting } from "./utils/middleware/subdomain";
 import { mainMiddleware } from "./utils/middleware/main";
 
-export const middleware = chain([mainMiddleware, subdomainRerouting]);
+const corsMiddleware: MiddlewareFunction = async (request, next) => {
+  const origin = request.headers.get("origin");
+  const allowedOrigins = [
+    /^https:\/\/(.*\.)?microfox\.app$/,
+    /^http:\/\/localhost(:\d+)?$/,
+  ];
+
+  let corsOrigin = "";
+  if (
+    origin &&
+    allowedOrigins.some((pattern) => new RegExp(pattern).test(origin))
+  ) {
+    corsOrigin = origin;
+  }
+
+  const response =
+    request.method === "OPTIONS"
+      ? new NextResponse(null, { status: 204 })
+      : await next();
+
+  if (corsOrigin) {
+    response.headers.set("Access-Control-Allow-Origin", corsOrigin);
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+  }
+
+  return response;
+};
+
+export const middleware = chain([
+  corsMiddleware,
+  mainMiddleware,
+  subdomainRerouting,
+]);
 
 export const config = {
   matcher: [

@@ -1,6 +1,6 @@
 "use client";
 
-import { uiHitlMap } from "@/server/ui/uiHitl";
+import { uiHitlMap } from "@/components/screens/Chat/message/uiTool/mappers/uiHitl";
 import {
     HoverCard,
     HoverCardContent,
@@ -11,9 +11,10 @@ import React, { useEffect, useState } from "react";
 import { InternalMarkdown } from "../../../text/markdown";
 import Link from "next/link";
 import { ExternalLinkIcon, ExternalLink, Expand } from "lucide-react";
-import { WebSearchSource } from "@/server/ui/brave/types";
-import { ImageSet } from "@/server/ui/types";
-import { MediaGrid, MediaImageDialog } from "../common/media";
+import { WebSearchSource } from "@/components/screens/Chat/message/uiTool/mappers/brave/types";
+import { MediaDialog, MediaGrid, MediaDialogItem } from "../common/media";
+import { prettyPrintDateAndTime, prettyPrintDateInMMMDD } from "@/utils/helpers/prettyprint";
+import { UiCommonTypes } from "@microfox/types";
 
 export const HoverSourcePopup = ({ source }: { source: WebSearchSource }) => {
     return (
@@ -155,7 +156,7 @@ export const BraveMediaGrid = ({
 
     const data = toolName in output ? output[toolName as keyof typeof output] : undefined;
     if (data && data.image_sources.length > 0) {
-        const images: ImageSet[] = data.image_sources.map((source: WebSearchSource) => ({
+        const images: UiCommonTypes["ImageSet"][] = data.image_sources.map((source: WebSearchSource) => ({
             src: source.thumbnail?.src ?? "",
             originalSrc: source.thumbnail?.originalSrc,
             title: source.title,
@@ -176,7 +177,7 @@ export const BraveSourceHeader = ({
     output: uiHitlMap["brave"] | undefined;
     toolName?: string;
 }) => {
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedMedia, setSelectedMedia] = useState<MediaDialogItem | null>(null);
     if (!output || !toolName) {
         return null;
     }
@@ -190,7 +191,26 @@ export const BraveSourceHeader = ({
             <div className="flex gap-2 overflow-x-auto">
                 {sources.map((source, idx) => (
                     <div
-                        onClick={() => setSelectedImage(source.thumbnail?.originalSrc ?? source.thumbnail?.src ?? "")}
+                        onClick={() => {
+                            if (source.media_type === 'video') {
+                                setSelectedMedia({
+                                    type: 'video', video: {
+                                        src: source.url,
+                                        ...source.meta_media
+                                    }
+                                });
+                            } else {
+                                setSelectedMedia({
+                                    type: 'image', image: {
+                                        src: source.thumbnail?.src ?? "",
+                                        originalSrc: source.thumbnail?.originalSrc,
+                                        title: source.title,
+                                        url: source.url,
+                                        description: source.description,
+                                    }
+                                });
+                            }
+                        }}
                         key={source.url + idx} className="relative group/media bg-neutral-900 rounded-lg overflow-hidden flex-shrink-0 min-w-20 h-40 cursor-pointer">
                         <img src={source.thumbnail?.src ?? ""} alt={source.title} className="min-w-20 h-full object-cover transition-transform duration-300 group-hover/media:scale-110" />
                         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 flex items-end justify-end p-2">
@@ -198,7 +218,24 @@ export const BraveSourceHeader = ({
 
                                 <button onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedImage(source.thumbnail?.originalSrc ?? source.thumbnail?.src ?? "")
+                                    if (source.media_type === 'video') {
+                                        setSelectedMedia({
+                                            type: 'video', video: {
+                                                src: source.url,
+                                                ...source.meta_media
+                                            }
+                                        });
+                                    } else {
+                                        setSelectedMedia({
+                                            type: 'image', image: {
+                                                src: source.thumbnail?.src ?? "",
+                                                originalSrc: source.thumbnail?.originalSrc,
+                                                title: source.title,
+                                                url: source.url,
+                                                description: source.description,
+                                            }
+                                        });
+                                    }
                                 }
                                 } className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors" title="Expand Image">
                                     <Expand className="w-4 h-4 text-neutral-800" />
@@ -220,9 +257,76 @@ export const BraveSourceHeader = ({
                     </div>
                 ))}
             </div>
-            <MediaImageDialog selectedImage={selectedImage} setSelectedImage={setSelectedImage} />
+            <MediaDialog media={selectedMedia} setMedia={setSelectedMedia} />
         </>);
     }
 
     return null;
 }
+
+export const BraveWebResults = ({
+    output,
+    toolName,
+}: {
+    output: uiHitlMap["brave"] | undefined;
+    toolName?: string;
+}) => {
+    if (!output || !toolName) {
+        return null;
+    }
+
+    const data = toolName in output ? output[toolName as keyof typeof output] : undefined;
+
+    if (!data || !("web_sources" in data) || !data.web_sources) {
+        return null;
+    }
+
+    const webSources = data.web_sources;
+
+    if (webSources.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="flex flex-col gap-6">
+            {webSources.map((source, idx) => (
+                <div key={source.url + idx} className="group/web-result">
+                    <div className="flex items-center gap-2 mb-1">
+                        {source.meta_url?.favicon && (
+                            <img
+                                src={source.meta_url.favicon}
+                                alt=""
+                                className="w-6 h-6 p-1 bg-neutral-100 rounded-full"
+                            />
+                        )}
+                        <a
+                            href={source.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col"
+                        >
+                            <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                                {source.meta_url?.hostname ?? new URL(source.url).hostname}
+                            </span>
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                                {source.displayDate}
+                            </span>
+                        </a>
+                    </div>
+                    <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <h3 className="text-lg line-clamp-1 font-semibold text-neutral-800 hover:underline dark:text-neutral-200 group-hover/web-result:underline">
+                            {source.title}
+                        </h3>
+                    </a>
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-1 line-clamp-3  ">
+                        <InternalMarkdown>{source.description ?? ""}</InternalMarkdown>
+                    </p>
+                </div>
+            ))}
+        </div>
+    );
+};

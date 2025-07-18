@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type MiddlewareFunction = (
+export type MiddlewareFunction = (
   request: NextRequest,
   next: () => Promise<NextResponse>
 ) => Promise<NextResponse>;

@@ -19,9 +19,25 @@ export const findLastElementWith = <T>(
   return new_array?.[new_array.length - 1];
 };
 
+export const trimMessagesForModel = (
+  messages: UIMessage<any, any>[],
+  offset?: number
+) => {
+  // trim to the last 8
+  let trimmedMessages;
+  if (offset && messages.length > offset) {
+    trimmedMessages = messages.slice(offset);
+  } else {
+    trimmedMessages = messages.length > 8 ? messages.slice(-8) : messages;
+  }
+  return trimmedMessages;
+};
+
 export const cleanUiMessageParts = (
   messages: UIMessage<any, any>[],
   options?: {
+    removeAllToolCallsExceptLast?: boolean;
+    keepUIinLastMessage?: boolean;
     removeToolCalls?: boolean;
     onlyLastText?: boolean;
   }
@@ -37,6 +53,23 @@ export const cleanUiMessageParts = (
     processedMessages = processedMessages.map((m) => ({
       ...m,
       parts: m?.parts.filter((p) => !p.type?.startsWith("tool-")),
+    }));
+  }
+
+  if (options?.removeAllToolCallsExceptLast) {
+    processedMessages = processedMessages.map((m, index) => ({
+      ...m,
+      parts:
+        index === processedMessages.length - 1
+          ? options?.keepUIinLastMessage
+            ? m?.parts
+            : m?.parts?.map((p) => ({
+                ...p,
+                ...((("output" in p) as any)
+                  ? { output: { ...(p as any).output, ui: undefined } }
+                  : {}),
+              }))
+          : m?.parts.filter((p) => !p.type?.startsWith("tool-")),
     }));
   }
 

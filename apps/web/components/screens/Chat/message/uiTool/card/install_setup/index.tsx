@@ -7,7 +7,7 @@ import { DEPLOY_STAGE } from "@prisma/client";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 type InstallSetupProps = Omit<UiComponentProps["card"], "uiType"> & {
     isLastInQueue?: boolean;

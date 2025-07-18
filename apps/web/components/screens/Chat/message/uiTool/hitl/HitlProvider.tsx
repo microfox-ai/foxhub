@@ -1,6 +1,6 @@
 "use client";
 
-import { HitlAuthObject } from "@/server/ui/uiTool";
+import { HitlAuthObject } from "@/components/screens/Chat/message/uiTool/mappers/uiTool";
 import { ClientSecret } from "@prisma/client";
 import {
     createContext,
@@ -24,6 +24,7 @@ function useHitlContext() {
     const { addToolResult } = useMicrofoxChat();
     const { selectedRequest } = useClientProject();
     const [auth, setAuth] = useState<HitlAuthObject | undefined>(undefined);
+    const [mutatedInput, setMutatedInput] = useState<any | undefined>(undefined);
 
     const selectSecret = (secret: ClientSecret, packageName: string) => {
         setAuth((as) => {
@@ -54,11 +55,12 @@ function useHitlContext() {
     }
 
     const addHitlToolResult = (toolResult: any) => {
-        console.log("addHitlToolResult", toolResult, "stateAuth", auth);
+        console.log("addHitlToolResult", toolResult, "stateAuth", auth, "mutatedInput", mutatedInput);
         addToolResult({
             ...toolResult,
             output: {
                 ...toolResult.output,
+                ...(mutatedInput && { mutatedInput }),
                 auth: {
                     ...toolResult.output.auth,
                     ...auth,
@@ -85,12 +87,17 @@ function useHitlContext() {
         });
     }
 
+    const mutateInput = (_input: any) => {
+        setMutatedInput(_input);
+    }
+
     return {
         auth,
         selectSecret,
         setAuth,
         addHitlToolResult,
         refetchHitlAuth,
+        mutateInput,
     };
 }
 

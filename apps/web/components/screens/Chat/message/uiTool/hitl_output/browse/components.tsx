@@ -1,30 +1,26 @@
 "use client";
 
-import { uiHitlMap } from "@/server/ui/uiHitl";
-import { ImageSet } from "@/server/ui/types";
+import { uiHitlMap } from "@/components/screens/Chat/message/uiTool/mappers/uiHitl";
 import { MediaGrid } from "../common/media";
 
 export const BrowseMediaGrid = ({
     output,
     toolName,
 }: {
-    output: uiHitlMap["puppeteer-sls"] | undefined;
+    output: uiHitlMap["puppeteer-sls"]["extractImagesFromURL"] | undefined;
     toolName?: string;
 }) => {
     if (!output || !toolName) {
         return null;
     }
 
-    const data = toolName in output ? output[toolName as keyof typeof output] : undefined;
-    if (data && data.image_sources.length > 0) {
-        const images = data.image_sources.map((source: ImageSet) => ({
-            src: source.src ?? "",
-            originalSrc: source.originalSrc,
-            title: source.title ?? "",
-            url: source.url,
-            description: source.description,
-        }));
+    let data = toolName in output ? output[toolName as keyof typeof output] : undefined;
+    // if (!data && "image" in output) {
+    //     data = output.image;
+    // }
 
+    if (data && data.length > 0) {
+        const images = data;
         return <MediaGrid images={images} />;
     }
 

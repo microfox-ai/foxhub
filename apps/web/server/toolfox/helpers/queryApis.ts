@@ -183,8 +183,8 @@ export interface QueryApisResult {
   metadata: {
     package_name: string;
     function_type: "WEBHOOK" | "CRON" | "MIXED";
-    openApiSchema: string;
-    endpointSchema: string;
+    openApiSchema: any;
+    endpointSchema: any;
   };
 }
 

@@ -1,17 +1,16 @@
 "use client";
 
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import ChatWindow from "../Chat/ChatWindow";
-import PreviewWindow from "../PreviewWindow/PreviewWindow";
 import { ApiDocProvider } from "../providers/ApiDocProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
-import { useAuth } from "@/components/auth/AuthProvider";
 import { useLayout } from "../providers/LayoutProvider";
-import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 import { TabUiProvider } from "../providers/TabUiProvider";
+import { TaskInstanceMetaProvider } from "../providers/TaskInstanceMetaProvider";
 
 export const RequestPage = () => {
   const { user } = useAuth();
@@ -26,7 +25,7 @@ export const RequestPage = () => {
     handleRightResizeHandleClick,
   } = useLayout();
 
-  const { selectedProject, selectedRequest, isLoading, clientRequestId, updateClientDeploymentById } =
+  const { isLoading, clientRequestId, updateClientDeploymentById } =
     useClientProject();
 
   useEffect(() => {

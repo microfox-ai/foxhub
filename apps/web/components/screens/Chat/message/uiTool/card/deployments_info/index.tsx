@@ -54,7 +54,7 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AWS_LAMBDA_DEFAULT_REGION, AWS_LAMBDA_LOG_GROUP_PREFIX } from "@/utils/services/aws/aws_helper";
 import { TabType } from "@/components/screens/providers/TabUiProvider";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 type DeploymentsInfoProps = Omit<UiComponentProps["card"], "uiType"> & {
   isLastInQueue?: boolean;

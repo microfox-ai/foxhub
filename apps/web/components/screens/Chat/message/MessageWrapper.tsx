@@ -116,10 +116,11 @@ export const MessageWrapper = ({
                   lastMessage={index === length - 1}
                   lastAnnotationIndices={lastAnnotationIndices}
                   messageIndex={index}
+                  message={message}
                 />
               )}
             {displayParts.length > 1 && (
-              <div className={`${message.role === "user" ? "w-[400px]" : "w-[500px]"} p-0 bg-transparent`}>
+              <div className={`${message.role === "user" ? "w-[400px]" : "w-[800px]"} p-0 bg-transparent`}>
                 <StepBanner />
                 {toolParts && toolParts?.length > 0 && (
                   <RenderToolHeader />
@@ -131,6 +132,7 @@ export const MessageWrapper = ({
                     lastMessage={index === length - 1}
                     lastAnnotationIndices={lastAnnotationIndices}
                     messageIndex={index}
+                    message={message}
                   />
                 )}
                 {toolParts && toolParts?.length > 0 && (

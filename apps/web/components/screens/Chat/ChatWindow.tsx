@@ -19,6 +19,7 @@ import CodeStudio from "./code/CodeStudio";
 import ConfigureTab from "./dashboard/ConfigureTab";
 import { HistoryTab } from "./history/HistoryTab";
 import PublishTab from "./publish/PublishTab";
+import { BackgroundTaskProvider } from "./BackgroundTaskProvider";
 
 export type AttachedMedia = {
   file: File;
@@ -99,7 +100,7 @@ function ChatWindow() {
         className="relative h-screen gap-0"
       >
         <div className="flex items-start w-full">
-          {isCollapsed && (
+          {/* {isCollapsed && (
             <ButtonSCN
               variant="ghost"
               size="icon"
@@ -108,7 +109,7 @@ function ChatWindow() {
             >
               <PanelRightIcon style={{ height: "1rem", width: "1rem" }} />
             </ButtonSCN>
-          )}
+          )} */}
           <ChatHeader
             messages={messages}
             projectTitle={clientRequest?.title}
@@ -270,7 +271,9 @@ export default function ChatWindowWithProvider() {
   return (
     <MicrofoxChatProvider clientRequest={selectedRequest}>
       <ChatUIProvider>
-        <ChatWindow />
+        <BackgroundTaskProvider>
+          <ChatWindow />
+        </BackgroundTaskProvider>
       </ChatUIProvider>
     </MicrofoxChatProvider>
   );

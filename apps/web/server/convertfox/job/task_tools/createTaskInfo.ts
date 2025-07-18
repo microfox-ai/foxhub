@@ -15,7 +15,7 @@ import {
   TaskInstanceMetaType,
 } from "../../helpers/types";
 import { AiToolFactory } from "@microfox/ai-router";
-import { uiTool } from "@/server/ui/uiTool";
+import { uiTool } from "@/components/screens/Chat/message/uiTool/mappers/uiTool";
 
 type CreateTaskInfoToolMetadata = {
   loader?: string;

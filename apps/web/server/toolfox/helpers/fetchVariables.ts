@@ -2,7 +2,7 @@ import { prisma } from "@/prisma/prisma";
 import { ClientRequest, ClientSecret } from "@prisma/client";
 import { ClientSecretVariable } from "../../types";
 import { AuthObject, AuthOptions } from "@microfox/tool-kit";
-import { HitlAuthObject } from "../../ui/uiTool";
+import { HitlAuthObject } from "../../../components/screens/Chat/message/uiTool/mappers/uiTool";
 import { Bot } from "@/components/screens/mybots/providers/types";
 import { templateEnvsFromTaskIntegrations } from "@/server/buildfox/helper/templateEnvsFromTaskIntegrations";
 import { codeTemplateType } from "@/server/convertfox/helpers/types";
@@ -112,7 +112,7 @@ const pickSecrets = (
 
 export const cleanSecretsForAuthObject = (authObject: AuthObject) => {
   const output = { ...authObject };
-  for (const secret of output.secrets) {
+  for (const secret of output?.secrets) {
     secret.secrets = secret.secrets.map((s: ClientSecret) => {
       return {
         ...s,
@@ -137,14 +137,14 @@ export const getVariablesForAuthObject = async (
   }
 ) => {
   const output = { ...authObject };
-  for (const secret of output.secrets) {
+  for (const secret of output?.secrets) {
     if (secret.selectedSecretId) {
       let selectedSecret = secret.secrets.find(
         (s: ClientSecret) => s.id === secret.selectedSecretId
       );
       if (refetchFromDb) {
         selectedSecret = await prisma.clientSecret.findUnique({
-          where: { id: secret.selectedSecretId },
+          where: { id: secret.selectedSecretId, status: "FILLED" },
         });
       }
       if (selectedSecret) {
@@ -193,6 +193,7 @@ export const fetchAuthSecrets = async (
       packageName: {
         in: options.packages?.map((p) => p.packageName) ?? [],
       },
+      status: "FILLED",
       ...(configuration.clientRequest
         ? { botProjectId: configuration.clientRequest.botProjectId }
         : {}),
@@ -244,7 +245,7 @@ export const fetchAuthSecrets = async (
       (s) => s.packageName === _package.packageName
     );
     if (!finalPackages.find((p) => p.packageName === _package.packageName)) {
-      output.secrets.push({
+      output?.secrets?.push({
         packageName: _package.packageName,
         packageConstructor: _package.packageConstructor,
         isAuthNeeded: false,
@@ -260,7 +261,7 @@ export const fetchAuthSecrets = async (
         configuration.userId
       );
       const variables = fetchSecretVariables(pickedSecret);
-      output.secrets.push({
+      output?.secrets.push({
         packageName: _package.packageName,
         packageConstructor: _package.packageConstructor,
         selectedSecretId: pickedSecret.id,
@@ -269,7 +270,7 @@ export const fetchAuthSecrets = async (
       });
       output.variables = output.variables?.concat(variables) ?? variables;
     } else {
-      output.secrets.push({
+      output?.secrets.push({
         packageName: _package.packageName,
         packageConstructor: _package.packageConstructor,
         selectedSecretId: undefined,

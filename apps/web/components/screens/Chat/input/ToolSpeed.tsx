@@ -31,8 +31,8 @@ export const ToolSpeed = () => {
         <TooltipProvider>
             <div
                 className="relative flex bg-gray-100 p-[3px] h-11 rounded-lg">
-                {speedTabs.map((tab) => (
-                    <Tooltip key={`tab-${tab.value}`}>
+                {speedTabs.map((tab, _idx) => (
+                    <Tooltip key={`tab-${tab.value}-${_idx}`}>
                         <TooltipTrigger>
                             <div
                                 key={`tab-${tab.value}`}
@@ -67,9 +67,7 @@ export const ToolSpeed = () => {
                             {tab.label}
                         </TooltipContent>
                     </Tooltip>
-                ))
-                }
-
+                ))}
             </div >
         </TooltipProvider>
     )

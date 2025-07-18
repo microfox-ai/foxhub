@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { TaskStructureDev } from "./components/TaskStructureDev";
 import { IN_STAGING } from "@/utils/constants/appInfo";
 import { TaskStructureProd } from "./components/TaskStructureProd";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 type TaskStructureProps = Omit<UiComponentProps["card"], "uiType"> & {
     isLastInQueue?: boolean;

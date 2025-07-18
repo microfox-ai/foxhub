@@ -114,6 +114,7 @@ model ClientRequest {
   userId                   String
   mentionedClientSecretIds String[]
   title                    String             @default("Untitled")
+  slug                     String?            
   minionFlow               String?
   description              String?
   repoName                 String?

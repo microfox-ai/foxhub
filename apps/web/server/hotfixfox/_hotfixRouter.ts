@@ -9,7 +9,7 @@ import { models } from "../models";
 import { editFile, readFile } from "./tool/editFile";
 import { AiRouter } from "@microfox/ai-router";
 import { DefaultMessageMetadata } from "../microfoxRouter";
-import { uiTool } from "../ui/uiTool";
+import { uiTool } from "../../components/screens/Chat/message/uiTool/mappers/uiTool";
 
 // TODO: add support for modifying an unkonwn file not passed in the files list,
 // for example, changing schedule means modifying the serverless.yml file

@@ -27,7 +27,7 @@ import { motion } from "framer-motion";
 import { MotionConfig } from "framer-motion";
 import { ClientSecretVariable } from "@/server/types";
 import { ClientSecretPackageType } from "@/server/types";
-import { UiComponentProps } from "@/server/ui/UiComponentProps";
+import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
 type HotFixesProps = Omit<UiComponentProps["card"], "uiType"> & {
     isLastInQueue?: boolean;

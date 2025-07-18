@@ -24,7 +24,7 @@ import { getFunctionNameFromKebabCase } from "../../../buildfox/prompt.coding";
 import { AiToolFactory } from "@microfox/ai-router";
 import { tool } from "ai";
 import { z } from "zod";
-import { uiTool } from "@/server/ui/uiTool";
+import { uiTool } from "@/components/screens/Chat/message/uiTool/mappers/uiTool";
 
 type CreateTaskStructureToolMetadata = {
   loader?: string;

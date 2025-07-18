@@ -132,7 +132,7 @@ taskQueryAgent.agent("/", async (ctx) => {
         : request.messages;
 
     console.log(cleanUiMessageParts(last7Messages), "last7Messages");
-    let processedMessages = await client.parseHitl(
+    let processedMessages = await client.processHitlToolResult(
       cleanUiMessageParts(last7Messages),
       {
         dataStream: ctx.response,
@@ -140,7 +140,6 @@ taskQueryAgent.agent("/", async (ctx) => {
           return _authObject;
         },
         mutateOutput: async (output) => {
-          console.log("mutateOutput", output);
           return output;
         },
       }

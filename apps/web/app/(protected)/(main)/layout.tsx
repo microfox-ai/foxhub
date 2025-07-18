@@ -11,7 +11,6 @@ import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import ResizableSidebar from "@/components/screens/global/ResizableSidebar";
 import LogoutElement from "@/components/auth/LogoutElement";
 import FeaturebaseFeedback from "@/components/auth/FeatureBaseFeedback";
-import { BackgroundTaskProvider } from "@/components/screens/Chat/BackgroundTaskProvider";
 
 const routesWithOuLogout = ["/feedback", "/request"];
 

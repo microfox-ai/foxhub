@@ -4,20 +4,22 @@ import { useBackgroundTasksHook } from "@/hooks/use-background-tasks";
 import { useState } from "react";
 
 export default function SseTestPage() {
-  const [taskId, setTaskId] = useState("test-task-123");
-  const [inputTaskId, setInputTaskId] = useState("test-task-123");
+  const [taskId, setTaskId] = useState("a8b39b5e-a98d-475b-8d04-e81125486902");
+  const [inputTaskId, setInputTaskId] = useState("a8b39b5e-a98d-475b-8d04-e81125486902");
   const { metadata, response, taskState, isCompleted, error, sseStatus } = useBackgroundTasksHook(`/request/a8b39b5e-a98d-475b-8d04-e81125486902`);
   const [isSending, setIsSending] = useState(false);
 
   const handleSendMessage = async () => {
     setIsSending(true);
     try {
-      const response = await fetch("/api/background-tasks/task/a8b39b5e-a98d-475b-8d04-e81125486902", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_TASK_API_BASE_URL}/task/${taskId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+          "x-task-protection-key": ``
+         },
         body: JSON.stringify({
           taskId: taskId,
-          event: "complete",
+          event: "update",
           data: { state: "submitted", metadata: `Hello from ${taskId}`, response: { content: `Hello from ${taskId}`, timestamp: new Date().toISOString() } },
           isClientUpdate: true
         }),

@@ -32,8 +32,7 @@ export function LoginForm({
                 Hello ! I&apos;m Microfox
               </h1>
               <p className="text-balance text-md text-muted-foreground">
-                I can help you build social media bots or any internet based
-                automations as you need.
+                I can help you access, research & operate digital tools in your stead. Fire the micro-tasks on me, & I will not let you down.
               </p>
             </div>
             <Button

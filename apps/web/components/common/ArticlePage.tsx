@@ -32,7 +32,7 @@ export default function ArticlePage({ articleData }: { articleData: any }) {
 
     return (
         <>
-            <div className="fixed top-24 left-0 w-full h-1 z-50">
+            <div className="fixed bottom-0 left-0 w-full h-1 z-50">
                 <div
                     className="h-1 bg-black"
                     style={{ width: `${scrollProgress}%` }}

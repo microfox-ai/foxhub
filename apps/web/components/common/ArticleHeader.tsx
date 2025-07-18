@@ -23,7 +23,7 @@ export default function ArticleHeader({ page }: ArticleHeaderProps) {
     const createdDate = page.properties['Created time']?.created_time;
     const lastUpdatedDate = page.properties['Last updated time']?.last_edited_time;
     const categories = page.properties.Category?.multi_select || [];
-    const description = page.properties.Description?.rich_text[0]?.plain_text;
+    const description = page.properties.Description?.rich_text?.map((item: any) => item.plain_text).join(' ');
     return (
         <div className="mt-20 mb-8">
             {coverUrl ? (
@@ -41,20 +41,17 @@ export default function ArticleHeader({ page }: ArticleHeaderProps) {
                         <h1 className="text-3xl md:text-5xl font-bold">
                             {title}
                         </h1>
-                        {description && <p className="mt-2 text-lg md:text-xl max-w-2xl">{description}</p>}
-                        <div className="mt-4 flex items-center space-x-4 text-sm">
-                            {author && <span>By {author}</span>}
-                            {createdDate && <span>{new Date(createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>}
-                        </div>
-                        <div className="mt-2 text-sm">
-                            {lastUpdatedDate && <span>Last updated on {new Date(lastUpdatedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>}
-                        </div>
-                        <div className="mt-4 flex flex-wrap justify-center gap-2">
-                            {categories.map((category: Category) => (
-                                <span key={category.id} className="bg-gray-700 bg-opacity-70 rounded-full px-3 py-1 text-sm font-semibold">
+                        <div className="mt-8 flex flex-wrap justify-center gap-2">
+                            {categories?.map((category: Category) => (
+                                <span key={category.id} className="bg-neutral-900 bg-opacity-70 tracking-[1em] rounded-full px-8 py-2 uppercase text-xs font-semibold text-white">
                                     {category.name}
                                 </span>
                             ))}
+                        </div>
+                        {/* {description && <p className="mt-8 text-lg md:text-xl max-w-2xl">{description}</p>} */}
+                        <div className="mt-2 flex items-center space-x-4 text-sm opacity-70">
+                            {author && <span>By {author}</span>}
+                            {lastUpdatedDate && <span>{new Date(lastUpdatedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>}
                         </div>
                     </div>
                 </div>

@@ -87,19 +87,22 @@ const TableOfContents: FC<TableOfContentsProps> = ({ editor }) => {
         }
     };
 
-    const renderNestedHeadings = (headings: NestedHeading[]) => {
+    const renderNestedHeadings = (headings: NestedHeading[], depth = 0) => {
         return (
             <ul className="space-y-2">
                 {headings.map((heading) => (
                     <li key={heading.id}>
                         <a
                             onClick={() => handleScrollTo(heading.id)}
-                            className="cursor-pointer hover:text-blue-500 text-sm line-clamp-2"
+                            className={`cursor-pointer hover:text-blue-500 text-sm line-clamp-2 ${depth > 0 ? 'text-neutral-400' : ''
+                                }`}
                         >
                             {heading.text}
                         </a>
                         {heading.children.length > 0 && (
-                            <div className="ml-4">{renderNestedHeadings(heading.children)}</div>
+                            <div className="ml-4">
+                                {renderNestedHeadings(heading.children, depth + 1)}
+                            </div>
                         )}
                     </li>
                 ))}

@@ -35,6 +35,7 @@ const NewHeader = () => {
   const router = useRouter();
   const { openForm } = useFilloutPopup();
 
+
   const { handleButtonClick } = useAppButton();
   const closeDropdowns = () => {
     setShowDropdown({ publicBots: false, pricing: false });
@@ -51,7 +52,7 @@ const NewHeader = () => {
 
   return (
     <div
-      className={`fixed top-0 z-[100] w-full ${open && 'bg-black/60'} lg:backdrop-blur-sm`}
+      className={`fixed top-0 z-[100] w-full ${open && 'bg-black/60'} ${path.includes("blog") ? '' : 'lg:backdrop-blur-sm'} `}
     >
       <div
         className={`relative mx-2 my-0 mt-2 flex items-center justify-between lg:mx-6 lg:my-6 lg:bg-transparent ${open && isLaptopOrLess && 'mb-0 rounded-t-lg rounded-tr-lg !bg-black'}`}

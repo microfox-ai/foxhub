@@ -14,7 +14,22 @@ export const StepBanner = () => {
     const { activePart, setActivePart, displayParts, message, setActivePartByToolCallId } = useMessageParts();
 
     const lastPartIndex = displayParts ? displayParts.length - 1 : -1;
-    const hasFinalSummary = lastPartIndex !== -1 && displayParts[lastPartIndex]?.type === 'text';
+
+    const hasPendingHumanIntervention = message?.parts?.some(p => {
+        if (p.type?.startsWith("tool-") && (p as any).output) {
+            try {
+                // p.output can be a stringified JSON
+                const output = typeof (p as any).output === 'string' ? JSON.parse((p as any).output) : (p as any).output;
+                return output?._humanIntervention === true;
+            } catch (error) {
+                // Not a valid JSON, so it can't have _humanIntervent
+                return false;
+            }
+        }
+        return false;
+    });
+
+    const hasFinalSummary = lastPartIndex !== -1 && displayParts[lastPartIndex]?.type === 'text' && !hasPendingHumanIntervention;
     const isFinalSummaryActive = hasFinalSummary && activePart === lastPartIndex;
 
     const toolPackages = message?.parts?.map((p) => {

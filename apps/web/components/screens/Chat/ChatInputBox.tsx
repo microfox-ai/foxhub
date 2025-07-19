@@ -102,13 +102,13 @@ export default function ChatInputBox({
     if (autoSubmit && autoSubmit.length > 0) {
       const minionFlow: any = selectedRequest?.minionFlow ?? MinionFlow.BuildFlow;
       const minionType: any = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
-      append(constructAutoSubmitMessage(autoSubmit), {
+      append({message: constructAutoSubmitMessage(autoSubmit), chatRequestOptions: {
         body: {
           minionFlow: minionFlow,
           minionType: minionType,
           ...submitMetadata
         }
-      });
+      }});
       setAutoSubmit(null);
       setSubmitMetadata({});
     }

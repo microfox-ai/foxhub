@@ -5,5 +5,6 @@ export const SUPPORTED_VERCEL_SUBDOMAINS = {
   "think-bold": "think-bold",
   rbrowse: "rbrowse",
   markit: "markitapp",
-  slack: "slack",
+  markitapp: "markitapp",
+  slack: "slackd",
 };

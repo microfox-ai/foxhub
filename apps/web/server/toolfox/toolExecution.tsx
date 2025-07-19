@@ -10,7 +10,7 @@ import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
 import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 import { prisma } from "@/prisma/prisma";
-import { getMicrofoxCharacter, getMicrofoxPersonality } from "../hellofox/_prompts";
+import { getMicrofoxCharacter, getMicrofoxPersonality, essentialTools } from "../hellofox/_prompts";
 import { insertUiHitlOutput } from "../../components/screens/Chat/message/uiTool/mappers/uiHitl";
 import { z } from "zod";
 import { restoreLastKnownState, savePassedInTools } from "./execution/loadValidateState";
@@ -250,6 +250,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             })),
             tools: {
                 ...toolSet.tools,
+                ...essentialTools,
                 // toolSelection: ctx.next.agentAsTool("@/chatFlow/toolSelection", {
                 //     description: "Select the next best tools for the user's request",
                 //     inputSchema: z.object({
@@ -288,7 +289,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             ${combinedToolsSystemPromtps ?? `The Following are some of the tools guidelines which you need to follow to execute the respective tool: \n${combinedToolsSystemPromtps}`}
 
             ${lastToolCallName ? `The last tool call was: ${lastToolCallName}` : ""}
-            
+
             Output:
             If its a small conversation, respond in small concise sentences.
             DO NOT WASTE WORDS, always be concise & get to the point.
@@ -301,7 +302,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             - You MUST MUST MUST make tool calls to answer the user with the latest possible information.
             - if a tool call results in "User denied access", simply skip to an alternative tool or just continue.
             - You must never call a tool called "pkg" - there is no such tool.
-            - Do not assume or hallucinate about the answer from the tool. If you are making a toolcall, respond based on the result from the toolcall.
+            - Do not assume or hallucinate about the answer from the tool. If you are making a toolcall, respond based on the result from the toolcall. If you don't know the answer, say so.
 
 
             microfoxAnnotationAudio - a short audio annotation that is lively & engaging that speaks to the user in short & compact scenetences.

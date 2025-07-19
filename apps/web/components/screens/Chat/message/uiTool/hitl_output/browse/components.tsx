@@ -15,9 +15,9 @@ export const BrowseMediaGrid = ({
     }
 
     let data = toolName in output ? output[toolName as keyof typeof output] : undefined;
-    // if (!data && "image" in output) {
-    //     data = output.image;
-    // }
+    if (!data && "image_sources" in output) {
+        data = output.image_sources;
+    }
 
     if (data && data.length > 0) {
         const images = data;

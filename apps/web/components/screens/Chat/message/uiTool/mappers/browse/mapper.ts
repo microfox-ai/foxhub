@@ -33,8 +33,21 @@ export const mapBrowseImageSearch = (data: any) => {
         };
         return webSearchSource;
       });
-  } else if (!Array.isArray(data)) {
-    //console.log("data", data);
+  } else if (data && !Array.isArray(data)) {
+    output.image_sources = Object.values(data).map((image: any) => {
+      return {
+        title: image.alt,
+        description: image.description,
+        src: image.src,
+        originalSrc: image.src,
+        imagePageUrl: image.imgPermalink,
+        pageUrl: image.pagePermalink,
+        srcHeight: image.height,
+        srcWidth: image.width,
+        set: [],
+        url: image.src,
+      };
+    });
   }
   return output as BrowseOutput;
 };

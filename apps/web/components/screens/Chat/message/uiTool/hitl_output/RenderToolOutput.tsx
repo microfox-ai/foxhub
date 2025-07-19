@@ -27,8 +27,8 @@ export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part
 
     // a placeholder UI for taskId type of outputs (if a match is done, update the message both on frontend & backend)
 
-    if (fullOutput.data?.taskId) {
-        return <TaskPlaceholder taskId={fullOutput.data.taskId} mcpName={mcpName} toolName={toolName} />
+    if (fullOutput.backgroundTask?.taskId) {
+        return <TaskPlaceholder taskId={fullOutput.backgroundTask.taskId} fullOutput={fullOutput} mcpName={mcpName} toolName={toolName} />
     }
 
     switch (mcpName) {
@@ -48,7 +48,7 @@ export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part
         case "puppeteer-sls":
             switch (toolName) {
                 case "extractImagesFromURL":
-                    return <BrowseMediaGrid toolName={toolName} output={mapBrowseImageSearch(fullOutput.data)} />
+                    return <BrowseMediaGrid toolName={toolName} output={mapBrowseImageSearch(fullOutput?.data)} />
             }
         case "ragreddit":
             // const uiFunctionString = TempMapper.toString();

@@ -19,6 +19,8 @@ import {
   KeyRound,
   Settings,
   ListIcon,
+  Search,
+  X,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import { ProjectDropdown } from "./ProjectDropdown";
@@ -34,10 +36,12 @@ import {
 import { useLayout } from "../providers/LayoutProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { FeatureBaseLinkAttributes } from "@/components/auth/FeatureBase";
-import { IN_STAGING } from "@/utils/constants/appInfo";
+import { APP_BASE_URL, IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
 import { MinionFlow } from "../hooks/convertors";
 import dayjs from "dayjs";
 import React from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { Input } from "@/components/ui/input";
 
 interface BotProjectWithRequests extends BotProject {
   clientRequests: ClientRequest[];
@@ -177,6 +181,10 @@ export default function Sidebar({
   const { setIsFeedbackModalOpen } = useLayout();
   const { selectedProject, selectedProjectClientRequests,
     createNewEmptyRequest } = useClientProject();
+  const { user } = useAuth()
+
+  const isProduction = APP_BASE_URL === "https://microfox.app";
+  const isFeaturesEnables = isProduction ? false : (user?.isBetaAccess || IN_DEV);
 
   return (
     <div
@@ -188,65 +196,69 @@ export default function Sidebar({
         >
           <SidebarHeader isCollapsed={isCollapsed} onCollapse={onCollapse} />
 
-          <div className="flex-1">
+          {isFeaturesEnables && (
+            <div className="flex-1">
 
-            {selectedProject && (
-              <NewRequestButton
-                isCollapsed={isCollapsed}
-                onNewRequest={() => createNewEmptyRequest(MinionFlow.ChatFlow)}
-                selectedProject={selectedProject}
-                text="New Chat"
-              />
-            )}
+              {selectedProject && (
+                <NewRequestButton
+                  isCollapsed={isCollapsed}
+                  onNewRequest={() => createNewEmptyRequest(MinionFlow.ChatFlow)}
+                  selectedProject={selectedProject}
+                  text="New Chat"
+                />
+              )}
 
-            <ul
-              className={`${isCollapsed ? "flex flex-col items-center gap-2" : "flex flex-col"}`}
-            >
-              {navigationConfig
-                .filter((item) =>
-                  item.requiresProject
-                    ? selectedProject != null
-                    : !isCollapsed
-                      ? item.label !== "Chat"
-                      : true
-                )
-                .map((item, index) => (
-                  <NavigationItem
-                    key={item.label}
-                    icon={item.icon}
-                    collapsedIcon={item.collapsedIcon}
-                    label={item.label}
-                    href={item.href}
-                    hrefCallback={item.hrefCallback}
-                    onClick={
-                      item.onClick
-                        ? () =>
-                          item.onClick?.({
-                            isCollapsed,
-                            onCollapse,
-                            setIsFeedbackModalOpen,
-                          })
-                        : undefined
-                    }
-                    isCollapsed={isCollapsed}
-                    {...item.attributes}
-                  />
-                ))}
-            </ul>
+              <ul
+                className={`${isCollapsed ? "flex flex-col items-center gap-2" : "flex flex-col"}`}
+              >
+                {navigationConfig
+                  .filter((item) =>
+                    item.requiresProject
+                      ? selectedProject != null
+                      : !isCollapsed
+                        ? item.label !== "Chat"
+                        : true
+                  )
+                  .map((item, index) => (
+                    <NavigationItem
+                      key={item.label}
+                      icon={item.icon}
+                      collapsedIcon={item.collapsedIcon}
+                      label={item.label}
+                      href={item.href}
+                      hrefCallback={item.hrefCallback}
+                      onClick={
+                        item.onClick
+                          ? () =>
+                            item.onClick?.({
+                              isCollapsed,
+                              onCollapse,
+                              setIsFeedbackModalOpen,
+                            })
+                          : undefined
+                      }
+                      isCollapsed={isCollapsed}
+                      {...item.attributes}
+                    />
+                  ))}
+              </ul>
 
-            {selectedProject && (
-              <RequestsList
-                selectedProject={selectedProject}
-                clientRequests={selectedProjectClientRequests}
-                requestParamId={requestParamId}
-                isCollapsed={isCollapsed}
-              />
-            )}
-          </div>
+              {selectedProject && (
+                <RequestsList
+                  selectedProject={selectedProject}
+                  clientRequests={selectedProjectClientRequests}
+                  requestParamId={requestParamId}
+                  isCollapsed={isCollapsed}
+                />
+              )}
+            </div>
+          )}
 
-          <div className="space-y-4 mb-6">
-            <ProjectDropdown className="w-full" isCollapsed={isCollapsed} />
-          </div>
+          {isFeaturesEnables && (
+            <div className="space-y-4 mb-6">
+              <ProjectDropdown className="w-full" isCollapsed={isCollapsed} />
+            </div>
+          )}
         </div>
       </TooltipProvider>
     </div>
@@ -367,6 +379,43 @@ const RequestsList = ({
 }) => {
   if (isCollapsed) return null;
 
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [searchResults, setSearchResults] = React.useState<ClientRequest[] | null>(null);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [showSearch, setShowSearch] = React.useState(false);
+
+  React.useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setSearchResults(null);
+      return;
+    }
+
+    const search = async () => {
+      setIsSearching(true);
+      try {
+        const response = await fetch(`/api/client-requests/search?q=${encodeURIComponent(searchQuery)}&projectId=${selectedProject.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSearchResults(data);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error("Failed to search requests", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }
+
+    const timer = setTimeout(() => {
+      search();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedProject.id]);
+
+
   const renderDateSeparator = (currentDate: Date, prevDate?: Date) => {
     if (!prevDate || !dayjs(currentDate).isSame(prevDate, "day")) {
       return (
@@ -378,56 +427,106 @@ const RequestsList = ({
     return null;
   };
 
+  const requestsToDisplay = searchResults !== null ? searchResults : clientRequests;
+
   return (
-    <div className="my-4 mx-1 space-y-1 max-h-[50vh] overflow-y-auto">
-      {clientRequests?.length > 0 ? (
-        clientRequests?.map(
-          (request: ClientRequest, index) => {
-            const prevRequest = clientRequests[index - 1];
-            return (
-              <React.Fragment key={request.id}>
-                {renderDateSeparator(request.updatedAt, prevRequest?.updatedAt)}
-                <Link
-                  key={request?.id}
-                  href={`/project/${selectedProject?.id}/request/${request?.id}`}
-                  className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
-                    ? "bg-gray-200 text-black"
-                    : "hover:bg-gray-100"
-                    }`}
-                >
-                  {request.id === requestParamId ? (
-                    <ChevronRight
-                      style={{
-                        marginRight: "0.5rem",
-                        height: "1rem",
-                        width: "1rem",
-                      }}
-                    />
-                  ) : (
-                    <MessageSquare
-                      style={{
-                        marginRight: "0.5rem",
-                        height: "1rem",
-                        width: "1rem",
-                        color: "#4c4c4c",
-                      }}
-                    />
-                  )}
-                  <span
-                    className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
-                  >
-                    {request.title}
-                  </span>
-                </Link>
-              </React.Fragment>
-            )
-          }
-        )
+    <div className="relative my-4 mx-1">
+      {!showSearch ? (
+        <div className="absolute -top-2 right-1 z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSearch(true)}
+            title="Search chats"
+            className="h-8 w-8"
+          >
+            <Search className="h-4 w-4 text-gray-500 hover:text-black" />
+          </Button>
+        </div>
       ) : (
-        <div className="px-4 py-2 text-sm text-muted-foreground">
-          No requests
+        <div className="relative mb-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-8 h-9"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setShowSearch(false);
+                setSearchQuery('');
+              }
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setShowSearch(false);
+              setSearchQuery('');
+            }}
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       )}
+      <div className="space-y-1 max-h-[50vh] overflow-y-auto" style={{
+        maxHeight: showSearch ? 'calc(50vh - 44px)' : '50vh'
+      }}>
+        {isSearching ? (
+          <div className="px-4 py-2 text-sm text-muted-foreground">Searching...</div>
+        ) : requestsToDisplay?.length > 0 ? (
+          requestsToDisplay?.map(
+            (request: ClientRequest, index) => {
+              const prevRequest = requestsToDisplay[index - 1];
+              return (
+                <React.Fragment key={request.id}>
+                  {renderDateSeparator(request.updatedAt, prevRequest?.updatedAt)}
+                  <Link
+                    key={request?.id}
+                    href={`/project/${selectedProject?.id}/request/${request?.id}`}
+                    className={`flex cursor-pointer w-full line-clamp-1 items-center rounded-sm px-2 py-2 text-sm ${request?.id === requestParamId
+                      ? "bg-gray-200 text-black"
+                      : "hover:bg-gray-100"
+                      }`}
+                  >
+                    {request.id === requestParamId ? (
+                      <ChevronRight
+                        style={{
+                          marginRight: "0.5rem",
+                          height: "1rem",
+                          width: "1rem",
+                        }}
+                      />
+                    ) : (
+                      <MessageSquare
+                        style={{
+                          marginRight: "0.5rem",
+                          height: "1rem",
+                          width: "1rem",
+                          color: "#4c4c4c",
+                        }}
+                      />
+                    )}
+                    <span
+                      className={`flex-1 truncate text-left ${request.id === requestParamId ? "font-semibold" : ""}`}
+                    >
+                      {request.title}
+                    </span>
+                  </Link>
+                </React.Fragment>
+              )
+            }
+          )
+        ) : (
+          <div className="px-4 py-2 text-sm text-muted-foreground">
+            No requests
+          </div>
+        )}
+      </div>
     </div>
   );
 };

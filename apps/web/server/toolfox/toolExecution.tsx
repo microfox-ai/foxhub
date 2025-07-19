@@ -243,6 +243,9 @@ toolExecutionAgent.agent("/", async (ctx) => {
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
         console.log("Inserted tool set", Object.keys(toolSet.tools));
+        response.writeMessageMetadata({
+            availableTools: Object.keys(toolSet.tools),
+        });
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {

@@ -83,10 +83,16 @@ export async function subdomainRerouting(
         );
       }
 
-      if (SUPPORTED_VERCEL_SUBDOMAINS.includes(subdomain)) {
-        console.log("rewriting to:", `https://${subdomain}.vercel.app`);
+      if (Object.keys(SUPPORTED_VERCEL_SUBDOMAINS).includes(subdomain)) {
+        console.log(
+          "rewriting to:",
+          `https://${SUPPORTED_VERCEL_SUBDOMAINS[subdomain as keyof typeof SUPPORTED_VERCEL_SUBDOMAINS]}.vercel.app`
+        );
         return NextResponse.rewrite(
-          new URL(`https://${subdomain}.vercel.app${path}`, request.url)
+          new URL(
+            `https://${SUPPORTED_VERCEL_SUBDOMAINS[subdomain as keyof typeof SUPPORTED_VERCEL_SUBDOMAINS]}.vercel.app${path}`,
+            request.url
+          )
         );
       }
 

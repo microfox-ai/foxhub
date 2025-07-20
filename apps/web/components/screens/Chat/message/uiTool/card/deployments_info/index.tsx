@@ -52,7 +52,10 @@ import { useClientProject } from "@/components/screens/providers/ClientProjectPr
 import { toast } from "sonner";
 import { PortalSdk } from "@/utils/services/PortalSdk";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AWS_LAMBDA_DEFAULT_REGION, AWS_LAMBDA_LOG_GROUP_PREFIX } from "@/utils/services/aws/aws_helper";
+import {
+  AWS_LAMBDA_DEFAULT_REGION,
+  AWS_LAMBDA_LOG_GROUP_PREFIX,
+} from "@/utils/services/aws/aws_helper";
 import { TabType } from "@/components/screens/providers/TabUiProvider";
 import { UiComponentProps } from "@/components/screens/Chat/message/uiTool/mappers/UiComponentProps";
 
@@ -77,8 +80,11 @@ export const DeploymentsInfo = ({
   const { isRightCollapsed, handleRightCollapse } = useLayout();
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
-  const { setSubmitMetadata, selectedRequest, selectedClientDeployment: clientDeployment } =
-    useClientProject();
+  const {
+    setSubmitMetadata,
+    selectedRequest,
+    selectedClientDeployment: clientDeployment,
+  } = useClientProject();
   const { taskInstanceMeta } = useTaskInstanceMetaContext();
 
   const { deployment, logs, shouldBreak, progress } = useDeployStatus({
@@ -87,9 +93,9 @@ export const DeploymentsInfo = ({
   });
 
   let statusPart = "is in progress";
-  if (deployment?.status === 'deployed') {
+  if (deployment?.status === "deployed") {
     statusPart = "is deployed successfully";
-  } else if (deployment?.status === 'failed') {
+  } else if (deployment?.status === "failed") {
     statusPart = "deployment failed";
   }
 
@@ -113,7 +119,6 @@ export const DeploymentsInfo = ({
       return;
     }
 
-
     toast.promise(
       (async () => {
         const logs = await fetchServerlessLogs({
@@ -132,8 +137,10 @@ export const DeploymentsInfo = ({
 
         setSubmitMetadata((sm: any) => ({
           ...sm,
-          api_errors: sm.api_errors ? [...sm.api_errors, errorAttachment] : [errorAttachment]
-        }))
+          api_errors: sm.api_errors
+            ? [...sm.api_errors, errorAttachment]
+            : [errorAttachment],
+        }));
         setActiveTab("chat");
         handleRightCollapse(true);
       })(),
@@ -186,13 +193,15 @@ export const DeploymentsInfo = ({
     return null;
   }
 
-  const titleNode = <DeploymentTitle
-    taskInstanceMeta={taskInstanceMeta}
-    deployment={deployment}
-    statusPart={statusPart}
-    fetchLogs={fetchLogs}
-    isInProgress={!shouldBreak}
-  />
+  const titleNode = (
+    <DeploymentTitle
+      taskInstanceMeta={taskInstanceMeta}
+      deployment={deployment}
+      statusPart={statusPart}
+      fetchLogs={fetchLogs}
+      isInProgress={!shouldBreak}
+    />
+  );
 
   return (
     <>
@@ -232,7 +241,13 @@ interface DeploymentTitleProps {
   isInProgress: boolean;
 }
 
-const DeploymentTitle = ({ taskInstanceMeta, deployment, statusPart, fetchLogs, isInProgress }: DeploymentTitleProps) => {
+const DeploymentTitle = ({
+  taskInstanceMeta,
+  deployment,
+  statusPart,
+  fetchLogs,
+  isInProgress,
+}: DeploymentTitleProps) => {
   const taskInfo = taskInstanceMeta?.taskInfo;
   const taskStructure = taskInstanceMeta?.taskStructure;
   const taskIntegrations = taskInstanceMeta?.taskIntegrations;
@@ -249,28 +264,44 @@ const DeploymentTitle = ({ taskInstanceMeta, deployment, statusPart, fetchLogs, 
             {taskInfo?.name}
           </p>
           <p className="text-sm text-neutral-600 mt-1 max-w-[250px]">
-            A <span className="font-semibold text-neutral-800">{deployment?.stage?.toLowerCase()}</span> version {statusPart}. <span className="text-xs text-neutral-600">({deployment?.metrics?.timing?.totalDuration ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds` : "N/A"})</span> <span className="text-sm"></span>
+            A{" "}
+            <span className="font-semibold text-neutral-800">
+              {deployment?.stage?.toLowerCase()}
+            </span>{" "}
+            version {statusPart}.{" "}
+            <span className="text-xs text-neutral-600">
+              (
+              {deployment?.metrics?.timing?.totalDuration
+                ? `${(deployment?.metrics?.timing?.totalDuration / 1000).toFixed(2)} seconds`
+                : "N/A"}
+              )
+            </span>{" "}
+            <span className="text-sm"></span>
           </p>
           <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 text-sm text-neutral-600">
             {taskStructure?.lambdaFunctions?.length > 0 && (
               <span className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1">
-                {taskStructure.lambdaFunctions.length} Ai tool{taskStructure.lambdaFunctions.length > 1 ? 's' : ''}
+                {taskStructure.lambdaFunctions.length} Ai tool
+                {taskStructure.lambdaFunctions.length > 1 ? "s" : ""}
               </span>
             )}
             {taskStructure?.cronJobs > 0 && (
               <span className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1">
-                {taskStructure.cronJobs} background job{taskStructure.cronJobs > 1 ? 's' : ''}
+                {taskStructure.cronJobs} background job
+                {taskStructure.cronJobs > 1 ? "s" : ""}
               </span>
             )}
             {taskIntegrations?.platforms?.length > 0 && (
               <span className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1">
-                {taskIntegrations.platforms.length} platform{taskIntegrations.platforms.length > 1 ? 's' : ''}
+                {taskIntegrations.platforms.length} platform
+                {taskIntegrations.platforms.length > 1 ? "s" : ""}
               </span>
             )}
             {!isInProgress && (
               <span
                 onClick={fetchLogs}
-                className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1">
+                className="text-xs flex items-center gap-1.5 border border-neutral-200 rounded-xl px-2 py-1"
+              >
                 {"View Logs"}
               </span>
             )}
@@ -301,7 +332,14 @@ interface DeployingViewProps {
   clientDeployment: any;
 }
 
-const DeployingView = ({ title, deployment, progress, logs, fetchLogs, clientDeployment }: DeployingViewProps) => {
+const DeployingView = ({
+  title,
+  deployment,
+  progress,
+  logs,
+  fetchLogs,
+  clientDeployment,
+}: DeployingViewProps) => {
   return (
     <motion.div
       className="flex flex-col gap-4 p-5 bg-white rounded-xl border border-gray-100 shadow-sm"
@@ -314,9 +352,7 @@ const DeployingView = ({ title, deployment, progress, logs, fetchLogs, clientDep
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Cube size={16} color="#2b7fff" />
-          <h3 className="text-base font-medium text-gray-800">
-            Deploying...
-          </h3>
+          <h3 className="text-base font-medium text-gray-800">Deploying...</h3>
         </div>
         <div className="flex items-center gap-2">
           <Clock size={14} className="text-gray-500" />
@@ -402,9 +438,7 @@ const DeployingView = ({ title, deployment, progress, logs, fetchLogs, clientDep
 
       <div className="text-xs text-gray-500 flex items-center gap-2">
         <Loader2 size={12} className="animate-spin" />
-        <span>
-          {deployment?.statusDescription}
-        </span>
+        <span>{deployment?.statusDescription}</span>
       </div>
     </motion.div>
   );
@@ -425,25 +459,22 @@ const DeploymentResultView = ({
   debugIssue,
   fetchLogs,
 }: DeploymentResultViewProps) => {
-
   const { append } = useMicrofoxChat();
   const { setActiveTab } = useTabUi();
   const { handleRightCollapse } = useLayout();
 
   const deployToProduction = () => {
     console.log("deployToProduction");
-    append(
-      constructMessageFromButton(
-        {
-          text: "Deploy to Production !",
-          minionType: "deployfox",
-        }
-      ),
-      constructAppendBody("deployfox", {
+    append({
+      message: constructMessageFromButton({
+        text: "Deploy to Production !",
+        minionType: "deployfox",
+      }),
+      chatRequestOptions: constructAppendBody("deployfox", {
         stage: DEPLOY_STAGE.PROD,
         is_local: false,
-      })
-    );
+      }),
+    });
   };
 
   return (
@@ -462,7 +493,9 @@ const DeploymentResultView = ({
             )}
           />
           <h2 className="text-xl font-medium text-gray-900">
-            {deployment?.status == "failed" ? "Uh oh! Deployment Failed" : "Deployment Success !"}
+            {deployment?.status == "failed"
+              ? "Uh oh! Deployment Failed"
+              : "Deployment Success !"}
           </h2>
         </div>
         <span
@@ -475,7 +508,11 @@ const DeploymentResultView = ({
                 : "bg-yellow-50 text-yellow-700"
           )}
         >
-          {deployment?.status == "failed" ? <MessageCircleWarningIcon className="w-3 h-3" /> : <CheckCircleIcon className="w-3 h-3" />}
+          {deployment?.status == "failed" ? (
+            <MessageCircleWarningIcon className="w-3 h-3" />
+          ) : (
+            <CheckCircleIcon className="w-3 h-3" />
+          )}
         </span>
       </div>
 
@@ -569,8 +606,8 @@ const DeploymentResultView = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 const LogsDialog = ({
   isOpen,

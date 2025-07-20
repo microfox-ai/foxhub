@@ -10,12 +10,13 @@ import { convertToModelMessages, streamText } from "ai";
 import { models } from "../models";
 import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 import { prisma } from "@/prisma/prisma";
-import { getMicrofoxCharacter, getMicrofoxPersonality } from "../hellofox/_prompts";
+import { getMicrofoxCharacter, getMicrofoxPersonality, essentialTools } from "../hellofox/_prompts";
 import { insertUiHitlOutput } from "../../components/screens/Chat/message/uiTool/mappers/uiHitl";
 import { z } from "zod";
 import { restoreLastKnownState, savePassedInTools } from "./execution/loadValidateState";
 import { loadClientRequest } from "./helpers/loadClientRequest";
 import { createToolsetForExecution } from "./helpers/createToolset";
+import { UIMessage } from "@ai-sdk/react";
 
 /**
  * Tool execution agent.
@@ -74,8 +75,20 @@ toolExecutionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             loader: "booting the tools...",
         });
+        let originUserMessage: UIMessage<any, any> | undefined;
+        let originAssistantMessage: UIMessage<any, any> | undefined;
+        const originMessage = request.messages[request.messages.length - 1]
+        if (originMessage?.role === "assistant") {
+            originUserMessage = request.messages[request.messages.length - 2];
+            originAssistantMessage = originMessage;
+        } else {
+            originUserMessage = originMessage;
+        }
         //console.log("toolPopulatedMcps", toolPopulatedMcps);
-        let client = await createToolsetForExecution(toolPopulatedMcps, clientRequest);
+        let client = await createToolsetForExecution(toolPopulatedMcps, clientRequest, {
+            originUserMessage,
+            originAssistantMessage,
+        });
 
         const toolSet = await client.tools({
             disableAllExecutions: true,
@@ -100,6 +113,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
                         console.log("inserting auth variables", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
+                            extraVariables: {
+                                MICROFOX_ASSISTANT_MESSAGE_ID: originAssistantMessage?.id || "",
+                                MICROFOX_USER_MESSAGE_ID: originUserMessage?.id || "",
+                            },
                             refetchFromDb: true,
                         });
                         return authFilledOutput;
@@ -208,7 +225,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
             //console.log("searchForToolsResponse", searchForToolsResponse);
             processedMessages = [...processedMessagesResponse];
             console.log("re-updating tools", ctx.state.toolPopulatedMcps.length, ctx.state.toolPopulatedMcps.map((mcp: ApiMcp) => mcp.package_name));
-            client = await createToolsetForExecution(ctx.state.toolPopulatedMcps, clientRequest);
+            client = await createToolsetForExecution(ctx.state.toolPopulatedMcps, clientRequest, {
+                originUserMessage,
+                originAssistantMessage,
+            });
         }
         response.writeMessageMetadata({
             loader: "Processing the task...",
@@ -243,6 +263,9 @@ toolExecutionAgent.agent("/", async (ctx) => {
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
         console.log("Inserted tool set", Object.keys(toolSet.tools));
+        response.writeMessageMetadata({
+            availableTools: Object.keys(toolSet.tools),
+        });
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
@@ -250,6 +273,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             })),
             tools: {
                 ...toolSet.tools,
+                ...essentialTools,
                 // toolSelection: ctx.next.agentAsTool("@/chatFlow/toolSelection", {
                 //     description: "Select the next best tools for the user's request",
                 //     inputSchema: z.object({
@@ -288,7 +312,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             ${combinedToolsSystemPromtps ?? `The Following are some of the tools guidelines which you need to follow to execute the respective tool: \n${combinedToolsSystemPromtps}`}
 
             ${lastToolCallName ? `The last tool call was: ${lastToolCallName}` : ""}
-            
+
             Output:
             If its a small conversation, respond in small concise sentences.
             DO NOT WASTE WORDS, always be concise & get to the point.
@@ -301,7 +325,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             - You MUST MUST MUST make tool calls to answer the user with the latest possible information.
             - if a tool call results in "User denied access", simply skip to an alternative tool or just continue.
             - You must never call a tool called "pkg" - there is no such tool.
-            - Do not assume or hallucinate about the answer from the tool. If you are making a toolcall, respond based on the result from the toolcall.
+            - Do not assume or hallucinate about the answer from the tool. If you are making a toolcall, respond based on the result from the toolcall. If you don't know the answer, say so.
 
 
             microfoxAnnotationAudio - a short audio annotation that is lively & engaging that speaks to the user in short & compact scenetences.

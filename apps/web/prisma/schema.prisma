@@ -570,6 +570,20 @@ model EventWatcher {
   @@map("event_watchers")
 }
 
+model PendingEvent {
+  id           String   @id @default(uuid())
+  event        String
+  data         Json
+  createdAt    DateTime @default(now())
+  botProjectId String?
+  requestId    String?
+  taskId       String?
+
+  @@index([botProjectId])
+  @@index([requestId])
+  @@index([taskId])
+}
+
 model SubdomainRedirect {
   id          String      @id @default(cuid())
   subdomain   String      @unique

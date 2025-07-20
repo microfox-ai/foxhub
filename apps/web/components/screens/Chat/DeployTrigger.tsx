@@ -113,18 +113,16 @@ const DeployTrigger = () => {
         return;
     }
 
-    append(
-      constructMessageFromButton(
-        {
-          text: buttonText,
-          minionType: "deployfox",
-        }
-      ),
-      constructAppendBody("deployfox", {
+    append({
+      message: constructMessageFromButton({
+        text: buttonText,
+        minionType: "deployfox",
+      }),
+      chatRequestOptions: constructAppendBody("deployfox", {
         stage: deployStage,
         is_local: false, //targetStage === "local",
-      })
-    );
+      }),
+    });
   };
 
   let deploymentOptions = [

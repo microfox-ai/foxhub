@@ -17,6 +17,8 @@ export const useBackgroundTasksHook = (url: string | null) => {
   const [sseStatus, setSseStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
+  const [originAssistantMessageId, setOriginAssistantMessageId] = useState<string | null>(null);
+  const [originUserMessageId, setOriginUserMessageId] = useState<string | null>(null);
 
   console.log(
     "task-processing url",
@@ -28,7 +30,7 @@ export const useBackgroundTasksHook = (url: string | null) => {
     (process.env.NEXT_PUBLIC_TASK_API_BASE_URL ?? "") + url,
     (key, { next }) => {
       if (!key) {
-        return () => {};
+        return () => { };
       }
 
       console.log("SSE: subscribing to", key);
@@ -45,6 +47,8 @@ export const useBackgroundTasksHook = (url: string | null) => {
           console.log("SSE: update", data);
           setTaskState(data.state);
           setMetadata(data.metadata);
+          setOriginAssistantMessageId(data.originAssistantMessageId);
+          setOriginUserMessageId(data.originUserMessageId);
           next(null, data);
         } catch (err) {
           console.error("SSE: Failed to parse SSE message data", err);
@@ -58,6 +62,8 @@ export const useBackgroundTasksHook = (url: string | null) => {
           setMetadata(data.metadata);
           setResponse(data.response);
           setIsCompleted(true);
+          setOriginAssistantMessageId(data.originAssistantMessageId);
+          setOriginUserMessageId(data.originUserMessageId);
           next(null, data);
         } catch (err) {
           console.error("SSE: Failed to parse SSE message data", err);
@@ -71,6 +77,8 @@ export const useBackgroundTasksHook = (url: string | null) => {
           setError(data.error);
           setMetadata(data.metadata);
           setIsCompleted(false);
+          setOriginAssistantMessageId(data.originAssistantMessageId);
+          setOriginUserMessageId(data.originUserMessageId);
           next(null, data);
         } catch (err) {
           console.error("SSE: Failed to parse SSE message data", err);
@@ -110,5 +118,7 @@ export const useBackgroundTasksHook = (url: string | null) => {
     response,
     taskState,
     isCompleted,
+    originAssistantMessageId,
+    originUserMessageId,
   };
 };

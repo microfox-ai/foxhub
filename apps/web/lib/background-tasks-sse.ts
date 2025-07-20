@@ -1,6 +1,6 @@
 import { createChannel, type Channel } from "better-sse";
 
-export const defaultChannel = createChannel({});
+export const defaultChannel = createChannel();
 
 const taskChannels = new Map<string, Channel>();
 

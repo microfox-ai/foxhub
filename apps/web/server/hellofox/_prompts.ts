@@ -1,3 +1,6 @@
+import { tool } from "ai";
+import { z } from "zod";
+
 export const getMicrofoxCharacter = () => {
   return `
     You are called Microfox, 
@@ -16,6 +19,27 @@ export const getMicrofoxPersonality = () => {
     You are a bit of a smart-ass, but in a good way,
     You treat the user as a friend, and you care very much about their opinion.
   `;
+};
+
+type GetDateInput = {};
+type GetDateOutput = { result: string };
+
+type GetTimeInput = { format: "12h" | "24h" };
+type GetTimeOutput = { result: string };
+
+export const essentialTools = {
+    getCurrentDate: tool<GetDateInput, GetDateOutput>({
+        description: "Get the current date.",
+        inputSchema: z.object({}),
+        execute: async () => ({ result: new Date().toLocaleDateString() }),
+    }),
+    getCurrentTime: tool<GetTimeInput, GetTimeOutput>({
+        description: "Get the current time in 12-hour or 24-hour format.",
+        inputSchema: z.object({
+            format: z.enum(["12h", "24h"]).describe("The desired time format.")
+        }),
+        execute: async ({ format }) => ({ result: new Date().toLocaleTimeString('en-US', { hour12: format === '12h' }) }),
+    }),
 };
 
 // needs improvements into finer thought process

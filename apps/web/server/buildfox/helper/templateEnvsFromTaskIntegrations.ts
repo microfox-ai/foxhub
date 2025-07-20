@@ -22,11 +22,21 @@ export interface InternalTemplateEnv {
 
 export const templateEnvsFromTaskIntegrations = async (
   template_type: CodeTemplateType,
-  clientRequest: ClientRequest
+  clientRequest: ClientRequest,
+  extraVariables?: Record<string, string>
 ) => {
   let templatedEnvs: InternalTemplateEnv[] = [];
   if (template_type === codeTemplateType.enum.upstash_sls) {
     templatedEnvs = upstashEnvs;
+  }
+  if (extraVariables) {
+    templatedEnvs = templatedEnvs.concat(Object.entries(extraVariables).map(([key, value]) => ({
+      key,
+      package: "ids-internal",
+      constructorFunction: "microfox",
+      value,
+      isOptional: false,
+    })));
   }
   if (clientRequest.id) {
     templatedEnvs.push({

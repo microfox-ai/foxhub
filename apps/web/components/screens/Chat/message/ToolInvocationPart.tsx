@@ -129,10 +129,10 @@ export const ToolInvocationPart = ({
                 onClick={() => {
                   if (button.action === "shiftMinion") {
                     setInput("");
-                    append(
-                      constructShiftMinionMessage(button),
-                      constructAppendBody(button.value)
-                    );
+                    append({
+                      message: constructShiftMinionMessage(button),
+                      chatRequestOptions: constructAppendBody(button.value),
+                    });
                     removeThisPart();
                   }
                   if (button.action === "removeThisPart") {
@@ -140,10 +140,10 @@ export const ToolInvocationPart = ({
                   }
                   if (button.action === "appendMessage") {
                     setInput("");
-                    append(
-                      constructMessageFromButton(button),
-                      constructAppendBody(button.minionType)
-                    );
+                    append({
+                      message: constructMessageFromButton(button),
+                      chatRequestOptions: constructAppendBody(button.minionType),
+                    });
                     removeThisPart();
                   }
                 }}

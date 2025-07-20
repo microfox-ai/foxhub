@@ -131,9 +131,11 @@ export const getVariablesForAuthObject = async (
   {
     clientRequest,
     refetchFromDb,
+    extraVariables,
   }: {
     clientRequest?: ClientRequest;
     refetchFromDb?: boolean;
+    extraVariables?: Record<string, string>;
   }
 ) => {
   const output = { ...authObject };
@@ -158,7 +160,8 @@ export const getVariablesForAuthObject = async (
   if (clientRequest) {
     const envs = await templateEnvsFromTaskIntegrations(
       codeTemplateType.enum.upstash_sls,
-      clientRequest
+      clientRequest,
+      extraVariables
     );
     output.variables = output.variables?.concat(envs) ?? envs;
   }

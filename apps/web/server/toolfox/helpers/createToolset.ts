@@ -11,11 +11,17 @@ import {
   getVariablesForAuthObject,
   cleanSecretsForAuthObject,
 } from "./fetchVariables";
+import { UIMessage } from "@ai-sdk/react";
 
 export async function createToolsetForExecution(
   toolPopulatedMcps: ApiMcp[],
-  clientRequest: ClientRequest
+  clientRequest: ClientRequest,
+  options: {
+    originUserMessage?: UIMessage<any, any>;
+    originAssistantMessage?: UIMessage<any, any>;
+  }
 ) {
+  const { originUserMessage, originAssistantMessage } = options;
   const client = await createOpenApiToolset(
     toolPopulatedMcps?.map((mcp: ApiMcp) => {
       return {
@@ -37,6 +43,10 @@ export async function createToolsetForExecution(
           const authFilledOutput = await getVariablesForAuthObject(output, {
             clientRequest,
             refetchFromDb: false,
+            extraVariables: {
+              MICROFOX_ASSISTANT_MESSAGE_ID: originAssistantMessage?.id || "",
+              MICROFOX_USER_MESSAGE_ID: originUserMessage?.id || "",
+            },
           });
           return authFilledOutput;
         },

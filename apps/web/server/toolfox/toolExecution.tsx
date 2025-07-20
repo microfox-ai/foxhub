@@ -16,6 +16,7 @@ import { z } from "zod";
 import { restoreLastKnownState, savePassedInTools } from "./execution/loadValidateState";
 import { loadClientRequest } from "./helpers/loadClientRequest";
 import { createToolsetForExecution } from "./helpers/createToolset";
+import { UIMessage } from "@ai-sdk/react";
 
 /**
  * Tool execution agent.
@@ -74,8 +75,20 @@ toolExecutionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             loader: "booting the tools...",
         });
+        let originUserMessage: UIMessage<any, any> | undefined;
+        let originAssistantMessage: UIMessage<any, any> | undefined;
+        const originMessage = request.messages[request.messages.length - 1]
+        if (originMessage?.role === "assistant") {
+            originUserMessage = request.messages[request.messages.length - 2];
+            originAssistantMessage = originMessage;
+        } else {
+            originUserMessage = originMessage;
+        }
         //console.log("toolPopulatedMcps", toolPopulatedMcps);
-        let client = await createToolsetForExecution(toolPopulatedMcps, clientRequest);
+        let client = await createToolsetForExecution(toolPopulatedMcps, clientRequest, {
+            originUserMessage,
+            originAssistantMessage,
+        });
 
         const toolSet = await client.tools({
             disableAllExecutions: true,
@@ -100,6 +113,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
                         console.log("inserting auth variables", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
+                            extraVariables: {
+                                MICROFOX_ASSISTANT_MESSAGE_ID: originAssistantMessage?.id || "",
+                                MICROFOX_USER_MESSAGE_ID: originUserMessage?.id || "",
+                            },
                             refetchFromDb: true,
                         });
                         return authFilledOutput;
@@ -208,7 +225,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
             //console.log("searchForToolsResponse", searchForToolsResponse);
             processedMessages = [...processedMessagesResponse];
             console.log("re-updating tools", ctx.state.toolPopulatedMcps.length, ctx.state.toolPopulatedMcps.map((mcp: ApiMcp) => mcp.package_name));
-            client = await createToolsetForExecution(ctx.state.toolPopulatedMcps, clientRequest);
+            client = await createToolsetForExecution(ctx.state.toolPopulatedMcps, clientRequest, {
+                originUserMessage,
+                originAssistantMessage,
+            });
         }
         response.writeMessageMetadata({
             loader: "Processing the task...",

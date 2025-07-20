@@ -139,21 +139,34 @@ export const getVariablesForAuthObject = async (
   }
 ) => {
   const output = { ...authObject };
-  for (const secret of output?.secrets) {
-    if (secret.selectedSecretId) {
-      let selectedSecret = secret.secrets.find(
-        (s: ClientSecret) => s.id === secret.selectedSecretId
-      );
-      if (refetchFromDb) {
-        selectedSecret = await prisma.clientSecret.findUnique({
-          where: { id: secret.selectedSecretId, status: "FILLED" },
-        });
+  if (output.secrets) {
+    for (const secret of output?.secrets) {
+      if (secret.selectedSecretId) {
+        let selectedSecret = secret.secrets.find(
+          (s: ClientSecret) => s.id === secret.selectedSecretId
+        );
+        if (refetchFromDb) {
+          selectedSecret = await prisma.clientSecret.findUnique({
+            where: { id: secret.selectedSecretId, status: "FILLED" },
+          });
+        }
+        if (selectedSecret) {
+          const selectedSecretVariables = fetchSecretVariables(selectedSecret);
+          output.variables =
+            output.variables?.concat(selectedSecretVariables) ??
+            selectedSecretVariables;
+        }
       }
-      if (selectedSecret) {
-        const selectedSecretVariables = fetchSecretVariables(selectedSecret);
-        output.variables =
-          output.variables?.concat(selectedSecretVariables) ??
-          selectedSecretVariables;
+      //if (secret.)
+    }
+  }
+  if (output.customSecrets) {
+    for (const secret of output.customSecrets) {
+      if (process.env?.[secret.key]) {
+        output.variables?.push({
+          key: secret.key,
+          value: process.env[secret.key] ?? "",
+        });
       }
     }
   }
@@ -178,7 +191,7 @@ export const fetchAuthSecrets = async (
     fillVariables?: boolean;
   }
 ): Promise<AuthObject> => {
-  if (!options.packages) {
+  if (!options.packages && !options.customSecrets) {
     return {
       encryptionKey: configuration.fillEncryptionKey
         ? (process.env.OPEN_API_ENCRYPTION_KEY ?? "")
@@ -186,54 +199,6 @@ export const fetchAuthSecrets = async (
       variables: [],
     };
   }
-
-  // check if package is even needs the secrets (by check the package-info)
-  const packageInfosPromise = PackageInfoHelper.getPackageInfos(
-    options.packages.map((p) => p.packageName)
-  );
-  const dbSecretsPromise = prisma.clientSecret.findMany({
-    where: {
-      packageName: {
-        in: options.packages?.map((p) => p.packageName) ?? [],
-      },
-      status: "FILLED",
-      ...(configuration.clientRequest
-        ? { botProjectId: configuration.clientRequest.botProjectId }
-        : {}),
-      ...(configuration.userId ? { userId: configuration.userId } : {}),
-    },
-    orderBy: {
-      updatedAt: "desc",
-    },
-  });
-  const [packageInfos, dbSecrets] = await Promise.all([
-    packageInfosPromise,
-    dbSecretsPromise,
-  ]);
-  const finalPackages = options.packages.filter((p) => {
-    const packageInfo = packageInfos.find((pi) => pi.name === p.packageName);
-    const reqVariables: any[] | undefined = packageInfo?.constructors?.reduce(
-      (acc, c) => {
-        if (
-          c.auth === "oauth2" &&
-          c.internalKeys &&
-          c.internalKeys?.length > 0
-        ) {
-          acc = acc.concat(c.internalKeys);
-        }
-        if (
-          c.auth === "apikey" &&
-          c.requiredKeys &&
-          c.requiredKeys?.length > 0
-        ) {
-          acc = acc.concat(c.requiredKeys);
-        }
-        return acc;
-      },
-      [] as any[]
-    );
-    return reqVariables && reqVariables.length > 0;
-  });
 
   const output: HitlAuthObject = {
     variables: [],
@@ -243,43 +208,105 @@ export const fetchAuthSecrets = async (
     secrets: [],
   };
 
-  for (const _package of options.packages) {
-    const _secrets = dbSecrets.filter(
-      (s) => s.packageName === _package.packageName
-    );
-    if (!finalPackages.find((p) => p.packageName === _package.packageName)) {
-      output?.secrets?.push({
-        packageName: _package.packageName,
-        packageConstructor: _package.packageConstructor,
-        isAuthNeeded: false,
-        selectedSecretId: undefined,
-        secrets: [],
-      });
-      continue;
+  if (options.customSecrets) {
+    for (const secret of options.customSecrets) {
+      output.customSecrets?.push(secret);
+      if (process.env?.[secret.key]) {
+        output.variables?.push({
+          key: secret.key,
+          value: process.env[secret.key] ?? "",
+        });
+      }
     }
-    if (_secrets.length > 0 && _secrets[0]?.id) {
-      const { pickedSecret, uniqueClubbedSecrets } = pickSecrets(
-        _secrets,
-        configuration.clientRequest,
-        configuration.userId
+  }
+
+  if (options.packages) {
+    // check if package is even needs the secrets (by check the package-info)
+    const packageInfosPromise = PackageInfoHelper.getPackageInfos(
+      options.packages.map((p) => p.packageName)
+    );
+    const dbSecretsPromise = prisma.clientSecret.findMany({
+      where: {
+        packageName: {
+          in: options.packages?.map((p) => p.packageName) ?? [],
+        },
+        status: "FILLED",
+        ...(configuration.clientRequest
+          ? { botProjectId: configuration.clientRequest.botProjectId }
+          : {}),
+        ...(configuration.userId ? { userId: configuration.userId } : {}),
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+    const [packageInfos, dbSecrets] = await Promise.all([
+      packageInfosPromise,
+      dbSecretsPromise,
+    ]);
+    const finalPackages = options.packages.filter((p) => {
+      const packageInfo = packageInfos.find((pi) => pi.name === p.packageName);
+      const reqVariables: any[] | undefined = packageInfo?.constructors?.reduce(
+        (acc, c) => {
+          if (
+            c.auth === "oauth2" &&
+            c.internalKeys &&
+            c.internalKeys?.length > 0
+          ) {
+            acc = acc.concat(c.internalKeys);
+          }
+          if (
+            c.auth === "apikey" &&
+            c.requiredKeys &&
+            c.requiredKeys?.length > 0
+          ) {
+            acc = acc.concat(c.requiredKeys);
+          }
+          return acc;
+        },
+        [] as any[]
       );
-      const variables = fetchSecretVariables(pickedSecret);
-      output?.secrets.push({
-        packageName: _package.packageName,
-        packageConstructor: _package.packageConstructor,
-        selectedSecretId: pickedSecret.id,
-        secrets: uniqueClubbedSecrets,
-        isAuthNeeded: true,
-      });
-      output.variables = output.variables?.concat(variables) ?? variables;
-    } else {
-      output?.secrets.push({
-        packageName: _package.packageName,
-        packageConstructor: _package.packageConstructor,
-        selectedSecretId: undefined,
-        secrets: [],
-        isAuthNeeded: true,
-      });
+      return reqVariables && reqVariables.length > 0;
+    });
+
+    for (const _package of options.packages) {
+      const _secrets = dbSecrets.filter(
+        (s) => s.packageName === _package.packageName
+      );
+      if (!finalPackages.find((p) => p.packageName === _package.packageName)) {
+        output?.secrets?.push({
+          packageName: _package.packageName,
+          packageConstructor: _package.packageConstructor,
+          isAuthNeeded: false,
+          selectedSecretId: undefined,
+          secrets: [],
+        });
+        continue;
+      }
+      if (_secrets.length > 0 && _secrets[0]?.id) {
+        const { pickedSecret, uniqueClubbedSecrets } = pickSecrets(
+          _secrets,
+          configuration.clientRequest,
+          configuration.userId
+        );
+        const variables = fetchSecretVariables(pickedSecret);
+        output?.secrets.push({
+          packageName: _package.packageName,
+          packageConstructor: _package.packageConstructor,
+          selectedSecretId: pickedSecret.id,
+          secrets: uniqueClubbedSecrets,
+          isAuthNeeded: true,
+        });
+        output.variables = output.variables?.concat(variables) ?? variables;
+      } else {
+        output?.secrets.push({
+          packageName: _package.packageName,
+          packageConstructor: _package.packageConstructor,
+          selectedSecretId: undefined,
+          secrets: [],
+          isAuthNeeded: true,
+        });
+      }
     }
   }
   if (!configuration.fillVariables) {

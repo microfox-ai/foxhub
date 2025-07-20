@@ -9,10 +9,19 @@ export async function GET(
   const { taskId } = await params;
   console.log("taskId", taskId);
   return createResponse(request, (session) => {
-    //const channel = getTaskChannel(taskId);
     session.state.sessionType = "task";
     session.state.taskId = taskId;
     defaultChannel.register(session);
+    const pendingTasks = (defaultChannel.state.pendingTasks as Record<string, any>) ?? {};
+    if (pendingTasks[taskId]) {
+      defaultChannel.broadcast(pendingTasks[taskId].data, pendingTasks[taskId].event, {
+        filter: (session) =>
+          session.state.sessionType === "task" &&
+          session.state.taskId === taskId,
+      });
+      delete pendingTasks[taskId];
+    }
+    defaultChannel.state.pendingTasks = pendingTasks;
   });
 }
 
@@ -32,6 +41,10 @@ export async function POST(
       isClientUpdate,
       request.headers.get("x-task-protection-key")
     );
+    const botProjectId = taskId.substring(0, 36);
+    const requestId = taskId.substring(37, 73);
+    // const splitTaskId = taskId.substring(74, 110);
+
     if (
       request.headers.get("x-task-protection-key") !==
       process.env.TASK_API_PROTECTION_KEY
@@ -60,6 +73,7 @@ export async function POST(
       isClientUpdate,
       defaultChannel.activeSessions?.length
     );
+
     if (isClientUpdate && defaultChannel.activeSessions?.length > 0) {
       console.log("broadcasting event", data, defaultChannel.activeSessions);
       defaultChannel.broadcast(data, event, {
@@ -67,17 +81,27 @@ export async function POST(
           Boolean(
             (session.state.sessionType === "task" &&
               session.state.taskId === taskId) ||
-              (session.state.sessionType === "project" &&
-                session.state.projectId &&
-                taskId.includes(session.state.projectId as string)) ||
-              (session.state.sessionType === "request" &&
-                session.state.requestId &&
-                taskId.includes(session.state.requestId as string))
+            (session.state.sessionType === "project" &&
+              session.state.projectId &&
+              taskId.includes(session.state.projectId as string)) ||
+            (session.state.sessionType === "request" &&
+              session.state.requestId &&
+              taskId.includes(session.state.requestId as string))
           ),
       });
       return NextResponse.json({ success: true, message: "Event broadcasted" });
-    } else {
-      defaultChannel.emit("event", data, event);
+    } else if (isClientUpdate) {
+      defaultChannel.state.pendingTasks = {
+        ...(defaultChannel.state.pendingTasks ?? {}),
+        [taskId]: {
+          data,
+          event,
+          taskId,
+          requestId,
+          botProjectId,
+        },
+      };
+      console.log("pendingTasks", defaultChannel.state.pendingTasks);
     }
     return NextResponse.json({
       success: true,

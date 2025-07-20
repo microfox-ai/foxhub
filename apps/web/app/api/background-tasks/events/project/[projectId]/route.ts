@@ -12,5 +12,19 @@ export async function GET(
     session.state.sessionType = "project";
     session.state.projectId = projectId;
     defaultChannel.register(session);
+    const pendingProjects = (defaultChannel.state.pendingProjects as Record<string, any>) ?? {};
+    const matchingKeys = Object.keys(pendingProjects).filter((key) =>
+      key.includes(projectId)
+    );
+    for (const key of matchingKeys) {
+      const { data, event } = pendingProjects[key];
+      defaultChannel.broadcast(data, event, {
+        filter: (s) =>
+          s.state.sessionType === "project" &&
+          s.state.projectId === projectId,
+      });
+      delete pendingProjects[key];
+    }
+    defaultChannel.state.pendingProjects = pendingProjects;
   });
 }

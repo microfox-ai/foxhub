@@ -1,30 +1,75 @@
-import { defaultChannel, getTaskChannel } from "@/lib/background-tasks-sse";
-import { createChannel, createResponse } from "better-sse";
+import { defaultChannel } from "@/lib/background-tasks-sse";
+import { createResponse, type Session } from "better-sse";
 import { NextResponse, type NextRequest } from "next/server";
 
+/**
+ * Handles GET requests to establish a Server-Sent Events (SSE) connection
+ * for a specific task.
+ */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ taskId: string }> }
+  { params }: { params: { taskId: string } }
 ) {
-  const { taskId } = await params;
-  console.log("taskId", taskId);
+  const { taskId } = params;
+
   return createResponse(request, (session) => {
-    session.state.sessionType = "task";
-    session.state.taskId = taskId;
+    // Initialize session state
+    session.state = {
+      ...session.state,
+      sessionType: "task",
+      taskId,
+    };
+
     defaultChannel.register(session);
-    const pendingTasks = (defaultChannel.state.pendingTasks as Record<string, any>) ?? {};
+
+    // Check for and send any pending updates for this task
+    const pendingTasks =
+      (defaultChannel.state.pendingTasks as Record<
+        string,
+        { data: any; event: string }
+      >) ?? {};
+
     if (pendingTasks[taskId]) {
-      defaultChannel.broadcast(pendingTasks[taskId].data, pendingTasks[taskId].event, {
-        filter: (session) =>
-          session.state.sessionType === "task" &&
-          session.state.taskId === taskId,
-      });
+      const { data, event } = pendingTasks[taskId];
+      session.push(data, event);
       delete pendingTasks[taskId];
+      defaultChannel.state.pendingTasks = pendingTasks;
     }
-    defaultChannel.state.pendingTasks = pendingTasks;
   });
 }
 
+const isMatchingSession = (session: Session, taskId: string): boolean => {
+  const {
+    sessionType,
+    taskId: sessionTaskId,
+    projectId,
+    requestId,
+  } = session.state;
+
+  if (sessionType === "task" && sessionTaskId === taskId) {
+    return true;
+  }
+  if (
+    sessionType === "project" &&
+    projectId &&
+    taskId.includes(projectId as string)
+  ) {
+    return true;
+  }
+  if (
+    sessionType === "request" &&
+    requestId &&
+    taskId.includes(requestId as string)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Handles POST requests to broadcast events to clients subscribed to SSE tasks.
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ taskId: string }> }
@@ -41,8 +86,8 @@ export async function POST(
       isClientUpdate,
       request.headers.get("x-task-protection-key")
     );
-    const botProjectId = taskId.substring(0, 36);
-    const requestId = taskId.substring(37, 73);
+    // const botProjectId = taskId.substring(0, 36);
+    // const requestId = taskId.substring(37, 73);
     // const splitTaskId = taskId.substring(74, 110);
 
     if (
@@ -58,6 +103,7 @@ export async function POST(
         { status: 401 }
       );
     }
+
     if (!taskId || !event || !data) {
       console.log("taskId, event, and data are required");
       return NextResponse.json(
@@ -74,39 +120,39 @@ export async function POST(
       defaultChannel.activeSessions?.length
     );
 
-    if (isClientUpdate && defaultChannel.activeSessions?.length > 0) {
-      console.log("broadcasting event", data, defaultChannel.activeSessions);
-      defaultChannel.broadcast(data, event, {
-        filter: (session) =>
-          Boolean(
-            (session.state.sessionType === "task" &&
-              session.state.taskId === taskId) ||
-            (session.state.sessionType === "project" &&
-              session.state.projectId &&
-              taskId.includes(session.state.projectId as string)) ||
-            (session.state.sessionType === "request" &&
-              session.state.requestId &&
-              taskId.includes(session.state.requestId as string))
-          ),
+    if (!isClientUpdate) {
+      return NextResponse.json({
+        success: true,
+        message: "Event received, no client update required.",
       });
+    }
+
+    const hasMatchingActiveSession = defaultChannel.activeSessions.some(
+      (session) => isMatchingSession(session, taskId)
+    );
+
+    if (hasMatchingActiveSession) {
+      console.log("hasMatchingActiveSession", hasMatchingActiveSession);
+      defaultChannel.broadcast(data, event, {
+        filter: (session) => isMatchingSession(session, taskId),
+      });
+      console.log("broadcasted event", data);
       return NextResponse.json({ success: true, message: "Event broadcasted" });
-    } else if (isClientUpdate) {
+    } else {
+      // If no active client is listening, queue the update as a pending task.
+      const botProjectId = taskId.substring(0, 36);
+      const requestId = taskId.substring(37, 73);
       defaultChannel.state.pendingTasks = {
         ...(defaultChannel.state.pendingTasks ?? {}),
-        [taskId]: {
-          data,
-          event,
-          taskId,
-          requestId,
-          botProjectId,
-        },
+        [taskId]: { data, event, taskId, requestId, botProjectId },
       };
-      console.log("pendingTasks", defaultChannel.state.pendingTasks);
+      console.log(
+        "pendingTasks",
+        defaultChannel.state.pendingTasks,
+        defaultChannel.activeSessions?.length
+      );
+      return NextResponse.json({ success: true, message: "Event queued" });
     }
-    return NextResponse.json({
-      success: true,
-      message: "Event Sent to Server",
-    });
   } catch (error) {
     console.error("Error broadcasting event:", error);
     return NextResponse.json(

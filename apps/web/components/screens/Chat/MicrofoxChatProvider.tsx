@@ -384,6 +384,8 @@ export const useMicrofoxContext = (
           ...chatRequestOptions,
           body: bodyParams,
         });
+      } else {
+        chatOptions.setMessages((messages) => [...messages, messageNew]);
       }
     },
     [

@@ -17,15 +17,19 @@ export async function GET(
     const matchingKeys = Object.keys(pendingRequests).filter((key) =>
       key.includes(requestId)
     );
-
+    console.log("matchingKeys", matchingKeys);
     for (const key of matchingKeys) {
       const { data, event } = pendingRequests[key];
-      defaultChannel.broadcast(data, event, {
-        filter: (s) =>
-          s.state.sessionType === "request" &&
-          s.state.requestId === requestId,
-      });
-      delete pendingRequests[key];
+      if (data.requestId === requestId) {
+        console.log("broadcasting pending event", data, event);
+        defaultChannel.broadcast(data, event, {
+          filter: (s) =>
+            s.state.sessionType === "request" &&
+            s.state.requestId === requestId,
+        });
+        delete pendingRequests[key];
+        console.log("broadcasted pending event", data);
+      }
     }
     defaultChannel.state.pendingRequests = pendingRequests;
   });

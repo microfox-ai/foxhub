@@ -119,11 +119,6 @@ export async function POST(
         { status: 400 }
       );
     }
-    console.log(
-      "isClientUpdate",
-      isClientUpdate,
-      defaultChannel.activeSessions?.length
-    );
 
     if (!isClientUpdate) {
       return NextResponse.json({
@@ -157,11 +152,6 @@ export async function POST(
           botProjectId,
         },
       });
-      console.log(
-        "pendingTasks",
-        defaultChannel.state.pendingTasks,
-        defaultChannel.activeSessions?.length
-      );
       return NextResponse.json({ success: true, message: "Event queued" });
     }
   } catch (error) {

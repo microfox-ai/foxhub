@@ -1,5 +1,6 @@
-import { defaultChannel, getTaskChannel } from "@/lib/background-tasks-sse";
-import { createChannel, createResponse } from "better-sse";
+import { defaultChannel } from "@/lib/background-tasks-sse";
+import { prisma } from "@/prisma/prisma";
+import { createResponse } from "better-sse";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function GET(
@@ -7,30 +8,37 @@ export async function GET(
   { params }: { params: Promise<{ requestId: string }> }
 ) {
   const { requestId } = await params;
-  console.log("requestId", requestId);
-  return createResponse(request, (session) => {
+  console.log(`SSE connection opened for request: ${requestId}`);
+  return createResponse(request, async (session) => {
     session.state.sessionType = "request";
     session.state.requestId = requestId;
     defaultChannel.register(session);
+    console.log(`SSE session registered for request: ${requestId}`);
 
-    const pendingRequests = (defaultChannel.state.pendingRequests as Record<string, any>) ?? {};
-    const matchingKeys = Object.keys(pendingRequests).filter((key) =>
-      key.includes(requestId)
+    console.log(`Checking for pending events for request: ${requestId}`);
+    const pendingRequests = await prisma.pendingEvent.findMany({
+      where: { requestId: requestId },
+    });
+
+    console.log(
+      `Found ${pendingRequests.length} pending events for request: ${requestId}`
     );
-    console.log("matchingKeys", matchingKeys);
-    for (const key of matchingKeys) {
-      const { data, event } = pendingRequests[key];
-      if (data.requestId === requestId) {
-        console.log("broadcasting pending event", data, event);
-        defaultChannel.broadcast(data, event, {
+
+    for (const pendingRequest of pendingRequests) {
+      if (pendingRequest) {
+        console.log(
+          `Broadcasting pending event ${pendingRequest.event} for request: ${requestId}`
+        );
+        defaultChannel.broadcast(pendingRequest.data, pendingRequest.event, {
           filter: (s) =>
             s.state.sessionType === "request" &&
             s.state.requestId === requestId,
         });
-        delete pendingRequests[key];
-        console.log("broadcasted pending event", data);
+        console.log(
+          `Deleting pending event ${pendingRequest.id} for request: ${requestId}`
+        );
+        await prisma.pendingEvent.delete({ where: { id: pendingRequest.id } });
       }
     }
-    defaultChannel.state.pendingRequests = pendingRequests;
   });
 }

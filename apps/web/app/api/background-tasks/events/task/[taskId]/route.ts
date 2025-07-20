@@ -1,4 +1,5 @@
 import { defaultChannel } from "@/lib/background-tasks-sse";
+import { prisma } from "@/prisma/prisma";
 import { createResponse, type Session } from "better-sse";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -11,8 +12,9 @@ export async function GET(
   { params }: { params: Promise<{ taskId: string }> }
 ) {
   const { taskId } = await params;
+  console.log(`SSE connection opened for task: ${taskId}`);
 
-  return createResponse(request, (session) => {
+  return createResponse(request, async (session) => {
     // Initialize session state
     session.state = {
       ...session.state,
@@ -21,24 +23,32 @@ export async function GET(
     };
 
     defaultChannel.register(session);
+    console.log(`SSE session registered for task: ${taskId}`);
 
     // Check for and send any pending updates for this task
-    const pendingTasks =
-      (defaultChannel.state.pendingTasks as Record<
-        string,
-        { data: any; event: string }
-      >) ?? {};
+    console.log(`Checking for pending events for task: ${taskId}`);
+    const pendingTasks = await prisma.pendingEvent.findMany({
+      where: { taskId: taskId },
+    });
 
-    if (pendingTasks[taskId]) {
-      const { data, event } = pendingTasks[taskId];
-      session.push(data, event);
-      delete pendingTasks[taskId];
-      defaultChannel.state.pendingTasks = pendingTasks;
+    console.log(
+      `Found ${pendingTasks.length} pending events for task: ${taskId}`
+    );
+
+    for (const pendingTask of pendingTasks) {
+      console.log(
+        `Broadcasting pending event ${pendingTask.event} for task: ${taskId}`
+      );
+      session.push(pendingTask.data, pendingTask.event);
+      console.log(
+        `Deleting pending event ${pendingTask.id} for task: ${taskId}`
+      );
+      await prisma.pendingEvent.delete({ where: { id: pendingTask.id } });
     }
   });
 }
 
-const isMatchingSession = (session: Session, taskId: string): boolean => {
+function isMatchingSession(session: Session, taskId: string): boolean {
   const {
     sessionType,
     taskId: sessionTaskId,
@@ -79,12 +89,7 @@ export async function POST(
     const { event, data, isClientUpdate } = await request.json();
 
     console.log(
-      "triggered for taskId",
-      taskId,
-      event,
-      data,
-      isClientUpdate,
-      request.headers.get("x-task-protection-key")
+      `POST request received for task: ${taskId}, event: ${event}, isClientUpdate: ${isClientUpdate}`
     );
     // const botProjectId = taskId.substring(0, 36);
     // const requestId = taskId.substring(37, 73);
@@ -140,12 +145,18 @@ export async function POST(
       return NextResponse.json({ success: true, message: "Event broadcasted" });
     } else {
       // If no active client is listening, queue the update as a pending task.
+      console.log(`No active session for task: ${taskId}, queueing event`);
       const botProjectId = taskId.substring(0, 36);
       const requestId = taskId.substring(37, 73);
-      defaultChannel.state.pendingTasks = {
-        ...(defaultChannel.state.pendingTasks ?? {}),
-        [taskId]: { data, event, taskId, requestId, botProjectId },
-      };
+      await prisma.pendingEvent.create({
+        data: {
+          event,
+          data,
+          taskId,
+          requestId,
+          botProjectId,
+        },
+      });
       console.log(
         "pendingTasks",
         defaultChannel.state.pendingTasks,

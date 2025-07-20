@@ -8,9 +8,9 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
-  const { taskId } = params;
+  const { taskId } = await params;
 
   return createResponse(request, (session) => {
     // Initialize session state

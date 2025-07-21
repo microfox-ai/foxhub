@@ -128,6 +128,7 @@ const AuthPopupWindow = async ({
     });
 
     const providerName = packageName.replace("-oauth", "").replace("oauth-", "");
+    console.log("tokenResponse for", providerName, tokenResponse );
     if (SupportedProviders.includes(providerName as any)) {
       try {
         const identityMetadata = await OauthKit.exchangeTokenResponseForIdentity(providerName, tokenResponse);

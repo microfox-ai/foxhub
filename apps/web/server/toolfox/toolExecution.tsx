@@ -269,7 +269,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
-                removeAllToolCallsExceptLast: true,
+                removeAllToolCallsExceptLast: false,
             })),
             tools: {
                 ...toolSet.tools,

@@ -210,7 +210,12 @@ export const fetchAuthSecrets = async (
 
   if (options.customSecrets) {
     for (const secret of options.customSecrets) {
-      output.customSecrets?.push(secret);
+      output.customSecrets?.push({
+        key: secret.key,
+        description: secret.description ?? "",
+        required: false,
+        type: "any",
+      });
       if (process.env?.[secret.key]) {
         output.variables?.push({
           key: secret.key,

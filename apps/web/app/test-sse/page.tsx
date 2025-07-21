@@ -5,25 +5,61 @@ import { useState } from "react";
 
 export default function SseTestPage() {
   const [taskId, setTaskId] = useState("a8b39b5e-a98d-475b-8d04-e81125486902");
-  const [inputTaskId, setInputTaskId] = useState("a8b39b5e-a98d-475b-8d04-e81125486902");
-  const { metadata, response, taskState, isCompleted, error, sseStatus } = useBackgroundTasksHook(`/request/a8b39b5e-a98d-475b-8d04-e81125486902`);
+  const [inputTaskId, setInputTaskId] = useState(
+    "a8b39b5e-a98d-475b-8d04-e81125486902"
+  );
+  const { metadata, response, taskState, isCompleted, error, sseStatus } =
+    useBackgroundTasksHook(`/request/a8b39b5e-a98d-475b-8d04-e81125486902`);
   const [isSending, setIsSending] = useState(false);
 
   const handleSendMessage = async () => {
     setIsSending(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_TASK_API_BASE_URL}/task/${taskId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json",
-          "x-task-protection-key": ``
-         },
-        body: JSON.stringify({
-          taskId: taskId,
-          event: "update",
-          data: { state: "submitted", metadata: `Hello from ${taskId}`, response: { content: `Hello from ${taskId}`, timestamp: new Date().toISOString() } },
-          isClientUpdate: true
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_TASK_API_BASE_URL}/task/${taskId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-task-protection-key": ``,
+          },
+          body: JSON.stringify({
+            taskId: taskId,
+            event: "complete",
+            data: {
+              state: 'completed',
+              response: {
+                "0": {
+                  src: "https://i.pinimg.com/236x/31/f6/37/31f6371453e9776d524b1f964b64b6ec.jpg",
+                  srcset: null,
+                  responsiveImages: null,
+                  alt: "Favorite Puppet 🥀 nel 2025",
+                  imgPermalink:
+                    "https://in.pinterest.com/pin/73887250132009995/",
+                  pagePermalink:
+                    "https://in.pinterest.com/pin/73887250132009995/",
+                  width: 508,
+                  height: 902,
+                }
+              },
+              metadata: {
+                packageName: "puppeteer-sls",
+                functionName: "extractImagesFromURL",
+                triggerEvent: {
+                  body: '{"arguments":{"url":"https://in.pinterest.com/pin/73887250132009995/","headless":true}}',
+                  headers: [Object],
+                  path: "/extractImagesFromURL",
+                  pathParameters: [Object],
+                  queryStringParameters: null,
+                },
+                loader: "Completed the task",
+              },
+              updatedAt: new Date(),
+            },
+            isClientUpdate: true,
+          }),
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to send message");
       }
@@ -66,19 +102,25 @@ export default function SseTestPage() {
           <p className="font-semibold">
             Connection Status:{" "}
             <span
-              className={`font-bold ${sseStatus === "connected" ? "text-green-400" : "text-red-400"
-                }`}
+              className={`font-bold ${
+                sseStatus === "connected" ? "text-green-400" : "text-red-400"
+              }`}
             >
               {sseStatus}
             </span>
           </p>
-          <p className="font-semibold">Task ID: <span className="font-mono text-cyan-300">{taskId || "Not connected"}</span></p>
+          <p className="font-semibold">
+            Task ID:{" "}
+            <span className="font-mono text-cyan-300">
+              {taskId || "Not connected"}
+            </span>
+          </p>
         </div>
 
         <div className="mb-4">
           <button
             onClick={handleSendMessage}
-            disabled={isSending || sseStatus !== 'connected'}
+            disabled={isSending || sseStatus !== "connected"}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
             {isSending ? "Sending..." : "Send Mock Event"}
@@ -104,4 +146,4 @@ export default function SseTestPage() {
       </div>
     </div>
   );
-} 
+}

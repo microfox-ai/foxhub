@@ -38,6 +38,8 @@ export const AiUsageTab = () => {
         }
     );
 
+    console.log("analytics", analytics);
+
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
         mutate();

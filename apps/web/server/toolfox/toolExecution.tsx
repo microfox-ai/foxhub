@@ -17,6 +17,7 @@ import { restoreLastKnownState, savePassedInTools } from "./execution/loadValida
 import { loadClientRequest } from "./helpers/loadClientRequest";
 import { createToolsetForExecution } from "./helpers/createToolset";
 import { UIMessage } from "@ai-sdk/react";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 /**
  * Tool execution agent.
@@ -284,6 +285,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 // }),
             },
             toolChoice: "auto",
+            maxRetries: 3,
             experimental_repairToolCall: async ({ toolCall }) => {
                 console.log("repairToolCall - trying to fix the tool call", toolCall);
                 if (toolCall.toolName == "pkg") {
@@ -356,10 +358,20 @@ toolExecutionAgent.agent("/", async (ctx) => {
             },
             onError: (error) => {
                 console.log("error", error);
+            },
+            onFinish: async (result) => {
+                console.log("onFinish", result);
+                TokenUsageAnalyticsTracker.trackUsage({
+                    userId: ctx.request.userId,
+                    clientRequestId: ctx.state.clientRequest?.id,
+                    model: models.claude35Sonnet.modelId,
+                    usage: result.usage,
+                })
             }
         });
         ctx.response.merge(stream.toUIMessageStream({ sendFinish: false, sendStart: false }));
-        const text = await stream.text;
+        const result = await stream.text;
+
         response.writeMessageMetadata({
             loader: "Done! wrapping up.",
         });

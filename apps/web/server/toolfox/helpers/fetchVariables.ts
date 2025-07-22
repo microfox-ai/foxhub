@@ -111,19 +111,24 @@ const pickSecrets = (
 };
 
 export const cleanSecretsForAuthObject = (authObject: AuthObject) => {
-  const output = { ...authObject };
-  for (const secret of output?.secrets) {
-    secret.secrets = secret.secrets.map((s: ClientSecret) => {
-      return {
-        ...s,
-        variables: [],
-        botConfig: [],
-      };
-    });
+  try {
+    const output = { ...authObject };
+    for (const secret of output?.secrets) {
+      secret.secrets = secret.secrets.map((s: ClientSecret) => {
+        return {
+          ...s,
+          variables: [],
+          botConfig: [],
+        };
+      });
+    }
+    output.encryptionKey = "REDACTED";
+    output.variables = [];
+    return output;
+  } catch (error) {
+    console.error("Error cleaning secrets for auth object", error);
+    throw error;
   }
-  output.encryptionKey = "REDACTED";
-  output.variables = [];
-  return output;
 };
 
 export const getVariablesForAuthObject = async (
@@ -138,48 +143,54 @@ export const getVariablesForAuthObject = async (
     extraVariables?: Record<string, string>;
   }
 ) => {
-  const output = { ...authObject };
-  if (output.secrets) {
-    for (const secret of output?.secrets) {
-      if (secret.selectedSecretId) {
-        let selectedSecret = secret.secrets.find(
-          (s: ClientSecret) => s.id === secret.selectedSecretId
-        );
-        if (refetchFromDb) {
-          selectedSecret = await prisma.clientSecret.findUnique({
-            where: { id: secret.selectedSecretId, status: "FILLED" },
+  try {
+    const output = { ...authObject };
+    if (output.secrets) {
+      for (const secret of output?.secrets) {
+        if (secret.selectedSecretId) {
+          let selectedSecret = secret.secrets.find(
+            (s: ClientSecret) => s.id === secret.selectedSecretId
+          );
+          if (refetchFromDb) {
+            selectedSecret = await prisma.clientSecret.findUnique({
+              where: { id: secret.selectedSecretId, status: "FILLED" },
+            });
+          }
+          if (selectedSecret) {
+            const selectedSecretVariables =
+              fetchSecretVariables(selectedSecret);
+            output.variables =
+              output.variables?.concat(selectedSecretVariables) ??
+              selectedSecretVariables;
+          }
+        }
+        //if (secret.)
+      }
+    }
+    if (output.customSecrets) {
+      for (const secret of output.customSecrets) {
+        if (process.env?.[secret.key]) {
+          output.variables?.push({
+            key: secret.key,
+            value: process.env[secret.key] ?? "",
           });
         }
-        if (selectedSecret) {
-          const selectedSecretVariables = fetchSecretVariables(selectedSecret);
-          output.variables =
-            output.variables?.concat(selectedSecretVariables) ??
-            selectedSecretVariables;
-        }
-      }
-      //if (secret.)
-    }
-  }
-  if (output.customSecrets) {
-    for (const secret of output.customSecrets) {
-      if (process.env?.[secret.key]) {
-        output.variables?.push({
-          key: secret.key,
-          value: process.env[secret.key] ?? "",
-        });
       }
     }
+    if (clientRequest) {
+      const envs = await templateEnvsFromTaskIntegrations(
+        codeTemplateType.enum.upstash_sls,
+        clientRequest,
+        extraVariables
+      );
+      output.variables = output.variables?.concat(envs) ?? envs;
+    }
+    output.encryptionKey = process.env.OPEN_API_ENCRYPTION_KEY ?? "";
+    return output;
+  } catch (error) {
+    console.error("Error fetching variables for auth object", error);
+    throw error;
   }
-  if (clientRequest) {
-    const envs = await templateEnvsFromTaskIntegrations(
-      codeTemplateType.enum.upstash_sls,
-      clientRequest,
-      extraVariables
-    );
-    output.variables = output.variables?.concat(envs) ?? envs;
-  }
-  output.encryptionKey = process.env.OPEN_API_ENCRYPTION_KEY ?? "";
-  return output;
 };
 
 export const fetchAuthSecrets = async (
@@ -191,133 +202,141 @@ export const fetchAuthSecrets = async (
     fillVariables?: boolean;
   }
 ): Promise<AuthObject> => {
-  if (!options.packages && !options.customSecrets) {
-    return {
+  try {
+    if (!options.packages && !options.customSecrets) {
+      return {
+        encryptionKey: configuration.fillEncryptionKey
+          ? (process.env.OPEN_API_ENCRYPTION_KEY ?? "")
+          : "",
+        variables: [],
+      };
+    }
+
+    const output: HitlAuthObject = {
+      variables: [],
       encryptionKey: configuration.fillEncryptionKey
         ? (process.env.OPEN_API_ENCRYPTION_KEY ?? "")
         : "",
-      variables: [],
+      secrets: [],
+      customSecrets: [],
     };
-  }
 
-  const output: HitlAuthObject = {
-    variables: [],
-    encryptionKey: configuration.fillEncryptionKey
-      ? (process.env.OPEN_API_ENCRYPTION_KEY ?? "")
-      : "",
-    secrets: [],
-  };
-
-  if (options.customSecrets) {
-    for (const secret of options.customSecrets) {
-      output.customSecrets?.push({
-        key: secret.key,
-        description: secret.description ?? "",
-        required: false,
-        type: "any",
-      });
-      if (process.env?.[secret.key]) {
-        output.variables?.push({
+    if (options.customSecrets) {
+      for (const secret of options.customSecrets) {
+        output.customSecrets?.push({
           key: secret.key,
-          value: process.env[secret.key] ?? "",
+          description: secret.description ?? "",
+          required: true,
+          type: "any",
         });
+        if (process.env?.[secret.key]) {
+          output.variables?.push({
+            key: secret.key,
+            value: process.env[secret.key] ?? "",
+          });
+        }
       }
     }
-  }
 
-  if (options.packages) {
-    // check if package is even needs the secrets (by check the package-info)
-    const packageInfosPromise = PackageInfoHelper.getPackageInfos(
-      options.packages.map((p) => p.packageName)
-    );
-    const dbSecretsPromise = prisma.clientSecret.findMany({
-      where: {
-        packageName: {
-          in: options.packages?.map((p) => p.packageName) ?? [],
-        },
-        status: "FILLED",
-        ...(configuration.clientRequest
-          ? { botProjectId: configuration.clientRequest.botProjectId }
-          : {}),
-        ...(configuration.userId ? { userId: configuration.userId } : {}),
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
-    const [packageInfos, dbSecrets] = await Promise.all([
-      packageInfosPromise,
-      dbSecretsPromise,
-    ]);
-    const finalPackages = options.packages.filter((p) => {
-      const packageInfo = packageInfos.find((pi) => pi.name === p.packageName);
-      const reqVariables: any[] | undefined = packageInfo?.constructors?.reduce(
-        (acc, c) => {
-          if (
-            c.auth === "oauth2" &&
-            c.internalKeys &&
-            c.internalKeys?.length > 0
-          ) {
-            acc = acc.concat(c.internalKeys);
-          }
-          if (
-            c.auth === "apikey" &&
-            c.requiredKeys &&
-            c.requiredKeys?.length > 0
-          ) {
-            acc = acc.concat(c.requiredKeys);
-          }
-          return acc;
-        },
-        [] as any[]
+    if (options.packages) {
+      // check if package is even needs the secrets (by check the package-info)
+      const packageInfosPromise = PackageInfoHelper.getPackageInfos(
+        options.packages.map((p) => p.packageName)
       );
-      return reqVariables && reqVariables.length > 0;
-    });
-
-    for (const _package of options.packages) {
-      const _secrets = dbSecrets.filter(
-        (s) => s.packageName === _package.packageName
-      );
-      if (!finalPackages.find((p) => p.packageName === _package.packageName)) {
-        output?.secrets?.push({
-          packageName: _package.packageName,
-          packageConstructor: _package.packageConstructor,
-          isAuthNeeded: false,
-          selectedSecretId: undefined,
-          secrets: [],
-        });
-        continue;
-      }
-      if (_secrets.length > 0 && _secrets[0]?.id) {
-        const { pickedSecret, uniqueClubbedSecrets } = pickSecrets(
-          _secrets,
-          configuration.clientRequest,
-          configuration.userId
+      const dbSecretsPromise = prisma.clientSecret.findMany({
+        where: {
+          packageName: {
+            in: options.packages?.map((p) => p.packageName) ?? [],
+          },
+          status: "FILLED",
+          ...(configuration.clientRequest
+            ? { botProjectId: configuration.clientRequest.botProjectId }
+            : {}),
+          ...(configuration.userId ? { userId: configuration.userId } : {}),
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+      const [packageInfos, dbSecrets] = await Promise.all([
+        packageInfosPromise,
+        dbSecretsPromise,
+      ]);
+      const finalPackages = options.packages.filter((p) => {
+        const packageInfo = packageInfos.find(
+          (pi) => pi.name === p.packageName
         );
-        const variables = fetchSecretVariables(pickedSecret);
-        output?.secrets.push({
-          packageName: _package.packageName,
-          packageConstructor: _package.packageConstructor,
-          selectedSecretId: pickedSecret.id,
-          secrets: uniqueClubbedSecrets,
-          isAuthNeeded: true,
-        });
-        output.variables = output.variables?.concat(variables) ?? variables;
-      } else {
-        output?.secrets.push({
-          packageName: _package.packageName,
-          packageConstructor: _package.packageConstructor,
-          selectedSecretId: undefined,
-          secrets: [],
-          isAuthNeeded: true,
-        });
+        const reqVariables: any[] | undefined =
+          packageInfo?.constructors?.reduce((acc, c) => {
+            if (
+              c.auth === "oauth2" &&
+              c.internalKeys &&
+              c.internalKeys?.length > 0
+            ) {
+              acc = acc.concat(c.internalKeys);
+            }
+            if (
+              c.auth === "apikey" &&
+              c.requiredKeys &&
+              c.requiredKeys?.length > 0
+            ) {
+              acc = acc.concat(c.requiredKeys);
+            }
+            return acc;
+          }, [] as any[]);
+        return reqVariables && reqVariables.length > 0;
+      });
+
+      for (const _package of options.packages) {
+        const _secrets = dbSecrets.filter(
+          (s) => s.packageName === _package.packageName
+        );
+        if (
+          !finalPackages.find((p) => p.packageName === _package.packageName)
+        ) {
+          output?.secrets?.push({
+            packageName: _package.packageName,
+            packageConstructor: _package.packageConstructor,
+            isAuthNeeded: false,
+            selectedSecretId: undefined,
+            secrets: [],
+          });
+          continue;
+        }
+        if (_secrets.length > 0 && _secrets[0]?.id) {
+          const { pickedSecret, uniqueClubbedSecrets } = pickSecrets(
+            _secrets,
+            configuration.clientRequest,
+            configuration.userId
+          );
+          const variables = fetchSecretVariables(pickedSecret);
+          output?.secrets.push({
+            packageName: _package.packageName,
+            packageConstructor: _package.packageConstructor,
+            selectedSecretId: pickedSecret.id,
+            secrets: uniqueClubbedSecrets,
+            isAuthNeeded: true,
+          });
+          output.variables = output.variables?.concat(variables) ?? variables;
+        } else {
+          output?.secrets.push({
+            packageName: _package.packageName,
+            packageConstructor: _package.packageConstructor,
+            selectedSecretId: undefined,
+            secrets: [],
+            isAuthNeeded: true,
+          });
+        }
       }
     }
+    if (!configuration.fillVariables) {
+      output.variables = [];
+    }
+    return output;
+  } catch (error) {
+    console.error("Error fetching auth secrets", error);
+    throw error;
   }
-  if (!configuration.fillVariables) {
-    output.variables = [];
-  }
-  return output;
 };
 
 export const replaceVariables = (

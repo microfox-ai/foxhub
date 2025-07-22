@@ -112,7 +112,7 @@ async function handler(
       redirect: "manual",
     });
 
-    console.log("response", response);
+    //console.log("response", response);
 
     // The fetch response is a stream. We can return it directly to the client.
     return response;

@@ -73,7 +73,7 @@ function useSparkboardContextInternal() {
             const { data, error } = await sparkboardClient.GET("/search/images", {
                 params: {
                     query: {
-                        query: query,
+                        q: query,
                         topK: 50,
                         ...(searchKeywords && searchKeywords.length > 0 && { keywords: searchKeywords }),
                         ...(artStyle && artStyle.length > 0 && { artStyle: artStyle }),

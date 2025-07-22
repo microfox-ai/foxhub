@@ -212,7 +212,7 @@ export interface operations {
         parameters: {
             query: {
                 /** @description Search query text for RAG search search */
-                query: string;
+                q: string;
                 /** @description Filter by art style (uses CONTAINS matching) - Only fill this if user mentions that he only wants this art style */
                 artStyle?: string;
                 /** @description Filter by keywords (uses CONTAINS matching) - Only fill this if user mentions that he only wants this keywords */

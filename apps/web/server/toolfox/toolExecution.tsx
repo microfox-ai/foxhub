@@ -111,6 +111,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 {
                     dataStream: ctx.response,
                     inserAuthVariables: async (_authObject: AuthObject) => {
+                        console.log("INSERT AUTH", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
                             extraVariables: {
@@ -119,6 +120,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                             },
                             refetchFromDb: true,
                         });
+                        console.log("FILLED AUTH", authFilledOutput);
                         return authFilledOutput;
                     },
                     mutateOutput: async (output, { part, uiMapper }) => {
@@ -262,14 +264,14 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
-        console.log("Inserted tool set", Object.keys(toolSet.tools), toolSet.metadata);
+        console.log("Inserted tool set", Object.keys(toolSet.tools));
         response.writeMessageMetadata({
             availableTools: Object.keys(toolSet.tools),
         });
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
-                removeAllToolCallsExceptLast: false,
+                removeAllToolCallsExceptLast: true,
             })),
             tools: {
                 ...toolSet.tools,
@@ -360,7 +362,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 console.log("error", error);
             },
             onFinish: async (result) => {
-                console.log("onFinish", result);
                 TokenUsageAnalyticsTracker.trackUsage({
                     userId: ctx.request.userId,
                     clientRequestId: ctx.state.clientRequest?.id,

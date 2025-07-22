@@ -127,80 +127,71 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
 
 
     return <div className="flex flex-col my-2 bg-white shadow-md rounded-xl border border-gray-200">
-        {isSinglePackage && singlePackage && singlePackageSecret && (
-            <SecretSelectorForAuth
-                packageAuth={singlePackageSecret}
-                packageInfo={singlePackage}
-                onSelectSecret={selectSecret}
-                refetchSecrets={refetchHitlAuth}
-            />
-        )}
-        {!isSinglePackage && (
-            <div className="flex flex-col w-full">
-                <div
-                    className="flex flex-row items-start justify-between gap-2 border-b border-gray-200 py-3 px-3 cursor-pointer"
-                >
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className="flex flex-row gap-2 items-center">
-                                    {agentInfo?.iconUrl && (
-                                        <img src={agentInfo.iconUrl} alt={agentInfo.title} className="w-6 h-6 rounded-full" />
-                                    )}
-                                    <span className="text-sm text-muted-foreground">
-                                        {agentInfo?.title ?? mcpName}
-                                    </span>
-                                </div>
-                            </TooltipTrigger>
-                            {agentInfo?.description && (
-                                <TooltipContent className="max-w-[300px]">
-                                    <p>{agentInfo.description}</p>
-                                </TooltipContent>
-                            )}
-                        </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                        <div className="flex flex-row gap-2 items-center"
-                            onClick={() => setExpanded(!expanded)}
-                        >
-                            {stateAuth.secrets?.map((s) => {
-                                const packageInfo = packageInfos?.find(p => p.name === s.packageName);
-                                return (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <img
-                                                src={packageInfo?.icon ?? "/favicon_io/favicon.ico"} alt="Project Logo" className="w-4 h-4 rounded-full cursor-pointer" />
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-[300px]">
-                                            <p>{packageInfo?.name}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                )
-                            })}
-                            {/* <h3 className="text-sm text-muted-foreground">{stateAuth.secrets?.length} Connections</h3> */}
-                            <ChevronDown className={cn("min-w-2 min-h-2 text-gray-500 transition-transform", expanded && "rotate-180")} />
-                        </div>
-                    </TooltipProvider>
-                </div>
-                {expanded && (
-                    <div className="flex flex-col w-full">
+
+        <div className="flex flex-col w-full">
+            <div
+                className="flex flex-row items-start justify-between gap-2 border-b border-gray-200 py-3 px-3 cursor-pointer"
+            >
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="flex flex-row gap-2 items-center">
+                                {agentInfo?.iconUrl && (
+                                    <img src={agentInfo.iconUrl} alt={agentInfo.title} className="w-6 h-6 rounded-full" />
+                                )}
+                                <span className="text-sm text-muted-foreground">
+                                    {agentInfo?.title ?? mcpName}
+                                </span>
+                            </div>
+                        </TooltipTrigger>
+                        {agentInfo?.description && (
+                            <TooltipContent className="max-w-[300px]">
+                                <p>{agentInfo.description}</p>
+                            </TooltipContent>
+                        )}
+                    </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                    <div className="flex flex-row gap-2 items-center"
+                        onClick={() => setExpanded(!expanded)}
+                    >
                         {stateAuth.secrets?.map((s) => {
                             const packageInfo = packageInfos?.find(p => p.name === s.packageName);
-                            if (!packageInfo) return null;
                             return (
-                                <SecretSelectorForAuth
-                                    key={s.packageName}
-                                    packageAuth={s}
-                                    packageInfo={packageInfo}
-                                    onSelectSecret={selectSecret}
-                                    refetchSecrets={refetchHitlAuth}
-                                />
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <img
+                                            src={packageInfo?.icon ?? "/favicon_io/favicon.ico"} alt="Project Logo" className="w-4 h-4 rounded-full cursor-pointer" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-[300px]">
+                                        <p>{packageInfo?.name}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             )
                         })}
+                        {/* <h3 className="text-sm text-muted-foreground">{stateAuth.secrets?.length} Connections</h3> */}
+                        <ChevronDown className={cn("min-w-2 min-h-2 text-gray-500 transition-transform", expanded && "rotate-180")} />
                     </div>
-                )}
+                </TooltipProvider>
             </div>
-        )}
+            {(expanded || singlePackage) && (
+                <div className="flex flex-col w-full">
+                    {stateAuth.secrets?.map((s) => {
+                        const packageInfo = packageInfos?.find(p => p.name === s.packageName);
+                        if (!packageInfo) return null;
+                        return (
+                            <SecretSelectorForAuth
+                                key={s.packageName}
+                                packageAuth={s}
+                                packageInfo={packageInfo}
+                                onSelectSecret={selectSecret}
+                                refetchSecrets={refetchHitlAuth}
+                            />
+                        )
+                    })}
+                </div>
+            )}
+        </div>
         {/* <h4 className="text-lg font-bold">{auth.metadata.summary}</h4>
         <div className="text-sm text-gray-500">
             {auth.metadata.description} So, can i call the tool {Object.keys(auth.args)?.length > 0 ? "with the below args?" : "?"}

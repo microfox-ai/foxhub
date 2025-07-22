@@ -3,9 +3,10 @@ import { operations } from "@/components/subapps/sparkboard/sparkboard.d";
 import { mapSearchResults } from "./searchResults";
 
 export default function ToolOutputMapper(toolName: keyof operations, data: any) {
+
     switch (toolName) {
         case "searchStocksearchImages":
-            return <MediaGrid images={mapSearchResults(data)} />
+            return <MediaGrid images={mapSearchResults(data?.data)} />
         default:
             return null;
     }

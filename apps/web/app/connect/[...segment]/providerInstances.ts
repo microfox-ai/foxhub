@@ -3,6 +3,7 @@ import { GoogleOAuthSdk } from "@microfox/google-oauth";
 import { SlackOAuthSdk } from "@microfox/slack-oauth";
 import { RedditOAuthSdk } from "@microfox/reddit-oauth";
 import { NotionOAuthSdk } from "@microfox/notion-oauth";
+import { GitHubOAuthSdk } from "@microfox/github-oauth";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 // NOTE:edit this whenever new provider is added
@@ -64,6 +65,16 @@ export const mapProviderToAuthFunction = (
         clientSecret: process.env.NOTION_CLIENT_SECRET!,
         redirectUri: process.env.NOTION_REDIRECT_URI
           ? APP_BASE_URL + process.env.NOTION_REDIRECT_URI
+          : APP_BASE_URL + `/connect/${packageName}/callback`,
+        ...(scopes && { scopes: scopes }),
+      });
+    case "github-oauth":
+    case "oauth-github":
+      return new GitHubOAuthSdk({
+        clientId: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+        redirectUri: process.env.GITHUB_REDIRECT_URI
+          ? APP_BASE_URL + process.env.GITHUB_REDIRECT_URI
           : APP_BASE_URL + `/connect/${packageName}/callback`,
         ...(scopes && { scopes: scopes }),
       });

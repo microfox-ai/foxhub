@@ -10,6 +10,8 @@ import { useMessageParts } from "../../../MessageProvider";
 import { useEffect, useState } from "react";
 import { TaskPlaceholder } from "./TaskPlaceholder";
 import { mapBrowseImageSearch, mapBrowseMcp } from "../mappers/browse/mapper";
+import { mapSearchResults } from "@/components/subapps/sparkboard/mappers/searchResults";
+import SparkBoardMapper from "@/components/subapps/sparkboard/mappers/ToolOutput";
 
 export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part }: { fullOutput: any, uiOutput: UiComponentProps["hitl_output"], mcpName: string, toolName: string, part: ToolUIPart<any> }) => {
 
@@ -26,10 +28,10 @@ export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part
 
 
     // a placeholder UI for taskId type of outputs (if a match is done, update the message both on frontend & backend)
-
     if (fullOutput.backgroundTask?.taskId) {
         return <TaskPlaceholder taskId={fullOutput.backgroundTask.taskId} fullOutput={fullOutput} mcpName={mcpName} toolName={toolName} />
     }
+
 
     switch (mcpName) {
         case "brave":
@@ -61,6 +63,8 @@ export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part
                 case "searchSubredditPosts":
                     return <InfoTable data={PostMapper(fullOutput.data)} />
             }
+        case "sparkboard":
+            return SparkBoardMapper(toolName as any, fullOutput.data)
     }
 
     if (outputUi?.namespace === "common" && isMainSupport) {

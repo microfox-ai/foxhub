@@ -81,6 +81,7 @@ function useHitlContext() {
             clientRequestId: selectedRequest?.id,
             userId: selectedRequest?.userId,
         }).then((res) => {
+            console.log("REFETCHED AUTH", res);
             setAuth(res);
         }).catch((err) => {
             console.error("Error fetching secrets", err);

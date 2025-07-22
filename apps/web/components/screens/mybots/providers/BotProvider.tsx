@@ -88,6 +88,7 @@ const useBotsContextInternal = (packageTypes?: ClientSecretPackageType[]) => {
     isLoading,
     error: projectSecretsError || stablePackagesError,
     stableBotPackages,
+    oAuthPackages: stablePackages?.filter((pkg: any) => pkg.constructors.some((constructor: any) => constructor.auth === ClientSecretPackageType.OAUTH2)) ?? [],
     refreshBots,
     botId,
     botToEdit,

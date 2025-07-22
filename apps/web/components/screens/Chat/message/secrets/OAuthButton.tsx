@@ -9,6 +9,7 @@ import { PortalSdk } from "@/utils/services/PortalSdk";
 import { useParams } from "next/navigation";
 import { KeyedMutator } from "swr";
 import { CheckCircle2 } from "lucide-react";
+import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 
 export const OAuthButton = ({
   packageInfo,
@@ -20,7 +21,7 @@ export const OAuthButton = ({
   secretsData?: {
     clientSecrets: ClientSecret[];
   };
-  mutateSecrets: KeyedMutator<{
+  mutateSecrets?: KeyedMutator<{
     clientSecrets: ClientSecret[];
   }>;
   disabled?: boolean;
@@ -29,8 +30,9 @@ export const OAuthButton = ({
     project_id?: string;
     request_id?: string;
   }>();
-  const projectParamId = params?.project_id;
-  const requestParamId = params?.request_id;
+  const { selectedProject, selectedRequest } = useClientProject();
+  const projectParamId = params?.project_id || selectedProject?.id;
+  const requestParamId = params?.request_id || selectedRequest?.id;
   const { user } = useAuth();
   const [connecting, setConnecting] = useState<Record<string, boolean>>({});
   const constructor: Constructor = packageInfo?.constructors.find(

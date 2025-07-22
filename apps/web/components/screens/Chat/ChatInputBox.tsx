@@ -65,7 +65,7 @@ export default function ChatInputBox({
   };
 
   const handleSend = (e?: any) => {
-    if (status != "ready") {
+    if (status === "streaming") {
       return;
     }
     const isFirstMessage = messages.length === 0;
@@ -102,13 +102,15 @@ export default function ChatInputBox({
     if (autoSubmit && autoSubmit.length > 0) {
       const minionFlow: any = selectedRequest?.minionFlow ?? MinionFlow.BuildFlow;
       const minionType: any = minionFlow === MinionFlow.BuildFlow ? MinionType.HelloFox : undefined;
-      append({message: constructAutoSubmitMessage(autoSubmit), chatRequestOptions: {
-        body: {
-          minionFlow: minionFlow,
-          minionType: minionType,
-          ...submitMetadata
+      append({
+        message: constructAutoSubmitMessage(autoSubmit), chatRequestOptions: {
+          body: {
+            minionFlow: minionFlow,
+            minionType: minionType,
+            ...submitMetadata
+          }
         }
-      }});
+      });
       setAutoSubmit(null);
       setSubmitMetadata({});
     }

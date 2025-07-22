@@ -17,6 +17,7 @@ import { restoreLastKnownState, savePassedInTools } from "./execution/loadValida
 import { loadClientRequest } from "./helpers/loadClientRequest";
 import { createToolsetForExecution } from "./helpers/createToolset";
 import { UIMessage } from "@ai-sdk/react";
+import { TokenUsageAnalyticsTracker } from "../analytics/helper";
 
 /**
  * Tool execution agent.
@@ -110,7 +111,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 {
                     dataStream: ctx.response,
                     inserAuthVariables: async (_authObject: AuthObject) => {
-                        console.log("inserting auth variables", _authObject);
+                        console.log("INSERT AUTH", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
                             extraVariables: {
@@ -119,6 +120,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                             },
                             refetchFromDb: true,
                         });
+                        console.log("FILLED AUTH", authFilledOutput);
                         return authFilledOutput;
                     },
                     mutateOutput: async (output, { part, uiMapper }) => {
@@ -284,6 +286,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 // }),
             },
             toolChoice: "auto",
+            maxRetries: 3,
             experimental_repairToolCall: async ({ toolCall }) => {
                 console.log("repairToolCall - trying to fix the tool call", toolCall);
                 if (toolCall.toolName == "pkg") {
@@ -335,12 +338,13 @@ toolExecutionAgent.agent("/", async (ctx) => {
             stopWhen: (s) => {
                 if (s.steps.length > 0) {
                     console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults, s.steps[s.steps.length - 1]?.finishReason);
-                    // const lastStep = s.steps[s.steps.length - 1];
-                    // const isBackgroundTask = lastStep?.toolResults?.some((result: any) => result.output?.data?.task_id);
-                    // //console.log("isBackgroundTask task_ids", lastStep?.toolResults?.map((result: any) => result));
-                    // if (isBackgroundTask) {
-                    //     return true;
-                    // }
+                    const lastStep = s.steps[s.steps.length - 1];
+                    // state = output-available.
+                    const isFinalCall = lastStep?.toolResults?.some((result: any) => result.output?._isFinal && result);
+                    //console.log("isFinalCall task_ids", lastStep?.toolResults?.map((result: any) => result));
+                    if (isFinalCall) {
+                        return true;
+                    }
                 }
                 return client.isHitlStep()(s);
             },
@@ -356,10 +360,19 @@ toolExecutionAgent.agent("/", async (ctx) => {
             },
             onError: (error) => {
                 console.log("error", error);
+            },
+            onFinish: async (result) => {
+                TokenUsageAnalyticsTracker.trackUsage({
+                    userId: ctx.request.userId,
+                    clientRequestId: ctx.state.clientRequest?.id,
+                    model: models.claude35Sonnet.modelId,
+                    usage: result.usage,
+                })
             }
         });
         ctx.response.merge(stream.toUIMessageStream({ sendFinish: false, sendStart: false }));
-        const text = await stream.text;
+        const result = await stream.text;
+
         response.writeMessageMetadata({
             loader: "Done! wrapping up.",
         });

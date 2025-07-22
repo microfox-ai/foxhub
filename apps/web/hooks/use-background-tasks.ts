@@ -17,12 +17,11 @@ export const useBackgroundTasksHook = (url: string | null) => {
   const [sseStatus, setSseStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
-  const [originAssistantMessageId, setOriginAssistantMessageId] = useState<string | null>(null);
-  const [originUserMessageId, setOriginUserMessageId] = useState<string | null>(null);
-
-  console.log(
-    "task-processing url",
-    (process.env.NEXT_PUBLIC_TASK_API_BASE_URL ?? "") + url
+  const [originAssistantMessageId, setOriginAssistantMessageId] = useState<
+    string | null
+  >(null);
+  const [originUserMessageId, setOriginUserMessageId] = useState<string | null>(
+    null
   );
 
   const { data, error: swrError } = useSWRSubscription(
@@ -30,7 +29,7 @@ export const useBackgroundTasksHook = (url: string | null) => {
     (process.env.NEXT_PUBLIC_TASK_API_BASE_URL ?? "") + url,
     (key, { next }) => {
       if (!key) {
-        return () => { };
+        return () => {};
       }
 
       console.log("SSE: subscribing to", key);

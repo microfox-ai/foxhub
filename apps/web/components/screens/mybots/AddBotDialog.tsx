@@ -8,23 +8,29 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { OAuthButton } from "../Chat/message/secrets/OAuthButton";
+import { ClientSecretPackageType } from "@/server/types";
 
 interface AddBotDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   stableBotPackages: any[];
+  isOAuth?: boolean;
 }
 
 const AddBotDialog = ({
   isOpen,
   onOpenChange,
   stableBotPackages,
+  isOAuth = false,
 }: AddBotDialogProps) => {
   const router = useRouter();
 
   const handlePackageSelect = (pkg: any) => {
-    onOpenChange(false); // Close the dialog
-    router.push(`/my-bots/new-bot?package=${pkg.name}`);
+    if (!isOAuth) {
+      onOpenChange(false); // Close the dialog
+      router.push(`/my-bots/new-bot?package=${pkg.name}`);
+    }
   };
 
   return (
@@ -53,9 +59,12 @@ const AddBotDialog = ({
                     {pkg.title}
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    <span className="font-bold bg-gray-100 px-1 rounded-md">
-                      {pkg.name}
-                    </span>
+                    <div className="flex justify-between">
+                      <span className="font-bold bg-gray-100 px-1 rounded-md w-fit h-fit">
+                        {pkg.name}
+                      </span>
+                      {isOAuth && pkg.constructors.some((constructor: any) => constructor.auth === ClientSecretPackageType.OAUTH2) && <OAuthButton packageInfo={pkg} />}
+                    </div>
                     {pkg.description}
                   </p>
                 </div>

@@ -14,6 +14,7 @@ const BackgroundTaskContext = createContext<
 const useBackgroundTaskProvider = () => {
   const { selectedRequest } = useClientProject();
   const { messages, append } = useMicrofoxChat();
+  const [startSSE, setStartSSE] = useState(false);
   const {
     error,
     sseStatus,
@@ -24,7 +25,7 @@ const useBackgroundTaskProvider = () => {
     originAssistantMessageId,
     originUserMessageId,
   } = useBackgroundTasksHook(
-    selectedRequest?.id ? `/request/${selectedRequest.id}` : null
+    startSSE && selectedRequest?.id ? `/request/${selectedRequest.id}` : null
   );
 
   useEffect(() => {
@@ -81,6 +82,12 @@ const useBackgroundTaskProvider = () => {
       });
     }
   }, [taskState]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setStartSSE(true);
+    }
+  }, [messages]);
 
   // useEffect(() => {
   //   if (messages.length > 0) {

@@ -34,7 +34,6 @@ export async function createToolsetForExecution(
               ? "microAgent" + mcp.package_name
               : mcp.api_type,
         getAuth: async (options: AuthOptions) => {
-          console.log("inserting auth variables", options);
           const output = await fetchAuthSecrets(options, {
             clientRequest,
             fillEncryptionKey: true,

@@ -111,7 +111,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 {
                     dataStream: ctx.response,
                     inserAuthVariables: async (_authObject: AuthObject) => {
-                        console.log("inserting auth variables", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
                             extraVariables: {
@@ -263,7 +262,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
-        console.log("Inserted tool set", Object.keys(toolSet.tools));
+        console.log("Inserted tool set", Object.keys(toolSet.tools), toolSet.metadata);
         response.writeMessageMetadata({
             availableTools: Object.keys(toolSet.tools),
         });
@@ -337,12 +336,13 @@ toolExecutionAgent.agent("/", async (ctx) => {
             stopWhen: (s) => {
                 if (s.steps.length > 0) {
                     console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults, s.steps[s.steps.length - 1]?.finishReason);
-                    // const lastStep = s.steps[s.steps.length - 1];
-                    // const isBackgroundTask = lastStep?.toolResults?.some((result: any) => result.output?.data?.task_id);
-                    // //console.log("isBackgroundTask task_ids", lastStep?.toolResults?.map((result: any) => result));
-                    // if (isBackgroundTask) {
-                    //     return true;
-                    // }
+                    const lastStep = s.steps[s.steps.length - 1];
+                    // state = output-available.
+                    const isFinalCall = lastStep?.toolResults?.some((result: any) => result.output?._isFinal && result);
+                    //console.log("isFinalCall task_ids", lastStep?.toolResults?.map((result: any) => result));
+                    if (isFinalCall) {
+                        return true;
+                    }
                 }
                 return client.isHitlStep()(s);
             },

@@ -5,6 +5,7 @@ import {
   fetchAuthSecrets,
   getVariablesForAuthObject,
 } from "@/server/toolfox/helpers/fetchVariables";
+import { prisma } from "@/prisma/prisma";
 
 interface AgentConfig {
   baseUrl: string;
@@ -82,16 +83,28 @@ async function handler(
       operation || {}
     );
 
+    // Check if clientRequest is provided in query params
+    const searchParams = new URL(request.url).searchParams;
+    const clientRequestId = searchParams.get("clientRequestId");
+    let clientRequest = undefined;
+
+    if (clientRequestId) {
+      clientRequest =
+        (await prisma.clientRequest.findUnique({
+          where: { id: clientRequestId },
+        })) || undefined;
+    }
+
     // Fetch and process auth secrets
     const authSecrets = await fetchAuthSecrets(authOptions, {
-      clientRequest: request as any, // Note: You might need to adapt the request object
+      clientRequest,
       fillEncryptionKey: true,
       fillVariables: true,
     });
 
     // Get variables for auth object
     const authFilledOutput = await getVariablesForAuthObject(authSecrets, {
-      clientRequest: request as any, // Note: You might need to adapt the request object
+      clientRequest,
       refetchFromDb: false,
     });
 

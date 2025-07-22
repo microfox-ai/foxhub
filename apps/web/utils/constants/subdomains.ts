@@ -1,4 +1,4 @@
-export const SUPPORTED_SUBDOMAINS = ["rtrends", "rlive"];
+export const SUPPORTED_SUBDOMAINS = ["rtrends", "rlive", "sparkboard"];
 
 export const SUPPORTED_VERCEL_SUBDOMAINS = {
   "reverie-web": "reverie-wb",

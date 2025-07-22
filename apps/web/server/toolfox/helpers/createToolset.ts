@@ -34,12 +34,13 @@ export async function createToolsetForExecution(
               ? "microAgent" + mcp.package_name
               : mcp.api_type,
         getAuth: async (options: AuthOptions) => {
-          console.log("inserting auth variables", options);
+          console.log("inserting auth variables", JSON.stringify(options));
           const output = await fetchAuthSecrets(options, {
             clientRequest,
             fillEncryptionKey: true,
             fillVariables: true,
           });
+          console.log("FETCHED AUTH", output);
           const authFilledOutput = await getVariablesForAuthObject(output, {
             clientRequest,
             refetchFromDb: false,
@@ -48,6 +49,7 @@ export async function createToolsetForExecution(
               MICROFOX_USER_MESSAGE_ID: originUserMessage?.id || "",
             },
           });
+          console.log("FILLED AUTH", authFilledOutput);
           return authFilledOutput;
         },
         cleanAuth: cleanSecretsForAuthObject,

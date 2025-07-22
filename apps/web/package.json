@@ -34,8 +34,8 @@
     "@microfox/ai-router": "^1.1.2",
     "@microfox/aws-ses": "^1.3.0",
     "@microfox/crypto-sdk": "^1.2.0",
-    "@microfox/google-oauth": "^1.2.0",
     "@microfox/github-oauth": "1.0.2",
+    "@microfox/google-oauth": "^1.2.0",
     "@microfox/google-sdk": "^1.1.0",
     "@microfox/linkedin-oauth": "^1.2.0",
     "@microfox/notion": "^1.1.1",
@@ -152,6 +152,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.2",
     "eslint-config-prettier": "^10.1.1",
+    "openapi-fetch": "^0.14.0",
+    "openapi-typescript": "^7.8.0",
     "prettier": "^3.5.3",
     "tailwindcss": "^4",
     "typescript": "^5"

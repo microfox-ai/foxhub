@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { SelectInput } from "../InputHelpers";
+import { SelectInput, StringInput } from "../InputHelpers";
 import { getChannelsIds, getChannelInfo } from '../dataFetchers';
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
+import ImageUpload from "./ImageUpload";
+import { Button } from "@/components/ui/button";
 
 interface MessageChannelProps {
   input: {
     body: {
       channelId: string;
       text: string;
+      username?: string;
+      icon_url?: string;
     };
   };
   onInputChange: (input: any) => void;
@@ -24,6 +28,7 @@ const MessageChannel: React.FC<MessageChannelProps> = ({
   );
   const { clientRequestId } = useClientProject();
   const [loading, setLoading] = useState(true);
+  const [showBotConfig, setShowBotConfig] = useState(false);
   const { selectedRequest } = useClientProject();
 
   useEffect(() => {
@@ -39,12 +44,16 @@ const MessageChannel: React.FC<MessageChannelProps> = ({
           }));
 
           if (input.body.channelId && !channelOptions.some(c => c.value === input.body.channelId)) {
-            const channelInfo = await getChannelInfo(input.body.channelId, selectedRequest.id);
-            if (channelInfo) {
-              channelOptions.unshift({
-                value: channelInfo.id!,
-                label: channelInfo.name!
-              });
+            try {
+              const channelInfo = await getChannelInfo(input.body.channelId, selectedRequest.id);
+              if (channelInfo) {
+                channelOptions.unshift({
+                  value: channelInfo.id!,
+                  label: channelInfo.name!
+                });
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch info for channel ${input.body.channelId}:`, error);
             }
           }
 
@@ -92,6 +101,33 @@ const MessageChannel: React.FC<MessageChannelProps> = ({
           rows={3}
         />
       </div>
+      <Button variant="outline" onClick={() => setShowBotConfig(!showBotConfig)}>
+        {showBotConfig ? "Hide Bot Config" : "Add Bot Config"}
+      </Button>
+      {showBotConfig && (
+        <div className="flex flex-col gap-4 pt-4 border-t">
+          <StringInput
+            label="Username (optional)"
+            value={input.body.username || ""}
+            onChange={(value) =>
+              onInputChange({
+                ...input,
+                body: { ...input.body, username: value },
+              })
+            }
+            placeholder="Enter a username to override the default"
+          />
+          <ImageUpload
+            value={input.body.icon_url}
+            onImageSelect={(imageUrl) =>
+              onInputChange({
+                ...input,
+                body: { ...input.body, icon_url: imageUrl },
+              })
+            }
+          />
+        </div>
+      )}
     </div>
   );
 };

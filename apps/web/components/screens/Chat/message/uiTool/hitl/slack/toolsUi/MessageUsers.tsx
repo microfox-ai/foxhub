@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { MultiSelectInput } from "../InputHelpers";
+import { MultiSelectInput, StringInput } from "../InputHelpers";
 import { getActiveUsersIds, getUserInfos } from '../dataFetchers';
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
+import { Button } from "@/components/ui/button";
+import ImageUpload from "./ImageUpload";
 
 interface MessageUsersProps {
   input: {
     body: {
       userIds: string[];
       text: string;
+      username?: string;
+      icon_url?: string;
     };
   };
   onInputChange: (input: any) => void;
@@ -18,6 +22,7 @@ interface MessageUsersProps {
 const MessageUsers: React.FC<MessageUsersProps> = ({ input, onInputChange }) => {
   const [users, setUsers] = useState<{ value: string, label: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showBotConfig, setShowBotConfig] = useState(false);
   const { selectedRequest } = useClientProject();
 
   useEffect(() => {
@@ -96,6 +101,32 @@ const MessageUsers: React.FC<MessageUsersProps> = ({ input, onInputChange }) => 
           {"{last_name}"}
         </div>
       </div>
+      <Button variant="outline" onClick={() => setShowBotConfig(!showBotConfig)}>
+        {showBotConfig ? "Hide Bot Config" : "Add Bot Config"}
+      </Button>
+      {showBotConfig && (
+        <div className="flex flex-col gap-4 pt-4 border-t">
+          <StringInput
+            label="Username (optional)"
+            value={input.body.username || ""}
+            onChange={(value) =>
+              onInputChange({
+                ...input,
+                body: { ...input.body, username: value },
+              })
+            }
+            placeholder="Enter a username to override the default"
+          />
+          <ImageUpload
+            onImageSelect={(imageUrl) =>
+              onInputChange({
+                ...input,
+                body: { ...input.body, icon_url: imageUrl },
+              })
+            }
+          />
+        </div>
+      )}
     </div>
   );
 };

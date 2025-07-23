@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { z } from "zod";
 import { APP_DOMAIN, ALLOWED_API_ORIGINS } from "@/utils/constants/appInfo";
+import { createAgentClient } from "@/lib/agent-client";
+import { paths } from "./reply-bots";
+
+const agentName = "reply-bots";
+const replyBotsMcpClient = createAgentClient<paths>(agentName);
 
 // Validation schema for request body
 const createAccessCodeSchema = z.object({
@@ -215,6 +220,41 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
+
+    const { data, error } = await replyBotsMcpClient.POST("/send-template-email", {
+      body: {
+        "to": "vishwajeety14122@gmail.com",
+        "from": "microfox@reply-bots.com",
+        "subject": "Welcome to Our Service!",
+        "templateId": "general-purpose-001",
+        "fallbackText": "Welcome to Our Service! We're excited to have you.",
+        "data": {
+          "company": {
+            "name": "Microfox",
+            "logoUrl": "https://staging.microfox.app/logo-mini-color.png"
+          },
+          "body": {
+            "title": "A Warm Welcome!",
+            "preheader": "This is the preheader text that shows up in email clients.",
+            "content": "Hello there,<br><br>This is a test email to demonstrate the dynamic templating functionality. You can include <strong>HTML</strong> content right here.<br><br>Thanks for trying it out!",
+            "action": {
+              "text": "Get Started",
+              "url": "https://staging.microfox.app/get-started"
+            }
+          },
+          "footer": {
+            "socials": {
+              "instagram": "https://www.instagram.com/microfox",
+              "x": "https://www.x.com/microfox",
+              "linkedin": "https://www.linkedin.com/company/microfox",
+              "facebook": "https://www.facebook.com/microfox",
+              "slack": "https://microfox.slack.com"
+            }
+          },
+          "unsubscribeLink": "https://staging.microfox.app/unsubscribe"
+        } as any
+      },
+    });
 
     // Create new access code
     const accessCode = await prisma.accessCode.create({

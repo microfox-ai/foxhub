@@ -20,6 +20,7 @@ import { Constructor, Package } from "../../Chat/message/types";
 import { useSearchParams } from "next/navigation";
 import { useSecret } from "./SecretProvider";
 import { Bot, mapClientSecretToBot } from "./types";
+import { IN_STAGING } from "@/utils/constants/appInfo";
 
 const useBotsContextInternal = (packageTypes?: ClientSecretPackageType[]) => {
   const [bots, setBots] = useState<Bot[]>([]);
@@ -41,7 +42,7 @@ const useBotsContextInternal = (packageTypes?: ClientSecretPackageType[]) => {
   }, [_botId, setBotId]);
 
   const { data: stablePackages, error: stablePackagesError } = useSWR(
-    `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.EXTERNAL}`,
+    (IN_STAGING && user?.isAdmin ? `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.EXTERNAL},${PackageStatus.SEMISTABLE}` : `/api/packages/infos?packageTypes=${PackageStatus.STABLE},${PackageStatus.EXTERNAL}`),
     async (url: string) => {
       const response = await fetch(url);
       if (!response.ok) {

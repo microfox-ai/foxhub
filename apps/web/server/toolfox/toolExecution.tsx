@@ -371,7 +371,9 @@ ${lastToolCallName ? `Previous tool used: ${lastToolCallName} - build upon this 
 Previous message outputSummaries: When available, previous messages may contain outputSummaries in their last text parts with structured data about tool executions (e.g., Slack interactions). Use this context to provide better continuity and avoid repeating actions.
 </context_awareness>
 
-Remember: Execute tasks efficiently using available tools. Be direct, accurate, and helpful. Only do what the user explicitly requests - do not add features or enhancements unless specifically asked.`,
+Remember: Execute tasks efficiently using available tools. Be direct, accurate, and helpful. Only do what the user explicitly requests - do not add features or enhancements unless specifically asked.
+The inputs you are giving for tool calls are passed to user, so don't ask user for input values, just assume he'll add in input later.
+`,
             //${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
             stopWhen: (s) => {
                 if (s.steps.length > 0) {

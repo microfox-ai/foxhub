@@ -30,6 +30,18 @@ model User {
   isAdmin            Boolean?
   isBetaAccess       Boolean?
   isBillingVerified  Boolean?
+  accessCodeId       String?
+}
+
+model AccessCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  isActive  Boolean   @default(true)
+  usedBy    String?
+  usedAt    DateTime?
+  source    String?
+  createdAt DateTime  @default(now())
+  email     String?
 }
 
 model FoxTemplate {

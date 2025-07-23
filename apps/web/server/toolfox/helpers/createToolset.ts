@@ -60,9 +60,11 @@ export async function createToolsetForExecution(
               ),
             microfoxReasoning: z
               .string()
+              .optional()
               .describe("The reasoning for the tool call"),
             microfoxAnnotationAudio: z
               .string()
+              .optional()
               .describe(
                 "The text to be spoken to the user to explain whats happening"
               ),

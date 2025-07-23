@@ -8,7 +8,6 @@ interface CreateChannelProps {
     body: {
       name: string;
       isPrivate?: boolean;
-      join?: boolean;
       userIds?: string[];
     };
   };
@@ -84,16 +83,6 @@ const CreateChannel: React.FC<CreateChannelProps> = ({
           onInputChange({
             ...input,
             body: { ...input.body, isPrivate: value },
-          })
-        }
-      />
-      <BooleanInput
-        label="Join Channel After Creation"
-        value={input?.body?.join ?? true}
-        onChange={(value) =>
-          onInputChange({
-            ...input,
-            body: { ...input.body, join: value },
           })
         }
       />

@@ -268,6 +268,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             availableTools: Object.keys(toolSet.tools),
         });
+        const availableTools = {
+            ...toolSet.tools,
+            ...essentialTools,
+        }
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
@@ -309,6 +313,13 @@ toolExecutionAgent.agent("/", async (ctx) => {
                         toolCall.input = JSON.stringify(newInput);
                         console.log("repairToolCall - fixed the tool call", toolCall);
                     }
+                }
+                if (Object.keys(availableTools).length > 0 && !Object.keys(availableTools).includes(toolCall.toolName)) {
+                    ctx.response.write({
+                        type: "text",
+                        text: `There was an error due to a modal limitation. Please refresh your message and try again.`,
+                    });
+                    return null;
                 }
                 return toolCall;
             },

@@ -15,8 +15,10 @@ export const getActiveUsersIds = async (clientRequestId: string) => {
                 }
             }
         },
-        query: {
-            clientRequestId: clientRequestId
+        params: {
+            query: {
+                clientRequestId: clientRequestId
+            } as any
         }
     });
 
@@ -36,8 +38,10 @@ export const getUserInfo = async (userId: string, clientRequestId: string) => {
                 }
             }
         },
-        query: {
-            clientRequestId: clientRequestId
+        params: {
+            query: {
+                clientRequestId: clientRequestId
+            } as any
         }
     });
 
@@ -62,8 +66,10 @@ export const getChannelsIds = async (clientRequestId: string) => {
                 }
             }
         },
-        query: {
-            clientRequestId: clientRequestId
+        params: {
+            query: {
+                clientRequestId: clientRequestId
+            } as any
         }
     });
 
@@ -83,8 +89,10 @@ export const getChannelConversationInfo = async (channelId: string, clientReques
                 }
             }
         },
-        query: {
-            clientRequestId: clientRequestId
+        params: {
+            query: {
+                clientRequestId: clientRequestId
+            } as any
         }
     });
 
@@ -104,8 +112,10 @@ export const getChannelInfo = async (channelId: string, clientRequestId: string)
                 }
             }
         },
-        query: {
-            clientRequestId: clientRequestId
+        params: {
+            query: {
+                clientRequestId: clientRequestId
+            } as any
         }
     });
 

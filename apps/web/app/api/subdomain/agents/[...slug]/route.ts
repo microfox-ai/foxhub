@@ -105,7 +105,7 @@ async function handler(
     // Get variables for auth object
     const authFilledOutput = await getVariablesForAuthObject(authSecrets, {
       clientRequest,
-      refetchFromDb: false,
+      refetchFromDb: true,
     });
 
     //console.log("authFilledOutput", authFilledOutput);

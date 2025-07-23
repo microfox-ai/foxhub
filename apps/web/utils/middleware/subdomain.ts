@@ -79,7 +79,10 @@ export async function subdomainRerouting(
       if (SUPPORTED_SUBDOMAINS.includes(subdomain)) {
         console.log("rewriting to:", `/subdomain/${subdomain}${path}`);
         return NextResponse.rewrite(
-          new URL(`/subdomain/${subdomain}${path}`, request.url)
+          new URL(
+            `https://${APP_DOMAIN}/subdomain/${subdomain}${path}`,
+            request.url
+          )
         );
       }
 

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "./AuthProvider";
 import { APP_ROUTES } from "@/utils/constants/appInfo";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export function LoginForm({
   className,
@@ -15,12 +15,24 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const { handleSigninWithGoogle, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (user) {
-      router.push("/dashboard");
+      const redirectTo = searchParams.get('redirect_to');
+      if (redirectTo) {
+        try {
+          const decodedUrl = decodeURIComponent(redirectTo);
+          router.push(decodedUrl);
+        } catch (e) {
+          // If URL decoding fails, fallback to dashboard
+          router.push("/dashboard");
+        }
+      } else {
+        router.push("/dashboard");
+      }
     }
-  }, [user]);
+  }, [user, searchParams]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

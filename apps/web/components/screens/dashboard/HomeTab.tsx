@@ -3,8 +3,10 @@ import Link from "next/link";
 import { TabProps } from "./types";
 import { MinionFlow } from "../hooks/convertors";
 import { IN_STAGING } from "@/utils/constants/appInfo";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export const HomeTab = ({ activeTab, setActiveTab, createNewEmptyRequest }: TabProps) => {
+    const { user } = useAuth();
     return (
         <ul className="flex flex-col gap-4 justify-start items-start">
             <li
@@ -27,7 +29,7 @@ export const HomeTab = ({ activeTab, setActiveTab, createNewEmptyRequest }: TabP
                 <BotIcon className="w-4 h-4" />
                 <span> Show all cutom bots </span>
             </Link>
-            {IN_STAGING && (
+            {IN_STAGING && user?.isAdmin && (
                 <li
                     onClick={() => {
                         createNewEmptyRequest?.();

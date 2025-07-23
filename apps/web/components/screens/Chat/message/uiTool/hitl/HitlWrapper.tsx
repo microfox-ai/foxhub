@@ -77,7 +77,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     if (missingSecrets && missingSecrets?.length > 0) {
         return (
             <div className="flex flex-col my-2 bg-white shadow-md rounded-xl border border-gray-200">
-                <div className="flex flex-row items-end gap-2 justify-start gap-2 border-b border-gray-200 pt-3 px-3">
+                <div className="flex flex-row items-end justify-start gap-2 border-b border-gray-200 pt-3 px-3">
                     <img src="/logo-mini-color.png" alt="Secret Icon" className="w-18 h-18" />
                     <div className="flex flex-col justify-end py-2 pl-4">
                         <div className="flex flex-row items-center gap-2 mb-1">

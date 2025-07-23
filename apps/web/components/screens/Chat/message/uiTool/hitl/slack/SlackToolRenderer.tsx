@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { operations } from './slack-mcp';
+import { operations } from './slack';
 import AddUsersToChannel from './toolsUi/AddUsersToChannel';
 import CreateChannel from './toolsUi/CreateChannel';
 import MessageChannel from './toolsUi/MessageChannel';
@@ -134,7 +134,9 @@ const SlackToolRenderer: React.FC<SlackToolRendererProps> = ({ toolName, input, 
                     fields={[
                         { key: 'channelId', label: 'Channel ID', type: 'string', placeholder: 'C1234567890' },
                         { key: 'thread_ts', label: 'Thread Timestamp', type: 'string', placeholder: '1234567890.123456' },
-                        { key: 'text', label: 'Reply Text', type: 'string', placeholder: 'Your reply message...' }
+                        { key: 'text', label: 'Reply Text', type: 'string', placeholder: 'Your reply message...' },
+                        { key: 'username', label: 'Username (optional)', type: 'string', placeholder: 'Enter a username to override the default' },
+                        { key: 'icon_url', label: 'Icon URL (optional)', type: 'string', placeholder: 'Enter a URL for a custom icon', isIconUrl: true }
                     ]}
                 />
             );

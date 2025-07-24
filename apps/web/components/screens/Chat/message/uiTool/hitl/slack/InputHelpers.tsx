@@ -46,11 +46,12 @@ export const SelectInput = ({ value, onChange, label, options, placeholder }: { 
     
     const totalPages = Math.ceil(filteredOptions.length / ITEMS_PER_PAGE);
     const selectedOption = options.find(opt => opt.value === value);
+    const validValue = selectedOption ? value : undefined;
 
     return (
         <div className="flex flex-col gap-2">
             <Label>{label}</Label>
-            <Select onValueChange={onChange} value={value}>
+            <Select onValueChange={onChange} value={validValue}>
                 <SelectTrigger>
                     <SelectValue placeholder={placeholder}>
                         {selectedOption ? selectedOption.label : placeholder}

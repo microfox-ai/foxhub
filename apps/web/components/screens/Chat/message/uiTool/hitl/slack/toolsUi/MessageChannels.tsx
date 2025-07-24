@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { MultiSelectInput } from "../InputHelpers";
+import { MultiSelectInput, StringInput } from "../InputHelpers";
 import { getChannelsIds } from "../dataFetchers";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
+import { Button } from "@/components/ui/button";
+import ImageUpload from "./ImageUpload";
 
 interface MessageChannelsProps {
   input: {
     body: {
       channelIds: string[];
       text: string;
+      username?: string;
+      icon_url?: string;
     };
   };
   onInputChange: (input: any) => void;
@@ -23,6 +27,7 @@ const MessageChannels: React.FC<MessageChannelsProps> = ({
     []
   );
   const [loading, setLoading] = useState(true);
+  const [showBotConfig, setShowBotConfig] = useState(false);
   const { selectedRequest } = useClientProject();
   useEffect(() => {
     const fetchData = async () => {
@@ -80,6 +85,32 @@ const MessageChannels: React.FC<MessageChannelsProps> = ({
           rows={3}
         />
       </div>
+      <Button variant="outline" onClick={() => setShowBotConfig(!showBotConfig)}>
+        {showBotConfig ? "Hide Bot Config" : "Add Bot Config"}
+      </Button>
+      {showBotConfig && (
+        <div className="flex flex-col gap-4 pt-4 border-t">
+          <StringInput
+            label="Username (optional)"
+            value={input.body.username || ""}
+            onChange={(value) =>
+              onInputChange({
+                ...input,
+                body: { ...input.body, username: value },
+              })
+            }
+            placeholder="Enter a username to override the default"
+          />
+          <ImageUpload
+            onImageSelect={(imageUrl) =>
+              onInputChange({
+                ...input,
+                body: { ...input.body, icon_url: imageUrl },
+              })
+            }
+          />
+        </div>
+      )}
     </div>
   );
 };

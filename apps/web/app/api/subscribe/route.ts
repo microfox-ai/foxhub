@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { z } from "zod";
-import { APP_DOMAIN, ALLOWED_API_ORIGINS } from "@/utils/constants/appInfo";
+import { APP_DOMAIN, ALLOWED_API_ORIGINS, APP_BASE_URL } from "@/utils/constants/appInfo";
+import { createAgentClient } from "@/lib/agent-client";
+import { paths } from "./reply-bots";
+
+const agentName = "reply-bots";
+const replyBotsMcpClient = createAgentClient<paths>(agentName);
 
 // Validation schema for request body
 const createAccessCodeSchema = z.object({
@@ -169,7 +174,54 @@ interface EmailService {
 // TODO: Implement the actual email service
 class MockEmailService implements EmailService {
   async sendAccessCode(email: string, code: string): Promise<boolean> {
-    console.log(`TODO: Send email to ${email} with access code ${code}`);
+    const { data, error } = await replyBotsMcpClient.POST("/send-template-email", {
+      body: {
+        "to": email,
+        "from": "microfox@reply-bots.com",
+        "subject": "Confirm Your Email Address",
+        "templateId": "email-confirmation-001",
+        "fallbackText": `Confirm your email address by using the following code: ${code}`,
+        "data": {
+          "company": {
+            "name": "Microfox",
+            "logoUrl": `${APP_BASE_URL}/logo-mini-color.png`
+          },
+          "body": {
+            "title": "Confirm your email address",
+            "content": "Here’s your confirmation code. Click the button below, sign in to your account and enter the code to confirm your email address.",
+            "code": code,
+            "action": {
+              "text": "Confirm and Sign In",
+              "url": `${APP_BASE_URL}/dashboard`
+            },
+            "postscript": "If you haven’t requested this email, there’s nothing to worry about – you can safely ignore it."
+          },
+          "footer": {
+            // "socials": {
+            //   "x": "https://www.x.com/microfox",
+            //   "facebook": "https://www.facebook.com/microfox",
+            //   "linkedin": "https://www.linkedin.com/company/microfox",
+            //   "instagram": "https://www.instagram.com/microfox"
+            // },
+            // "links": [
+            //   {
+            //     "text": "Our Blog",
+            //     "url": "https://staging.microfox.app/blog"
+            //   },
+            //   {
+            //     "text": "Policies",
+            //     "url": "https://staging.microfox.app/policies"
+            //   }
+            // ],
+            "customText": "©2025 Microfox"
+          }
+        } as any
+      },
+    });
+    if (error) {
+      console.error("Failed to send access code email:", error);
+      return false;
+    }
     return true;
   }
 }

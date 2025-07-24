@@ -195,7 +195,7 @@ export interface paths {
         put?: never;
         /**
          * List all users in a specific Slack channel.
-         * @description Retrieves a list of all userIds of users in a specified Slack channel. It provides only the userIds of the users in the channel.
+         * @description Retrieves a list of all userIds of users in a specified Slack channel.
          */
         post: operations["getChannelMembers"];
         delete?: never;
@@ -1590,6 +1590,10 @@ export interface operations {
                             channelId: string;
                             /** @description The text of the message. */
                             text: string;
+                            /** @description Optional custom username for the message. */
+                            username?: string;
+                            /** @description Optional URL to an image to use as the icon for the message. */
+                            icon_url?: string;
                         };
                     };
                 };
@@ -1655,6 +1659,10 @@ export interface operations {
                             userId: string;
                             /** @description The text of the message to be sent. */
                             text: string;
+                            /** @description Optional custom username for the message. */
+                            username?: string;
+                            /** @description Optional URL to an image to use as the icon for the message. */
+                            icon_url?: string;
                         };
                     };
                 };
@@ -1851,6 +1859,10 @@ export interface operations {
                             thread_ts: string;
                             /** @description The text of the reply. */
                             text: string;
+                            /** @description Optional custom username for the message. */
+                            username?: string;
+                            /** @description Optional URL to an image to use as the icon for the message. */
+                            icon_url?: string;
                         };
                     };
                 };
@@ -2147,6 +2159,10 @@ export interface operations {
                             channelIds: string[];
                             /** @description The text of the message. */
                             text: string;
+                            /** @description Optional custom username for the message. */
+                            username?: string;
+                            /** @description Optional URL to an image to use as the icon for the message. */
+                            icon_url?: string;
                         };
                     };
                 };
@@ -2212,6 +2228,10 @@ export interface operations {
                             userIds: string[];
                             /** @description The text of the message to be sent. Can include template variables: {mention} (mentions user), {user_name} (user's name), {user_email} (email), {user_title} (job title), {user_phone} (phone), {user_status} (status), {user_avatar} (profile image), {first_name} (first name), {last_name} (last name). Template variables are automatically replaced with user data. */
                             text: string;
+                            /** @description Optional custom username for the message. */
+                            username?: string;
+                            /** @description Optional URL to an image to use as the icon for the message. */
+                            icon_url?: string;
                         };
                     };
                 };

@@ -101,7 +101,7 @@ const AddNewSecretDialog = ({ isOpen, onClose, packageAuth, packageInfo }: AddNe
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent>
                 <div className="flex flex-col bg-white rounded-xl">
-                    <div className="flex flex-row items-end gap-2 justify-start gap-2 border-b border-gray-200 pt-3 px-3">
+                    <div className="flex flex-row items-end justify-start gap-2 border-b border-gray-200 pt-3 px-3">
                         <img src="/logo-mini-color.png" alt="Secret Icon" className="w-18 h-18" />
                         <div className="flex flex-col justify-end py-2 pl-4">
                             <div className="flex flex-row items-center gap-2 mb-1">

@@ -609,3 +609,15 @@ model SubdomainRedirect {
   userId      String?
 }
 
+model UserImageSourcemap {
+  id        String   @id @default(uuid())
+  userId    String
+  fileName  String
+  fileUrl   String
+  fileType  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+

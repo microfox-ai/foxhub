@@ -1,6 +1,6 @@
 
 import { createAgentClient } from "@/lib/agent-client";
-import { paths } from "./slack-mcp";
+import { paths } from "./slack";
 
 const agentName = "slack";
 const slackMcpClient = createAgentClient<paths>(agentName);

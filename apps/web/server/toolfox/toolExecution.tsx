@@ -268,6 +268,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             availableTools: Object.keys(toolSet.tools),
         });
+        const availableTools = {
+            ...toolSet.tools,
+            ...essentialTools,
+        }
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
@@ -310,6 +314,13 @@ toolExecutionAgent.agent("/", async (ctx) => {
                         toolCall.input = JSON.stringify(newInput);
                         console.log("repairToolCall - fixed the tool call", toolCall);
                     }
+                }
+                if (Object.keys(availableTools).length > 0 && !Object.keys(availableTools).includes(toolCall.toolName)) {
+                    ctx.response.write({
+                        type: "text",
+                        text: `There was an error due to a modal limitation. Please refresh your message and try again.`,
+                    });
+                    return null;
                 }
                 return toolCall;
             },
@@ -374,7 +385,9 @@ ${lastToolCallName ? `Previous tool used: ${lastToolCallName} - build upon this 
 Previous message outputSummaries: When available, previous messages may contain outputSummaries in their last text parts with structured data about tool executions (e.g., Slack interactions). Use this context to provide better continuity and avoid repeating actions.
 </context_awareness>
 
-Remember: Execute tasks efficiently using available tools. Be direct, accurate, and helpful. Only do what the user explicitly requests - do not add features or enhancements unless specifically asked.`,
+Remember: Execute tasks efficiently using available tools. Be direct, accurate, and helpful. Only do what the user explicitly requests - do not add features or enhancements unless specifically asked.
+The inputs you are giving for tool calls are passed to user, so don't ask user for input values, just assume he'll add in input later.
+`,
             //${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
             stopWhen: (s) => {
                 if (s.steps.length > 0) {

@@ -174,7 +174,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
                     </div>
                 </TooltipProvider>
             </div>
-            {(expanded || singlePackage) && (
+            {(expanded) && (
                 <div className="flex flex-col w-full">
                     {stateAuth.secrets?.map((s) => {
                         const packageInfo = packageInfos?.find(p => p.name === s.packageName);

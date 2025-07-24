@@ -9,8 +9,10 @@ import useSWR from "swr";
 import { Package } from "../types";
 import { AgentInfo } from "@microfox/types";
 import { parseMcpType } from "@/components/screens/Chat/message/uiTool/mappers/uiHitl";
+import { useMicrofoxChat } from "../../MicrofoxChatProvider";
 
 export const StepBanner = () => {
+    const { status } = useMicrofoxChat();
     const { activePart, setActivePart, displayParts, message, setActivePartByToolCallId } = useMessageParts();
 
     const lastPartIndex = displayParts ? displayParts.length - 1 : -1;
@@ -29,7 +31,9 @@ export const StepBanner = () => {
         return false;
     });
 
-    const hasFinalSummary = lastPartIndex !== -1 && displayParts[lastPartIndex]?.type === 'text' && !hasPendingHumanIntervention;
+    const lastPart = displayParts[lastPartIndex];
+    const lastPartIsSummary = lastPart?.type.match(/summary/i) || lastPart?.type === "text";
+    const hasFinalSummary = lastPartIndex !== -1 && lastPartIsSummary && !hasPendingHumanIntervention && status !== "streaming";
     const isFinalSummaryActive = hasFinalSummary && activePart === lastPartIndex;
 
     const toolPackages = message?.parts?.map((p) => {

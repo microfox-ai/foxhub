@@ -54,6 +54,13 @@ export const DisplayPart = ({ part, messageId, lastMessage, lastAnnotationIndice
     }
     if (part.type.startsWith("tool-") && (part as any).state == "output-available" && (part as any).output) {
         const { mcpType, mcpName, toolName } = parseMcpType(part.type as `tool-${string}`);
+        if (part.type.match(/summary/i) && (part as any).output?.summary) {
+            return (
+                <div className="flex flex-col gap-2 text-xs">
+                    <MessageMarkdown>{(part as any).output?.summary}</MessageMarkdown>
+                </div>
+            )
+        }
         return (
             <div className="flex flex-col gap-2">
                 <RenderToolInput tool={part as any} />

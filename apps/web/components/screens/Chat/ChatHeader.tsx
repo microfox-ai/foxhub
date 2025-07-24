@@ -89,7 +89,7 @@ const ChatHeader = ({
   const flowTabs = tabList.filter((tab) => tab.flows.includes(currentFlow));
 
   return (
-    <div className="grid grid-cols-12 w-full items-start justify-between gap-2 px-4 pt-6 py-2">
+    <div className="grid grid-cols-12 w-full items-start justify-between gap-2 px-4 pt-4 ml-4">
       <div className="col-span-4">
         {isChatLoading ? (
           <Skeleton className="w-full h-6" />
@@ -123,7 +123,7 @@ const ChatHeader = ({
         )} */}
       </div>
 
-      <div className="col-span-4 flex justify-start">
+      <div className="col-span-4 flex justify-start ">
         {messages.length > 0 && flowTabs.length > 1 && (
           <TabsList className="relative  flex bg-gray-100 p-[3px] h-11 rounded-lg">
             {flowTabs.map((tab) => (

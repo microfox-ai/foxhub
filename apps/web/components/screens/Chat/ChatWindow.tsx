@@ -120,7 +120,7 @@ function ChatWindow() {
             activeTab={activeTab}
             setActiveTab={handleTabChange}
           />
-          {isRightCollapsed && (
+          {/* {isRightCollapsed && (
             <ButtonSCN
               variant="outline"
               size="icon"
@@ -132,7 +132,7 @@ function ChatWindow() {
                 style={{ height: "1rem", width: "1rem" }}
               />
             </ButtonSCN>
-          )}
+          )} */}
         </div>
 
         {(isClientRequestLoading || isLoading) && (

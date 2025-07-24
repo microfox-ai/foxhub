@@ -18,6 +18,7 @@ import { loadClientRequest } from "./helpers/loadClientRequest";
 import { createToolsetForExecution } from "./helpers/createToolset";
 import { UIMessage } from "@ai-sdk/react";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { insertRedditSummaryTool } from "./summaryTools/redditSummary";
 
 /**
  * Tool execution agent.
@@ -111,7 +112,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 {
                     dataStream: ctx.response,
                     inserAuthVariables: async (_authObject: AuthObject) => {
-                        console.log("INSERT AUTH", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
                             extraVariables: {
@@ -120,7 +120,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                             },
                             refetchFromDb: true,
                         });
-                        console.log("FILLED AUTH", authFilledOutput);
                         return authFilledOutput;
                     },
                     mutateOutput: async (output, { part, uiMapper }) => {
@@ -265,6 +264,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
         console.log("Inserted tool set", Object.keys(toolSet.tools));
+        ctx.state.processedMessages = processedMessages;
         response.writeMessageMetadata({
             availableTools: Object.keys(toolSet.tools),
         });
@@ -276,6 +276,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             tools: {
                 ...toolSet.tools,
                 ...essentialTools,
+                ...(insertRedditSummaryTool(toolSet, ctx))
                 // toolSelection: ctx.next.agentAsTool("@/chatFlow/toolSelection", {
                 //     description: "Select the next best tools for the user's request",
                 //     inputSchema: z.object({
@@ -335,6 +336,7 @@ ${getMicrofoxPersonality()}
 - **Concise Tasks**: For straightforward requests, provide brief, focused responses
 - **Complex Tasks**: For detailed work, use structured markdown with clear sections and bullet points
 - Include tables when presenting structured data or comparisons
+- If you have the links available, make sure to include them in the response markdown.
 </response_format>
 
 <tool_execution_principles>
@@ -363,6 +365,7 @@ ${getMicrofoxPersonality()}
 
 <tool_guidelines>
 ${combinedToolsSystemPromtps ?? `When using tools, follow the specific guidelines for each tool as provided in your tool documentation.`}
+use the redditSummary tool to summarise the data if the summary tool is available & the content is about reddit.
 </tool_guidelines>
 
 <context_awareness>
@@ -378,7 +381,9 @@ Remember: Execute tasks efficiently using available tools. Be direct, accurate, 
                     console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults, s.steps[s.steps.length - 1]?.finishReason);
                     const lastStep = s.steps[s.steps.length - 1];
                     // state = output-available.
-                    const isFinalCall = lastStep?.toolResults?.some((result: any) => result.output?._isFinal && result);
+                    const isFinalCall =
+                        lastStep?.toolCalls?.some((toolCall: any) => toolCall.toolName === "redditSummary") ||
+                        lastStep?.toolResults?.some((result: any) => result.output?._isFinal && result);
                     //console.log("isFinalCall task_ids", lastStep?.toolResults?.map((result: any) => result));
                     if (isFinalCall) {
                         return true;
@@ -392,7 +397,7 @@ Remember: Execute tasks efficiently using available tools. Be direct, accurate, 
                 return step;
             },
             onStepFinish: async (step) => {
-                console.log("step", step.usage, step.finishReason);
+                console.log("step", step.usage);
                 //console.log("Step - request", JSON.stringify(step.request, null, 2));
                 //console.log("Step - response", JSON.stringify(step.response, null, 2));
             },

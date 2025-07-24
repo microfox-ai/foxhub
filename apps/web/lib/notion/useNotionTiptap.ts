@@ -29,6 +29,7 @@ export function useNotionTiptap(blocks: NotionBlock[]) {
   const editor = useEditor({
     editable: false,
     content: "",
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: false,

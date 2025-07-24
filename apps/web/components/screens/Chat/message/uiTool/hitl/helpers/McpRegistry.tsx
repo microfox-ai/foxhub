@@ -14,11 +14,11 @@ const McpRegistry: React.FC<McpRegistryProps> = ({ tool, input, metadata }) => {
     const { mcpName, toolName } = parseMcpType(tool.type);
     const [mcpInput, setMcpInput] = useState(input);
     const { mutateInput } = useHitl();
-    
+
     // Check if this is a Slack tool
     if (mcpName === 'slack') {
         return (
-            <SlackToolRenderer 
+            <SlackToolRenderer
                 toolName={toolName as any}
                 input={mcpInput}
                 onInputChange={(newInput) => {
@@ -28,7 +28,7 @@ const McpRegistry: React.FC<McpRegistryProps> = ({ tool, input, metadata }) => {
             />
         );
     }
-    
+
     // Fall back to generic renderer
     return (
         <GenericMcpRenderer

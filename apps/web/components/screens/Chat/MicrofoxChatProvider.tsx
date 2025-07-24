@@ -360,6 +360,7 @@ export const useMicrofoxContext = (
 
       let messageNew = {
         ...message,
+        id: message.id ? ((clientRequest?.id && message.id.endsWith(clientRequest?.id)) ? message.id : message.id + "-" + clientRequest?.id) : crypto.randomUUID(),
         metadata: {
           ...bodyParams,
           ...(message.metadata || {}),
@@ -431,6 +432,7 @@ export const useMicrofoxContext = (
           message: messageToResend as UIMessage,
           chatRequestOptions: { body: bodyParams },
           bypassDb: true,
+          bypassAi: false
         });
       } catch (error) {
         console.log("error appending message during refresh", error);

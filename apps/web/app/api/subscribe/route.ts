@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { z } from "zod";
-import { APP_DOMAIN, ALLOWED_API_ORIGINS, APP_BASE_URL } from "@/utils/constants/appInfo";
+import {
+  APP_DOMAIN,
+  ALLOWED_API_ORIGINS,
+  APP_BASE_URL,
+  IN_DEV,
+} from "@/utils/constants/appInfo";
 import { createAgentClient } from "@/lib/agent-client";
 import { paths } from "./reply-bots";
 
@@ -168,56 +173,65 @@ const openApiDocs = {
 
 // TODO: Create an email service interface
 interface EmailService {
-  sendAccessCode(email: string, code: string): Promise<boolean>;
+  sendAccessCode(email: string, code: string, source: string): Promise<boolean>;
 }
 
 // TODO: Implement the actual email service
 class MockEmailService implements EmailService {
-  async sendAccessCode(email: string, code: string): Promise<boolean> {
-    const { data, error } = await replyBotsMcpClient.POST("/send-template-email", {
-      body: {
-        "to": email,
-        "from": "microfox@reply-bots.com",
-        "subject": "Confirm Your Email Address",
-        "templateId": "email-confirmation-001",
-        "fallbackText": `Confirm your email address by using the following code: ${code}`,
-        "data": {
-          "company": {
-            "name": "Microfox",
-            "logoUrl": `${APP_BASE_URL}/logo-mini-color.png`
-          },
-          "body": {
-            "title": "Confirm your email address",
-            "content": "Here’s your confirmation code. Click the button below, sign in to your account and enter the code to confirm your email address.",
-            "code": code,
-            "action": {
-              "text": "Confirm and Sign In",
-              "url": `${APP_BASE_URL}/dashboard`
+  async sendAccessCode(
+    email: string,
+    code: string,
+    source: string
+  ): Promise<boolean> {
+    const { data, error } = await replyBotsMcpClient.POST(
+      "/send-template-email",
+      {
+        body: {
+          to: email,
+          from: "microfox@reply-bots.com",
+          subject: `Early Access Invite for Micorfox - ${source}`,
+          templateId: "email-confirmation-001",
+          fallbackText: `Hey, you can access your early beta access by using the following code: ${code}`,
+          data: {
+            company: {
+              name: "Microfox",
+              logoUrl: `${APP_BASE_URL}/logo-mini-color.png`,
             },
-            "postscript": "If you haven’t requested this email, there’s nothing to worry about – you can safely ignore it."
-          },
-          "footer": {
-            // "socials": {
-            //   "x": "https://www.x.com/microfox",
-            //   "facebook": "https://www.facebook.com/microfox",
-            //   "linkedin": "https://www.linkedin.com/company/microfox",
-            //   "instagram": "https://www.instagram.com/microfox"
-            // },
-            // "links": [
-            //   {
-            //     "text": "Our Blog",
-            //     "url": "https://staging.microfox.app/blog"
-            //   },
-            //   {
-            //     "text": "Policies",
-            //     "url": "https://staging.microfox.app/policies"
-            //   }
-            // ],
-            "customText": "©2025 Microfox"
-          }
-        } as any
-      },
-    });
+            body: {
+              title: "Early Access Invite for Micorfox",
+              content:
+                "Here’s your confirmation code for early access. Click the button below, sign in to your account with this same email & you're good to go.",
+              code: code,
+              action: {
+                text: "Confirm and Sign In",
+                url: `https://staging.microfox.app/login?code=${code}&email=${email}&source=${source}`,
+              },
+              postscript:
+                "Please note that beta access is limited to only few users & they can access it at staging.microfox.app only. Hoping you'd help us shape the future of Microfox !",
+            },
+            footer: {
+              // "socials": {
+              //   "x": "https://www.x.com/microfox",
+              //   "facebook": "https://www.facebook.com/microfox",
+              //   "linkedin": "https://www.linkedin.com/company/microfox",
+              //   "instagram": "https://www.instagram.com/microfox"
+              // },
+              // "links": [
+              //   {
+              //     "text": "Our Blog",
+              //     "url": "https://staging.microfox.app/blog"
+              //   },
+              //   {
+              //     "text": "Policies",
+              //     "url": "https://staging.microfox.app/policies"
+              //   }
+              // ],
+              customText: "©2025 Microfox",
+            },
+          } as any,
+        },
+      }
+    );
     if (error) {
       console.error("Failed to send access code email:", error);
       return false;
@@ -243,7 +257,7 @@ export async function POST(request: Request) {
     const isAllowedOrigin = origin && ALLOWED_API_ORIGINS.includes(origin);
     const isAllowedHost = host?.includes(APP_DOMAIN);
 
-    if (!isAllowedOrigin && !isAllowedHost) {
+    if (!isAllowedOrigin && !isAllowedHost && !IN_DEV) {
       console.log("Unauthorized - Invalid domain", host, origin);
       return NextResponse.json(
         { error: "Unauthorized - Invalid domain" },
@@ -284,7 +298,8 @@ export async function POST(request: Request) {
         // TODO: Add proper error handling and email templates
         emailSent = await emailService.sendAccessCode(
           validatedData.email,
-          validatedData.code
+          validatedData.code,
+          validatedData.source
         );
       } catch (error) {
         console.error("Failed to send access code email:", error);

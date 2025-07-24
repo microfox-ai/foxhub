@@ -5,13 +5,24 @@ import { createClient } from "@/utils/supabase/server-client";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, name, avatar } = body;
+    const { email, name, avatar, code, source } = body;
 
     if (!email || !name) {
       return NextResponse.json(
         { error: "Email and name are required" },
         { status: 400 }
       );
+    }
+
+    let validAccessCode = null;
+
+    if (code && source) {
+      validAccessCode = await prisma.accessCode.findUnique({
+        where: {
+          code: code,
+          isActive: true,
+        },
+      });
     }
 
     // Try to find existing user
@@ -26,7 +37,21 @@ export async function POST(request: Request) {
           email,
           name,
           avatar,
+          isBetaAccess: validAccessCode ? true : false,
+          accessCodeId: validAccessCode ? validAccessCode.id : null,
         },
+      });
+    } else if (validAccessCode) {
+      user = await prisma.user.update({
+        where: { email },
+        data: { isBetaAccess: true, accessCodeId: validAccessCode.id },
+      });
+    }
+
+    if (validAccessCode) {
+      await prisma.accessCode.update({
+        where: { id: validAccessCode.id },
+        data: { isActive: false },
       });
     }
 

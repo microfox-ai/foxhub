@@ -7,10 +7,13 @@ export const updateSession = async (request: NextRequest) => {
     request.nextUrl.pathname?.startsWith("/api/client-secrets/get-variables") ||
     request.nextUrl.pathname?.startsWith("/api/webhooks") ||
     request.nextUrl.pathname?.startsWith("/api/whatsapp-verify") ||
-    request.nextUrl.pathname?.startsWith("/api/landing")
+    request.nextUrl.pathname?.startsWith("/api/landing") ||
+    // Instead of bypassing the auth check for everything, do it more cleverly.
+    request.nextUrl.pathname?.startsWith("/subdomain")
   ) {
     return NextResponse.next();
   }
+
   try {
     // Create an unmodified response
     let response = NextResponse.next({

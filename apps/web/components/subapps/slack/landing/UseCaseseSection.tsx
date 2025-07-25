@@ -7,13 +7,12 @@ const inter = Inter({
 
 
 const USE_CASES = [
-    "Message 10,000+ users on slack with templates",
+    "Message 10k+ users with templates",
     "Summarize the happenings from your channels",
     "Onboard & offboard employees with ease",
-    "Interconnect with Other AI Agents",
     "Set User Reminders that trigger X mins before meet.",
     "Take Feedback with Emojis",
-    "Create Private Channels & add users to them"
+    //"Create Private Channels & add users to them"
 ] as const;
 
 export const UseCaseSection = () => {
@@ -24,7 +23,7 @@ export const UseCaseSection = () => {
                 <p className="text-2xl text-white/50">
                     A 1-stop desk to operate all your slack workspace.
                 </p>
-                <div className="space-y-4 mt-auto">
+                <div className="space-y-6 mt-auto">
                     {USE_CASES.map((useCase, index) => (
                         <div
                             key={index}

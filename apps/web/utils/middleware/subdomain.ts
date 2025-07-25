@@ -60,8 +60,7 @@ export async function subdomainRerouting(
       subdomain.length <= 3 || // www. or axy.
       hostname === APP_DOMAIN || // aidouse.com
       subdomain === APP_DOMAIN ||
-      subdomain === "staging" ||
-      path.startsWith("/subdomain")
+      subdomain === "staging"
       //hostname.includes('vercel.app') ||
       //path.includes('/api/')
     ) {
@@ -78,10 +77,13 @@ export async function subdomainRerouting(
 
     if (subdomain) {
       if (SUPPORTED_SUBDOMAINS.includes(subdomain)) {
-        console.log("rewriting to:", `/subdomain/${subdomain}${path}`);
+        console.log(
+          "rewriting to:",
+          `https://${APP_DOMAIN}${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`
+        );
         return NextResponse.rewrite(
           new URL(
-            `https://${APP_DOMAIN}/subdomain/${subdomain}${path}`,
+            `https://${APP_DOMAIN}${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`,
             request.url
           )
         );

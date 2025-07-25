@@ -36,6 +36,18 @@ export const mainMiddleware = async (
     return NextResponse.next();
   }
 
+  const { pathname } = request.nextUrl;
+
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.includes("widget") ||
+    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$/.test(pathname)
+  ) {
+    return NextResponse.next();
+  }
+
   const { subdomain } = await fetchSubdomain(request);
 
   // bypass for all subdomain with length > 3 routes i.e public hosted pages or subdomain hosted pages.
@@ -48,18 +60,6 @@ export const mainMiddleware = async (
   ) {
     console.log("bypassing for subdomain", subdomain);
     return next();
-  }
-
-  const { pathname } = request.nextUrl;
-
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.includes("widget") ||
-    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$/.test(pathname)
-  ) {
-    return NextResponse.next();
   }
 
   console.log("updating session for", request.nextUrl.href);

@@ -8,7 +8,7 @@ import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export const BlogSection = () => {
+export const BlogSection = ({ category }: { category?: string }) => {
 
     const { data, isLoading, error } = useSWR("/api/landing/blog/articles?databaseId=213fa11b8894800d89f8fffb4e133784", fetcher);
 
@@ -17,13 +17,16 @@ export const BlogSection = () => {
     const industryArticles = results?.map((result) => {
         if (result.object === "page" && "properties" in result) {
             const properties = result.properties as Record<string, any>;
-            console.log(properties);
             const title = properties?.["Doc name"]?.title[0]?.plain_text;
             const description = properties?.["Description"]?.rich_text[0]?.plain_text;
             const link = properties?.["Link"]?.url;
             const categories = properties?.["Category"]?.multi_select.map((item: any) => item.name);
             const last_edited_time = result.last_edited_time;
             const image = result.cover?.type === "external" ? result.cover.external.url : result.cover?.type === "file" ? result.cover.file.url : null;
+            console.log(categories.includes(category), category, categories);
+            if (category && !categories.includes(category)) {
+                return null;
+            }
             return {
                 id: result.id,
                 link: APP_BASE_URL + "/blog/" + result.id,
@@ -40,7 +43,7 @@ export const BlogSection = () => {
             <IndustryCarousel
                 theme={'dark'}
                 industryArticles={industryArticles}
-                industryName={"Blog"}
+                industryName={category ? category : "Blog"}
             />
         </div>
     );

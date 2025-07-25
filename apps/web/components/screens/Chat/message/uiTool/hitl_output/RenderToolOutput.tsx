@@ -14,15 +14,6 @@ import { mapSearchResults } from "@/components/subapps/sparkboard/mappers/search
 import SparkBoardMapper from "@/components/subapps/sparkboard/mappers/ToolOutput";
 
 export const RenderToolOutput = ({ fullOutput, uiOutput, mcpName, toolName, part }: { fullOutput: any, uiOutput: UiComponentProps["hitl_output"], mcpName: string, toolName: string, part: ToolUIPart<any> }) => {
-
-    const [key, setKey] = useState(0);
-    const { activePart } = useMessageParts();
-
-    useEffect(() => {
-        setKey(prev => prev + 1);
-    }, [activePart, part.toolCallId])
-
-
     const outputUi = uiOutput?.uiOutput;
     const isMainSupport = uiOutput?.uiOutput?.supports?.find((s) => s.type === "main");
 

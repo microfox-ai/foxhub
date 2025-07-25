@@ -47,13 +47,13 @@ export interface MicrofoxChatProviderProps {
 }
 
 export const useMicrofoxContext = (
-  clientRequest?: ClientRequest,
   userChatOptions?: Partial<UseChatOptions<UIMessage>>
 ) => {
   const { selectedRequest, mutateSelectedClientRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
   const [toolMode, setToolMode] = useState<"fast" | "deep">("fast");
   const { user } = useAuth();
+  const clientRequest = selectedRequest;
 
   const {
     data: serverMessages,
@@ -105,7 +105,7 @@ export const useMicrofoxContext = (
         };
       },
     }),
-    resume: false,
+    resume: true,
     messages: (serverMessages as any[]) || [],
     ...userChatOptions,
     id: clientRequest?.id,
@@ -360,6 +360,7 @@ export const useMicrofoxContext = (
 
       let messageNew = {
         ...message,
+        id: message.id ? ((clientRequest?.id && message.id.endsWith(clientRequest?.id)) ? message.id : message.id + "-" + clientRequest?.id) : crypto.randomUUID(),
         metadata: {
           ...bodyParams,
           ...(message.metadata || {}),
@@ -431,6 +432,7 @@ export const useMicrofoxContext = (
           message: messageToResend as UIMessage,
           chatRequestOptions: { body: bodyParams },
           bypassDb: true,
+          bypassAi: false
         });
       } catch (error) {
         console.log("error appending message during refresh", error);
@@ -465,10 +467,9 @@ export const useMicrofoxContext = (
 
 export const MicrofoxChatProvider: React.FC<MicrofoxChatProviderProps> = ({
   children,
-  clientRequest,
   chatOptions: userChatOptions,
 }) => {
-  const value = useMicrofoxContext(clientRequest, userChatOptions);
+  const value = useMicrofoxContext(userChatOptions);
   return (
     <MicrofoxContext.Provider value={value}>
       {children}

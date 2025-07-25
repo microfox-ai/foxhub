@@ -35,7 +35,7 @@ function ChatWindow() {
     serverMessages,
   } = useMicrofoxChat();
   const { isLeftCollapsed: isCollapsed, handleLeftCollapse: onCollapse } = useLayout();
-  const { selectedRequest: clientRequest, isLoading: isClientRequestLoading } = useClientProject();
+  const { selectedRequest: clientRequest, isLoading: isClientRequestLoading, selectedProject } = useClientProject();
 
   const {
     activeTab,
@@ -112,7 +112,7 @@ function ChatWindow() {
           )} */}
           <ChatHeader
             messages={messages}
-            projectTitle={clientRequest?.title}
+            projectTitle={selectedProject?.name ?? clientRequest?.title}
             clientRequest={clientRequest}
             isChatLoading={isClientRequestLoading}
             isLoading={isLoading}
@@ -120,7 +120,7 @@ function ChatWindow() {
             activeTab={activeTab}
             setActiveTab={handleTabChange}
           />
-          {isRightCollapsed && (
+          {/* {isRightCollapsed && (
             <ButtonSCN
               variant="outline"
               size="icon"
@@ -132,7 +132,7 @@ function ChatWindow() {
                 style={{ height: "1rem", width: "1rem" }}
               />
             </ButtonSCN>
-          )}
+          )} */}
         </div>
 
         {(isClientRequestLoading || isLoading) && (
@@ -252,7 +252,7 @@ function ChatWindow() {
                 What can I do for you?
               </h1>
               <p className="text-gray-500">
-                I build bots that do complex automations across platforms based on your needs.
+                Please select a tool/agent from the bottom right for better results.
               </p>
               <ChatInputBox
                 messageStatus={status}
@@ -267,14 +267,7 @@ function ChatWindow() {
 }
 
 export default function ChatWindowWithProvider() {
-  const { selectedRequest, isLoading } = useClientProject();
   return (
-    <MicrofoxChatProvider clientRequest={selectedRequest}>
-      <ChatUIProvider>
-        <BackgroundTaskProvider>
-          <ChatWindow />
-        </BackgroundTaskProvider>
-      </ChatUIProvider>
-    </MicrofoxChatProvider>
+    <ChatWindow />
   );
 }

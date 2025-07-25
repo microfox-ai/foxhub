@@ -39,7 +39,7 @@ export const LandingPage = () => {
             <FeaturesSection />
             <IdeasSection />
             <TechnicalSection />
-            <BlogSection />
+            <BlogSection category="" />
             <FooterCtaSection />
         </div>
     );

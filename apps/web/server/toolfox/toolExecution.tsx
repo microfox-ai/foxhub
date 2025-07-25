@@ -18,6 +18,7 @@ import { loadClientRequest } from "./helpers/loadClientRequest";
 import { createToolsetForExecution } from "./helpers/createToolset";
 import { UIMessage } from "@ai-sdk/react";
 import { TokenUsageAnalyticsTracker } from "../analytics/helper";
+import { insertRedditSummaryTool } from "./summaryTools/redditSummary";
 
 /**
  * Tool execution agent.
@@ -111,7 +112,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 {
                     dataStream: ctx.response,
                     inserAuthVariables: async (_authObject: AuthObject) => {
-                        console.log("INSERT AUTH", _authObject);
                         const authFilledOutput = await getVariablesForAuthObject(_authObject, {
                             clientRequest,
                             extraVariables: {
@@ -120,7 +120,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                             },
                             refetchFromDb: true,
                         });
-                        console.log("FILLED AUTH", authFilledOutput);
                         return authFilledOutput;
                     },
                     mutateOutput: async (output, { part, uiMapper }) => {
@@ -265,9 +264,14 @@ toolExecutionAgent.agent("/", async (ctx) => {
         //TODO: a sequential thinker toolcall, which would search tool calls and inserts them at the nest step.
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
         console.log("Inserted tool set", Object.keys(toolSet.tools));
-        response.writeMessageMetadata({
-            availableTools: Object.keys(toolSet.tools),
-        });
+        ctx.state.processedMessages = processedMessages;
+        // response.writeMessageMetadata({
+        //     availableTools: Object.keys(toolSet.tools),
+        // });
+        const availableTools = {
+            ...toolSet.tools,
+            ...essentialTools,
+        }
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
@@ -276,6 +280,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
             tools: {
                 ...toolSet.tools,
                 ...essentialTools,
+                ...(insertRedditSummaryTool(toolSet, ctx))
                 // toolSelection: ctx.next.agentAsTool("@/chatFlow/toolSelection", {
                 //     description: "Select the next best tools for the user's request",
                 //     inputSchema: z.object({
@@ -310,6 +315,13 @@ toolExecutionAgent.agent("/", async (ctx) => {
                         console.log("repairToolCall - fixed the tool call", toolCall);
                     }
                 }
+                if (Object.keys(availableTools).length > 0 && !Object.keys(availableTools).includes(toolCall.toolName)) {
+                    ctx.response.write({
+                        type: "text",
+                        text: `There was an error due to a modal limitation. Please refresh your message and try again.`,
+                    });
+                    return null;
+                }
                 return toolCall;
             },
             system:
@@ -335,9 +347,11 @@ ${getMicrofoxPersonality()}
 - **Concise Tasks**: For straightforward requests, provide brief, focused responses
 - **Complex Tasks**: For detailed work, use structured markdown with clear sections and bullet points
 - Include tables when presenting structured data or comparisons
+- If you have the links available, make sure to include them in the response markdown.
 </response_format>
 
 <tool_execution_principles>
+- To perform a task or an action, ALWAYS call a tool, do not assume any information without calling a tool.
 - **ALWAYS include additionalArgs for every tool call** with:
   - microfoxReasoning: Your reasoning for making this tool call
   - microfoxAnnotationAudio: Brief, lively explanation of what's happening
@@ -363,6 +377,7 @@ ${getMicrofoxPersonality()}
 
 <tool_guidelines>
 ${combinedToolsSystemPromtps ?? `When using tools, follow the specific guidelines for each tool as provided in your tool documentation.`}
+use the redditSummary tool to summarise the data if the summary tool is available & the content is about reddit.
 </tool_guidelines>
 
 <context_awareness>
@@ -371,14 +386,18 @@ ${lastToolCallName ? `Previous tool used: ${lastToolCallName} - build upon this 
 Previous message outputSummaries: When available, previous messages may contain outputSummaries in their last text parts with structured data about tool executions (e.g., Slack interactions). Use this context to provide better continuity and avoid repeating actions.
 </context_awareness>
 
-Remember: Execute tasks efficiently using available tools. Be direct, accurate, and helpful. Only do what the user explicitly requests - do not add features or enhancements unless specifically asked.`,
+Remember: Execute tasks efficiently using available tools. Be direct, accurate, and helpful. Only do what the user explicitly requests - do not add features or enhancements unless specifically asked.
+The inputs you are giving for tool calls are passed to user, so don't ask user for input values, just assume he'll add in input later.
+`,
             //${Object.entries(toolSet.tools).map(([toolName, tool]) => toolName).join(", \n")}
             stopWhen: (s) => {
                 if (s.steps.length > 0) {
                     console.log("stopWhen", s.steps[s.steps.length - 1]?.toolResults, s.steps[s.steps.length - 1]?.finishReason);
                     const lastStep = s.steps[s.steps.length - 1];
                     // state = output-available.
-                    const isFinalCall = lastStep?.toolResults?.some((result: any) => result.output?._isFinal && result);
+                    const isFinalCall =
+                        lastStep?.toolCalls?.some((toolCall: any) => toolCall.toolName === "redditSummary") ||
+                        lastStep?.toolResults?.some((result: any) => result.output?._isFinal && result);
                     //console.log("isFinalCall task_ids", lastStep?.toolResults?.map((result: any) => result));
                     if (isFinalCall) {
                         return true;
@@ -392,7 +411,7 @@ Remember: Execute tasks efficiently using available tools. Be direct, accurate, 
                 return step;
             },
             onStepFinish: async (step) => {
-                console.log("step", step.usage, step.finishReason);
+                console.log("step finished", step.usage, step.finishReason);
                 //console.log("Step - request", JSON.stringify(step.request, null, 2));
                 //console.log("Step - response", JSON.stringify(step.response, null, 2));
             },
@@ -410,7 +429,6 @@ Remember: Execute tasks efficiently using available tools. Be direct, accurate, 
         });
         ctx.response.merge(stream.toUIMessageStream({ sendFinish: false, sendStart: false }));
         const result = await stream.text;
-
         response.writeMessageMetadata({
             loader: "Done! wrapping up.",
         });

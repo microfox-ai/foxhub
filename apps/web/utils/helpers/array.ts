@@ -1,4 +1,5 @@
 import { UIMessage } from "@ai-sdk/react";
+import { convertToModelMessages, ToolCallPart, ToolResultPart } from "ai";
 
 export const findLastElement = <T>(array: T[]) => {
   return array[array.length - 1];
@@ -36,10 +37,10 @@ export const trimMessagesForModel = (
 export const cleanUiMessageParts = (
   messages: UIMessage<any, any>[],
   options?: {
-    removeAllToolCallsExceptLast?: boolean;
-    keepUIinLastMessage?: boolean;
-    removeToolCalls?: boolean;
-    onlyLastText?: boolean;
+    removeAllToolCallsExceptLast?: boolean; // false by default
+    keepUIinLastMessage?: boolean; // false by default
+    removeToolCalls?: boolean; // false by default
+    onlyLastText?: boolean; // false by default
   }
 ) => {
   let processedMessages = messages.map((m) => ({
@@ -69,7 +70,20 @@ export const cleanUiMessageParts = (
                   ? { output: { ...(p as any).output, ui: undefined } }
                   : {}),
               }))
-          : m?.parts.filter((p) => !p.type?.startsWith("tool-")),
+          : m?.parts.map((p) =>
+              p.type?.startsWith("tool-")
+                ? {
+                    type: p.type as `tool-${string}`,
+                    toolCallId: (p as any)?.toolCallId!,
+                    input: p.input,
+                    state:
+                      (p as any)?.state === "input-streaming"
+                        ? "output-available"
+                        : (p as any)?.state,
+                    output: "This tool call was successfully executed.",
+                  }
+                : p
+            ),
     }));
   }
 
@@ -86,5 +100,9 @@ export const cleanUiMessageParts = (
     }));
   }
 
+  // console.log(
+  //   "processedMessages",
+  //   JSON.stringify(convertToModelMessages(processedMessages), null, 2)
+  // );
   return processedMessages;
 };

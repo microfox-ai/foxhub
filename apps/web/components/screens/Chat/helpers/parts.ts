@@ -20,6 +20,14 @@ export const getDisplayParts = (message: UIMessage<any, any, any>) => {
     ) {
       return true;
     }
+    if (
+      part.type.match(/summary/i) &&
+      (part as any).state == "output-available" &&
+      (part as any).output?.summary &&
+      (part as any).output?._isFinal
+    ) {
+      return true;
+    }
     if (EXCLUDED_PARTS.some((excluded) => part.type.startsWith(excluded))) {
       return false;
     }

@@ -48,6 +48,9 @@ const useAuthInit = () => {
   const router = useRouter();
   const supabase = createClient();
   const searchParams = useSearchParams();
+  const queryCode = searchParams.get('code');
+  const queryEmail = searchParams.get('email');
+  const querySource = searchParams.get('source');
 
   const handleSigninWithGoogle = useCallback(async () => {
     try {
@@ -60,6 +63,7 @@ const useAuthInit = () => {
 
       const result = await signInWithGoogle({
         redirectTo: searchParams?.get("redirect_to") ?? "",
+        ...(queryCode && queryEmail && querySource ? { queryParams: { code: queryCode, email: queryEmail, source: querySource } } : {}),
       });
       if (result.url) {
         router.push(result.url);
@@ -137,7 +141,7 @@ const useAuthInit = () => {
           setDbUser(user);
           return true;
         } else {
-          const data = await PortalSdk.getData(`/api/users?email=${email}`, {});
+          const data = await PortalSdk.getData(`/api/users?email=${email}&code=${queryCode}&source=${querySource}`, {});
           if (!data.email) return false;
           setDbUser(data);
           return true;

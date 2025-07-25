@@ -54,13 +54,13 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
         }, {
         revalidateOnFocus: false,
     });
+    const agentInfo = agentInfos?.find(a => a.agentName === mcpName);
 
     const isSinglePackage = stateAuth?.secrets?.length === 1;
     const singlePackageSecret = stateAuth?.secrets[0];
     const singlePackage = packageInfos?.find(p => p.name === singlePackageSecret?.packageName);
     const selectedSinglePackageSecret = singlePackageSecret?.secrets.find(s => s.id === singlePackageSecret?.selectedSecretId);
 
-    const agentInfo = agentInfos?.find(a => a.agentName === mcpName);
     const missingSecrets = stateAuth?.secrets?.filter(s => !s.selectedSecretId && s.isAuthNeeded);
 
     useEffect(() => {
@@ -77,7 +77,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     if (missingSecrets && missingSecrets?.length > 0) {
         return (
             <div className="flex flex-col my-2 bg-white shadow-md rounded-xl border border-gray-200">
-                <div className="flex flex-row items-end gap-2 justify-start gap-2 border-b border-gray-200 pt-3 px-3">
+                <div className="flex flex-row items-end justify-start gap-2 border-b border-gray-200 pt-3 px-3">
                     <img src="/logo-mini-color.png" alt="Secret Icon" className="w-18 h-18" />
                     <div className="flex flex-col justify-end py-2 pl-4">
                         <div className="flex flex-row items-center gap-2 mb-1">
@@ -174,7 +174,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
                     </div>
                 </TooltipProvider>
             </div>
-            {(expanded || singlePackage) && (
+            {(expanded) && (
                 <div className="flex flex-col w-full">
                     {stateAuth.secrets?.map((s) => {
                         const packageInfo = packageInfos?.find(p => p.name === s.packageName);

@@ -11,8 +11,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { XIcon } from 'lucide-react';
+import { XIcon, ChevronDown, ChevronRight, ExpandIcon, ListCollapseIcon } from 'lucide-react';
 import { useHitl } from '../HitlProvider';
+import { Button } from '@/components/ui/button';
 
 interface GenericMcpRendererProps {
     input: any;
@@ -21,24 +22,29 @@ interface GenericMcpRendererProps {
     toolName: string;
 }
 
-const GenericMcpRenderer: React.FC<GenericMcpRendererProps> = ({ 
-    input, 
-    metadata, 
-    mcpName, 
-    toolName 
+const GenericMcpRenderer: React.FC<GenericMcpRendererProps> = ({
+    input,
+    metadata,
+    mcpName,
+    toolName
 }) => {
     const { mutateInput } = useHitl();
     const [formData, setFormData] = useState(input || {});
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const parameterCount = metadata?.jsonSchema?.properties
+        ? Object.keys(metadata.jsonSchema.properties).filter(key => !key.startsWith('microfox')).length
+        : 0;
 
     const handleFieldChange = (fieldPath: string, value: any) => {
         const newFormData = { ...formData };
         const pathParts = fieldPath.split('.');
-        
+
         let current = newFormData;
         for (let i = 0; i < pathParts.length - 1; i++) {
             const part = pathParts[i];
             if (!part) continue; // Skip if undefined
-            
+
             if (!(part in current)) {
                 current[part] = {};
             }
@@ -48,7 +54,7 @@ const GenericMcpRenderer: React.FC<GenericMcpRendererProps> = ({
         if (lastPart) {
             current[lastPart] = value;
         }
-        
+
         setFormData(newFormData);
         mutateInput(newFormData);
     };
@@ -56,7 +62,7 @@ const GenericMcpRenderer: React.FC<GenericMcpRendererProps> = ({
     const getFieldValue = (fieldPath: string) => {
         const pathParts = fieldPath.split('.');
         let current = formData;
-        
+
         for (const part of pathParts) {
             if (current && typeof current === 'object' && part in current) {
                 current = current[part];
@@ -187,9 +193,10 @@ const GenericMcpRenderer: React.FC<GenericMcpRendererProps> = ({
                 break;
 
             case 'object':
-                if (schema.properties) {
+                const cleanedProps = Object.keys(schema.properties).filter((key) => !key.startsWith('microfox'));
+                if (cleanedProps.length > 0) {
                     return (
-                        <div key={fieldPath} className="flex flex-col gap-4 p-4 border rounded-md">
+                        <div key={fieldPath} className="flex flex-col gap-4 px-2 py-2 rounded-md">
                             <Label className="font-semibold">{label} {isRequired && <span className="text-red-500">*</span>}</Label>
                             {description && (
                                 <div className="text-xs text-gray-500">{description}</div>
@@ -238,11 +245,28 @@ const GenericMcpRenderer: React.FC<GenericMcpRendererProps> = ({
     }
 
     return (
-        <div className="flex flex-col gap-4">
-            {Object.entries(metadata.jsonSchema.properties).map(([fieldName, schema]: [string, any]) => {
-                const isRequired = metadata.jsonSchema.required?.includes(fieldName) || false;
-                return renderField(fieldName, schema, fieldName, isRequired);
-            })}
+        <div className="border rounded-lg">
+            <div
+                className="flex items-center justify-between cursor-pointer p-2"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <div className="flex items-center gap-2">
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    Filters
+                    <Badge variant="secondary" className="">
+                        {parameterCount}
+                    </Badge>
+                </div>
+            </div>
+
+            {isExpanded && (
+                <div className="flex flex-col gap-4 border-t pt-2 mt-2">
+                    {Object.entries(metadata.jsonSchema.properties).map(([fieldName, schema]: [string, any]) => {
+                        const isRequired = metadata.jsonSchema.required?.includes(fieldName) || false;
+                        return renderField(fieldName, schema, fieldName, isRequired);
+                    })}
+                </div>
+            )}
         </div>
     );
 };

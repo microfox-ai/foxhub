@@ -4,7 +4,13 @@ import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import { createClient } from "@/utils/supabase/server-client";
 import { redirect } from "next/navigation";
 
-export async function signInWithGoogle({ redirectTo }: { redirectTo: string }) {
+export async function signInWithGoogle({
+  redirectTo,
+  queryParams,
+}: {
+  redirectTo: string;
+  queryParams?: { code?: string; email?: string; source?: string };
+}) {
   try {
     let newRedirectTo = redirectTo;
     if (redirectTo === "") {
@@ -26,6 +32,7 @@ export async function signInWithGoogle({ redirectTo }: { redirectTo: string }) {
           ? `${APP_BASE_URL}/auth/callback?redirect_to=${newRedirectTo}`
           : `${APP_BASE_URL}/auth/callback`,
         scopes: "email profile",
+        ...(queryParams ? { data: queryParams } : {}),
       },
     });
 

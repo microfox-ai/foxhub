@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { operations } from './slack-mcp';
+import { operations } from './slack';
 import AddUsersToChannel from './toolsUi/AddUsersToChannel';
 import CreateChannel from './toolsUi/CreateChannel';
 import MessageChannel from './toolsUi/MessageChannel';
@@ -23,75 +23,75 @@ const SlackToolRenderer: React.FC<SlackToolRendererProps> = ({ toolName, input, 
     switch (toolName) {
         case 'addUsersToChannel':
             return <AddUsersToChannel input={input} onInputChange={onInputChange} />;
-            
+
         case 'createChannel':
             return <CreateChannel input={input} onInputChange={onInputChange} />;
 
         case 'getChannelMembers':
             return <GetChannelMembers input={input} onInputChange={onInputChange} />;
-            
+
         case 'messageChannel':
             return <MessageChannel input={input} onInputChange={onInputChange} />;
-            
+
         case 'messageUser':
             return <MessageUser input={input} onInputChange={onInputChange} />;
-            
-        case 'messageChannels':
+
+        case 'messageMultipleChannels':
             return <MessageChannels input={input} onInputChange={onInputChange} />;
-            
-        case 'messageUsers':
+
+        case 'messageMultipleUsers':
             return <MessageUsers input={input} onInputChange={onInputChange} />;
-            
+
         case 'joinChannel':
             return <JoinChannel input={input} onInputChange={onInputChange} />;
-            
+
         case 'getUserByEmail':
             return <GetUserByEmail input={input} onInputChange={onInputChange} />;
-            
+
         case 'getUsersByEmails':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'emails', label: 'Email Addresses (comma-separated)', type: 'string', placeholder: 'email1@example.com, email2@example.com' }
                     ]}
                 />
             );
-            
+
         case 'getChannelConversationInfo':
             return <JoinChannel input={input} onInputChange={onInputChange} />; // Reuse JoinChannel for channel selection
-            
+
         case 'getConversationHistory':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'channelId', label: 'Channel ID', type: 'string', placeholder: 'C1234567890' },
                         { key: 'limit', label: 'Limit', type: 'number', placeholder: '100' },
-                        { key: 'latest', label: 'Latest Timestamp', type: 'string', placeholder: '1234567890.123456' },
-                        { key: 'oldest', label: 'Oldest Timestamp', type: 'string', placeholder: '1234567890.123456' },
+                        //{ key: 'latest', label: 'Latest Timestamp', type: 'string', placeholder: '1234567890.123456' },
+                        //{ key: 'oldest', label: 'Oldest Timestamp', type: 'string', placeholder: '1234567890.123456' },
                         { key: 'inclusive', label: 'Inclusive', type: 'boolean' }
                     ]}
                 />
             );
-            
+
         case 'getUserInfo':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'userId', label: 'User ID', type: 'string', placeholder: 'U1234567890' }
                     ]}
                 />
             );
-            
+
         case 'getChannelMembers':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'channelId', label: 'Channel ID', type: 'string', placeholder: 'C1234567890' },
@@ -100,11 +100,11 @@ const SlackToolRenderer: React.FC<SlackToolRendererProps> = ({ toolName, input, 
                     ]}
                 />
             );
-            
+
         case 'reactMessage':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'channelId', label: 'Channel ID', type: 'string', placeholder: 'C1234567890' },
@@ -113,11 +113,11 @@ const SlackToolRenderer: React.FC<SlackToolRendererProps> = ({ toolName, input, 
                     ]}
                 />
             );
-            
+
         case 'removeUserFromChannel':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'channelId', label: 'Channel ID', type: 'string', placeholder: 'C1234567890' },
@@ -125,24 +125,26 @@ const SlackToolRenderer: React.FC<SlackToolRendererProps> = ({ toolName, input, 
                     ]}
                 />
             );
-            
+
         case 'replyMessage':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'channelId', label: 'Channel ID', type: 'string', placeholder: 'C1234567890' },
                         { key: 'thread_ts', label: 'Thread Timestamp', type: 'string', placeholder: '1234567890.123456' },
-                        { key: 'text', label: 'Reply Text', type: 'string', placeholder: 'Your reply message...' }
+                        { key: 'text', label: 'Reply Text', type: 'string', placeholder: 'Your reply message...' },
+                        { key: 'username', label: 'Username (optional)', type: 'string', placeholder: 'Enter a username to override the default' },
+                        { key: 'icon_url', label: 'Icon URL (optional)', type: 'string', placeholder: 'Enter a URL for a custom icon', isIconUrl: true }
                     ]}
                 />
             );
-            
-        case 'setReminder':
+
+        case 'setUserReminder':
             return (
-                <GenericSlackTool 
-                    input={input} 
+                <GenericSlackTool
+                    input={input}
                     onInputChange={onInputChange}
                     fields={[
                         { key: 'userId', label: 'User ID', type: 'string', placeholder: 'U1234567890' },
@@ -151,9 +153,9 @@ const SlackToolRenderer: React.FC<SlackToolRendererProps> = ({ toolName, input, 
                     ]}
                 />
             );
-            
+
         default:
-            return <div></div>;
+            return null;
     }
 };
 

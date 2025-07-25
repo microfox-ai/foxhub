@@ -1,3 +1,4 @@
+import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import createClient from "openapi-fetch";
 
 /**
@@ -26,7 +27,7 @@ import createClient from "openapi-fetch";
 export function createAgentClient<T extends {}>(agentName: string) {
   const client = createClient<T>({
     // All requests from this client will be prefixed with the gateway path
-    baseUrl: `/api/subdomain/agents/${agentName}`,
+    baseUrl: `${APP_BASE_URL}/api/subdomain/agents/${agentName}`,
   });
 
   return client;

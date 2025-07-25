@@ -23,6 +23,8 @@ interface LayoutContextType {
   handleRightResizeHandleClick: () => void;
   isFeedbackModalOpen: boolean;
   setIsFeedbackModalOpen: (open: boolean) => void;
+  rightPanelContent: React.ReactNode | null;
+  setRightPanelContent: (content: React.ReactNode | null) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -32,13 +34,14 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
     "isLeftCollapsed",
     true
   );
-  const [isRightCollapsed, setIsRightCollapsed] = useLocalState(
-    "isRightCollapsed",
-    false
+  const [isRightCollapsed, setIsRightCollapsed] = useState(
+    true
   );
   const [isLeftTransitioning, setIsLeftTransitioning] = useState(false);
   const [isRightTransitioning, setIsRightTransitioning] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [rightPanelContent, setRightPanelContent] =
+    useState<React.ReactNode | null>(null);
   const leftPanelRef = useRef<ResizablePrimitive.ImperativePanelHandle | null>(
     null
   );
@@ -61,7 +64,6 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     setIsLeftCollapsed(collapsed);
-    localStorage.setItem("isLeftCollapsed", collapsed.toString());
 
     transitionTimeoutRef.current = setTimeout(() => {
       setIsLeftTransitioning(false);
@@ -82,7 +84,6 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     setIsRightCollapsed(collapsed);
-    localStorage.setItem("isRightCollapsed", collapsed.toString());
 
     transitionTimeoutRef.current = setTimeout(() => {
       setIsRightTransitioning(false);
@@ -112,6 +113,8 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
         handleRightResizeHandleClick,
         isFeedbackModalOpen,
         setIsFeedbackModalOpen,
+        rightPanelContent,
+        setRightPanelContent,
       }}
     >
       {children}

@@ -1,9 +1,9 @@
 /* apps/web/styles/tiptap.css */
 
 .ProseMirror {
-  padding: 1rem;
+  padding: 0rem;
   border-radius: 0.5rem;
-  min-height: 150px;
+  min-height: 0;
   outline: none;
 }
 
@@ -19,7 +19,7 @@
 }
 
 .ProseMirror h2 {
-  font-size: 1.75em;
+  font-size: 2em;
   font-weight: 700;
   line-height: 1.2;
   margin-top: 1.5rem;
@@ -27,7 +27,7 @@
 }
 
 .ProseMirror h3 {
-  font-size: 1.5em;
+  font-size: 1.25em;
   font-weight: 700;
   line-height: 1.2;
   margin-top: 1.5rem;
@@ -35,23 +35,33 @@
 }
 
 .ProseMirror p {
-  font-size: 1.125rem;
+  font-size: 1rem;
   line-height: 1.6;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  color: rgb(0, 0, 0);
 }
 
 .ProseMirror ul,
 .ProseMirror ol {
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
+  /* margin-left: 1.5rem; */
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem; /* Ensure padding is used for indentation */
+}
+
+.ProseMirror ul {
+  list-style-type: disc; /* Ensure bullet points are displayed */
 }
 
 .ProseMirror li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror li > p {
+  margin-bottom: 0rem;
 }
 
 .ProseMirror a {
-  color: #3b82f6; /* blue-500 */
+  color: rgb(93, 93, 93); /* blue-500 */
   text-decoration: underline;
   cursor: pointer;
 }

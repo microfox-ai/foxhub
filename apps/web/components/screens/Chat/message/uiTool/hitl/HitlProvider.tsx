@@ -9,6 +9,7 @@ import {
     useState,
     Dispatch,
     SetStateAction,
+    useCallback,
 } from "react";
 import { useMicrofoxChat } from "../../../MicrofoxChatProvider";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
@@ -54,8 +55,8 @@ function useHitlContext() {
         })
     }
 
-    const addHitlToolResult = (toolResult: any) => {
-        console.log("addHitlToolResult", toolResult, "stateAuth", auth, "mutatedInput", mutatedInput);
+    const addHitlToolResult = useCallback((toolResult: any) => {
+        // console.log("addHitlToolResult", toolResult, "stateAuth", auth, "mutatedInput", mutatedInput);
         addToolResult({
             ...toolResult,
             output: {
@@ -67,7 +68,8 @@ function useHitlContext() {
                 },
             },
         });
-    }
+        setMutatedInput(undefined);
+    }, [auth, mutatedInput]);
 
     const refetchHitlAuth = () => {
         PortalSdk.postData("/api/client-secrets/hitl-auth", {
@@ -89,6 +91,7 @@ function useHitlContext() {
     }
 
     const mutateInput = (_input: any) => {
+        console.log("mutateInput", _input);
         setMutatedInput(_input);
     }
 
@@ -98,6 +101,7 @@ function useHitlContext() {
         setAuth,
         addHitlToolResult,
         refetchHitlAuth,
+        mutatedInput,
         mutateInput,
     };
 }

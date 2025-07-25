@@ -101,7 +101,7 @@ async function handler(
       fillEncryptionKey: true,
       fillVariables: true,
     });
-
+    // TODO: refetchFromDb should be false
     // Get variables for auth object
     const authFilledOutput = await getVariablesForAuthObject(authSecrets, {
       clientRequest,

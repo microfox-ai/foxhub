@@ -62,6 +62,10 @@ export const mainMiddleware = async (
     return next();
   }
 
+  if (pathname.startsWith("/subdomain/")) {
+    return NextResponse.next();
+  }
+
   console.log("updating session for", request.nextUrl.href);
 
   return updateSession(request);

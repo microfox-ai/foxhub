@@ -1,5 +1,4 @@
 import { prisma } from "@/prisma/prisma";
-import { updateSession } from "@/utils/supabase/middleware";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {

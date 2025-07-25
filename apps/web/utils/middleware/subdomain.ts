@@ -60,7 +60,8 @@ export async function subdomainRerouting(
       subdomain.length <= 3 || // www. or axy.
       hostname === APP_DOMAIN || // aidouse.com
       subdomain === APP_DOMAIN ||
-      subdomain === "staging"
+      subdomain === "staging" ||
+      path.startsWith("/subdomain")
       //hostname.includes('vercel.app') ||
       //path.includes('/api/')
     ) {

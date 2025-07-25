@@ -52,7 +52,7 @@ export const StepBanner = () => {
     const agentNames = toolPackages.filter((p) => p.packageName && p.mcpType === "agent").map((p) => p.mcpName).join(",");
 
     const { data: packageInfos, mutate: mutatePackageInfos } = useSWR<Package[]>(
-        packageNames ? `/api/packages/infos?packageNames=${packageNames}` : null,
+        packageNames && packageNames.length > 0 ? `/api/packages/infos?packageNames=${packageNames}` : null,
         async (url: string) => {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Failed to fetch packages");
@@ -62,7 +62,7 @@ export const StepBanner = () => {
     });
 
     const { data: agentInfos, mutate: mutateAgentInfos } = useSWR<AgentInfo[]>(
-        `/api/agents/infos?agentNames=${agentNames}`,
+        agentNames && agentNames.length > 0 ? `/api/agents/infos?agentNames=${agentNames}` : null,
         async (url: string) => {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Failed to fetch agents");
@@ -106,8 +106,9 @@ export const StepBanner = () => {
                     const agentInfo = agentInfos?.find((ai) => ai.agentName === p.mcpName);
                     const icon = mcpType === "pkg" ? packageInfo?.icon : agentInfo?.iconUrl;
                     const title = mcpType === "pkg" ? packageInfo?.name : agentInfo?.title;
+
                     return (
-                        <React.Fragment key={p.type + _index}>
+                        <div key={p.type + _index} className="flex items-center gap-2">
                             <div
                                 onClick={() => {
                                     setActivePartByToolCallId((p as any).toolCallId);
@@ -117,20 +118,20 @@ export const StepBanner = () => {
                             >
                                 <Tooltip>
                                     <TooltipTrigger>
-                                        <img src={icon} alt={title} className="w-4 h-4 rounded-full" />
+                                        <img src={icon ?? ""} alt={title} className="w-4 h-4 rounded-full" />
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        {p.toolName} in {title}
+                                        {p?.toolName} in {title}
                                     </TooltipContent>
                                 </Tooltip>
                                 {isActivePart && (
-                                    <span className="text-md font-medium text-neutral-800">{p.toolName}</span>
+                                    <span className="text-md font-medium text-neutral-800">{p?.toolName}</span>
                                 )}
                             </div>
                             {_index !== toolPackages.length - 1 && (
                                 <ChevronRight className="w-3 h-3" />
                             )}
-                        </React.Fragment>
+                        </div>
                     )
                 })}
                 {hasFinalSummary && (

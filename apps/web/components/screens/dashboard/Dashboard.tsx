@@ -109,15 +109,16 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
     <div className="container mx-auto w-full min-h-screen p-8 flex flex-col justify-center items-center">
       <div className="grid grid-cols-12 gap-4 w-full px-8">
         <div className="col-span-12 bg-white">
+
+        </div>
+        <div className="col-span-6 gap-4 flex flex-col items-start justify-start">
           <h2 className="text-4xl font-medium mb-2">
             What can I do for you ?
           </h2>
           <p className="text-lg text-gray-500">
-            I am currently running {selectedProject?.clientRequests?.length} Tasks, connected to {selectedProject?.clientRequests?.length} Platforms.
+            Hello {user?.name || <span className="inline-block h-8 w-32 bg-gray-200 rounded animate-pulse"></span>}, Are you having a good day ?
           </p>
-        </div>
-        <div className="col-span-6 gap-4">
-          <Tabs value={activeTab} className="w-full">
+          <Tabs value={activeTab} className="w-full mt-6">
             <TabsContent value="home" className="mt-0">
               <HomeTab
                 activeTab={activeTab}
@@ -143,6 +144,18 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
             setActiveTab={setActiveTab}
             createNewEmptyRequest={createNewEmptyRequest}
           />
+          <div className="col-span-4 flex items-center justify-center">
+            <video
+              className="rounded-lg shadow-lg w-[300px] h-auto object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+            >
+              <source src="/videos/microfox-rotate.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
         </div>
       </div>
     </div>

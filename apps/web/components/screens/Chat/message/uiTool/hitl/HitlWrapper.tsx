@@ -54,13 +54,13 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
         }, {
         revalidateOnFocus: false,
     });
+    const agentInfo = agentInfos?.find(a => a.agentName === mcpName);
 
     const isSinglePackage = stateAuth?.secrets?.length === 1;
     const singlePackageSecret = stateAuth?.secrets[0];
     const singlePackage = packageInfos?.find(p => p.name === singlePackageSecret?.packageName);
     const selectedSinglePackageSecret = singlePackageSecret?.secrets.find(s => s.id === singlePackageSecret?.selectedSecretId);
 
-    const agentInfo = agentInfos?.find(a => a.agentName === mcpName);
     const missingSecrets = stateAuth?.secrets?.filter(s => !s.selectedSecretId && s.isAuthNeeded);
 
     useEffect(() => {

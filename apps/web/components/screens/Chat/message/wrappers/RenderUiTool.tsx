@@ -48,31 +48,27 @@ export const RenderUiTool = ({ tool, lastMessage, lastAnnotationIndices, message
 
         if ((tool.output as HitlInput).auth?.secrets?.length > 0) {
             return (
-                <HitlProvider>
-                    <HitlAuthWrapper
-                        tool={tool}
+                <HitlAuthWrapper
+                    tool={tool}
+                    lastMessage={lastMessage}
+                    lastAnnotationIndices={lastAnnotationIndices}
+                    messageIndex={messageIndex}
+                >
+                    <RenderHiltTool
+                        tool={manipulated_tool}
                         lastMessage={lastMessage}
                         lastAnnotationIndices={lastAnnotationIndices}
                         messageIndex={messageIndex}
-                    >
-                        <RenderHiltTool
-                            tool={manipulated_tool}
-                            lastMessage={lastMessage}
-                            lastAnnotationIndices={lastAnnotationIndices}
-                            messageIndex={messageIndex}
-                        />
-                    </HitlAuthWrapper>
-                </HitlProvider>
+                    />
+                </HitlAuthWrapper>
             )
         }
         else {
             return (
-                <HitlProvider>
-                    <AcceptHitl
-                        tool={tool as ToolUIPart}
-                        lastMessage={lastMessage}
-                    />
-                </HitlProvider>
+                <AcceptHitl
+                    tool={tool as ToolUIPart}
+                    lastMessage={lastMessage}
+                />
             )
         }
     }

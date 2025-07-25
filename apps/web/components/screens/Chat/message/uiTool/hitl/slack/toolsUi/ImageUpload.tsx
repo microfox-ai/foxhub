@@ -3,7 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useClientProject } from "@/components/screens/providers/ClientProjectProvider";
 import React, { useState, useEffect } from "react";
-import { XIcon } from "lucide-react";
+import { XIcon, PencilIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 interface ImageUploadProps {
   value?: string;
@@ -84,53 +86,67 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ value, onImageSelect }) => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <Label>Upload a new profile image (optional)</Label>
-        <div className="flex gap-2">
-          <Input type="file" onChange={handleFileChange} />
-          <Button onClick={handleUpload} disabled={!file || uploading}>
-            {uploading ? "Uploading..." : "Upload"}
-          </Button>
-        </div>
-      </div>
-      {value && (
-        <div className="flex flex-col gap-2">
-          <Label>Selected Image</Label>
-          <div className="flex items-center gap-2">
-            <img src={value} alt="Selected" className="w-24 h-24 rounded" />
-            <Button variant="ghost" size="sm" onClick={() => onImageSelect(null)}>
-              Deselect
-            </Button>
-          </div>
-        </div>
-      )}
-      {images.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <Label>Or use an existing image</Label>
-          <div className="grid grid-cols-4 gap-2">
-            {images.map((image) => (
-              <div key={image.id} className="relative">
-                <div
-                  className={`cursor-pointer border-2 ${
-                    value === image.fileUrl ? "border-blue-500" : "border-transparent"
-                  }`}
-                  onClick={() => onImageSelect(image.fileUrl)}
-                >
-                  <img
-                    src={image.fileUrl}
-                    alt={image.fileName}
-                    className="w-24 h-24 object-cover rounded"
-                  />
-                </div>
-                <button
-                  onClick={() => handleDelete(image.id)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                >
-                  <XIcon className="w-3 h-3" />
-                </button>
+    <div className="flex flex-col gap-4 relative">
+      {value ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <div className="relative w-16 h-16 cursor-pointer">
+              <img src={value} alt="Selected" className="w-16 h-16 rounded object-cover object-center" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                <PencilIcon className="w-5 h-5 text-white" />
               </div>
-            ))}
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px]">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label>Upload a new image</Label>
+                <div className="flex gap-2">
+                  <Input type="file" onChange={handleFileChange} />
+                  <Button onClick={handleUpload} disabled={!file || uploading}>
+                    {uploading ? "Uploading..." : "Upload"}
+                  </Button>
+                </div>
+              </div>
+              {images.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <Label>Or choose an existing image</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {images.map((image) => (
+                      <div key={image.id} className="relative">
+                        <div
+                          className={`cursor-pointer border-2 ${value === image.fileUrl ? "border-blue-500" : "border-transparent"
+                            }`}
+                          onClick={() => onImageSelect(image.fileUrl)}
+                        >
+                          <img
+                            src={image.fileUrl}
+                            alt={image.fileName}
+                            className="w-full aspect-square object-cover rounded"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleDelete(image.id)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <XIcon className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <Label>Upload a profile image</Label>
+          <div className="flex gap-2">
+            <Input type="file" onChange={handleFileChange} />
+            <Button onClick={handleUpload} disabled={!file || uploading}>
+              {uploading ? "Uploading..." : "Upload"}
+            </Button>
           </div>
         </div>
       )}

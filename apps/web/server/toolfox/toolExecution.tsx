@@ -265,9 +265,9 @@ toolExecutionAgent.agent("/", async (ctx) => {
         //that sequential thinker toolcall also should be able to select active tools for the given puprose.
         console.log("Inserted tool set", Object.keys(toolSet.tools));
         ctx.state.processedMessages = processedMessages;
-        response.writeMessageMetadata({
-            availableTools: Object.keys(toolSet.tools),
-        });
+        // response.writeMessageMetadata({
+        //     availableTools: Object.keys(toolSet.tools),
+        // });
         const availableTools = {
             ...toolSet.tools,
             ...essentialTools,
@@ -351,6 +351,7 @@ ${getMicrofoxPersonality()}
 </response_format>
 
 <tool_execution_principles>
+- To perform a task or an action, ALWAYS call a tool, do not assume any information without calling a tool.
 - **ALWAYS include additionalArgs for every tool call** with:
   - microfoxReasoning: Your reasoning for making this tool call
   - microfoxAnnotationAudio: Brief, lively explanation of what's happening
@@ -410,7 +411,7 @@ The inputs you are giving for tool calls are passed to user, so don't ask user f
                 return step;
             },
             onStepFinish: async (step) => {
-                console.log("step", step.usage);
+                console.log("step finished", step.usage, step.finishReason);
                 //console.log("Step - request", JSON.stringify(step.request, null, 2));
                 //console.log("Step - response", JSON.stringify(step.response, null, 2));
             },
@@ -428,7 +429,6 @@ The inputs you are giving for tool calls are passed to user, so don't ask user f
         });
         ctx.response.merge(stream.toUIMessageStream({ sendFinish: false, sendStart: false }));
         const result = await stream.text;
-
         response.writeMessageMetadata({
             loader: "Done! wrapping up.",
         });

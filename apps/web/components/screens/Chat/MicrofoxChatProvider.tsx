@@ -47,13 +47,13 @@ export interface MicrofoxChatProviderProps {
 }
 
 export const useMicrofoxContext = (
-  clientRequest?: ClientRequest,
   userChatOptions?: Partial<UseChatOptions<UIMessage>>
 ) => {
   const { selectedRequest, mutateSelectedClientRequest } = useClientProject();
   const { handleRightCollapse } = useLayout();
   const [toolMode, setToolMode] = useState<"fast" | "deep">("fast");
   const { user } = useAuth();
+  const clientRequest = selectedRequest;
 
   const {
     data: serverMessages,
@@ -105,7 +105,7 @@ export const useMicrofoxContext = (
         };
       },
     }),
-    resume: false,
+    resume: true,
     messages: (serverMessages as any[]) || [],
     ...userChatOptions,
     id: clientRequest?.id,
@@ -467,10 +467,9 @@ export const useMicrofoxContext = (
 
 export const MicrofoxChatProvider: React.FC<MicrofoxChatProviderProps> = ({
   children,
-  clientRequest,
   chatOptions: userChatOptions,
 }) => {
-  const value = useMicrofoxContext(clientRequest, userChatOptions);
+  const value = useMicrofoxContext(userChatOptions);
   return (
     <MicrofoxContext.Provider value={value}>
       {children}

@@ -68,7 +68,7 @@ export const savePassedInTools = async (ctx: AiContext<any, any, any, any>) => {
       ? originMessageId
       : `${originMessageId}-${clientRequest.id}`
     : clientRequest.id;
-  console.log("uniqueId", uniqueId);
+  //console.log("uniqueId", uniqueId);
   await prisma.chatAgenticState.upsert({
     where: {
       originClientRequestId: uniqueId,

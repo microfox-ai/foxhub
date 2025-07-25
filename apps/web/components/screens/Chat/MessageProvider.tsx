@@ -30,10 +30,10 @@ export const useMessageContext = ({ message }: { message: UIMessage }) => {
     }, []);
 
     useEffect(() => {
-        if (displayParts && status === "streaming") {
-            setActivePart(displayParts.length - 1);
+        if (displayParts && displayParts.length > 1 && status === "streaming" && activePart !== displayParts.length - 1) {
+            setActivePart((_index) => displayParts.length - 1);
         }
-    }, [displayParts, status]);
+    }, [displayParts, status, activePart]);
 
     const setActivePartByToolCallId = (toolCallId?: string) => {
         if (!toolCallId) {

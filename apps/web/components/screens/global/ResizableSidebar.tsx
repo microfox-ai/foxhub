@@ -17,9 +17,7 @@ const ResizableSidebar = () => {
   return (
     <ResizablePanel
       ref={leftPanelRef}
-      defaultSize={16}
-      minSize={16}
-      maxSize={16}
+      defaultSize={4}
       collapsible={true}
       collapsedSize={4}
       onCollapse={() => handleLeftCollapse(true)}

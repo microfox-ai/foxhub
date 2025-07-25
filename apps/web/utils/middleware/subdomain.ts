@@ -79,7 +79,10 @@ export async function subdomainRerouting(
       if (SUPPORTED_SUBDOMAINS.includes(subdomain)) {
         console.log(
           "rewriting to:",
-          `https://${APP_DOMAIN}${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`
+          new URL(
+            `https://${APP_DOMAIN}${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`,
+            request.url
+          ).toJSON()
         );
         return NextResponse.rewrite(
           new URL(
@@ -102,33 +105,33 @@ export async function subdomainRerouting(
         );
       }
 
-      try {
-        const response = await fetch(
-          `${APP_BASE_URL}/api/subdomain-redirect/${subdomain}`
-        );
-        if (response.ok) {
-          const { redirect } = await response.json();
-          if (redirect) {
-            const destination = `${redirect.rewritePath}${path}`;
-            console.log("Dynamically rerouting to:", destination);
+      // try {
+      //   const response = await fetch(
+      //     `${APP_BASE_URL}/api/subdomain-redirect/${subdomain}`
+      //   );
+      //   if (response.ok) {
+      //     const { redirect } = await response.json();
+      //     if (redirect) {
+      //       const destination = `${redirect.rewritePath}${path}`;
+      //       console.log("Dynamically rerouting to:", destination);
 
-            if (redirect.rewriteType === "REWRITE") {
-              if (redirect.hostedOn === "VERCEL") {
-                return NextResponse.rewrite(
-                  new URL(destination, `https://${redirect.rewritePath}`)
-                );
-              }
-              return NextResponse.rewrite(new URL(destination, request.url));
-            }
+      //       if (redirect.rewriteType === "REWRITE") {
+      //         if (redirect.hostedOn === "VERCEL") {
+      //           return NextResponse.rewrite(
+      //             new URL(destination, `https://${redirect.rewritePath}`)
+      //           );
+      //         }
+      //         return NextResponse.rewrite(new URL(destination, request.url));
+      //       }
 
-            if (redirect.rewriteType === "REDIRECT") {
-              return NextResponse.redirect(new URL(destination, request.url));
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching subdomain redirect:", error);
-      }
+      //       if (redirect.rewriteType === "REDIRECT") {
+      //         return NextResponse.redirect(new URL(destination, request.url));
+      //       }
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.error("Error fetching subdomain redirect:", error);
+      // }
     }
 
     console.log(

@@ -1,8 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/utils/supabase/middleware";
+import { NextResponse } from "next/server";
 import { MiddlewareFunction, chain } from "./utils/middleware/chain";
-import { subdomainRerouting } from "./utils/middleware/subdomain";
 import { mainMiddleware } from "./utils/middleware/main";
+import { subdomainRerouting } from "./utils/middleware/subdomain";
 
 const corsMiddleware: MiddlewareFunction = async (request, next) => {
   const origin = request.headers.get("origin");

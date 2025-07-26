@@ -38,16 +38,6 @@ export const mainMiddleware = async (
 
   const { pathname } = request.nextUrl;
 
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.includes("widget") ||
-    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$/.test(pathname)
-  ) {
-    return NextResponse.next();
-  }
-
   const { subdomain } = await fetchSubdomain(request);
 
   // bypass for all subdomain with length > 3 routes i.e public hosted pages or subdomain hosted pages.
@@ -62,7 +52,13 @@ export const mainMiddleware = async (
     return next();
   }
 
-  if (pathname.startsWith("/subdomain/")) {
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.includes("widget") ||
+    /\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$/.test(pathname)
+  ) {
     return NextResponse.next();
   }
 

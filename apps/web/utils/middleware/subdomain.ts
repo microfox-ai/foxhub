@@ -77,6 +77,18 @@ export async function subdomainRerouting(
 
     if (subdomain) {
       if (SUPPORTED_SUBDOMAINS.includes(subdomain)) {
+        //bypass rewriting for static assets
+        if (
+          path.startsWith("/_next") ||
+          path.startsWith("/api") ||
+          path.startsWith("/favicon.ico") ||
+          path.startsWith("/subdomain") ||
+          path.includes("widget") ||
+          /\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$/.test(path)
+        ) {
+          return NextResponse.next();
+        }
+
         console.log(
           "rewriting to:",
           new URL(

@@ -1,8 +1,11 @@
+import { FilloutFormIds, InviteLinks, useFilloutPopup } from "@/components/screens/landing/FilloutPopupProvider"
 import { Button } from "@/components/ui/button"
 import { ChevronRightIcon } from "lucide-react"
 
 
 export const BookADemoSection = () => {
+
+    const { openForm } = useFilloutPopup()
     return (
         <div className="flex relative min-h-screen min-w-screen items-center justify-center bg-gray-100 p-4">
             <div className="absolute inset-0 bg-white flex flex-row">
@@ -24,12 +27,18 @@ export const BookADemoSection = () => {
                         <div className="mt-4 gap-4 flex flex-row">
                             <Button
                                 variant="outline"
-                                type="submit" className="mt-4">
-                                Watch Mini
+                                type="submit" className="mt-4"
+                                onClick={() => {
+                                    window.open(InviteLinks.Slack, "_blank")
+                                }}
+                            >
+                                # Join Community
                             </Button>
                             <Button
                                 variant="default"
-                                type="submit" className="mt-4">
+                                type="submit" className="mt-4"
+                                onClick={() => openForm(FilloutFormIds.SlackDDemo)}
+                            >
                                 Book Full Demo
                                 <ChevronRightIcon className="w-4 h-4" />
                             </Button>

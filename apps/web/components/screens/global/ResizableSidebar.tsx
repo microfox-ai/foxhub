@@ -17,14 +17,15 @@ const ResizableSidebar = () => {
   return (
     <ResizablePanel
       ref={leftPanelRef}
-      defaultSize={4}
       collapsible={true}
       collapsedSize={4}
+      minSize={4}
+      maxSize={16}
       onCollapse={() => handleLeftCollapse(true)}
       onExpand={() => handleLeftCollapse(false)}
       className={cn(
         "z-50",
-        isLeftTransitioning && "transition-all duration-100 linear"
+        "transition-all duration-100 linear"
       )}
     >
       <div className="flex h-full flex-col">

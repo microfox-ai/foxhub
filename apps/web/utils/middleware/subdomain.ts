@@ -72,6 +72,7 @@ export async function subdomainRerouting(
       // } else if (path === "/") {
       //   return NextResponse.redirect(`${APP_BASE_URL}/home`);
       // }
+      console.log("checking auth for", request.nextUrl.href);
       return updateSession(request);
       //return next();
     }
@@ -85,7 +86,6 @@ export async function subdomainRerouting(
           path.startsWith("/_next") ||
           path.startsWith("/api") ||
           path.startsWith("/favicon.ico") ||
-          path.startsWith("/subdomain") ||
           path.includes("widget") ||
           /\.(?:svg|png|jpg|jpeg|gif|webp|mp4)$/.test(path)
         ) {
@@ -93,15 +93,18 @@ export async function subdomainRerouting(
         }
 
         console.log(
+          "request.url:",
+          request.url,
           "rewriting to:",
           new URL(
-            `https://${APP_DOMAIN}${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`,
+            `${path.startsWith("/subdomain/" + subdomain) ? path.replaceAll("/subdomain/" + subdomain, "") : `/subdomain/${subdomain}${path}`}`,
             request.url
-          ).toJSON()
+          ).toJSON(),
+          request.url.replaceAll("/subdomain/" + subdomain, "")
         );
         return NextResponse.rewrite(
           new URL(
-            `${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`,
+            `${path.startsWith("/subdomain/" + subdomain) ? path.replaceAll("/subdomain/" + subdomain, "") : `/subdomain/${subdomain}${path}`}`,
             request.url
           )
         );

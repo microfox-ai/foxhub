@@ -3,10 +3,16 @@
 import { createContext, useContext, useState } from 'react';
 import { FilloutSliderEmbed } from '@fillout/react';
 
+export const InviteLinks = {
+    Slack: `https://join.slack.com/t/microfoxoss/shared_invite/zt-399vobsye-6VLae3jVUkRybJI5FEhO0A`,
+
+}
+
 export const FilloutFormIds = {
     BookCall: `iNbFWaZ8Xzus`,
     SimpletonGetStarted: `oXdihN68Kbus`,
     Partnerships: `v6xbNmfxoTus`,
+    SlackDDemo: `5FDyfv7c9Kus`,
 };
 
 const FilloutPopupContext = createContext<ReturnType<

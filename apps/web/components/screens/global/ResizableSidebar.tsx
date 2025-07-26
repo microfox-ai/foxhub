@@ -25,7 +25,7 @@ const ResizableSidebar = () => {
       onExpand={() => handleLeftCollapse(false)}
       className={cn(
         "z-50",
-        ""//isLeftTransitioning && "transition-all duration-100 linear"
+        "transition-all duration-100 linear"
       )}
     >
       <div className="flex h-full flex-col">

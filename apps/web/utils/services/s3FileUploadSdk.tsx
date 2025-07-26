@@ -78,7 +78,7 @@ export const s3FileUploadSdk = {
           Key: key,
           Body: file ? Buffer.from(Body) : Body,
           ACL: "public-read",
-          ContentEncoding: "base64",
+          ContentEncoding: undefined,
           ContentType: fileType,
           BucketKeyEnabled: true,
           Metadata: {

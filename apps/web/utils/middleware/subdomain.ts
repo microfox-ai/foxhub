@@ -101,7 +101,7 @@ export async function subdomainRerouting(
         );
         return NextResponse.rewrite(
           new URL(
-            `https://${APP_DOMAIN}${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`,
+            `${path.startsWith("/subdomain/" + subdomain) ? path : `/subdomain/${subdomain}${path}`}`,
             request.url
           )
         );

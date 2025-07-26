@@ -31,7 +31,8 @@ export const mainMiddleware = async (
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/api/subdomain-redirect") ||
     request.nextUrl.pathname.startsWith("/api/background-tasks/events") ||
-    request.nextUrl.pathname.startsWith("/api/subscribe")
+    request.nextUrl.pathname.startsWith("/api/subscribe") ||
+    request.nextUrl.pathname.startsWith("/subscribe/")
   ) {
     return NextResponse.next();
   }

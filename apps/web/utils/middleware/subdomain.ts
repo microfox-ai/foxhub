@@ -39,7 +39,10 @@ export async function subdomainRerouting(
 ) {
   // Skip middleware for WebSocket connections
 
-  if (request.nextUrl.pathname.startsWith("/api")) {
+  if (
+    request.nextUrl.pathname.startsWith("/api") ||
+    request.nextUrl.pathname.startsWith("/subscribe/")
+  ) {
     return next();
     // console.log('api request', request.nextUrl.href)
     // return updateSession(request)

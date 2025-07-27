@@ -1,7 +1,7 @@
 import { FilloutFormIds, InviteLinks, useFilloutPopup } from "@/components/screens/landing/FilloutPopupProvider"
 import { Button } from "@/components/ui/button"
 import { AgentInfo } from "@microfox/types"
-import { ChevronRightIcon } from "lucide-react"
+import { ChevronRightIcon, PlusIcon } from "lucide-react"
 import { Quicksand } from "next/font/google"
 import useSWR from "swr"
 
@@ -56,6 +56,24 @@ export const HeaderSection = () => {
                         Book Demo
                         <ChevronRightIcon className="w-4 h-4" />
                     </Button>
+                </div>
+            </div>
+            <div className="absolute bottom-8 left-8 right-8 flex flex-row items-center justify-center">
+                <div className="flex flex-col items-center justify-center gap-4">
+                    <Button
+                        variant="default"
+                        type="submit"
+                        size={"lg"}
+                        className="mt-4 py-4! px-8! text-xl bg-white text-black hover:bg-white/80 hover:text-black"
+                        onClick={() => {
+                            window.open(InviteLinks.Slack, "_blank")
+                        }}
+                    >
+                        # Join Community
+                    </Button>
+                    <p className="text-white/50 text-lg">
+                        Early Access for Slack'd is now available only for community members.
+                    </p>
                 </div>
             </div>
         </div>

@@ -3,8 +3,8 @@
 import { useState, memo, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Tab, useSparkboard, IndexingLimit, TopK } from "../provider";
-import { Search, Sliders, Link2, ImagePlus, Settings, ChevronDown, Tags, Palette, Users } from "lucide-react";
+import { Tab, useSparkboard, IndexingLimit, TopK, SearchTopK } from "../provider";
+import { Search, Sliders, Link2, ImagePlus, Settings, ChevronDown, Tags, Palette, Users, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { KeywordSelect } from "./KeywordSelect";
@@ -72,6 +72,7 @@ TabButton.displayName = "TabButton";
 
 const indexingLimitOptions: IndexingLimit[] = [50, 500, 1000, 5000, 10000];
 const topKOptions: TopK[] = [50, 100, 150, 200];
+const searchTopKOptions: SearchTopK[] = [25, 50, 100, 200];
 
 function IndexingLimitDropdown({
     value,
@@ -175,6 +176,57 @@ function TopKDropdown({
     );
 }
 
+function SearchTopKDropdown({
+    value,
+    onChange,
+}: {
+    value: SearchTopK;
+    onChange: (value: SearchTopK) => void;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="relative inline-block text-left">
+            <div>
+                <button
+                    type="button"
+                    className="inline-flex justify-center items-center rounded-full border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-red-500"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    Show {value}
+                    <ChevronDown className="-mr-1 ml-2 h-4 w-4" aria-hidden="true" />
+                </button>
+            </div>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.1 }}
+                        className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                    >
+                        <div className="py-1">
+                            {searchTopKOptions.map((option) => (
+                                <button
+                                    key={option}
+                                    onClick={() => {
+                                        onChange(option);
+                                        setIsOpen(false);
+                                    }}
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                    Show {option}
+                                </button>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
 export default function SparkBoardHeader() {
     const {
         setSearchQuery,
@@ -185,6 +237,8 @@ export default function SparkBoardHeader() {
         setIndexingLimit,
         topK,
         setTopK,
+        searchTopK,
+        setSearchTopK,
         triggerIndex,
         searchKeywords,
         artStyle,
@@ -328,6 +382,60 @@ export default function SparkBoardHeader() {
                                     ) : (
                                         <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                                     )}
+
+                                    {/* Add Filter Button in Search Bar */}
+                                    {activeTab === "search" && (
+                                        <Popover open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+                                            <PopoverTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full transition-colors ${isFiltersOpen ? 'bg-gray-100' : 'hover:bg-gray-100'}`}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setIsFiltersOpen(!isFiltersOpen);
+                                                    }}
+                                                >
+                                                    <Sliders className={`h-4 w-4 ${isFiltersOpen ? 'text-red-600' : 'text-gray-400'}`} />
+                                                </button>
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                className="w-80 p-4"
+                                                align="end"
+                                                side="bottom"
+                                            >
+                                                <div className="space-y-4">
+                                                    <h3 className="text-xs text-gray-900 uppercase tracking-[0.5em] mb-4">Filters</h3>
+
+                                                    {/* Search Keywords Filter */}
+                                                    <div className="space-y-2 flex flex-row items-center justify-between gap-2">
+                                                        <p className="flex items-center gap-2 font-medium text-gray-700">
+                                                            <Tags className="h-4 w-4" />
+                                                            <span>Keywords</span>
+                                                        </p>
+                                                        <KeywordSelect />
+                                                    </div>
+
+                                                    {/* Art Style Filter */}
+                                                    <div className="space-y-2 flex flex-row items-center justify-between gap-2">
+                                                        <p className="flex items-center gap-2 font-medium text-gray-700">
+                                                            <Palette className="h-4 w-4" />
+                                                            <span>Art Style</span>
+                                                        </p>
+                                                        <ArtStyleSelect />
+                                                    </div>
+
+                                                    {/* Audience Keywords Filter */}
+                                                    <div className="space-y-2 flex flex-row items-center justify-between gap-2">
+                                                        <p className="flex items-center gap-2 font-medium text-gray-700">
+                                                            <Users className="h-4 w-4" />
+                                                            <span>Audience</span>
+                                                        </p>
+                                                        <AudienceKeywordSelect />
+                                                    </div>
+                                                </div>
+                                            </PopoverContent>
+                                        </Popover>
+                                    )}
                                 </div>
                             </motion.form>
                         </AnimatePresence>
@@ -338,83 +446,49 @@ export default function SparkBoardHeader() {
                         {activeTab === 'index' && user?.isAdmin && (
                             <>
                                 <IndexingLimitDropdown value={indexingLimit} onChange={setIndexingLimit} />
-                                <TopKDropdown value={topK} onChange={setTopK} />
+                                <TopKDropdown value={topK as TopK} onChange={setTopK} />
                             </>
                         )}
-                        <div className="flex items-center gap-2">
-                            {activeTab === 'search' && (
-                                <>
-                                    <div className="flex items-center gap-1">
-                                        {searchKeywords && (
-                                            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-2 rounded-md">
-                                                #{searchKeywords}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        {artStyle && (
-                                            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-2 rounded-md">
-                                                @{artStyle}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        {audienceKeywords && (
-                                            <span className="text-xs bg-gray-100 px-2 py-2 rounded">
-                                                !{audienceKeywords}
-                                            </span>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                            <Popover open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                                <PopoverTrigger asChild>
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className={`p-2 rounded-full transition-colors ${isFiltersOpen ? 'bg-gray-100' : 'hover:bg-gray-100'}`}
-                                    >
-                                        <Sliders className={`h-5 w-5 ${isFiltersOpen ? 'text-red-600' : 'text-gray-600'}`} />
-                                    </motion.button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                    className="w-80 p-4"
-                                    align="end"
-                                    side="bottom"
-                                >
-                                    <div className="space-y-4">
-                                        <h3 className="text-xs text-gray-900 uppercase tracking-[0.5em] mb-4">Filters</h3>
-
-                                        {/* Search Keywords Filter */}
-                                        <div className="space-y-2 flex flex-row items-center justify-between gap-2">
-                                            <p className="flex items-center gap-2 font-medium text-gray-700">
-                                                <Tags className="h-4 w-4" />
-                                                <span>Keywords</span>
-                                            </p>
-                                            <KeywordSelect />
-                                        </div>
-
-                                        {/* Art Style Filter */}
-                                        <div className="space-y-2 flex flex-row items-center justify-between gap-2">
-                                            <p className="flex items-center gap-2 font-medium text-gray-700">
-                                                <Palette className="h-4 w-4" />
-                                                <span>Art Style</span>
-                                            </p>
-                                            <ArtStyleSelect />
-                                        </div>
-
-                                        {/* Audience Keywords Filter */}
-                                        <div className="space-y-2 flex flex-row items-center justify-between gap-2">
-                                            <p className="flex items-center gap-2 font-medium text-gray-700">
-                                                <Users className="h-4 w-4" />
-                                                <span>Audience</span>
-                                            </p>
-                                            <AudienceKeywordSelect />
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
+                        {activeTab === 'search' && (
+                            <>
+                                <SearchTopKDropdown value={searchTopK} onChange={setSearchTopK} />
+                                <div className="flex items-center gap-2">
+                                    {searchKeywords && (
+                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-2 rounded-md flex items-center gap-1">
+                                            #{searchKeywords}
+                                            <button
+                                                onClick={() => setSearchKeywords("")}
+                                                className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    )}
+                                    {artStyle && (
+                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-2 rounded-md flex items-center gap-1">
+                                            @{artStyle}
+                                            <button
+                                                onClick={() => setArtStyle("")}
+                                                className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    )}
+                                    {audienceKeywords && (
+                                        <span className="text-xs bg-gray-100 px-2 py-2 rounded flex items-center gap-1">
+                                            !{audienceKeywords}
+                                            <button
+                                                onClick={() => setAudienceKeywords("")}
+                                                className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

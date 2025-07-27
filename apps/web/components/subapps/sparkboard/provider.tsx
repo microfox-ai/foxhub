@@ -18,6 +18,7 @@ export type IndexingSession = {
 export type Tab = "search" | "index" | "admin";
 export type IndexingLimit = 50 | 500 | 1000 | 5000 | 10000;
 export type TopK = 50 | 100 | 150 | 200;
+export type SearchTopK = 25 | 50 | 100 | 200;
 
 
 const agentName = "sparkboard";
@@ -37,7 +38,8 @@ function useSparkboardContextInternal() {
     const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
     const [indexingUrls, setIndexingUrls] = useState<string[]>([]);
     const [indexingLimit, setIndexingLimit] = useState<IndexingLimit>(50);
-    const [topK, setTopK] = useState<TopK>(50);
+    const [topK, setTopK] = useQueryState("topK", 50);
+    const [searchTopK, setSearchTopK] = useLocalState<SearchTopK>("searchTopK", 50);
     const [indexingSessions, setIndexingSessions] = useLocalState<IndexingSession[]>("sparkboard_indexing_sessions", []);
     const [activeIndexingId, setActiveIndexingId] = useState<string | null>(null);
     const [availableKeywords, setAvailableKeywords] = useState<Set<string>>(new Set());
@@ -67,14 +69,14 @@ function useSparkboardContextInternal() {
     }, [searchQuery, debouncedSetQuery]);
 
     const { data: searchResults, isLoading: isSearchLoading, error: searchError, mutate: mutateSearchResults } = useSWR(
-        debouncedQuery && activeTab === "search" ? [`${agentName}/${searchImageToolName}`, debouncedQuery] : null,
+        debouncedQuery && activeTab === "search" ? [`${agentName}/${searchImageToolName}/${searchTopK}/${audienceKeywords}/${artStyle}/${searchKeywords}`, debouncedQuery] : null,
         async ([, query]) => {
             console.log("search", query);
             const { data, error } = await sparkboardClient.GET("/search/images", {
                 params: {
                     query: {
                         q: query,
-                        topK: 50,
+                        topK: searchTopK,
                         ...(searchKeywords && searchKeywords.length > 0 && { keywords: searchKeywords }),
                         ...(artStyle && artStyle.length > 0 && { artStyle: artStyle }),
                         ...(audienceKeywords && audienceKeywords.length > 0 && { audienceKeywords: audienceKeywords }),
@@ -205,6 +207,8 @@ function useSparkboardContextInternal() {
         setIndexingLimit,
         topK,
         setTopK,
+        searchTopK,
+        setSearchTopK,
         triggerIndex,
         indexingStatus,
         isIndexingStatusLoading,

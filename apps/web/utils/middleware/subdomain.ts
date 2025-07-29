@@ -41,7 +41,7 @@ export async function subdomainRerouting(
 
   if (
     request.nextUrl.pathname.startsWith("/api") ||
-    request.nextUrl.pathname.startsWith("/subscribe/")
+    request.nextUrl.pathname.startsWith("/subscribe")
   ) {
     return next();
     // console.log('api request', request.nextUrl.href)

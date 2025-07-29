@@ -4,17 +4,16 @@ import { AgentInfo } from "@microfox/types"
 import { ChevronRightIcon, PlusIcon } from "lucide-react"
 import { Quicksand } from "next/font/google"
 import useSWR from "swr"
+import { getFilloutFormIdFromAgentName, getInviteLinkFromAgentName, useAgentData } from "../../common/helper"
 
 const quicksand = Quicksand({
     subsets: ['latin'],
     weight: ['400', '500', '600', '700'],
 })
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
 export const HeaderSection = () => {
 
-    const { data: agentData } = useSWR<AgentInfo[]>("/api/agents/infos?agentNames=slack", fetcher)
+    const { data: agentData } = useAgentData()
 
     const thisAgent = agentData?.[0]
 
@@ -23,7 +22,7 @@ export const HeaderSection = () => {
     return (
         <div className="flex relative min-h-screen min-w-screen items-center justify-center bg-gray-100 p-4">
             <div className="absolute inset-0 bg-white flex flex-row">
-                <img className="w-full h-full object-cover object-left" src={`/images/slack/header.png`} alt="Subscribe Background" />
+                <img className="w-full h-full object-cover object-left" src={`/images/${thisAgent?.agentName}/header.png`} alt="Subscribe Background" />
             </div>
 
             <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -43,7 +42,7 @@ export const HeaderSection = () => {
                         variant="outline"
                         type="submit" className="mt-4 bg-transparent text-white hover:bg-white/10 hover:text-white"
                         onClick={() => {
-                            window.open(InviteLinks.Slack, "_blank")
+                            window.open(getInviteLinkFromAgentName(thisAgent?.agentName ?? ""), "_blank")
                         }}
                     >
                         # Join Community
@@ -51,7 +50,7 @@ export const HeaderSection = () => {
                     <Button
                         variant="default"
                         color="white"
-                        onClick={() => openForm(FilloutFormIds.SlackDDemo)}
+                        onClick={() => openForm(getFilloutFormIdFromAgentName(thisAgent?.agentName ?? ""))}
                         type="submit" className="mt-4 bg-white text-black hover:bg-white/80 hover:text-black">
                         Book Demo
                         <ChevronRightIcon className="w-4 h-4" />

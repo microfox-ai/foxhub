@@ -70,7 +70,7 @@ export default function SubscribePage() {
         <div className="flex relative min-h-screen min-w-screen items-center justify-center bg-gray-100 p-4">
             <div className="absolute inset-0 bg-white flex flex-row">
                 <img className="w-1/2 h-full object-cover object-right" src="/images/BetaMicrofox.png" alt="Subscribe Background" />
-                <img className="w-1/2 h-full object-cover object-left" src={`/images/Beta_${source}.png`} alt="Subscribe Background" />
+                <img className="w-1/2 h-full object-cover object-left" src={`/images/${source}/beta.png`} alt="Subscribe Background" />
             </div>
             <div className="absolute inset-0  flex flex-col items-center justify-center">
                 <div className="w-full max-w-lg rounded-xl bg-white p-16 shadow-xl">

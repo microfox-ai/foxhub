@@ -3,6 +3,7 @@ export const SUPPORTED_SUBDOMAINS = [
   "rlive",
   "sparkboard",
   "slackd",
+  "reddit",
 ];
 
 export const SUPPORTED_VERCEL_SUBDOMAINS = {

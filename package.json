@@ -73,8 +73,6 @@
     "@aws-sdk/client-iam": "^3.828.0",
     "@aws-sdk/client-lambda": "^3.828.0",
     "@aws-sdk/client-s3": "^3.828.0",
-    "@microfox/tool-kit": "*",
-    "@microfox/types": "^1.0.10",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",

@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google"
+import { useAgentData } from "../../common/helper";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -16,6 +17,11 @@ const USE_CASES = [
 ] as const;
 
 export const UseCaseSection = () => {
+
+    const { data: agentData } = useAgentData();
+
+    const thisAgent = agentData?.[0];
+
     return (
         <div className="w-full h-screen flex flex-row items-stretch">
             <div className="w-1/2 h-full bg-black text-white p-20 flex flex-col">
@@ -35,7 +41,7 @@ export const UseCaseSection = () => {
                 </div>
             </div>
             <div className="w-1/2 h-full bg-black">
-                <img src="/images/slack/usecases.png" alt="Slack'd Use Cases" className="w-full h-full object-cover" />
+                <img src={`/images/${thisAgent?.agentName}/usecases.png`} alt="Slack'd Use Cases" className="w-full h-full object-cover" />
                 {/* Right side content can be added here */}
             </div>
         </div>

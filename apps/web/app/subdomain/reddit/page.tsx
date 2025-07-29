@@ -64,8 +64,11 @@ import { getApiMcpsByPackageName } from '@/utils/services/embeddings/packageSear
 import { APP_DOMAIN } from '@/utils/constants/appInfo';
 import { AgentInfo } from '@microfox/types';
 import { RedditLandingPage } from '@/components/subapps/reddit/landing/RedditLandingPage';
+import { headers } from 'next/headers';
 
 
-export default function Page() {
-    return <RedditLandingPage />;
+export default async function Page() {
+    const headersList = await headers();
+    const subdomain = headersList.get('x-subdomain');
+    return <RedditLandingPage subdomain={subdomain} />;
 }

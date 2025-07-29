@@ -16,9 +16,9 @@ const USE_CASES = [
     //"Create Private Channels & add users to them"
 ] as const;
 
-export const UseCaseSection = () => {
+export const UseCaseSection = ({ subdomain }: { subdomain: string | null }) => {
 
-    const { data: agentData } = useAgentData();
+    const { data: agentData } = useAgentData(undefined, subdomain ?? undefined);
 
     const thisAgent = agentData?.[0];
 

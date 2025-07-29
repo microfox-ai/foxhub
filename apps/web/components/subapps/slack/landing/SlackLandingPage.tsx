@@ -16,21 +16,19 @@ import { useParams, usePathname, useRouter } from "next/navigation"
 import { VideoSection } from "../../common/VideoSection"
 
 
-export const SlackLandingPage = () => {
+export const SlackLandingPage = ({ subdomain }: { subdomain: string | null }) => {
 
-    const { data: agentData } = useAgentData();
-
-
+    const { data: agentData } = useAgentData(undefined, subdomain ?? undefined);
 
     const thisAgent = agentData?.[0];
 
     return (
         <div>
-            <HeaderSection />
-            <UseCaseSection />
-            <VideoSection description="Slack'd is a 1-stop desk to operate all your slack workspace." />
+            <HeaderSection subdomain={subdomain} />
+            <UseCaseSection subdomain={subdomain} />
+            <VideoSection description="Slack'd is a 1-stop desk to operate all your slack workspace." subdomain={subdomain} />
             <DemoSections />
-            <BookADemoSection />
+            <BookADemoSection subdomain={subdomain} />
             <BlogSection category="Community Management" />
             <FooterSection />
         </div>

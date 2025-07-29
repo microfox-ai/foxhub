@@ -64,7 +64,10 @@ import { getApiMcpsByPackageName } from '@/utils/services/embeddings/packageSear
 import { APP_DOMAIN } from '@/utils/constants/appInfo';
 import { AgentInfo } from '@microfox/types';
 import { SlackLandingPage } from '@/components/subapps/slack/landing/SlackLandingPage';
+import { headers } from 'next/headers';
 
-export default function Page() {
-    return <SlackLandingPage />;
+export default async function Page() {
+    const headersList = await headers();
+    const subdomain = headersList.get('x-subdomain');
+    return <SlackLandingPage subdomain={subdomain} />;
 }

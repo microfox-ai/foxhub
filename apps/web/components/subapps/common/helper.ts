@@ -8,8 +8,23 @@ import { AgentInfo } from "@microfox/types";
 import { usePathname } from "next/navigation";
 import useSWR from "swr";
 
+export const getAgentNameFromSubdomain = (subdomain?: string) => {
+  if (subdomain?.includes("slack")) {
+    return "slack";
+  }
+  if (subdomain?.includes("reddit")) {
+    return "ragreddit";
+  }
+  return subdomain;
+};
+
 export const getAgentNameFromPath = (pathname: string) => {
-  const subdomain = pathname.split("/")?.[2];
+  if (pathname.startsWith("/subdomain/")) {
+    const agentName = pathname.split("/")[2];
+    return getAgentNameFromSubdomain(agentName);
+  }
+
+  const subdomain = pathname.split("/")?.[1];
   if (subdomain?.includes("slack")) {
     return "slack";
   }
@@ -21,12 +36,19 @@ export const getAgentNameFromPath = (pathname: string) => {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export const useAgentData = (agentNames?: string[]) => {
+export const useAgentData = (
+  agentNames?: string[],
+  subdomainFromProps?: string
+) => {
   const pathname = usePathname();
   const agentNamesString =
-    agentNames?.join(",") ?? getAgentNameFromPath(pathname);
+    getAgentNameFromSubdomain(subdomainFromProps) ??
+    agentNames?.join(",") ??
+    getAgentNameFromPath(pathname);
   return useSWR<AgentInfo[]>(
-    `/api/agents/infos?agentNames=${agentNamesString}`,
+    agentNamesString
+      ? `/api/agents/infos?agentNames=${agentNamesString}`
+      : null,
     fetcher
   );
 };

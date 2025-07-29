@@ -14,9 +14,9 @@ import { HeaderSection } from "./HeaderSection"
 import { VideoSection } from "../../common/VideoSection"
 
 
-export const RedditLandingPage = () => {
+export const RedditLandingPage = ({ subdomain }: { subdomain: string | null }) => {
 
-    const { data: agentData } = useAgentData();
+    const { data: agentData } = useAgentData(undefined, subdomain ?? undefined);
 
     const [isMuted, setIsMuted] = useState(true)
     const videoRef = useRef<HTMLVideoElement>(null)
@@ -31,14 +31,14 @@ export const RedditLandingPage = () => {
     const thisAgent = agentData?.[0];
 
     if (!thisAgent) {
-        return <div>Loading...</div>
+        return <div></div>
     }
 
     return (
         <div>
-            <HeaderSection />
-            <VideoSection />
-            <BookADemoSection />
+            <HeaderSection subdomain={subdomain} />
+            <VideoSection subdomain={subdomain} />
+            <BookADemoSection subdomain={subdomain} />
             <BlogSection category="Reddit" />
             <FooterSection />
         </div>

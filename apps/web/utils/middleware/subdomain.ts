@@ -92,6 +92,9 @@ export async function subdomainRerouting(
           return NextResponse.next();
         }
 
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set("x-subdomain", subdomain);
+
         console.log(
           "request.url:",
           request.url,
@@ -106,7 +109,12 @@ export async function subdomainRerouting(
           new URL(
             `${path.startsWith("/subdomain/" + subdomain) ? path.replaceAll("/subdomain/" + subdomain, "") : `/subdomain/${subdomain}${path}`}`,
             request.url
-          )
+          ),
+          {
+            request: {
+              headers: requestHeaders,
+            },
+          }
         );
       }
 

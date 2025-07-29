@@ -11,9 +11,9 @@ const quicksand = Quicksand({
     weight: ['400', '500', '600', '700'],
 })
 
-export const HeaderSection = () => {
+export const HeaderSection = ({ subdomain }: { subdomain: string | null }) => {
 
-    const { data: agentData } = useAgentData()
+    const { data: agentData } = useAgentData(undefined, subdomain ?? undefined)
 
     const thisAgent = agentData?.[0]
 

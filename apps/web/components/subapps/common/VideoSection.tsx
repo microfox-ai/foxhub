@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Volume2, VolumeX } from "lucide-react";
 
 
-export const VideoSection = ({ description }: { description?: string }) => {
-    const { data: agentData } = useAgentData();
+export const VideoSection = ({ description, subdomain }: { description?: string, subdomain: string | null }) => {
+    const { data: agentData } = useAgentData(undefined, subdomain ?? undefined);
 
     const thisAgent = agentData?.[0];
 

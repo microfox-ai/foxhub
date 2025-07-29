@@ -4,10 +4,10 @@ import { ChevronRightIcon } from "lucide-react"
 import { getFilloutFormIdFromAgentName, getInviteLinkFromAgentName, useAgentData } from "./helper";
 
 
-export const BookADemoSection = () => {
+export const BookADemoSection = ({ subdomain }: { subdomain: string | null }) => {
 
     const { openForm } = useFilloutPopup();
-    const { data: agentData } = useAgentData();
+    const { data: agentData } = useAgentData(undefined, subdomain ?? undefined);
 
     const thisAgent = agentData?.[0];
 

@@ -6,7 +6,7 @@ import { cleanSecretsForAuthObject, fetchAuthSecrets, getVariablesForAuthObject 
 import { codeTemplateType } from "../convertfox/helpers/types";
 import { ClientRequest } from "@prisma/client";
 import { templateEnvsFromTaskIntegrations } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
-import { convertToModelMessages, streamText } from "ai";
+import { convertToModelMessages, streamText, generateObject } from "ai";
 import { models } from "../models";
 import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
 import { prisma } from "@/prisma/prisma";
@@ -102,6 +102,10 @@ toolExecutionAgent.agent("/", async (ctx) => {
         response.writeMessageMetadata({
             loader: "Processing the tools...",
         });
+                
+        let lastToolPart: any = null;
+        let lastTextPart: any = null;
+        let executionHistory = ``;
 
         let processedMessages = trimMessagesForModel(ctx.request.messages);
         let lastToolCallName: string | null = null;
@@ -139,8 +143,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 }
                 userMessage = getTextPartsContent(lastUserMessage);
             }
-            let executionHistory = `
-              }"--- Execution History ---\n`;
 
             const lastMessage =
                 processedMessages?.[processedMessages.length - 1];
@@ -163,6 +165,7 @@ toolExecutionAgent.agent("/", async (ctx) => {
 
                 if (messageParts.length > 0) {
                     let stepCounter = 1;
+                    executionHistory = `--- Execution History ---\n`;
                     messageParts.forEach((part: any) => {
                         if (part.type === "text" && part.text?.trim()) {
                             executionHistory += `\nStep ${stepCounter++}: Assistant Message\n`;
@@ -179,9 +182,6 @@ toolExecutionAgent.agent("/", async (ctx) => {
                 }
             }
             console.log("executionHistory", executionHistory);
-
-            let lastToolPart: any = null;
-            let lastTextPart: any = null;
 
             if (lastMessage?.parts) {
                 for (let i = lastMessage.parts.length - 1; i >= 0; i--) {
@@ -268,19 +268,22 @@ toolExecutionAgent.agent("/", async (ctx) => {
         // response.writeMessageMetadata({
         //     availableTools: Object.keys(toolSet.tools),
         // });
-        const availableTools = {
-            ...toolSet.tools,
+
+        const persistedTools = {
             ...essentialTools,
+            ...(insertRedditSummaryTool(toolSet, ctx))
         }
+        let availableTools: Record<string, any> = {
+            ...toolSet.tools,
+            ...persistedTools,
+        };
         const stream = streamText({
             model: models.claude35Sonnet,
             messages: convertToModelMessages(cleanUiMessageParts(processedMessages, {
                 removeAllToolCallsExceptLast: true,
             })),
             tools: {
-                ...toolSet.tools,
-                ...essentialTools,
-                ...(insertRedditSummaryTool(toolSet, ctx))
+                ...availableTools,
                 // toolSelection: ctx.next.agentAsTool("@/chatFlow/toolSelection", {
                 //     description: "Select the next best tools for the user's request",
                 //     inputSchema: z.object({
@@ -407,9 +410,65 @@ The inputs you are giving for tool calls are passed to user, so don't ask user f
             },
             prepareStep: async (step) => {
                 console.log("prepareStep", step);
-                //if (step.steps)
-                return step;
+
+                if (Object.keys(toolSet.tools).length < 5) {
+                    return step;
+                }
+
+                const toolDefinitions = Object.values(toolSet.tools).map((tool: any) => ({
+                    _id: tool._id,
+                    toolName: tool.toolName,
+                    description: tool.description,
+                }));
+
+                let microfoxNextToolQuery = lastToolPart
+                    ? lastToolPart.input?.body?.microfoxNextToolQuery ||
+                    lastToolPart.input?.microfoxNextToolQuery
+                    : null;
+                const prompt = `From the following list of tools, select 5 of the most relevant tools for the user's request: "${getTextPartsContent(request.messages[request.messages.length - 1])}".\n\n
+                    ${lastToolCallName ? `Last tool call: ${lastToolCallName}\n` : ""}
+                    ${executionHistory ?? ""}
+                    ${microfoxNextToolQuery ? `Select tools for: ${microfoxNextToolQuery}\n` : ""}
+                    Available tools:
+                    ${JSON.stringify(toolDefinitions, null, 2)}`;
+
+                // console.log("prepareStep prompt", prompt)
+                const { object: aiFilteredTools } = await generateObject({
+                    model: models.googleGeminiFlash,
+                    system: `You are a tool selection agent. You are given a list of tools, user's request and execution history(if any). You need to select the most relevant tools for the user's request. Some steps for the user's request might already be done, so you need to select the tools that are most relevant to the next step.
+                    
+                    select exactly 5 tools
+                    `,
+                    prompt: prompt,
+                    schema: z.object({
+                        tools: z.array(z.object({
+                            _id: z.string(),
+                            toolName: z.string(),
+                        })).max(5),
+                    })
+                });
+                console.log("all available tools", Object.keys(availableTools));
+                console.log("ai filteredTools", aiFilteredTools);
+
+                const filteredToolsIds = aiFilteredTools.tools.map((t) => t._id);
+                const filteredTools = Object.fromEntries(
+                    Object.entries(toolSet.tools).filter(([toolId]) => filteredToolsIds.includes(toolId))
+                );
+                let activeTools = {
+                    ...persistedTools,
+                    ...filteredTools,
+                }
+                console.log("filtered available tools", Object.keys(activeTools));
+                response.writeMessageMetadata({
+                    activeTools: Object.keys(activeTools)
+                });
+
+                return {
+                    ...step,
+                    activeTools: Object.keys(activeTools),
+                };
             },
+            activeTools: Object.keys(availableTools),
             onStepFinish: async (step) => {
                 console.log("step finished", step.usage, step.finishReason);
                 //console.log("Step - request", JSON.stringify(step.request, null, 2));

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { fetchAuthSecrets } from "@/server/toolfox/helpers/fetchVariables";
-import { AuthOptions } from "@microfox/tool-kit";
 import { ClientRequest } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { authOptions, clientRequestId, userId } = body as {
-      authOptions: AuthOptions;
+      authOptions: any;
       clientRequestId?: string;
       userId?: string;
     };

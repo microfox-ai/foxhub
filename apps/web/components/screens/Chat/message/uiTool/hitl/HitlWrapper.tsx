@@ -36,7 +36,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     const [expanded, setExpanded] = useState(false);
 
     const { data: packageInfos, mutate: mutatePackageInfos } = useSWR<Package[]>(
-        auth ? `/api/packages/infos?packageNames=${auth?.secrets?.map((s: any) => s.packageName).join(",")}` : null,
+        auth ? `/api/packages/infos?packageNames=${auth?.secrets?.map(s => s.packageName).join(",")}` : null,
         async (url: string) => {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Failed to fetch packages");
@@ -59,9 +59,9 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
     const isSinglePackage = stateAuth?.secrets?.length === 1;
     const singlePackageSecret = stateAuth?.secrets[0];
     const singlePackage = packageInfos?.find(p => p.name === singlePackageSecret?.packageName);
-    const selectedSinglePackageSecret = singlePackageSecret?.secrets.find((s: any) => s.id === singlePackageSecret?.selectedSecretId);
+    const selectedSinglePackageSecret = singlePackageSecret?.secrets.find(s => s.id === singlePackageSecret?.selectedSecretId);
 
-    const missingSecrets = stateAuth?.secrets?.filter((s: any) => !s.selectedSecretId && s.isAuthNeeded);
+    const missingSecrets = stateAuth?.secrets?.filter(s => !s.selectedSecretId && s.isAuthNeeded);
 
     useEffect(() => {
         if (auth) {
@@ -102,7 +102,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
                         object={{
                             objectType: "task_integrations",
                             object: {
-                                platforms: missingSecrets.map((s: any) => ({
+                                platforms: missingSecrets.map(s => ({
                                     name: packageInfos?.find(p => p.name === s.packageName)?.title ?? s.packageName,
                                     reason: s.reason ?? "",
                                     optional: false,
@@ -155,7 +155,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
                     <div className="flex flex-row gap-2 items-center"
                         onClick={() => setExpanded(!expanded)}
                     >
-                        {stateAuth.secrets?.map((s: any) => {
+                        {stateAuth.secrets?.map((s) => {
                             const packageInfo = packageInfos?.find(p => p.name === s.packageName);
                             return (
                                 <Tooltip>
@@ -176,7 +176,7 @@ export const HitlAuthWrapper = ({ tool, lastMessage, lastAnnotationIndices, mess
             </div>
             {(expanded) && (
                 <div className="flex flex-col w-full">
-                    {stateAuth.secrets?.map((s: any) => {
+                    {stateAuth.secrets?.map((s) => {
                         const packageInfo = packageInfos?.find(p => p.name === s.packageName);
                         if (!packageInfo) return null;
                         return (

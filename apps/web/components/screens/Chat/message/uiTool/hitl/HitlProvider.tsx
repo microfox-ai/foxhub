@@ -28,7 +28,7 @@ function useHitlContext() {
     const [mutatedInput, setMutatedInput] = useState<any | undefined>(undefined);
 
     const selectSecret = (secret: ClientSecret, packageName: string) => {
-        setAuth((as: any) => {
+        setAuth((as) => {
             if (!as) return undefined;
             const newAuthSecrets = [...as?.secrets ?? []];
             const index = newAuthSecrets.findIndex((s) => s.packageName === packageName);
@@ -74,7 +74,7 @@ function useHitlContext() {
     const refetchHitlAuth = () => {
         PortalSdk.postData("/api/client-secrets/hitl-auth", {
             authOptions: {
-                packages: auth?.secrets.map((s: any) => ({
+                packages: auth?.secrets.map((s) => ({
                     packageName: s.packageName,
                     packageConstructor: s.packageConstructor,
                 })),

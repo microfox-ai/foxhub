@@ -145,7 +145,7 @@
     "turndown": "^7.2.0",
     "use-debounce": "^10.0.4",
     "zod": "^3.24.2",
-    "@microfox/whatsapp-oauth": "^1.0.1"
+    "@microfox/whatsapp-oauth": "^1.0.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

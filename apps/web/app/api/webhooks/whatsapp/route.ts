@@ -9,13 +9,6 @@ import { NextResponse } from "next/server";
 function isVerificationMessage(message: string): boolean {
     return message.includes("verification code");
 }
-const whatsappOAuthConfig = {
-    apiBaseUrl: process.env.WHATSAPP_WIDGET_API_BASE_URL,
-    upstashRedisRestUrl: process.env.WHATSAPP_REDIS_URL,
-    upstashRedisRestToken: process.env.WHATSAPP_REDIS_TOKEN,
-};
-
-const whatsappOAuthSdk = new WhatsappOAuthSdk(whatsappOAuthConfig);
 
 const whatsappKeys = {
     businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
@@ -98,10 +91,14 @@ export async function POST(
             accessToken: businessAccessToken,
             version: "v22.0",
         });
-
         const messageText = message?.type === "text" ? message?.text?.body : "";
         //1. if message is verification code, forward to verify route
         if (isVerificationMessage(messageText)) {
+            const whatsappOAuthSdk = new WhatsappOAuthSdk({
+                apiBaseUrl: process.env.WHATSAPP_WIDGET_API_BASE_URL,
+                upstashRedisRestUrl: process.env.WHATSAPP_REDIS_URL,
+                upstashRedisRestToken: process.env.WHATSAPP_REDIS_TOKEN,
+            });
             console.log("messageText", messageText);
             const { isVerified, record } =
                 await whatsappOAuthSdk.processVerification(

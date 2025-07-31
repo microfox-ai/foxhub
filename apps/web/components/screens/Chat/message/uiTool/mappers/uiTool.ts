@@ -1,10 +1,10 @@
 import { AuthObject, ToolMetadata } from "@microfox/tool-kit";
 import { UiComponentProps } from "./UiComponentProps";
 import { ClientSecret } from "@prisma/client";
-import { MicrofoxPackageAuthDetails } from "@microfox/types";
+import { AuthOptions } from "@microfox/tool-kit";
 
 export type HitlAuthObject = AuthObject & {
-  customSecrets?: MicrofoxPackageAuthDetails["customSecrets"];
+  customSecrets?: AuthOptions["customSecrets"];
   secrets: {
     packageName: string;
     packageConstructor?: string;

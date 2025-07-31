@@ -70,12 +70,17 @@ async function handler(
 
     // Extract path and method from the request for auth
     const path = apiPath || "";
+    const operation =
+      agentConfig.openApiSchema?.paths?.[`/${path}`]?.[
+        request.method.toLowerCase()
+      ];
 
     //console.log("operation", operation?.operationId);
 
     // Get auth options from the OpenAPI schema and operation
     const authOptions = getAuthOptions(
-      agentConfig.openApiSchema
+      agentConfig.openApiSchema,
+      operation || {}
     );
 
     // Check if clientRequest is provided in query params

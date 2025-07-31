@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     const existingVerification = await whatsappOAuthSdk.getVerification(code);
 
     if (existingVerification) {
-      return existingVerification
+      console.log("Code Already Exists, Please Try Again");
+      throw new Error("Code Already Exists, Please Try Again");
     }
 
     const record = await whatsappOAuthSdk.createVerification({

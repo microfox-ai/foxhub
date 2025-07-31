@@ -106,10 +106,10 @@ export async function POST(
                 );
 
             if (!record || !isVerified) {
-                await whatsappSdk.sendTextMessage(
-                    userPhoneNumber,
-                    "OTP timed out. Please try again."
-                );
+                // await whatsappSdk.sendTextMessage(
+                //     userPhoneNumber,
+                //     "OTP timed out. Please try again."
+                // );
                 return new NextResponse("Verification record not found", {
                     status: 200,
                 });

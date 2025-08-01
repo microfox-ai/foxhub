@@ -77,7 +77,7 @@ jobs:
           cp -r apps/cron/package*.json build/cron-prod/main-copy/
           cp -r apps/cron/node_modules build/cron-prod/main-copy/
           cp cron.prod.json build/cron-prod/main-copy/cron.json
-          cp apps/web/vercel.json build/cron-prod/main-copy/apps/web/vercel.json
+          cp -r apps/web/vercel.json build/cron-prod/main-copy/apps/web/vercel.json
           
       - name: Upload cron service using rsync
         if: ${{steps.build.outputs.build-status == 1 }}

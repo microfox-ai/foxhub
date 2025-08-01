@@ -1,4 +1,6 @@
 import { TargetAndTransition, Transition, VariantLabels } from "framer-motion";
+import { Sentence } from "@/hooks/use-audio-stream";
+import { FontPairing } from "./font-primitives";
 
 export interface StyleConfig {
   [key: string]: any;
@@ -31,7 +33,7 @@ export interface BaseAtomProps {
   // Layout-driven style overrides (e.g., from useFitText)
   overrideStyle?: React.CSSProperties;
   // Layout-driven animation overrides (e.g., for staggering delays)
-  overrideTransition?: MotionTransition;
+  timing?: MotionTransition;
   // A ref for the layout to measure the element.
   ref?: React.ForwardedRef<HTMLElement>;
 }
@@ -75,8 +77,16 @@ export interface LayoutInstance {
   constraints: LayoutConstraints;
   style?: React.CSSProperties;
   placement: LayoutPlacement; // Calculated by the Frame
+  // New properties for dynamic layouts
+  sentence: Sentence;
+  fontPairing: FontPairing;
+  atomStyles: string[];
 }
 
 export interface BaseLayoutProps {
   content: AtomData[];
+  // New properties for dynamic layouts
+  sentence: Sentence;
+  fontPairing: FontPairing;
+  atomStyles?: string[];
 }

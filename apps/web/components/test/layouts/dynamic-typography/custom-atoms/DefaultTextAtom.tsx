@@ -7,7 +7,7 @@ import { merge } from 'lodash-es';
 const motionComponents = { div: motion.div, p: motion.p, span: motion.span };
 
 export const DefaultTextAtom = forwardRef<HTMLElement, BaseAtomProps>(
-    ({ data, overrideStyle, overrideTransition }, ref) => {
+    ({ data, overrideStyle }, ref) => {
         const { as = 'div', style, animation, text } = data;
         const MotionComponent = motionComponents[as];
         // This component defines its own animation variants.
@@ -23,7 +23,7 @@ export const DefaultTextAtom = forwardRef<HTMLElement, BaseAtomProps>(
         const finalVariants: Variants = merge({}, customVariants, restDataAnimation);
 
         // Merge the transitions separately, with the override from the layout taking precedence.
-        const finalTransition = merge({}, dataTransition, overrideTransition);
+        const finalTransition = merge({}, dataTransition, data.timing);
 
         return (
             <MotionComponent

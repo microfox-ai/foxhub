@@ -23,7 +23,12 @@ export const LayoutRenderer = ({ layout, frameSize }: { layout: LayoutInstance, 
 
     return (
         <div style={style}>
-            <LayoutComponent content={layout.content} />
+            <LayoutComponent
+                content={layout.content}
+                sentence={layout.sentence}
+                fontPairing={layout.fontPairing}
+                atomStyles={layout.atomStyles}
+            />
         </div>
     );
 }; 

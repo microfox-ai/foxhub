@@ -5,7 +5,7 @@ import { BaseAtomProps } from '../primitives/types';
 import { merge } from 'lodash-es';
 
 export const CoolGlowAtom = forwardRef<HTMLDivElement, BaseAtomProps>(
-    ({ data, overrideStyle, overrideTransition }, ref) => {
+    ({ data, overrideStyle }, ref) => {
         // This component defines its own animation variants.
         const customVariants: Variants = {
             initial: { opacity: 0, y: 20 },
@@ -19,7 +19,7 @@ export const CoolGlowAtom = forwardRef<HTMLDivElement, BaseAtomProps>(
         const finalVariants: Variants = merge({}, customVariants, restDataAnimation);
 
         // Merge the transitions separately, with the override from the layout taking precedence.
-        const finalTransition = merge({}, dataTransition, overrideTransition);
+        const finalTransition = merge({}, dataTransition, data.timing);
 
         return (
             <motion.div

@@ -53,10 +53,9 @@ jobs:
 
           cp .env.vault apps/web/.env.vault
 
-          cd packages/ai-utils
-          npm run build
-          
-          cd ../../apps/web
+          npm run build --filter=[@repo/ai-utils,@repo/typescript-config,@repo/eslint-config]
+
+          cd apps/web
 
           export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
 

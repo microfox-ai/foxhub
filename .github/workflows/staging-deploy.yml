@@ -44,6 +44,7 @@ jobs:
       - name: Build project
         id: build
         run: |
+          shopt -s dotglob
           if ${{steps.install.outputs.install-status == 0}} ; then
             echo "npm install failed"
             echo "build-status=0" >> $GITHUB_OUTPUT

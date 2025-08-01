@@ -26,7 +26,8 @@
     "postinstall": "npm run prisma:generate",
     "delete-all-lambdas": "node scripts/delete-all-lambda-functions.js",
     "delete-all-github-repos": "node scripts/delete-all-github-repos.js",
-    "cleanup-lambda": "node scripts/cleanup-lambda.js"
+    "cleanup-lambda": "node scripts/cleanup-lambda.js",
+    "check:env": "node scripts/check-env.mjs"
   },
   "devDependencies": {
     "@repo/ai-utils": "*",
@@ -55,6 +56,7 @@
     "husky": "^9.1.7",
     "prettier": "^3.5.3",
     "prisma": "^6.10.1",
+    "tsx": "^4.20.3",
     "turbo": "^2.4.4",
     "typescript": "5.8.2"
   },
@@ -73,8 +75,9 @@
     "@aws-sdk/client-iam": "^3.828.0",
     "@aws-sdk/client-lambda": "^3.828.0",
     "@aws-sdk/client-s3": "^3.828.0",
-    "@microfox/tool-kit": "*",
-    "@microfox/types": "^1.0.10",
+    "@microfox/db-upstash": "*",
+    "@microfox/fontuse": "*",
+    "@microfox/rag-upstash": "*",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@types/json-schema": "^7.0.15",
     "dotenv": "^16.4.7",

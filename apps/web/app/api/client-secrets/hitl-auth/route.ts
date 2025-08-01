@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/prisma/prisma";
 import { fetchAuthSecrets } from "@/server/toolfox/helpers/fetchVariables";
-import { AuthOptions } from "@microfox/tool-kit";
 import { ClientRequest } from "@prisma/client";
+import { AuthOptions } from "@microfox/tool-kit";
 
 export async function POST(req: NextRequest) {
   try {

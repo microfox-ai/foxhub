@@ -4,6 +4,7 @@ import { SlackOAuthSdk } from "@microfox/slack-oauth";
 import { RedditOAuthSdk } from "@microfox/reddit-oauth";
 import { NotionOAuthSdk } from "@microfox/notion-oauth";
 import { GitHubOAuthSdk } from "@microfox/github-oauth";
+import { WhatsappOAuthSdk } from "@microfox/whatsapp-oauth";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 // NOTE:edit this whenever new provider is added
@@ -77,6 +78,13 @@ export const mapProviderToAuthFunction = (
           ? APP_BASE_URL + process.env.GITHUB_REDIRECT_URI
           : APP_BASE_URL + `/connect/${packageName}/callback`,
         ...(scopes && { scopes: scopes }),
+      });
+    case "whatsapp-oauth":
+    case "oauth-whatsapp":
+      return new WhatsappOAuthSdk({
+        apiBaseUrl: process.env.WHATSAPP_API_BASE_URL,
+        upstashRedisRestUrl: process.env.WHATSAPP_REDIS_URL,
+        upstashRedisRestToken: process.env.WHATSAPP_REDIS_TOKEN,
       });
     default:
       return null;

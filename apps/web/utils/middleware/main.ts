@@ -33,7 +33,8 @@ export const mainMiddleware = async (
     request.nextUrl.pathname.startsWith("/api/background-tasks/events") ||
     request.nextUrl.pathname.startsWith("/api/subscribe") ||
     request.nextUrl.pathname.startsWith("/subscribe") ||
-    request.nextUrl.pathname.startsWith("/subdomain/")
+    request.nextUrl.pathname.startsWith("/subdomain/") ||
+    request.nextUrl.pathname.startsWith("/microfox-qr")
   ) {
     return NextResponse.next();
   }

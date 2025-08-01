@@ -1,3 +1,4 @@
+import MicrofoxWhatsappWidget from "@/components/screens/whatsapp-widget/MicrofoxWhatsappWidget";
 import WhatsappWidget from "@/components/screens/whatsapp-widget/WhatsappWidget";
 
 const WhatsappWidgetPage = async ({
@@ -6,6 +7,9 @@ const WhatsappWidgetPage = async ({
   params: Promise<{ slug: string }>;
 }) => {
   const { slug } = await params;
+  if (slug === "microfox") {
+    return <MicrofoxWhatsappWidget />;
+  }
   return <WhatsappWidget slug={slug} />;
 };
 

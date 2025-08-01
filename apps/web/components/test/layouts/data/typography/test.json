@@ -1,0 +1,32 @@
+[
+  {
+    "id": "word1",
+    "text": "YOU",
+    "component": "default",
+    "style": { "fontFamily": "Bebas Neue, sans-serif", "color": "#3B82F6" }
+  },
+  {
+    "id": "word2",
+    "text": "ARE",
+    "component": "cool-glow",
+    "style": { "fontFamily": "Bebas Neue, sans-serif", "color": "#facc15" }
+  },
+  {
+    "id": "word3",
+    "text": "my",
+    "component": "default",
+    "style": { "fontFamily": "Bebas Neue, sans-serif", "color": "#10B981" }
+  },
+  {
+    "id": "word4",
+    "text": "fabulous",
+    "component": "default",
+    "style": { "fontFamily": "Bebas Neue, sans-serif", "color": "#EF4444" }
+  },
+  {
+    "id": "word5",
+    "text": "partner",
+    "component": "default",
+    "style": { "fontFamily": "Bebas Neue, sans-serif", "color": "#EF4444" }
+  }
+]

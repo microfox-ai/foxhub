@@ -296,7 +296,7 @@ export const fetchAuthSecrets = async (
         ) {
           output?.secrets?.push({
             packageName: _package.packageName,
-            packageConstructor: _package.packageConstructor,
+            packageConstructor: _package.packageConstructor?.[0],
             isAuthNeeded: false,
             selectedSecretId: undefined,
             secrets: [],
@@ -312,7 +312,7 @@ export const fetchAuthSecrets = async (
           const variables = fetchSecretVariables(pickedSecret);
           output?.secrets.push({
             packageName: _package.packageName,
-            packageConstructor: _package.packageConstructor,
+            packageConstructor: _package.packageConstructor?.[0],
             selectedSecretId: pickedSecret.id,
             secrets: uniqueClubbedSecrets,
             isAuthNeeded: true,
@@ -321,7 +321,7 @@ export const fetchAuthSecrets = async (
         } else {
           output?.secrets.push({
             packageName: _package.packageName,
-            packageConstructor: _package.packageConstructor,
+            packageConstructor: _package.packageConstructor?.[0],
             selectedSecretId: undefined,
             secrets: [],
             isAuthNeeded: true,

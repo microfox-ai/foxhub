@@ -37,6 +37,7 @@ export async function POST(request: Request) {
           email,
           name,
           avatar,
+          source: source ? source : "unknown",
           isBetaAccess: validAccessCode ? true : false,
           accessCodeId: validAccessCode ? validAccessCode.id : null,
         },

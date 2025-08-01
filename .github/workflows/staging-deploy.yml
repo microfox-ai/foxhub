@@ -44,18 +44,11 @@ jobs:
       - name: Build project
         id: build
         run: |
-          shopt -s dotglob
           if ${{steps.install.outputs.install-status == 0}} ; then
             echo "npm install failed"
             echo "build-status=0" >> $GITHUB_OUTPUT
             exit 1
           fi
-
-          cp .env.vault apps/web/.env.vault
-
-          npm run build --filter=[@repo/ai-utils,@repo/typescript-config,@repo/eslint-config]
-
-          cd apps/web
 
           export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
 

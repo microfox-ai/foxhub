@@ -2,9 +2,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 
 const MicrofoxQr = () => {
+    const searchParams = useSearchParams();
+    const source = searchParams.get("source");
+
     return (
         <div className="w-full max-w-md mx-auto overflow-y-auto">
             <motion.div
@@ -18,7 +22,7 @@ const MicrofoxQr = () => {
                         <div className="flex justify-center">
                             <div className="p-4 bg-white rounded-lg shadow-lg">
                                 <QRCodeSVG
-                                    value={"https://microfox.app/login?from=microfox-qr&source=event-target"}
+                                    value={`https://microfox.app/login?from=microfox-qr&source=${source}`}
                                     size={200}
                                     level="H"
                                     includeMargin={true}

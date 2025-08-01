@@ -25,7 +25,7 @@ const FeatureBase = () => {
             };
         }
 
-        console.log("Sending data to FeatureBase", user, userHashData);
+        //console.log("Sending data to FeatureBase", user, userHashData);
         win.Featurebase(
             "identify",
             {

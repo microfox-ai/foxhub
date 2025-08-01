@@ -12,7 +12,8 @@
     "check-types": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "jest"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.0-alpha.15",
@@ -26,14 +27,17 @@
     "@aws-sdk/client-sqs": "^3.831.0",
     "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@codemirror/lang-html": "^6.4.5",
+    "@elevenlabs/elevenlabs-js": "^2.7.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@fillout/react": "^3.0.0",
     "@google/generative-ai": "^0.24.0",
     "@hookform/resolvers": "^4.1.3",
+    "@juggle/resize-observer": "^3.4.0",
     "@microfox/ai-router": "^1.1.2",
     "@microfox/aws-ses": "^1.3.0",
     "@microfox/crypto-sdk": "^1.2.0",
+    "@microfox/fontuse": "^1.0.4",
     "@microfox/github-oauth": "1.0.2",
     "@microfox/google-oauth": "^1.2.0",
     "@microfox/google-sdk": "^1.1.0",
@@ -54,6 +58,7 @@
     "@microfox/webhook-octokit": "^1.2.1",
     "@microfox/webhook-slack": "^1.2.0",
     "@microfox/whatsapp-business": "^1.4.0",
+    "@microfox/whatsapp-oauth": "^1.0.2",
     "@monaco-editor/react": "^4.7.0",
     "@mui/material": "^6.4.7",
     "@prisma/client": "^6.6.0",
@@ -93,6 +98,8 @@
     "@tiptap/html": "^2.11.5",
     "@tiptap/react": "^3.0.7",
     "@tiptap/starter-kit": "^3.0.7",
+    "@types/lodash-es": "^4.17.12",
+    "@types/resize-observer-browser": "^0.1.11",
     "@uiw/codemirror-theme-vscode": "^4.21.9",
     "@uiw/react-codemirror": "^4.21.9",
     "@upstash/redis": "^1.35.0",
@@ -112,6 +119,7 @@
     "framer-motion": "^12.5.0",
     "globby": "^14.1.0",
     "highlight.js": "^11.11.1",
+    "lodash-es": "^4.17.21",
     "lodash.isequal": "^4.5.0",
     "lucide-react": "^0.482.0",
     "mixpanel": "^0.18.1",
@@ -144,8 +152,7 @@
     "tiptap-unique-id": "^2.10.3",
     "turndown": "^7.2.0",
     "use-debounce": "^10.0.4",
-    "zod": "^3.24.2",
-    "@microfox/whatsapp-oauth": "^1.0.2"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -160,10 +167,12 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.2",
     "eslint-config-prettier": "^10.1.1",
+    "jest": "^30.0.5",
     "openapi-fetch": "^0.14.0",
     "openapi-typescript": "^7.8.0",
     "prettier": "^3.5.3",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.0",
     "typescript": "^5"
   }
 }

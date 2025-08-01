@@ -13,7 +13,7 @@ class CronManager {
     // Default to cron.json at the repo root (three levels up from this file)
     // Current file is at: apps/cron/src/lib/cron-manager.ts
     // Need to go up: lib -> src -> cron -> apps -> root
-    this.configPath = configPath || path.resolve(__dirname, '../../../../cron.json');
+    this.configPath = configPath || path.resolve(__dirname, '../../cron.json');
   }
 
   /**

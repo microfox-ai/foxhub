@@ -5,11 +5,6 @@ import {
 import { WhatsappOAuthSdk } from "@microfox/whatsapp-oauth";
 import { NextResponse } from "next/server";
 
-const whatsappOAuthSdk = new WhatsappOAuthSdk({
-    apiBaseUrl: process.env.WHATSAPP_WIDGET_API_BASE_URL,
-    upstashRedisRestUrl: process.env.WHATSAPP_REDIS_URL,
-    upstashRedisRestToken: process.env.WHATSAPP_REDIS_TOKEN,
-});
 
 function isVerificationMessage(message: string): boolean {
     return message.includes("verification code");
@@ -99,6 +94,11 @@ export async function POST(
         const messageText = message?.type === "text" ? message?.text?.body : "";
         //1. if message is verification code, forward to verify route
         if (isVerificationMessage(messageText)) {
+            const whatsappOAuthSdk = new WhatsappOAuthSdk({
+                apiBaseUrl: process.env.WHATSAPP_WIDGET_API_BASE_URL,
+                upstashRedisRestUrl: process.env.WHATSAPP_REDIS_URL,
+                upstashRedisRestToken: process.env.WHATSAPP_REDIS_TOKEN,
+            });
             console.log("messageText", messageText);
             const { isVerified, record } =
                 await whatsappOAuthSdk.processVerification(

@@ -52,7 +52,12 @@ jobs:
           fi
 
           cp .env.vault apps/web/.env.vault
-          cd apps/web
+
+          cd packages/ai-utils
+          npm run build
+          
+          cd ../../apps/web
+
           export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
 
           if ! npm run build:ci; then

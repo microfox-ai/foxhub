@@ -13,7 +13,13 @@ async function checkEnvFiles() {
     const projectRoot = process.cwd();
     const filesInRoot = await fs.promises.readdir(projectRoot);
 
-    const envFileNames = filesInRoot.filter((file) => file.startsWith(".env"));
+    const envFileNames = filesInRoot.filter(
+      (file) =>
+        file.startsWith(".env") &&
+        file !== ".env.me" &&
+        file !== ".env.vault" &&
+        !file.endsWith(".previous")
+    );
     const envFiles = [];
     for (const fileName of envFileNames) {
       const stat = await fs.promises.stat(path.join(projectRoot, fileName));

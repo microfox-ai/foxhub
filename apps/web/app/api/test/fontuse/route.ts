@@ -1,7 +1,12 @@
 import { FontUse } from "@microfox/fontuse";
 import { NextRequest, NextResponse } from "next/server";
 
-const fontUse = new FontUse({});
+const fontUse = new FontUse({
+  redisUrl: process.env.FONTUSE_REDIS_REST_URL,
+  redisToken: process.env.FONTUSE_REDIS_REST_TOKEN,
+  ragUrl: process.env.FONTUSE_VECTOR_REST_URL,
+  ragToken: process.env.FONTUSE_VECTOR_REST_TOKEN,
+});
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

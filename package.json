@@ -26,7 +26,8 @@
     "postinstall": "npm run prisma:generate",
     "delete-all-lambdas": "node scripts/delete-all-lambda-functions.js",
     "delete-all-github-repos": "node scripts/delete-all-github-repos.js",
-    "cleanup-lambda": "node scripts/cleanup-lambda.js"
+    "cleanup-lambda": "node scripts/cleanup-lambda.js",
+    "check:env": "node scripts/check-env.mjs"
   },
   "devDependencies": {
     "@repo/ai-utils": "*",

@@ -14,13 +14,13 @@ const DataDeletion = () => {
           <p className="mb-4">Our platform collects and processes several categories of data that can be deleted upon request:</p>
           <ul className="list-disc pl-6 mb-4">
             <li>Account and profile information (name, email, company details)</li>
-            <li>Bot configurations and customization settings</li>
+            <li>Workflow configurations and customization settings</li>
             <li>Conversation history and message logs across messaging platforms</li>
             <li>Integration configurations and API connection data</li>
             <li>Stored credentials and API keys (always encrypted)</li>
             <li>Usage analytics and interaction patterns</li>
             <li>User preferences and personalization data</li>
-            <li>End-user data collected through bot interactions</li>
+            <li>End-user data collected through workflow interactions</li>
           </ul>
           <p className="mb-4">Understanding these data categories helps ensure complete data removal when making deletion requests.</p>
         </section>
@@ -45,7 +45,7 @@ const DataDeletion = () => {
           <p className="mb-4">You can request selective deletion of specific data categories:</p>
           <ul className="list-disc pl-6 mb-4">
             <li><strong>Conversation History:</strong> Account Settings → Data Management → Message History → Delete</li>
-            <li><strong>Bot Configurations:</strong> Bot Dashboard → [Select Bot] → Settings → Delete Bot</li>
+            <li><strong>Workflow Configurations:</strong> Workflow Dashboard → [Select Workflow] → Settings → Delete Workflow</li>
             <li><strong>Integration Data:</strong> Integrations → [Select Integration] → Disconnect & Remove Data</li>
             <li><strong>API Keys & Credentials:</strong> Developer Settings → API Keys → Revoke & Delete</li>
             <li><strong>Usage Analytics:</strong> Account Settings → Privacy → Usage Data → Delete History</li>
@@ -62,7 +62,7 @@ const DataDeletion = () => {
             <li>Conversation history and messages (within 48 hours)</li>
             <li>API keys and integration settings (immediate deletion)</li>
             <li>Usage analytics and preferences (within 72 hours)</li>
-            <li>Bot configurations and workflows (within 24 hours)</li>
+            <li>Workflow configurations and processes (within 24 hours)</li>
             <li>Stored files and media content (within 48 hours)</li>
             <li>Payment information except as required for financial records</li>
           </ul>

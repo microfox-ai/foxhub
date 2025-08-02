@@ -1,40 +1,54 @@
 'use client';
-import React, { useRef } from 'react';
-import { AtomData, MotionTransition } from '../primitives/types';
+import React, { useRef, useState, useLayoutEffect } from 'react';
+import { ResizeObserver } from '@juggle/resize-observer';
+import { BaseLayoutProps } from '../primitives/types';
 import { AtomRenderer } from '../primitives/AtomRenderer';
-import { useFitText } from '../hooks/useFitText';
+import { useVerticalLayout } from '../hooks/useVerticalLayout';
 
-const FitTextSlot = ({ atomData, index }: { atomData: AtomData, index: number }) => {
+export const VerticalFillLayout = ({ sentence, fontPairing, atomStyles }: BaseLayoutProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const textRef = useRef<HTMLElement>(null);
-    const textStyle = useFitText({
-        containerRef,
-        textRef,
-        strategy: 'fill-width',
+    const [size, setSize] = useState({ width: 0, height: 0 });
+
+    useLayoutEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        const observer = new ResizeObserver(entries => {
+            const entry = entries[0];
+            if (entry) {
+                setSize({
+                    width: entry.contentRect.width,
+                    height: entry.contentRect.height,
+                });
+            }
+        });
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, []);
+
+    const { lines, contentHeight } = useVerticalLayout({
+        sentence,
+        fontPairing,
+        containerWidth: size.width,
+        containerHeight: size.height,
+        atomStyles: atomStyles ?? [],
     });
 
-    const overrideTransition: MotionTransition = atomData.timing ?? {
-        delay: 0.15 * index,
-        duration: 0.25,
-    };
+    const scaleY = size.height > 0 && contentHeight > 0 ? size.height / contentHeight : 1;
 
     return (
-        <div ref={containerRef} style={{ width: '100%', display: 'flex' }}>
-            <AtomRenderer
-                ref={textRef}
-                data={atomData}
-                overrideStyle={{ ...textStyle }}
-                overrideTransition={overrideTransition}
-            />
-        </div>
-    );
-};
-
-export const VerticalFillLayout = ({ content }: { content: AtomData[] }) => {
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', gap: '2em' }}>
-            {content.map((atom, index) => (
-                <FitTextSlot key={atom.id} atomData={atom} index={index} />
+        <div ref={containerRef} style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'stretch',
+            height: '100%', width: '100%'
+        }}>
+            {lines.map((line, lineIndex) => (
+                <div key={lineIndex} style={{ display: 'flex', flexDirection: 'row', gap: '1ch', whiteSpace: 'nowrap' }}>
+                    {line.map((atom) => (
+                        <AtomRenderer key={atom.id} data={atom} />
+                    ))}
+                </div>
             ))}
         </div>
     );

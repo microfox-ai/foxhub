@@ -1,8 +1,7 @@
 import { UIMessage } from "ai";
 import dayjs from "dayjs";
-import { ChevronLeft, ChevronRight, FileText, RefreshCcw } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getDisplayParts, getStickyUiParts, getToolParts, getUiParts } from "../helpers/parts";
+import { FileText, RefreshCcw, EditIcon } from "lucide-react";
+import { useState } from "react";
 import { getMessageClass } from "../helpers/ui";
 import { useMicrofoxChat } from "../MicrofoxChatProvider";
 import { LoadingIndicator } from "./LoadingIndicator";
@@ -13,6 +12,15 @@ import { RenderToolFooter } from "./uiTool/hitl_output/RenderToolFooter";
 import { useMessageParts } from "../MessageProvider";
 import { StepBanner } from "./wrappers/Stepbanner";
 import { RenderToolHeader } from "./uiTool/hitl_output/RenderToolHeader";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Define types for annotations
 export type ThinkingAnnotation = {
@@ -48,31 +56,50 @@ export const MessageWrapper = ({
   length,
   lastAnnotationIndices,
 }: MessageWrapperProps) => {
-  const { activePart, setActivePart, displayParts, toolParts, stickyUiParts } = useMessageParts();
+  const { activePart, setActivePart, displayParts, toolParts, stickyUiParts } =
+    useMessageParts();
   const { handleRefresh, status } = useMicrofoxChat();
-  const systemType = message.metadata?.systemType;
-  const minion = message.metadata?.minionType;
-  // const uiAnnotations = message.metadata?.uiAnnotations;
+  const [showEditConfirmation, setShowEditConfirmation] = useState(false);
+
   const onRefresh = async () => {
     await handleRefresh(index);
   };
 
   return (
     <div key={message.id + index}>
-      {message.metadata?.createdAt && renderDateSeperator(new Date(message.metadata?.createdAt)?.toISOString())}
+      <EditMessageConfirmationDialog
+        showEditConfirmation={showEditConfirmation}
+        onClose={() => setShowEditConfirmation(false)}
+        index={index}
+      />
+      {message.metadata?.createdAt &&
+        renderDateSeperator(
+          new Date(message.metadata?.createdAt)?.toISOString()
+        )}
+
       {message.role === "system" ? (
         <div className="my-2 text-center text-xs text-gray-600">
-          {message.metadata?.content} • {message.metadata?.createdAt && dayjs(message.metadata?.createdAt).format("h:mm A")}
+          {message.metadata?.content} •{" "}
+          {message.metadata?.createdAt &&
+            dayjs(message.metadata?.createdAt).format("h:mm A")}
         </div>
       ) : (
         <div
           className={`group flex items-start gap-3 ${(message.role as any) === "user" ? "justify-end" : "justify-start"}`}
         >
           {message.role == "user" && index <= length - 1 && (
-            <RefreshCcw
-              className="h-4 w-4 text-neutral-500 cursor-pointer self-center opacity-0 group-hover:opacity-100 hover:text-neutral-700"
-              onClick={onRefresh}
-            />
+            <>
+              <RefreshCcw
+                className="h-4 w-4 text-neutral-500 cursor-pointer self-center opacity-0 group-hover:opacity-100 hover:text-neutral-700"
+                onClick={onRefresh}
+              />
+              <EditIcon
+                className="h-4 w-4 text-neutral-500 cursor-pointer self-center opacity-0 group-hover:opacity-100 hover:text-neutral-700"
+                onClick={() => {
+                  setShowEditConfirmation(true);
+                }}
+              />
+            </>
           )}
           <div
             className={`relative flex flex-col max-w-xs rounded-lg p-3 sm:max-w-md ${getMessageClass(message.role as any)}`}
@@ -81,21 +108,22 @@ export const MessageWrapper = ({
               <span
                 className={`mb-3 text-[10px] font-light ${(message.role as any) === "user" ? "text-gray-500 ml-auto" : "text-gray-500 mr-auto"}`}
               >
-                {message.metadata?.createdAt && dayjs(message.metadata?.createdAt).format("h:mm A")}
+                {message.metadata?.createdAt &&
+                  dayjs(message.metadata?.createdAt).format("h:mm A")}
               </span>
             )}
             {status !== "streaming" &&
               message.role === "assistant" &&
               message.metadata?.error && (
                 <div className="text-red-500">
-                  {message.metadata?.error || "Something went wrong! Try again."}
+                  {message.metadata?.error ||
+                    "Something went wrong! Try again."}
                 </div>
               )}
             {message.role === "assistant" &&
               status === "streaming" &&
-              index === length - 1 &&
-              //(!message.content || message.content?.trim()?.length === 0) &&
-              (
+              index === length - 1 && (
+                //(!message.content || message.content?.trim()?.length === 0) &&
                 <LoadingIndicator message={message} />
               )}
             {/* {IN_DEV && (
@@ -120,11 +148,11 @@ export const MessageWrapper = ({
                 />
               )}
             {displayParts.length > 1 && (
-              <div className={`${message.role === "user" ? "w-[400px]" : "w-[800px]"} p-0 bg-transparent`}>
+              <div
+                className={`${message.role === "user" ? "w-[400px]" : "w-[800px]"} p-0 bg-transparent`}
+              >
                 <StepBanner />
-                {toolParts && toolParts?.length > 0 && (
-                  <RenderToolHeader />
-                )}
+                {toolParts && toolParts?.length > 0 && <RenderToolHeader />}
                 {displayParts?.[activePart] && (
                   <DisplayPart
                     part={displayParts?.[activePart]}
@@ -135,9 +163,7 @@ export const MessageWrapper = ({
                     message={message}
                   />
                 )}
-                {toolParts && toolParts?.length > 0 && (
-                  <RenderToolFooter />
-                )}
+                {toolParts && toolParts?.length > 0 && <RenderToolFooter />}
                 {/* {message.customTools?.map((toolInvocation, idx) => (
                   <ToolInvocationPart
                     key={idx + toolInvocation.type}
@@ -159,7 +185,13 @@ export const MessageWrapper = ({
             {stickyUiParts.length > 0 && (
               <StickyUiPartsWrapper>
                 {stickyUiParts.map((part) => (
-                  <RenderUiTool key={part.toolCallId} tool={part} lastMessage={index === length - 1} lastAnnotationIndices={lastAnnotationIndices} messageIndex={index} />
+                  <RenderUiTool
+                    key={part.toolCallId}
+                    tool={part}
+                    lastMessage={index === length - 1}
+                    lastAnnotationIndices={lastAnnotationIndices}
+                    messageIndex={index}
+                  />
                 ))}
               </StickyUiPartsWrapper>
             )}
@@ -197,5 +229,54 @@ export const MessageWrapper = ({
         </div>
       )}
     </div>
+  );
+};
+
+export const EditMessageConfirmationDialog = ({
+  showEditConfirmation,
+  onClose,
+  index,
+}: {
+  showEditConfirmation: boolean;
+  onClose: () => void;
+  index: number;
+}) => {
+  const { handleEditMessage } = useMicrofoxChat();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const onEdit = () => {
+    setIsLoading(true);
+    handleEditMessage(index)
+      .then(() => {
+        onClose();
+      })
+      .catch((error) => {
+        setError(error.message);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+  return (
+    <Dialog open={showEditConfirmation} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Message</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to edit this message? This action cannot be
+            undone and will delete all messages that came after this one.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={onEdit} disabled={isLoading}>
+            Edit
+          </Button>
+          {error && <p className="text-red-500">{error}</p>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

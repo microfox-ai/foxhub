@@ -39,7 +39,10 @@ const splitTextIntoSentences = (text: string, maxWords: number): string[] => {
 const maxWords = 6;
 
 export const splittedStory = {
-  sentences: splitTextIntoSentences(story.text, maxWords),
+  sentences: splitTextIntoSentences(
+    story?.splitStory?.join(" ") ?? "",
+    maxWords
+  ),
 };
 
 console.log(splittedStory);

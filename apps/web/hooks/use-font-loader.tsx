@@ -8,19 +8,20 @@ import { Font, createGoogleFontUrl } from '@microfox/fontuse';
 interface FontLoaderState {
     fonts: Font[];
     loading: boolean;
-    fontsReady: boolean;
+    fontsReady: Record<string, boolean>;
     error: any;
 }
 
 const initialState: FontLoaderState = {
     fonts: [],
     loading: false,
-    fontsReady: false,
+    fontsReady: {},
     error: null,
 };
 
 type FontLoaderContextType = {
     loadFonts: (fontIds: string[]) => void;
+    areFontsReady: (fontIds: string[]) => boolean;
 } & FontLoaderState;
 
 // 2. Create Context
@@ -40,8 +41,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export const FontLoaderProvider = ({ children }: { children: React.ReactNode }) => {
     const [fontIds, setFontIds] = useState<string[]>([]);
-    const [fontsReady, setFontsReady] = useState(false);
-    // fontsReady is wrong, not jsut bolean, use soemthing based on the fontIds, as we want to know if a particular font is laoded or not, also only render frame if the related fonts are loaded
+    const [fontsReady, setFontsReady] = useState<Record<string, boolean>>({});
 
     const { data: fonts, error } = useSWR<Font[]>(
         fontIds.length > 0 ? `/api/test/fontuse?fonts=${fontIds.join(',')}` : null,
@@ -50,9 +50,6 @@ export const FontLoaderProvider = ({ children }: { children: React.ReactNode }) 
 
     useEffect(() => {
         if (!fonts) {
-            if (fontIds.length === 0) {
-                setFontsReady(true);
-            }
             return;
         }
 
@@ -70,16 +67,23 @@ export const FontLoaderProvider = ({ children }: { children: React.ReactNode }) 
 
         const checkFontsReady = async () => {
             if (!fonts || fonts.length === 0) {
-                setFontsReady(true);
                 return;
             }
-            try {
-                await Promise.all(fonts.map(font => document.fonts.load(`1em "${(font as any).family}"`)));
-                setFontsReady(true);
-            } catch (e) {
-                console.error("Failed to load fonts, proceeding with rendering.", e);
-                setFontsReady(true);
-            }
+
+            await Promise.all(
+                fonts.map(async (font) => {
+                    if (fontsReady[font.id]) {
+                        return;
+                    }
+                    try {
+                        await document.fonts.load(`1em "${(font as any).family}"`);
+                        setFontsReady(prev => ({ ...prev, [font.id]: true }));
+                    } catch (e) {
+                        console.error(`Failed to load font: ${(font as any).family}`, e);
+                        setFontsReady(prev => ({ ...prev, [font.id]: false })); // Consider a different state for error
+                    }
+                })
+            );
         };
 
         checkFontsReady();
@@ -88,17 +92,40 @@ export const FontLoaderProvider = ({ children }: { children: React.ReactNode }) 
             fontLinks.forEach(link => {
                 document.head.removeChild(link);
             });
-            setFontsReady(false);
         };
-    }, [fonts, fontIds.length]);
+    }, [fonts]);
 
     const loadFonts = useCallback((newFontIds: string[]) => {
         const uniqueFontIds = [...new Set(newFontIds)];
-        if (uniqueFontIds.length > 0) {
-            setFontsReady(false);
-            setFontIds(uniqueFontIds);
-        }
+
+        setFontsReady(prev => {
+            const newState = { ...prev };
+            let needsUpdate = false;
+            uniqueFontIds.forEach(id => {
+                if (!(id in newState)) {
+                    newState[id] = false;
+                    needsUpdate = true;
+                }
+            });
+            return needsUpdate ? newState : prev;
+        });
+
+        setFontIds(currentIds => {
+            const currentIdSet = new Set(currentIds);
+            const newIdsToAdd = uniqueFontIds.filter(id => !currentIdSet.has(id));
+            if (newIdsToAdd.length > 0) {
+                return [...currentIds, ...newIdsToAdd];
+            }
+            return currentIds;
+        });
     }, []);
+
+    const areFontsReady = useCallback((requiredFontIds: string[]) => {
+        if (requiredFontIds.length === 0) {
+            return true;
+        }
+        return requiredFontIds.every(id => fontsReady[id]);
+    }, [fontsReady]);
 
     const value = {
         fonts: fonts || [],
@@ -106,6 +133,7 @@ export const FontLoaderProvider = ({ children }: { children: React.ReactNode }) 
         fontsReady,
         error,
         loadFonts,
+        areFontsReady,
     };
 
     return (

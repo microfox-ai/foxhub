@@ -1,11 +1,13 @@
 // import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 // import { NextRequest, NextResponse } from "next/server";
 
-// //export const runtime = "edge";
+// export const runtime = "edge";
 
 // const elevenLabsClient = new ElevenLabsClient({
 //   apiKey: process.env.ELEVENLABS_API_KEY,
 // });
+
+// const voiceId = "56AoDkrOh6qfVPDXZ7Pt";
 
 // export async function POST(req: NextRequest) {
 //   const { text, previous_text, next_text, voice_settings } = await req.json();
@@ -14,9 +16,13 @@
 //     return new NextResponse("Missing text", { status: 400 });
 //   }
 
+//   console.log("text", text);
+//   console.log("previous_text", previous_text);
+//   console.log("next_text", next_text);
+
 //   try {
-//     const response = await elevenLabsClient.textToSpeech.streamWithTimestamps(
-//       "JBFqnCBsd6RMkjVDRZzb",
+//     const stream = await elevenLabsClient.textToSpeech.streamWithTimestamps(
+//       voiceId,
 //       {
 //         outputFormat: "mp3_44100_128",
 //         text,
@@ -40,16 +46,16 @@
 
 //     const readableStream = new ReadableStream({
 //       async start(controller) {
-//         for await (const item of response) {
-//           controller.enqueue(Buffer.from(JSON.stringify(item)));
+//         for await (const chunk of stream) {
+//           controller.enqueue(Buffer.from(JSON.stringify(chunk) + "<-s->"));
 //         }
 //         controller.close();
 //       },
 //     });
 
-//     return new NextResponse(readableStream, {
+//     return new Response(readableStream, {
 //       headers: {
-//         "Content-Type": "application/json",
+//         "Content-Type": "application/octet-stream",
 //       },
 //     });
 //   } catch (error) {

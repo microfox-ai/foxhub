@@ -1,30 +1,58 @@
-import { useState, createContext, useContext, useCallback, useEffect } from "react";
+import { useState, createContext, useContext, useCallback, useEffect, useRef } from "react";
 import { story } from "@/components/test/layouts/data/story";
+import { StreamingAudioChunkWithTimestampsResponse } from "@elevenlabs/elevenlabs-js/api/types/StreamingAudioChunkWithTimestampsResponse";
+
+const BATCH_SIZE = 5;
+
+export interface Word {
+    text: string;
+    start: number;
+    end: number;
+    duration: number;
+}
+
+export interface Sentence {
+    id: string;
+    text: string;
+    words: Word[];
+    start: number;
+    end: number;
+    duration: number;
+}
 
 interface AudioStreamState {
     isPlaying: boolean;
-    currentSentence: number;
-    alignments: {
-        characters: string[];
-        character_start_times_seconds: number[];
-        character_end_times_seconds: number[];
-    }[];
-    normalized_alignments: {
-        characters: string[];
-        character_start_times_seconds: number[];
-        character_end_times_seconds: number[];
-    }[];
+    isBuffering: boolean;
+    sentences: Sentence[];
+    currentIndex: {
+        sentence: number;
+        word: number;
+    };
+    currentTime: number;
+    totalDuration: number;
+    buffered: TimeRanges | null;
 }
 
 const initialState: AudioStreamState = {
     isPlaying: false,
-    currentSentence: -1,
-    alignments: [],
-    normalized_alignments: [],
+    isBuffering: false,
+    sentences: story.splitStory.map((text, index) => ({
+        id: `sentence_${index}`,
+        text,
+        words: [],
+        start: 0,
+        end: 0,
+        duration: 0,
+    })),
+    currentIndex: { sentence: -1, word: -1 },
+    currentTime: 0,
+    totalDuration: 0,
+    buffered: null,
 };
 
 type AudioStreamContextType = {
-    playStory: () => void;
+    togglePlayPause: () => void;
+    seek: (time: number) => void;
     audioPlayer: HTMLAudioElement | null;
 } & AudioStreamState;
 
@@ -38,146 +66,328 @@ export const useAudioStream = () => {
     return context;
 };
 
+interface QueuedChunk {
+    chunk: StreamingAudioChunkWithTimestampsResponse;
+    sentenceIndices: number[];
+}
+
 export const AudioStreamProvider = ({ children }: { children: React.ReactNode }) => {
     const [state, setState] = useState<AudioStreamState>(initialState);
-    const [audioQueue, setAudioQueue] = useState<string[]>([]);
-    const [audioPlayer] = useState(new Audio());
+    const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+    const mediaSourceRef = useRef<MediaSource | null>(null);
+    const sourceBufferRef = useRef<SourceBuffer | null>(null);
+    const isSeekingRef = useRef(false);
+    const chunkQueue = useRef<QueuedChunk[]>([]);
+    const playWhenReadyRef = useRef(false);
+    const isFetchingRef = useRef(false);
+    const sentenceStatusRef = useRef<Map<string, 'fetched'>>(new Map());
 
-    const fetchAndQueueAudio = useCallback(async (sentenceIndex: number) => {
-        console.log(`[AudioStream] Fetching audio for sentence ${sentenceIndex}`);
-        if (sentenceIndex >= story.splitStory.length) {
-            console.log("[AudioStream] Reached end of story.");
-            setState(prevState => ({ ...prevState, isPlaying: false }));
+    const fetchAndPlayAudio = async (sentences: Sentence[]) => {
+        if (isFetchingRef.current) {
             return;
         }
 
-        const text = story.splitStory[sentenceIndex];
-        const previous_text = sentenceIndex > 0 ? story.splitStory[sentenceIndex - 1] : undefined;
-        const next_text = sentenceIndex < story.splitStory.length - 1 ? story.splitStory[sentenceIndex + 1] : undefined;
+        const sentenceIndicesToFetch = sentences
+            .map((s, index) => ({ id: s.id, index }))
+            .filter(s => !sentenceStatusRef.current.has(s.id))
+            .slice(0, BATCH_SIZE)
+            .map(s => s.index);
 
-        console.log(`[AudioStream] Requesting TTS for: "${text}"`);
+        if (sentenceIndicesToFetch.length === 0) {
+            return;
+        }
+
+        sentenceIndicesToFetch.forEach(index => {
+            const sentence = sentences[index];
+            if (sentence) {
+                sentenceStatusRef.current.set(sentence.id, 'fetched');
+            }
+        });
+
+        isFetchingRef.current = true;
+
+        setState(prevState => ({ ...prevState, isBuffering: true }));
+
+        const textToFetch = sentenceIndicesToFetch.map(i => sentences[i]?.text).join(" ");
+
+        const firstSentenceIndex = sentenceIndicesToFetch[0];
+        const lastSentenceIndex = sentenceIndicesToFetch[sentenceIndicesToFetch.length - 1];
+
+        const previous_text = (firstSentenceIndex !== undefined && firstSentenceIndex > 0) ? sentences[firstSentenceIndex - 1]?.text : undefined;
+        const next_text = (lastSentenceIndex !== undefined && lastSentenceIndex < sentences.length - 1) ? sentences[lastSentenceIndex + 1]?.text : undefined;
+
         const response = await fetch("/api/voice/elvenlabs/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text, previous_text, next_text }),
+            body: JSON.stringify({
+                text: textToFetch,
+                previous_text,
+                next_text,
+            }),
         });
 
-        console.log(`[AudioStream] Response status: ${response.status}`);
         if (!response.body) {
-            console.error("[AudioStream] Response body is null.");
+            isFetchingRef.current = false;
+            return;
+        }
+        const reader = response.body.getReader();
+        let buffer = "";
+
+        const processStream = async () => {
+            const decoder = new TextDecoder();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    if (buffer.trim()) {
+                        const finalParts = buffer.split('<-s->');
+                        for (const part of finalParts) {
+                            if (part) {
+                                try {
+                                    const parsed = JSON.parse(part) as StreamingAudioChunkWithTimestampsResponse;
+                                    chunkQueue.current.push({ chunk: parsed, sentenceIndices: sentenceIndicesToFetch });
+                                    processQueue();
+                                } catch (e) {
+                                }
+                            }
+                        }
+                    }
+                    setState(prevState => ({ ...prevState, isBuffering: false }));
+                    isFetchingRef.current = false;
+                    break;
+                }
+
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split('<-s->');
+
+                for (let i = 0; i < parts.length - 1; i++) {
+                    const part = parts[i];
+                    if (part) {
+                        try {
+                            const parsed = JSON.parse(part) as StreamingAudioChunkWithTimestampsResponse;
+                            chunkQueue.current.push({ chunk: parsed, sentenceIndices: sentenceIndicesToFetch });
+                            processQueue();
+                        } catch (e) {
+                        }
+                    }
+                }
+                buffer = parts[parts.length - 1] ?? "";
+            }
+        };
+
+        processStream();
+    };
+
+    useEffect(() => {
+        const audioPlayer = new Audio();
+        audioPlayerRef.current = audioPlayer;
+        mediaSourceRef.current = new MediaSource();
+        audioPlayer.src = URL.createObjectURL(mediaSourceRef.current);
+        document.body.appendChild(audioPlayer);
+
+        const onSourceOpen = () => {
+            if (!mediaSourceRef.current) return;
+            try {
+                const sourceBuffer = mediaSourceRef.current.addSourceBuffer('audio/mpeg');
+                sourceBufferRef.current = sourceBuffer;
+
+                sourceBuffer.addEventListener('updateend', () => {
+                    processQueue();
+                });
+
+                processQueue();
+            } catch (e) {
+            }
+        };
+
+        mediaSourceRef.current.addEventListener('sourceopen', onSourceOpen);
+
+        return () => {
+            const player = audioPlayerRef.current;
+            if (player && mediaSourceRef.current) {
+                URL.revokeObjectURL(player.src);
+            }
+            if (player && document.body.contains(player)) {
+                document.body.removeChild(player);
+            }
+        };
+    }, []);
+
+    const processQueue = useCallback(() => {
+        const sourceBuffer = sourceBufferRef.current;
+        if (!sourceBuffer || sourceBuffer.updating || chunkQueue.current.length === 0) {
             return;
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedData = "";
+        const queuedItem = chunkQueue.current.shift();
+        if (!queuedItem) return;
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                console.log("[AudioStream] Stream finished.");
-                break;
-            }
+        const { chunk, sentenceIndices } = queuedItem;
+        const { alignment } = chunk;
 
-            const decodedChunk = decoder.decode(value, { stream: true });
-            console.log("[AudioStream] Received stream chunk:", decodedChunk);
-            accumulatedData += decodedChunk;
+        const audioData = Buffer.from(chunk.audioBase64, 'base64');
+        const timeOffset = sourceBuffer.buffered.length > 0 ? sourceBuffer.buffered.end(0) : 0;
 
-            try {
-                const jsonObjects = accumulatedData.split('}').filter(s => s.trim()).map(s => s + '}');
-                console.log("[AudioStream] Potential JSON objects:", jsonObjects);
-                accumulatedData = "";
+        if (alignment) {
+            const chunkWords: Word[] = [];
+            let currentWord = '';
+            let wordStartTime = -1;
 
-                for (const jsonObjStr of jsonObjects) {
-                    try {
-                        console.log("[AudioStream] Trying to parse:", jsonObjStr);
-                        const chunk = JSON.parse(jsonObjStr);
-                        console.log("[AudioStream] Parsed chunk:", chunk);
-                        if (chunk.audio_base64) {
-                            console.log("[AudioStream] Queuing audio data.");
-                            const audioSrc = `data:audio/mpeg;base64,${chunk.audio_base64}`;
-                            setAudioQueue(prev => [...prev, audioSrc]);
+            alignment.characters.forEach((char, index) => {
+                const startTime = alignment.characterStartTimesSeconds[index];
+                const endTime = alignment.characterEndTimesSeconds[index];
+
+                if (currentWord === '' && startTime !== undefined) {
+                    wordStartTime = startTime;
+                }
+                currentWord += char;
+
+                if ((char === ' ' || index === alignment.characters.length - 1) && currentWord.trim() !== '' && wordStartTime !== -1 && endTime !== undefined) {
+                    const newWord = {
+                        text: currentWord.trim(),
+                        start: wordStartTime + timeOffset,
+                        end: endTime + timeOffset,
+                        duration: endTime - wordStartTime,
+                    };
+                    chunkWords.push(newWord);
+                    currentWord = '';
+                    wordStartTime = -1;
+                }
+            });
+
+            setState(prevState => {
+                const newSentences = [...prevState.sentences];
+                let wordBufferIndex = 0;
+
+                for (const sentenceIndex of sentenceIndices) {
+                    const sentence = newSentences[sentenceIndex];
+                    if (!sentence) continue;
+
+                    const sentenceTextWords = sentence.text.split(' ').filter(Boolean);
+                    const sentenceWords: Word[] = [];
+
+                    for (let i = 0; i < sentenceTextWords.length; i++) {
+                        if (wordBufferIndex < chunkWords.length) {
+                            const word = chunkWords[wordBufferIndex];
+                            if (word) {
+                                sentenceWords.push(word);
+                            }
+                            wordBufferIndex++;
                         }
-                        if (chunk.alignment) {
-                            console.log("[AudioStream] Received alignment data.");
-                            setState(prevState => ({ ...prevState, alignments: [...prevState.alignments, chunk.alignment], normalized_alignments: [...prevState.normalized_alignments, chunk.normalized_alignment] }));
-                        }
-                    } catch (e) {
-                        console.warn("[AudioStream] Incomplete JSON object, accumulating:", jsonObjStr);
-                        accumulatedData = jsonObjStr;
+                    }
+
+                    if (sentenceWords.length > 0) {
+                        const sentenceStartTime = sentenceWords[0]?.start ?? 0;
+                        const sentenceEndTime = sentenceWords[sentenceWords.length - 1]?.end ?? 0;
+                        newSentences[sentenceIndex] = {
+                            ...sentence,
+                            words: sentenceWords,
+                            start: sentenceStartTime,
+                            end: sentenceEndTime,
+                            duration: sentenceEndTime - sentenceStartTime,
+                        };
                     }
                 }
 
-            } catch (error) {
-                console.error("Error processing stream", error, "Accumulated data:", accumulatedData);
+                const newTotalDuration = newSentences.reduce((acc, s) => acc + s.duration, 0);
+                return { ...prevState, sentences: newSentences, totalDuration: newTotalDuration };
+            });
+        }
+
+        try {
+            sourceBuffer.appendBuffer(audioData);
+            if (playWhenReadyRef.current && audioPlayerRef.current) {
+                audioPlayerRef.current.play().catch(e => { });
+                playWhenReadyRef.current = false;
             }
+        } catch (e) {
+            chunkQueue.current.unshift(queuedItem);
         }
     }, []);
 
-    const playNextInQueue = useCallback(() => {
-        console.log(`[AudioStream] playNextInQueue called. Queue length: ${audioQueue.length}`);
-        if (audioQueue.length > 0) {
-            const nextAudio = audioQueue[0];
-            setAudioQueue(prev => prev.slice(1));
-            if (nextAudio) {
-                console.log("[AudioStream] Playing next audio from queue.");
-                audioPlayer.src = nextAudio;
-                audioPlayer.play().catch(e => console.error("[AudioStream] Audio playback failed", e));
-            }
-        } else {
-            console.log("[AudioStream] Audio queue empty.");
-            if (state.currentSentence < story.splitStory.length - 1) {
-                const nextSentence = state.currentSentence + 1;
-                console.log(`[AudioStream] Fetching next sentence: ${nextSentence}`);
-                setState(prevState => ({ ...prevState, currentSentence: nextSentence, isPlaying: true }));
-                fetchAndQueueAudio(nextSentence);
-            } else {
-                console.log("[AudioStream] End of story reached in playNextInQueue.");
-                setState(prevState => ({ ...prevState, isPlaying: false, currentSentence: -1 }));
-            }
-        }
-    }, [audioQueue, audioPlayer, fetchAndQueueAudio, state.currentSentence]);
+    useEffect(() => {
+        const player = audioPlayerRef.current;
+        if (!player) return;
+
+        const onTimeUpdate = () => {
+            setState(prevState => {
+                const currentTime = player.currentTime;
+                let sentenceIndex = -1;
+                let wordIndex = -1;
+
+                if (prevState.sentences) {
+                    for (let sIdx = 0; sIdx < prevState.sentences.length; sIdx++) {
+                        const sentence = prevState.sentences[sIdx];
+                        if (sentence && sentenceStatusRef.current.has(sentence.id) && currentTime >= sentence.start && currentTime <= sentence.end) {
+                            sentenceIndex = sIdx;
+                            for (let wIdx = 0; wIdx < sentence.words.length; wIdx++) {
+                                const word = sentence.words[wIdx];
+                                if (word && currentTime >= word.start && currentTime <= word.end) {
+                                    wordIndex = wIdx;
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if (prevState.currentIndex.sentence !== sentenceIndex || prevState.currentIndex.word !== wordIndex) {
+                }
+
+                return {
+                    ...prevState,
+                    currentTime,
+                    buffered: player.buffered,
+                    currentIndex: { sentence: sentenceIndex, word: wordIndex },
+                };
+            });
+        };
+
+        player.addEventListener('timeupdate', onTimeUpdate);
+
+        return () => player.removeEventListener('timeupdate', onTimeUpdate);
+    }, []);
 
     useEffect(() => {
-        console.log(`[AudioStream] useEffect triggered. Audio queue length: ${audioQueue.length}, Player paused: ${audioPlayer.paused}`);
-        if (audioQueue.length > 0 && audioPlayer.paused) {
-            console.log("[AudioStream] Calling playNextInQueue from useEffect.");
-            playNextInQueue();
-        }
-    }, [audioQueue, audioPlayer, playNextInQueue]);
+        const player = audioPlayerRef.current;
+        if (!player || !state.buffered || isFetchingRef.current) return;
 
-    audioPlayer.onended = () => {
-        console.log("[AudioStream] Audio ended, playing next in queue.");
-        playNextInQueue();
+        const bufferedEnd = state.buffered.length > 0 ? state.buffered.end(state.buffered.length - 1) : 0;
+        const shouldFetch = bufferedEnd - state.currentTime < 10;
+
+        const allSentencesFetched = sentenceStatusRef.current.size === state.sentences.length;
+
+
+        if (shouldFetch && !allSentencesFetched) {
+            fetchAndPlayAudio(state.sentences);
+        }
+    }, [state.currentTime, state.buffered, state.sentences, fetchAndPlayAudio]);
+
+    const togglePlayPause = useCallback(() => {
+        const player = audioPlayerRef.current;
+        if (!player) return;
+
+        if (state.isPlaying) {
+            player.pause();
+            setState(prevState => ({ ...prevState, isPlaying: false }));
+        } else {
+            setState(prevState => ({ ...prevState, isPlaying: true }));
+            if (player.buffered.length > 0) {
+                player.play().catch(() => { });
+            } else {
+                playWhenReadyRef.current = true;
+                fetchAndPlayAudio(state.sentences);
+            }
+        }
+    }, [state.isPlaying, state.sentences, fetchAndPlayAudio]);
+
+    const seek = (time: number) => {
+        const player = audioPlayerRef.current;
+        if (!player) return;
+        player.currentTime = time;
     };
 
-    const playStory = useCallback(() => {
-        console.log("[AudioStream] playStory called.");
-        if (!state.isPlaying) {
-            // Attempt to play and immediately pause.
-            // This is a workaround for some browsers that restrict autoplay.
-            // By initiating play() within the user gesture event, we "unlock" the audio element.
-            const playPromise = audioPlayer.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    audioPlayer.pause();
-                    console.log("[AudioStream] Audio player unlocked.");
-                }).catch(error => {
-                    console.log("[AudioStream] Audio player unlock failed, playback might not work.", error);
-                });
-            }
-
-            console.log("[AudioStream] Starting story playback.");
-            setState({ isPlaying: true, currentSentence: 0, alignments: [], normalized_alignments: [] });
-            setAudioQueue([]);
-            fetchAndQueueAudio(0);
-        } else {
-            console.log("[AudioStream] Story is already playing.");
-        }
-    }, [state.isPlaying, fetchAndQueueAudio, audioPlayer]);
-
-
-    const value = { ...state, playStory, audioPlayer };
+    const value = { ...state, togglePlayPause, seek, audioPlayer: audioPlayerRef.current };
 
     return (
         <AudioStreamContext.Provider value={value}>

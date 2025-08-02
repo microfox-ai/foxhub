@@ -266,7 +266,7 @@ export const useMicrofoxContext = (
         return;
       }
       let _ids = messageIds.map((_id) =>
-        _id.endsWith(clientRequest.id) ? _id : _id + "-" + clientRequest.id
+        _id.endsWith(clientRequest.id) ? _id : `${_id}-${clientRequest.id}`
       );
       return await PortalSdk.deleteData(
         `/api/chat/message?ids=${_ids.join(",")}&originClientRequestId=${clientRequest.id}`,
@@ -287,10 +287,6 @@ export const useMicrofoxContext = (
   ) => {
     console.log("[handleSubmit] called with:", { text, chatRequestOptions });
     // first store the lastmessage to db
-    if (event) {
-      event.preventDefault?.();
-      setInput("");
-    }
     const newMessage: UIMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -301,6 +297,10 @@ export const useMicrofoxContext = (
         },
       ],
     };
+    if (event) {
+      event.preventDefault?.();
+    }
+    setInput("");
     console.log("[handleSubmit] created new message:", newMessage);
     await appendMessage({ message: newMessage, chatRequestOptions });
     console.log("[handleSubmit] finished.");
@@ -360,7 +360,11 @@ export const useMicrofoxContext = (
 
       let messageNew = {
         ...message,
-        id: message.id ? ((clientRequest?.id && message.id.endsWith(clientRequest?.id)) ? message.id : message.id + "-" + clientRequest?.id) : crypto.randomUUID(),
+        id: message.id
+          ? clientRequest?.id && message.id.endsWith(clientRequest?.id)
+            ? message.id
+            : message.id + "-" + clientRequest?.id
+          : crypto.randomUUID(),
         metadata: {
           ...bodyParams,
           ...(message.metadata || {}),
@@ -398,6 +402,39 @@ export const useMicrofoxContext = (
     ]
   );
 
+  const handleEditMessage = async (messageIndex: number) => {
+    if (messageIndex >= chatOptions.messages.length) {
+      return;
+    }
+    // show alert dialog to confirm the edit
+    const messageToEdit = { ...chatOptions.messages[messageIndex] };
+    if (messageToEdit.role !== "user") {
+      console.error("Cannot edit an assistant message index.");
+      toast.error("Cannot edit from this point.");
+      return;
+    }
+    chatOptions.stop();
+
+    const newTextInput = getTextParts(
+      messageToEdit as UIMessage<any, any, any>
+    );
+    setInput(newTextInput?.[0] ?? "");
+
+    const messagesToDelete = chatOptions.messages.slice(messageIndex);
+    if (messagesToDelete.length > 0) {
+      const response = await deleteMessages(messagesToDelete.map((m) => m.id));
+      console.log("deleted messages", response);
+    }
+
+    chatOptions.setMessages((messages) => {
+      let newMessages = messages.slice(0, messageIndex);
+      if (!newMessages || newMessages.length === 0) {
+        newMessages = [];
+      }
+      return newMessages;
+    });
+  };
+
   const handleRefresh = async (messageIndex: number) => {
     if (messageIndex >= chatOptions.messages.length) {
       return;
@@ -409,21 +446,21 @@ export const useMicrofoxContext = (
       toast.error("Cannot refresh from this point.");
       return;
     }
-
+    
+    chatOptions.stop();
     // Extract body parameters from annotations
     const bodyParams = messageToResend.metadata;
 
     const messagesToDelete = chatOptions.messages.slice(messageIndex + 1); // Assistant response and subsequent messages
+    if (messagesToDelete.length > 0) {
+      const response = await deleteMessages(messagesToDelete.map((m) => m.id));
+      console.log("deleted messages", response);
+    }
 
     chatOptions.setMessages((messages) => {
       const newMessages = messages.slice(0, messageIndex);
       return newMessages;
     });
-
-    if (messagesToDelete.length > 0) {
-      const response = await deleteMessages(messagesToDelete.map((m) => m.id));
-      console.log("deleted messages", response);
-    }
 
     if (messageToResend) {
       try {
@@ -432,7 +469,7 @@ export const useMicrofoxContext = (
           message: messageToResend as UIMessage,
           chatRequestOptions: { body: bodyParams },
           bypassDb: true,
-          bypassAi: false
+          bypassAi: false,
         });
       } catch (error) {
         console.log("error appending message during refresh", error);
@@ -453,6 +490,7 @@ export const useMicrofoxContext = (
     isValidating,
     serverMessages,
     handleRefresh,
+    handleEditMessage,
     clientRequest,
     lastKnownMinionType,
     lastKnownMinionFlow,

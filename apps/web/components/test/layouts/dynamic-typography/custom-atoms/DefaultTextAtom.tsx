@@ -8,7 +8,7 @@ const motionComponents = { div: motion.div, p: motion.p, span: motion.span };
 
 export const DefaultTextAtom = forwardRef<HTMLElement, BaseAtomProps>(
     ({ data, overrideStyle }, ref) => {
-        const { as = 'div', style, animation, text } = data;
+        const { as = 'div', style, text } = data;
         const MotionComponent = motionComponents[as];
         // This component defines its own animation variants.
         const customVariants: Variants = {

@@ -9,9 +9,9 @@ import { useAudioStream } from '@/hooks/use-audio-stream';
 import { generateLayout } from '../dynamic-typography/layouts/layout-generators';
 
 const fixedConstraints: LayoutConstraints = {
-    alignment: 'top-center',
+    alignment: 'center',
     minWidth: '20%',
-    minHeight: '30%',
+    minHeight: '50%',
 };
 
 export const FramePlayer = () => {

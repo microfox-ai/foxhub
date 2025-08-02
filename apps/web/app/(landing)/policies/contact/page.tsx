@@ -55,7 +55,7 @@ const Contact = () => {
             <li><strong>Account Changes:</strong> admin@themoondevs.com</li>
             <li><strong>Hours:</strong> Monday - Friday, 9 AM - 6 PM Eastern Time</li>
           </ul>
-          <p className="mb-4">Schedule a demo with our sales team to learn how our AI bot integration platform can help streamline your business operations.</p>
+          <p className="mb-4">Schedule a demo with our sales team to learn how our intelligent workflow optimization platform can help streamline your business operations.</p>
         </section>
 
         <section className="mb-8">
@@ -67,7 +67,7 @@ const Contact = () => {
             <li><strong>Messaging Platform Partnerships:</strong> growth@themoondevs.com</li>
             <li><strong>Reseller Program:</strong> growth@themoondevs.com</li>
           </ul>
-          <p className="mb-4">We're always looking to expand our ecosystem with innovative partners who share our vision for seamless bot integration across messaging platforms.</p>
+          <p className="mb-4">We're always looking to expand our ecosystem with innovative partners who share our vision for seamless workflow integration across messaging platforms.</p>
         </section>
 
         <section className="mb-8">

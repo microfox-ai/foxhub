@@ -8,7 +8,7 @@ import FooterCtaSection from '@/components/screens/landing/FooterCTASection/Foot
 const ShippingDelivery = () => {
   return (
     <>
-      <div className="max-w-3xl mt-20 mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <Zap className="h-12 w-12 mx-auto mb-4 text-yellow-400" />
           <h1 className="text-4xl font-bold mb-4">Instant Digital Delivery</h1>

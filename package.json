@@ -6,7 +6,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "openapi:gen": "node scripts/generate-agent-types.mjs",
-    "build:ci": "dotenv -- turbo run build --filter=./apps/web",
+    "build:ci": "dotenv -e .env.vault turbo run build --filter=./apps/web",
     "build:ci:gitbot": "dotenv -- turbo run build --filter=./apps/gitbot",
     "start:ci": "node -r dotenv/config apps/web/server.js",
     "lint": "turbo run lint",

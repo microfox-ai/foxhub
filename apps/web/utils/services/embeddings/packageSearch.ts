@@ -1,11 +1,10 @@
-import { Package } from "@/components/screens/Chat/message/types";
 import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
-import { QueryApisResult } from "@/server/toolfox/helpers/queryApis";
 import { getLocalMcpDocs } from "@/server/toolfox/execution/loadLocalTools";
-import { RagUpstashSdk } from "@microfox/rag-upstash";
-import { FilterHelpers } from "@microfox/rag-upstash";
+import { RagUpstashSdk, FilterHelpers } from "@microfox/rag-upstash";
+import { ApiMcp, PackageDbInfo } from "./types";
+import { Package } from "@/components/screens/Chat/message/types";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -15,8 +14,8 @@ const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
 
 // Initialize RAG client
 const ragClient = new RagUpstashSdk({
-  upstashUrl: process.env.MICROFOX_UPSTASH_VECTOR_REST_URL || "",
-  upstashToken: process.env.MICROFOX_UPSTASH_VECTOR_REST_TOKEN || "",
+  upstashUrl: process.env.MICROFOX_UPSTASH_VECTOR_REST_URL ?? "", 
+  upstashToken: process.env.MICROFOX_UPSTASH_VECTOR_REST_TOKEN ?? "",
 });
 
 const PACKAGE_INFO_TABLE = "package_infos";
@@ -26,32 +25,6 @@ const MATCH_COUNT = 10;
 const TABLE_NAME = "package_infos";
 const MATCH_PACKAGE_RPC = "match_package_infos";
 const MATCH_MCP_RPC = "match_mcps";
-
-export interface PackageDbInfo {
-  id: string;
-  package_name: string;
-  package_title: string;
-  package_path: string;
-  platform_type: string;
-  auth_type: string | null;
-  auth_endpoint: string | null;
-  webhook_endpoint: string | null;
-  oauth2_scopes: string[] | null;
-  description: string;
-  dependencies: string[] | null;
-  added_dependencies: string[] | null;
-  status: string;
-  documentation: string;
-  icon: string;
-  readme_map: any;
-  constructors: any[];
-  key_instructions: string | null;
-  extra_info: any;
-  raw_content: Package;
-  file_path: string;
-  github_url: string;
-  updated_at: string;
-}
 
 async function searchPackages(searchTerm: string) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -342,21 +315,6 @@ export async function findSimilarPackages(
   }
 }
 
-export interface ApiMcp {
-  id: number;
-  name: string;
-  package_name: string;
-  base_url: string;
-  stage: string;
-  api_type: string;
-  type: string;
-  similarity: number;
-  created_at: string;
-  updated_at: string;
-  openApiSchema?: any;
-  metadata?: any;
-  tools?: QueryApisResult[];
-}
 
 export async function plainSearchMcps({
   query,

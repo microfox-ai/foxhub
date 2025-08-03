@@ -51,7 +51,6 @@ jobs:
           fi
 
           cp .env.vault apps/web/.env.vault
-          rm -f .env.vault
           export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
 
           if ! npm run build:ci; then

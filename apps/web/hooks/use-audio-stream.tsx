@@ -236,10 +236,14 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                 const startTime = alignment.characterStartTimesSeconds[index];
                 const endTime = alignment.characterEndTimesSeconds[index];
 
-                if (currentWord === '' && startTime !== undefined) {
-                    wordStartTime = startTime;
+                if (char.trim() !== '') {
+                    if (currentWord.trim() === '') {
+                        wordStartTime = startTime || 0;
+                    }
+                    currentWord += char;
+                } else if (currentWord.trim() !== '') {
+                    currentWord += char;
                 }
-                currentWord += char;
 
                 if ((char === ' ' || index === alignment.characters.length - 1) && currentWord.trim() !== '' && wordStartTime !== -1 && endTime !== undefined) {
                     const newWord = {

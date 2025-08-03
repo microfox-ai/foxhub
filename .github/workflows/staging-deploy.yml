@@ -50,6 +50,8 @@ jobs:
             exit 1
           fi
 
+          cp .env.vault apps/web/.env.vault
+          rm -f .env.vault
           export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
 
           if ! npm run build:ci; then
@@ -138,4 +140,4 @@ jobs:
           if [ $? -ne 0 ]; then
             echo "Deployment step failed"
             exit 1
-          fi 
+          fi

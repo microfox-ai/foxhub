@@ -1,29 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-
-import { ChevronRight, Plus } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
-import AddBotDialog from "./AddBotDialog";
 import { useBots } from "./providers/BotProvider";
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
-import { Identity } from "@microfox/oauth-kit";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BotsCardsGrid } from "./BotsCardsGrid";
 import { BotsTableList } from "./BotsTableList";
 
 const MyBots = ({ uiType = "bots" }: { uiType?: "bots" | "connections" }) => {
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const { bots, isLoading, error, stableBotPackages } = useBots();
-
+  const { error } = useBots();
 
   if (error) {
     return (

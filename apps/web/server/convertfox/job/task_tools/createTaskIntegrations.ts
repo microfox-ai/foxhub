@@ -2,8 +2,8 @@ import { updateTaskInstanceMeta } from "@/utils/services/db_functions/updateClie
 import {
   PackageInfoHelper,
   findSimilarPackages,
-  PackageDbInfo,
 } from "@/utils/services/embeddings/packageSearch";
+import { PackageDbInfo } from "@/utils/services/embeddings/types";
 import { MySlackChannels, slackBotSdk } from "@/utils/services/slackBotSdk";
 import { generateObject, streamText, tool } from "ai";
 import { z } from "zod";

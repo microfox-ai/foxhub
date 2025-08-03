@@ -8,7 +8,7 @@ import { ClientRequest } from "@prisma/client";
 import { templateEnvsFromTaskIntegrations } from "../buildfox/helper/templateEnvsFromTaskIntegrations";
 import { convertToModelMessages, streamText, generateObject } from "ai";
 import { models } from "../models";
-import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
 import { prisma } from "@/prisma/prisma";
 import { getMicrofoxCharacter, getMicrofoxPersonality, essentialTools } from "../hellofox/_prompts";
 import { insertUiHitlOutput } from "../../components/screens/Chat/message/uiTool/mappers/uiHitl";

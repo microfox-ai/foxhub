@@ -1,5 +1,5 @@
 import { IN_DEV } from "@/utils/constants/appInfo";
-import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
 
 export const LOCAL_MCP_PORTS = [4000]
 

@@ -4,7 +4,8 @@ import { AiRouter, getTextPartsContent } from "@microfox/ai-router";
 import { models } from "../models";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { findApiMcps, ApiMcp, getApiMcpById } from "@/utils/services/embeddings/packageSearch";
+import { findApiMcps, getApiMcpById } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
 import { queryApis, QueryApisResult } from "./helpers/queryApis";
 
 // mounted at /chatFlow/toolSelection

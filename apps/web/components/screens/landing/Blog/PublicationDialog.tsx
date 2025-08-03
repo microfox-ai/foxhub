@@ -12,6 +12,7 @@ export interface IPublication {
     video_url?: string;
     name?: string;
     avatar?: string;
+    created_time?: string;
 
     isHot?: boolean;
 

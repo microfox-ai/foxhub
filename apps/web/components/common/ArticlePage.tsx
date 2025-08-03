@@ -5,11 +5,19 @@ import TiptapRenderer from '@/components/common/Tiptap/TiptapRenderer';
 import TableOfContents from '@/components/common/Tiptap/TableOfContents';
 import { useNotionTiptap } from '@/lib/notion/useNotionTiptap';
 import ArticleHeader from './ArticleHeader';
+import { BlogSection } from '../screens/landing/Blog/BlogSection';
 
 export default function ArticlePage({ articleData }: { articleData: any }) {
     const [scrollProgress, setScrollProgress] = useState(0);
 
     const { page, content } = articleData;
+
+    const category = page.properties.Category?.multi_select?.[0]?.name;
+    const title = (page.properties['Doc name']?.title[0]?.plain_text || 'Untitled Article') + ` - Microfox ${category}`;
+    const description = page.properties.Description?.rich_text?.map((item: any) => item.plain_text).join(' ');
+    const keywords = page.properties.keywords?.multi_select?.map(
+        (c: any) => c.name,
+    );
 
     const editor = useNotionTiptap(content || []);
 
@@ -53,6 +61,7 @@ export default function ArticlePage({ articleData }: { articleData: any }) {
                     </div>
                 </div>
             </div>
+            <BlogSection category={category} />
         </>
     );
 }

@@ -24,6 +24,10 @@ import { Column } from "@/components/common/Tiptap/extensions/Column";
 import { File } from "@/components/common/Tiptap/extensions/File";
 import { Audio } from "@/components/common/Tiptap/extensions/Audio";
 import { Bookmark } from "@/components/common/Tiptap/extensions/Bookmark";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
 
 export function useNotionTiptap(blocks: NotionBlock[]) {
   const editor = useEditor({
@@ -35,6 +39,27 @@ export function useNotionTiptap(blocks: NotionBlock[]) {
         heading: false,
         codeBlock: {},
         blockquote: {},
+      }),
+      Table.configure({
+        HTMLAttributes: {
+          style: "border-collapse: collapse; border-spacing: 0; width: 100%;",
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          style: "border: 1px solid #ddd; padding: 8px;",
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          style: "border: 1px solid #ddd; padding: 8px;",
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          style:
+            "border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;",
+        },
       }),
       Heading.configure({
         levels: [1, 2, 3],

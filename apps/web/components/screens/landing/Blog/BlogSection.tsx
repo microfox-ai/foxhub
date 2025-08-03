@@ -5,12 +5,13 @@ import IndustryCarousel from "./IndustryCarousel";
 import useSWR from "swr";
 import { type QueryDatabaseResponse } from "@microfox/notion";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { MAIN_BLOG_DATABASE } from "./blogConstants";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export const BlogSection = ({ category }: { category?: string }) => {
 
-    const { data, isLoading, error } = useSWR("/api/landing/blog/articles?databaseId=213fa11b8894800d89f8fffb4e133784", fetcher);
+    const { data, isLoading, error } = useSWR(`/api/landing/blog/articles?databaseId=${MAIN_BLOG_DATABASE.databaseId}&category=${category ? category : ''}`, fetcher);
 
     const results = data?.results as QueryDatabaseResponse["results"]
 
@@ -30,7 +31,12 @@ export const BlogSection = ({ category }: { category?: string }) => {
             return {
                 id: result.id,
                 link: APP_BASE_URL + "/blog/" + result.id,
-                title, description, categories, type: "article" as const, image_url: image, last_edited_time
+                title,
+                description,
+                categories,
+                type: "article" as const,
+                image_url: image,
+                last_edited_time
             }
         }
         return null;

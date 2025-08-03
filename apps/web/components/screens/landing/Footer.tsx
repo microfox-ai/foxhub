@@ -8,13 +8,17 @@ import { FilloutFormIds, useFilloutPopup } from "@/components/screens/landing/Fi
 
 const Company = [
     {
-        name: "About Microfox",
+        name: "About Project",
         link: "/",
     },
     {
-        name: "The Moon Devs",
-        link: "https://themoondevs.com",
+        name: "Blog & Resources",
+        link: "/blog",
     },
+    // {
+    //     name: "The Moon Devs",
+    //     link: "https://themoondevs.com",
+    // },
     // {
     //     name: "Founders",
     //     link: "https://themoondevs.com/team/founder",
@@ -143,7 +147,7 @@ export const FooterSection = () => {
                 <div className="flex flex-col sm:flex-row justify-between gap-8 w-full md:w-1/2 md:flex-wrap lg:gap-4">
                     {/* Company Links */}
                     <div className="flex flex-col gap-2">
-                        <span className="text-base font-medium">Company</span>
+                        <span className="text-base font-medium">Microfox</span>
                         <ul className="flex flex-col gap-2">
                             {Company.map((item, index) => (
                                 <li key={index} className="text-base font-light opacity-70 hover:opacity-100 cursor-pointer">

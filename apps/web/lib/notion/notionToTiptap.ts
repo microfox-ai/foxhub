@@ -299,6 +299,41 @@ function blockToTiptap(block: NotionBlock): TiptapNode | null {
     }
   }
 
+  if (isBlockType(block, "table") && block.table) {
+    const tableContent = block.children
+      ? notionToTiptap(block.children).content || []
+      : [];
+    if (block.table.has_column_header && tableContent.length > 0) {
+      const headerRow = tableContent[0];
+      if (headerRow && headerRow.type === "tableRow" && headerRow.content) {
+        headerRow.content.forEach((cell) => {
+          cell.type = "tableHeader";
+        });
+      }
+    }
+    return {
+      type: "table",
+      content: tableContent,
+    };
+  }
+
+  if (isBlockType(block, "table_row") && block.table_row) {
+    return {
+      type: "tableRow",
+      content: block.table_row.cells.map((cell: RichText[]) => {
+        return {
+          type: "tableCell",
+          content: [
+            {
+              type: "paragraph",
+              content: richTextToTiptap(cell),
+            },
+          ],
+        };
+      }),
+    };
+  }
+
   if (isBlockType(block, "breadcrumb") && block.breadcrumb) {
     // return {
     //   type: "breadcrumb",

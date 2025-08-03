@@ -5,7 +5,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const databaseId = searchParams.get("databaseId");
-    const pageSize = parseInt(searchParams.get("pageSize") || "10");
+    const category = searchParams.get("category");
+    const pageSize = parseInt(searchParams.get("pageSize") || "50");
     const startCursor = searchParams.get("startCursor") || undefined;
     const pageNo = parseInt(searchParams.get("pageNo") || "1");
 
@@ -20,16 +21,33 @@ export async function GET(request: Request) {
       auth: process.env.NOTION_BOT_TOKEN || "",
     });
 
+    const mainFilter = {
+      property: "Status",
+      select: {
+        equals: "Published",
+      },
+    };
+    let filter: any = mainFilter;
+
+    if (category) {
+      const categoryFilter = {
+        property: "Category",
+        multi_select: {
+          contains: category,
+        },
+      };
+      filter = {
+        or: [mainFilter, categoryFilter],
+      };
+    } else {
+      filter = mainFilter;
+    }
+
     const pages = await client.databases.query({
       database_id: databaseId,
       page_size: pageSize,
       start_cursor: startCursor,
-      filter: {
-        property: "Status",
-        select: {
-          equals: "Published",
-        },
-      },
+      filter,
     });
 
     return NextResponse.json({

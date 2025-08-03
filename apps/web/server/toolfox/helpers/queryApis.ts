@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { RagUpstashSdk } from '@microfox/rag-upstash';
 import { FilterHelpers } from '@microfox/rag-upstash';
+import { QueryApisResult } from "@/utils/services/embeddings/types";
 
 // Supabase configuration with validation
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL;
@@ -216,25 +217,6 @@ export interface QueryApisParams {
   match_threshold?: number;
 }
 
-export interface QueryApisResult {
-  id: string;
-  name: string;
-  package_name: string;
-  base_url: string;
-  endpoint_path: string;
-  http_method: string;
-  similarity: number;
-  api_type: string;
-  schema_path: string;
-  created_at: string;
-  updated_at: string;
-  metadata: {
-    package_name: string;
-    function_type: "WEBHOOK" | "CRON" | "MIXED";
-    openApiSchema: any;
-    endpointSchema: any;
-  };
-}
 
 const queryApis = async ({
   query,

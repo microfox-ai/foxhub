@@ -6,7 +6,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { findApiMcps, getApiMcpById } from "@/utils/services/embeddings/packageSearch";
 import { ApiMcp } from "@/utils/services/embeddings/types";
-import { queryApis, QueryApisResult } from "./helpers/queryApis";
+import { queryApis } from "./helpers/queryApis";
 
 // mounted at /chatFlow/toolSelection
 const toolSelectionAgent = new AiRouter<any, any, any, any>();

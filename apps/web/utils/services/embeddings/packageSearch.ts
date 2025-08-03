@@ -2,19 +2,17 @@ import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
 import { getLocalMcpDocs } from "@/server/toolfox/execution/loadLocalTools";
-import { RagUpstashSdk, FilterHelpers } from "@microfox/rag-upstash";
-import { ApiMcp, PackageDbInfo } from "./types";
+import { RagUpstashSdk } from "@microfox/rag-upstash";
+import { FilterHelpers } from "@microfox/rag-upstash";
+import { ApiMcp, PackageDbInfo, QueryApisResult } from "./types";
 import { Package } from "@/components/screens/Chat/message/types";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
 
 // Initialize RAG client
 const ragClient = new RagUpstashSdk({
-  upstashUrl: process.env.MICROFOX_UPSTASH_VECTOR_REST_URL ?? "", 
+  upstashUrl: process.env.MICROFOX_UPSTASH_VECTOR_REST_URL ?? "",
   upstashToken: process.env.MICROFOX_UPSTASH_VECTOR_REST_TOKEN ?? "",
 });
 
@@ -314,7 +312,6 @@ export async function findSimilarPackages(
     throw err;
   }
 }
-
 
 export async function plainSearchMcps({
   query,

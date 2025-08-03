@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack --port 3000",
     "start": "next start",
-    "build": "dotenv -- next build",
-    "build:ci": "dotenv -- next build",
+    "build": "next build",
+    "build:ci": "dotenv -e .env.vault next build",
     "start:ci": "node -r dotenv/config ./server.js",
     "lint": "next lint --max-warnings 30",
     "check-types": "tsc --noEmit",

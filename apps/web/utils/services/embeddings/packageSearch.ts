@@ -4,8 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
 import { QueryApisResult } from "@/server/toolfox/helpers/queryApis";
 import { getLocalMcpDocs } from "@/server/toolfox/execution/loadLocalTools";
-import { RagUpstashSdk } from '@microfox/rag-upstash';
-import { FilterHelpers } from '@microfox/rag-upstash';
+import { RagUpstashSdk } from "@microfox/rag-upstash";
+import { FilterHelpers } from "@microfox/rag-upstash";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
@@ -379,7 +382,7 @@ export async function plainSearchMcps({
 
     let { data: packages, error } = await queryBuilder;
 
-    const localMcps = await getLocalMcpDocs()
+    const localMcps = await getLocalMcpDocs();
     if (localMcps.length > 0) {
       packages = [...(packages as ApiMcp[]), ...localMcps] as ApiMcp[];
     }
@@ -427,8 +430,7 @@ export async function getApiMcpById(ids: number[]): Promise<ApiMcp[]> {
     .select("*")
     .in("id", ids);
 
-
-  const localMcps = await getLocalMcpDocs()
+  const localMcps = await getLocalMcpDocs();
   if (localMcps.length > 0) {
     data = [...(data as ApiMcp[]), ...localMcps];
   }
@@ -456,47 +458,49 @@ export async function findApiMcps({
 }): Promise<ApiMcp[]> {
   try {
     console.log("Searching MCPs with query:", query);
-    
+
     // Build filter for Upstash RAG
     const filterBuilder = FilterHelpers;
-    let filter: any = filterBuilder.and(
-      filterBuilder.eq('type', 'api_mcp')
-    );
+    let filter: any = filterBuilder.and(filterBuilder.eq("type", "api_mcp"));
 
     if (api_type) {
       filter = filterBuilder.and(
         filter,
-        filterBuilder.eq('api_type', api_type)
+        filterBuilder.eq("api_type", api_type)
       );
     }
 
     const results: ApiMcp[] = [];
 
     // Search in global MCP namespace
-    const mcpNamespace = 'api-mcps';
+    const mcpNamespace = "api-mcps";
     console.log(`Searching MCPs in namespace: ${mcpNamespace}`);
-    
-    const mcpResults = await ragClient.queryDocsFromRAG({
-      data: query,
-      topK: match_count,
-      filter: filter,
-      includeData: false,
-      includeMetadata: true
-    }, mcpNamespace);
+
+    const mcpResults = await ragClient.queryDocsFromRAG(
+      {
+        data: query,
+        topK: match_count,
+        filter: filter,
+        includeData: false,
+        includeMetadata: true,
+      },
+      mcpNamespace
+    );
 
     // Fetch full data from Supabase
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     for (const ragResult of mcpResults) {
       if (ragResult.metadata?.supabase_id) {
         const { data: supabaseData, error } = await supabase
-          .from('api_mcps')
-          .select('*')
-          .eq('id', ragResult.metadata.supabase_id)
+          .from("api_mcps")
+          .select("*")
+          .eq("id", ragResult.metadata.supabase_id)
           .single();
 
         if (!error && supabaseData) {
-          const similarity = (ragResult as any).score || (ragResult as any).similarity || 0;
-          
+          const similarity =
+            (ragResult as any).score || (ragResult as any).similarity || 0;
+
           // Apply similarity threshold
           if (similarity >= match_threshold) {
             results.push({
@@ -511,7 +515,7 @@ export async function findApiMcps({
               created_at: supabaseData.created_at,
               updated_at: supabaseData.updated_at,
               openApiSchema: supabaseData.metadata?.docs_data,
-              metadata: supabaseData.metadata
+              metadata: supabaseData.metadata,
             });
           }
         }
@@ -547,4 +551,4 @@ export const PackageInfoHelper = {
   findSimilarPackages,
   findApiMcps,
   plainSearchMcps,
-}; 
+};

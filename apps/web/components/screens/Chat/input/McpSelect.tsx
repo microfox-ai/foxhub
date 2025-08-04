@@ -25,7 +25,7 @@ import {
     HoverCard,
     HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
 import { useMicrofoxChat } from "../MicrofoxChatProvider";
 import { IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
 import { McpHoverCardContent } from "./McpHoverCard";

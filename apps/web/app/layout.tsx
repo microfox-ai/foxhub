@@ -69,27 +69,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block"
-          rel="stylesheet"
-        ></link>
-        <link
-          href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&display=block"
-          rel="stylesheet"
-        ></link>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&display=block"
-        ></link>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+    <>
+      <link
+        href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block"
+        rel="stylesheet"
+      ></link>
+      <link
+        href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&display=block"
+        rel="stylesheet"
+      ></link>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&display=block"
+      ></link>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      />
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
               window.fbAsyncInit = function() {
                 FB.init({
                   appId      : '2061594424315808',
@@ -106,26 +105,23 @@ export default function RootLayout({
                  js.src = "https://connect.facebook.net/en_US/sdk.js";
                  fjs.parentNode.insertBefore(js, fjs);
                }(document, 'script', 'facebook-jssdk'));
-            `
-          }}
-        />
-      </head>
-      <body>
-        <Suspense
-          fallback={
-            <div className="flex justify-center items-center overflow-hidden h-screen">
-              <Loader2 className="w-full h-6 animate-spin" />
-            </div>
-          }
-        >
-          <AuthProvider>
-            <AnalyticsProvider>
-              <FeatureBase />
-              <div className="flex-1">{children}</div>
-            </AnalyticsProvider>
-          </AuthProvider>
-        </Suspense>
-      </body>
-    </html>
+            `,
+        }}
+      />
+      <Suspense
+        fallback={
+          <div className="flex justify-center items-center overflow-hidden h-screen">
+            <Loader2 className="w-full h-6 animate-spin" />
+          </div>
+        }
+      >
+        <AuthProvider>
+          <AnalyticsProvider>
+            <FeatureBase />
+            <div className="flex-1">{children}</div>
+          </AnalyticsProvider>
+        </AuthProvider>
+      </Suspense>
+    </>
   );
 }

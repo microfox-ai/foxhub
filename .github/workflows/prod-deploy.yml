@@ -62,6 +62,7 @@ jobs:
             exit 1
           fi
 
+          cp .env.vault apps/web/.env.vault
           export DOTENV_KEY=${{ secrets.PROD_DOTENV_KEY }}
 
           # Clean Turbo cache

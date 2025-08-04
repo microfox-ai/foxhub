@@ -42,7 +42,7 @@ export function LoginForm({
           <div className="p-6 md:p-8 h-full flex flex-col justify-center items-center">
             <div className="flex flex-col items-center text-center">
               <h1 className="text-2xl font-bold py-4">
-                {directedFrom == "microfox-qr" ? "Microfox" : "Hello ! I&apos;m Microfox"}
+                {directedFrom == "microfox-qr" ? "Microfox" : "Hello! Microfox"}
               </h1>
               <p className="text-balance text-md text-muted-foreground">
                 {directedFrom == "microfox-qr" ? "A open source Multi agentic framework for real world, with inbuilt Auth, a2a support, tool use, hitl systems and especially scalabity built in." : "I can help you access, research & operate digital tools in your stead. Fire the micro-tasks on me, & I will not let you down."}

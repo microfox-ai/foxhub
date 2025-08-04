@@ -1,5 +1,9 @@
-import { RichText } from "@microfox/notion";
-export type { RichText };
+import { RichText as OriginalRichText } from "@microfox/notion";
+
+export type RichText = OriginalRichText & {
+  plain_text?: string;
+  href?: string | null;
+};
 
 export interface NotionBlock {
   object: "block";
@@ -55,6 +59,14 @@ export interface NotionBlock {
       type: "emoji";
       emoji: string;
     };
+  };
+  table?: {
+    table_width: number;
+    has_column_header: boolean;
+    has_row_header: boolean;
+  };
+  table_row?: {
+    cells: RichText[][];
   };
   children?: NotionBlock[]; // For nested blocks
 }

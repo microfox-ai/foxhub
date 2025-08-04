@@ -32,7 +32,7 @@ import { useClientProject } from "../providers/ClientProjectProvider";
 import { useLayout } from "../providers/LayoutProvider";
 import { getTextParts } from "@repo/ai-utils/helper";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
 
 type MicrofoxContextType = ReturnType<typeof useMicrofoxContext>;
 

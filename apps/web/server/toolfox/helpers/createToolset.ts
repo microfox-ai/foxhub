@@ -3,7 +3,7 @@ import {
   OpenAPIToolsClientOptions,
   AuthOptions,
 } from "@microfox/tool-kit";
-import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
 import { ClientRequest } from "@prisma/client";
 import { z } from "zod";
 import {

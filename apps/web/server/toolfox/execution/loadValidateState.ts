@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { ApiMcp } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
 import { AiContext, AiMiddleware } from "@microfox/ai-router";
 
 /**

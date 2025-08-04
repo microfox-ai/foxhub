@@ -1,5 +1,5 @@
 import { prisma } from "@/prisma/prisma";
-import { DEPLOY_STATUS, ClientDeployment } from "@prisma/client";
+import { ClientRequest } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { generateUsageReport } from "@/utils/services/billing/generate-usage-report";
 
@@ -9,10 +9,10 @@ export const maxDuration = 600_000;
 
 const BATCH_SIZE = 100;
 
-async function processBatch(deployments: ClientDeployment[], dateKey: string) {
+async function processBatch(requests: ClientRequest[], dateKey: string) {
   const results = await Promise.all(
-    deployments.map(async (deployment) => {
-      const requestId = deployment.originClientRequestId;
+    requests.map(async (request) => {
+      const requestId = request.id;
       if (!requestId) {
         return {
           requestId: "unknown",
@@ -44,11 +44,7 @@ async function processBatch(deployments: ClientDeployment[], dateKey: string) {
 export async function GET() {
   try {
     // Get all client deployments
-    const clientDeployments = await prisma.clientDeployment.findMany({
-      where: {
-        status: DEPLOY_STATUS.DEPLOYED,
-      },
-    });
+    const clientRequests = await prisma.clientRequest.findMany();
 
     const today = new Date().toISOString().split("T")[0];
     const results = [];
@@ -62,8 +58,8 @@ export async function GET() {
 
     // Create batches
     const batchResults = [];
-    for (let i = 0; i < clientDeployments.length; i += BATCH_SIZE) {
-      const batch = clientDeployments.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < clientRequests.length; i += BATCH_SIZE) {
+      const batch = clientRequests.slice(i, i + BATCH_SIZE);
       const results = await processBatch(batch, today);
       batchResults.push(...results);
     }

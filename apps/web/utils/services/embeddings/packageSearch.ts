@@ -1,9 +1,11 @@
-import { Package } from "@/components/screens/Chat/message/types";
 import { PackageStatus } from "@/server/types";
 import { createClient } from "@supabase/supabase-js";
 import { embed } from "./geminiEmbed";
-import { QueryApisResult } from "@/server/toolfox/helpers/queryApis";
 import { getLocalMcpDocs } from "@/server/toolfox/execution/loadLocalTools";
+import { RagUpstashSdk } from "@microfox/rag-upstash";
+import { FilterHelpers } from "@microfox/rag-upstash";
+import { ApiMcp, PackageDbInfo, QueryApisResult } from "./types";
+import { Package } from "@/components/screens/Chat/message/types";
 
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
@@ -15,32 +17,6 @@ const MATCH_COUNT = 10;
 const TABLE_NAME = "package_infos";
 const MATCH_PACKAGE_RPC = "match_package_infos";
 const MATCH_MCP_RPC = "match_mcps";
-
-export interface PackageDbInfo {
-  id: string;
-  package_name: string;
-  package_title: string;
-  package_path: string;
-  platform_type: string;
-  auth_type: string | null;
-  auth_endpoint: string | null;
-  webhook_endpoint: string | null;
-  oauth2_scopes: string[] | null;
-  description: string;
-  dependencies: string[] | null;
-  added_dependencies: string[] | null;
-  status: string;
-  documentation: string;
-  icon: string;
-  readme_map: any;
-  constructors: any[];
-  key_instructions: string | null;
-  extra_info: any;
-  raw_content: Package;
-  file_path: string;
-  github_url: string;
-  updated_at: string;
-}
 
 async function searchPackages(searchTerm: string) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -331,22 +307,6 @@ export async function findSimilarPackages(
   }
 }
 
-export interface ApiMcp {
-  id: number;
-  name: string;
-  package_name: string;
-  base_url: string;
-  stage: string;
-  api_type: string;
-  type: string;
-  similarity: number;
-  created_at: string;
-  updated_at: string;
-  openApiSchema?: any;
-  metadata?: any;
-  tools?: QueryApisResult[];
-}
-
 export async function plainSearchMcps({
   query,
   match_count = 10,
@@ -371,7 +331,7 @@ export async function plainSearchMcps({
 
     let { data: packages, error } = await queryBuilder;
 
-    const localMcps = await getLocalMcpDocs()
+    const localMcps = await getLocalMcpDocs();
     if (localMcps.length > 0) {
       packages = [...(packages as ApiMcp[]), ...localMcps] as ApiMcp[];
     }
@@ -419,8 +379,7 @@ export async function getApiMcpById(ids: number[]): Promise<ApiMcp[]> {
     .select("*")
     .in("id", ids);
 
-
-  const localMcps = await getLocalMcpDocs()
+  const localMcps = await getLocalMcpDocs();
   if (localMcps.length > 0) {
     data = [...(data as ApiMcp[]), ...localMcps];
   }
@@ -447,28 +406,87 @@ export async function findApiMcps({
   api_type?: string;
 }): Promise<ApiMcp[]> {
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log("Embedding query", query);
-    const embedding = await embed(query);
-
-    const { data: packages, error } = await supabase.rpc(MATCH_MCP_RPC, {
-      query_embedding: embedding,
-      ...(api_type && { api_type }), // package-sls, micro-agent
-      match_count: match_count,
-      match_threshold: match_threshold,
+    const ragClient = new RagUpstashSdk({
+      upstashUrl: process.env.MICROFOX_UPSTASH_VECTOR_REST_URL ?? "",
+      upstashToken: process.env.MICROFOX_UPSTASH_VECTOR_REST_TOKEN ?? "",
     });
+    console.log("Searching MCPs with query:", query);
 
-    if (error) {
-      console.error("Error querying Supabase:", error);
-      throw new Error(`Error finding similar packages: ${error.message}`);
+    // Build filter for Upstash RAG
+    const filterBuilder = FilterHelpers;
+    let filter: any = filterBuilder.and(filterBuilder.eq("type", "api_mcp"));
+
+    if (api_type) {
+      filter = filterBuilder.and(
+        filter,
+        filterBuilder.eq("api_type", api_type)
+      );
     }
 
-    if (!packages || packages.length === 0) {
-      console.log("No similar packages found.");
+    const results: ApiMcp[] = [];
+
+    // Search in global MCP namespace
+    const mcpNamespace = "api-mcps";
+    console.log(`Searching MCPs in namespace: ${mcpNamespace}`);
+
+    const mcpResults = await ragClient.queryDocsFromRAG(
+      {
+        data: query,
+        topK: match_count,
+        filter: filter,
+        includeData: false,
+        includeMetadata: true,
+      },
+      mcpNamespace
+    );
+
+    // Fetch full data from Supabase
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    for (const ragResult of mcpResults) {
+      if (ragResult.metadata?.supabase_id) {
+        const { data: supabaseData, error } = await supabase
+          .from("api_mcps")
+          .select("*")
+          .eq("id", ragResult.metadata.supabase_id)
+          .single();
+
+        if (!error && supabaseData) {
+          const similarity =
+            (ragResult as any).score || (ragResult as any).similarity || 0;
+
+          // Apply similarity threshold
+          if (similarity >= match_threshold) {
+            results.push({
+              id: supabaseData.id,
+              name: supabaseData.name,
+              package_name: supabaseData.package_name,
+              base_url: supabaseData.base_url,
+              stage: supabaseData.stage,
+              api_type: supabaseData.api_type,
+              type: supabaseData.type,
+              similarity: similarity,
+              created_at: supabaseData.created_at,
+              updated_at: supabaseData.updated_at,
+              openApiSchema: supabaseData.metadata?.docs_data,
+              metadata: supabaseData.metadata,
+            });
+          }
+        }
+      }
+    }
+
+    // Add local MCPs if available
+    const localMcps = await getLocalMcpDocs();
+    if (localMcps.length > 0) {
+      results.push(...localMcps);
+    }
+
+    if (results.length === 0) {
+      console.log("No similar MCPs found.");
       return [];
     }
 
-    return packages;
+    return results.sort((a, b) => b.similarity - a.similarity);
   } catch (err) {
     console.error("An unexpected error occurred:", err);
     throw err;

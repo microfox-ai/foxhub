@@ -44,14 +44,17 @@ jobs:
       - name: Build project
         id: build
         run: |
+          shopt -s dotglob
           if ${{steps.install.outputs.install-status == 0}} ; then
             echo "npm install failed"
             echo "build-status=0" >> $GITHUB_OUTPUT
             exit 1
           fi
 
+          cp .env.vault apps/web/.env.vault
           export DOTENV_KEY=${{ secrets.STAGING_DOTENV_KEY }}
 
+          npm run clean
           if ! npm run build:ci; then
             echo "build-status=0" >> $GITHUB_OUTPUT
             exit 1
@@ -138,4 +141,4 @@ jobs:
           if [ $? -ne 0 ]; then
             echo "Deployment step failed"
             exit 1
-          fi 
+          fi

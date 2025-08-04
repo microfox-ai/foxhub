@@ -26,10 +26,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useMemo } from "react";
 import { Bot } from "./providers/types";
-import { clubUniqueBots } from "@/server/toolfox/helpers/fetchVariables";
+import { clubUniqueBots } from "@/server/toolfox/helpers/clubUniqueBots";
 import AddBotDialog from "./AddBotDialog";
-
-// Import the clubUniqueSecrets function
+import { ClientSecret } from "@prisma/client";
 
 export const BotsTableList = () => {
     const router = useRouter();
@@ -61,7 +60,7 @@ export const BotsTableList = () => {
     console.log("groupedBots", groupedBots);
 
     const [isAddBotDialogOpen, setIsAddBotDialogOpen] = useState(false);
-    
+
     if (isLoading) {
         return (
             <div className="rounded-lg bg-card w-full overflow-y-auto h-screen pb-[200px]">
@@ -318,10 +317,10 @@ export const BotsTableList = () => {
         <div className="rounded-lg bg-card w-full overflow-y-auto h-screen pb-[200px]">
             <div className="p-6 border-b sticky top-0 bg-white z-10 flex justify-between items-center">
                 <div>
-                <h2 className="text-lg font-semibold">Recent Connections</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                    Manage and configure your connections to external services
-                </p>
+                    <h2 className="text-lg font-semibold">Recent Connections</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Manage and configure your connections to external services
+                    </p>
                 </div>
                 <Button onClick={() => setIsAddBotDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" />

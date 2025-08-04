@@ -4,8 +4,9 @@ import { AiRouter, getTextPartsContent } from "@microfox/ai-router";
 import { models } from "../models";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { findApiMcps, ApiMcp, getApiMcpById } from "@/utils/services/embeddings/packageSearch";
-import { queryApis, QueryApisResult } from "./helpers/queryApis";
+import { findApiMcps, getApiMcpById } from "@/utils/services/embeddings/packageSearch";
+import { ApiMcp } from "@/utils/services/embeddings/types";
+import { queryApis } from "./helpers/queryApis";
 
 // mounted at /chatFlow/toolSelection
 const toolSelectionAgent = new AiRouter<any, any, any, any>();
@@ -89,7 +90,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
         ragResults = await getApiMcpById(selectedMcps);
         ctx.state.toolExecType = "selected";
     }
-    else if (thisToolMode == "deep") {
+    else if (thisToolMode === "deep") {
         response.writeMessageMetadata({
             loader: "Deep-Thinking the best fit.",
         });
@@ -184,19 +185,20 @@ toolSelectionAgent.agent("/", async (ctx) => {
         console.log("ragResults", ragResults);
         ctx.state.toolExecType = "deep";
     }
-    else if (thisToolMode == "fast") {
+    else if (thisToolMode === "fast") {
         response.writeMessageMetadata({
             loader: "Fast-search based on user's request...",
         });
-        console.log("Fast Search: RAG - Searching for User's Request", userMessage);
-        console.time("Fast Search: RAG - findApiMcps");
+        console.time("Time: FastSearchMain");
         const toolsResults = await queryApis({
-            query: `User's Request: ${userMessage}`,
+            query: `${userMessage}`,
             match_threshold: 0.5,
             match_count: 10,
         });
+        console.timeEnd("Time: FastSearchMain");
+        console.time("Time: FastSearchMap");
         ragResults = toolsResults.map((tool, _index) => {
-            let { openApiSchema, endpointSchema, ...rest } = tool.metadata;
+            let { openApiSchema, endpointSchema } = tool.metadata;
             let { paths, ...restOpenApiSchema } = openApiSchema || {};
             return {
                 stage: "PROD",
@@ -215,11 +217,11 @@ toolSelectionAgent.agent("/", async (ctx) => {
                 },
             };
         });
+        console.timeEnd("Time: FastSearchMap");
         response.writeMessageMetadata({
             loader: "Found " + ragResults.length + " tools...",
         });
         //console.log("ragResults", ragResults.map((r) => r.openApiSchema));
-        console.timeEnd("Fast Search: RAG - findApiMcps");
         ctx.state.toolExecType = "fast";
     }
 
@@ -235,7 +237,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
             };
         });
     }
-    else if (ragResults.length > 0 && thisToolMode == "fast") {
+    else if (ragResults.length > 0 && thisToolMode === "fast") {
         toolPopulatedMcps = ragResults.map((ragResult) => {
             return {
                 ...ragResult,
@@ -243,7 +245,7 @@ toolSelectionAgent.agent("/", async (ctx) => {
             };
         });
     }
-    else if (ragResults.length > 0 && thisToolMode == "deep") {
+    else if (ragResults.length > 0 && thisToolMode === "deep") {
         // toolSearchQuery: "search query to find the correct tools inside this MCP/API/Agent"}
         console.time("Deep Search: RAG - queryApis for all ragResults");
         response.writeMessageMetadata({

@@ -9,8 +9,9 @@ const DATABASE_ID = MAIN_BLOG_DATABASE.databaseId
 
 export async function generateSitemaps() {
 
+    console.log("process.env.NOTION_BOT_TOKEN", process.env.NOTION_BOT_TOKEN);
     const client = new NotionClient({
-        auth: process.env.NOTION_BOT_TOKEN || "",
+        auth: process.env.NOTION_BOT_TOKEN ?? "",
     });
 
     const pages = await client.databases.query({

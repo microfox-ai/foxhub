@@ -9,21 +9,21 @@ const DATABASE_ID = MAIN_BLOG_DATABASE.databaseId
 
 export async function generateSitemaps() {
 
-    console.log("process.env.NOTION_BOT_TOKEN", process.env.NOTION_BOT_TOKEN);
-    const client = new NotionClient({
-        auth: process.env.NOTION_BOT_TOKEN ?? "",
-    });
 
-    const pages = await client.databases.query({
-        database_id: DATABASE_ID,
-        page_size: 50000,
-        filter: {
-            property: "Status",
-            select: {
-                equals: "Published",
-            },
-        },
-    });
+    // const client = new NotionClient({
+    //     auth: process.env.NOTION_BOT_TOKEN ?? "",
+    // });
+
+    // const pages = await client.databases.query({
+    //     database_id: DATABASE_ID,
+    //     page_size: 50000,
+    //     filter: {
+    //         property: "Status",
+    //         select: {
+    //             equals: "Published",
+    //         },
+    //     },
+    // });
 
     // Fetch the total number of products and calculate the number of sitemaps needed
     return [{ id: 0 }]
@@ -37,8 +37,10 @@ export default async function sitemap({
     // Google's limit is 50,000 URLs per sitemap
     const start = id * 50000
     const end = start + 50000
+
+    console.log("process.env.NOTION_BOT_TOKEN", process.env.NOTION_BOT_TOKEN);
     const client = new NotionClient({
-        auth: process.env.NOTION_BOT_TOKEN || "",
+        auth: process.env.NOTION_BOT_TOKEN ?? "",
     });
 
     const pages = await client.databases.query({

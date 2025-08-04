@@ -10,12 +10,6 @@ import { Package } from "@/components/screens/Chat/message/types";
 const SUPABASE_URL = process.env.EMBEDDING_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.EMBEDDING_SUPABASE_SERVICE_ROLE_KEY!;
 
-// Initialize RAG client
-const ragClient = new RagUpstashSdk({
-  upstashUrl: process.env.MICROFOX_UPSTASH_VECTOR_REST_URL ?? "",
-  upstashToken: process.env.MICROFOX_UPSTASH_VECTOR_REST_TOKEN ?? "",
-});
-
 const PACKAGE_INFO_TABLE = "package_infos";
 
 const MATCH_THRESHOLD = 0.78;
@@ -412,6 +406,10 @@ export async function findApiMcps({
   api_type?: string;
 }): Promise<ApiMcp[]> {
   try {
+    const ragClient = new RagUpstashSdk({
+      upstashUrl: process.env.MICROFOX_UPSTASH_VECTOR_REST_URL ?? "",
+      upstashToken: process.env.MICROFOX_UPSTASH_VECTOR_REST_TOKEN ?? "",
+    });
     console.log("Searching MCPs with query:", query);
 
     // Build filter for Upstash RAG

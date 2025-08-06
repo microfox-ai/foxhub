@@ -8,6 +8,8 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 import FeatureBase from "@/components/auth/FeatureBase";
+import Head from "next/head";
+import { Html } from "next/document";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -69,26 +71,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <link
-        href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block"
-        rel="stylesheet"
-      ></link>
-      <link
-        href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&display=block"
-        rel="stylesheet"
-      ></link>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&display=block"
-      ></link>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      />
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
+    <html>
+      <Head>
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block"
+          rel="stylesheet"
+        ></link>
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&display=block"
+          rel="stylesheet"
+        ></link>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&display=block"
+        ></link>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
               window.fbAsyncInit = function() {
                 FB.init({
                   appId      : '2061594424315808',
@@ -106,22 +109,25 @@ export default function RootLayout({
                  fjs.parentNode.insertBefore(js, fjs);
                }(document, 'script', 'facebook-jssdk'));
             `,
-        }}
-      />
-      <Suspense
-        fallback={
-          <div className="flex justify-center items-center overflow-hidden h-screen">
-            <Loader2 className="w-full h-6 animate-spin" />
-          </div>
-        }
-      >
-        <AuthProvider>
-          <AnalyticsProvider>
-            <FeatureBase />
-            <div className="flex-1">{children}</div>
-          </AnalyticsProvider>
-        </AuthProvider>
-      </Suspense>
-    </>
+          }}
+        />
+      </Head>
+      <body>
+        <Suspense
+          fallback={
+            <div className="flex justify-center items-center overflow-hidden h-screen">
+              <Loader2 className="w-full h-6 animate-spin" />
+            </div>
+          }
+        >
+          <AuthProvider>
+            <AnalyticsProvider>
+              <FeatureBase />
+              <div className="flex-1">{children}</div>
+            </AnalyticsProvider>
+          </AuthProvider>
+        </Suspense>
+      </body>
+    </html>
   );
 }

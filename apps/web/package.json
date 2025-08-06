@@ -27,7 +27,9 @@
     "@aws-sdk/client-sqs": "^3.831.0",
     "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@codemirror/lang-html": "^6.4.5",
+    "@elevenlabs/client": "^0.4.4",
     "@elevenlabs/elevenlabs-js": "^2.7.0",
+    "@elevenlabs/react": "^0.4.5",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@fillout/react": "^3.0.0",
@@ -154,7 +156,8 @@
     "tiptap-unique-id": "^2.10.3",
     "turndown": "^7.2.0",
     "use-debounce": "^10.0.4",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -166,6 +169,7 @@
     "@types/react-dom": "^19",
     "@types/showdown": "^2.0.6",
     "@types/turndown": "^5.0.5",
+    "@types/ws": "^8.5.10",
     "eslint": "^9",
     "eslint-config-next": "15.2.2",
     "eslint-config-prettier": "^10.1.1",

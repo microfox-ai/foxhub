@@ -2,8 +2,15 @@ import { useState, createContext, useContext, useCallback, useEffect, useRef } f
 import { story } from "@/components/test/layouts/data/story";
 import { StreamingAudioChunkWithTimestampsResponse } from "@elevenlabs/elevenlabs-js/api/types/StreamingAudioChunkWithTimestampsResponse";
 
+/**
+ * The number of sentences to fetch in a single batch.
+ * This helps in managing network requests efficiently.
+ */
 const BATCH_SIZE = 5;
 
+/**
+ * Represents a single word with its timing information.
+ */
 export interface Word {
     text: string;
     start: number;
@@ -11,6 +18,9 @@ export interface Word {
     duration: number;
 }
 
+/**
+ * Represents a sentence, which is a collection of words, with its timing information.
+ */
 export interface Sentence {
     id: string;
     text: string;
@@ -20,16 +30,26 @@ export interface Sentence {
     duration: number;
 }
 
+/**
+ * Defines the shape of the audio stream's state.
+ */
 interface AudioStreamState {
+    /** Whether the audio is currently playing. */
     isPlaying: boolean;
+    /** Whether the audio is currently buffering. */
     isBuffering: boolean;
+    /** Array of sentences that make up the audio content. */
     sentences: Sentence[];
+    /** The current index of the sentence and word being played. */
     currentIndex: {
         sentence: number;
         word: number;
     };
+    /** The current playback time of the audio. */
     currentTime: number;
+    /** The total duration of the audio generated so far. */
     totalDuration: number;
+    /** The time ranges of the audio that have been buffered. */
     buffered: TimeRanges | null;
 }
 
@@ -51,13 +71,20 @@ const initialState: AudioStreamState = {
 };
 
 type AudioStreamContextType = {
+    /** Toggles the playback state of the audio. */
     togglePlayPause: () => void;
+    /** Seeks to a specific time in the audio. */
     seek: (time: number) => void;
+    /** The HTML audio element used for playback. */
     audioPlayer: HTMLAudioElement | null;
 } & AudioStreamState;
 
 const AudioStreamContext = createContext<AudioStreamContextType | undefined>(undefined);
 
+/**
+ * Custom hook to access the audio stream context.
+ * Provides a convenient way to consume the audio stream's state and controls.
+ */
 export const useAudioStream = () => {
     const context = useContext(AudioStreamContext);
     if (!context) {
@@ -66,27 +93,50 @@ export const useAudioStream = () => {
     return context;
 };
 
+/**
+ * Represents a chunk of audio data from the stream, queued for processing.
+ */
 interface QueuedChunk {
+    /** The parsed chunk from the streaming response. */
     chunk: StreamingAudioChunkWithTimestampsResponse;
+    /** The indices of the sentences this chunk corresponds to. */
     sentenceIndices: number[];
 }
 
+/**
+ * Provides the audio streaming functionality to its children.
+ * This component manages the audio player, fetches audio data,
+ * handles buffering, and keeps track of the playback state.
+ */
 export const AudioStreamProvider = ({ children }: { children: React.ReactNode }) => {
     const [state, setState] = useState<AudioStreamState>(initialState);
+
+    // Refs for core audio components and state
     const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
     const mediaSourceRef = useRef<MediaSource | null>(null);
     const sourceBufferRef = useRef<SourceBuffer | null>(null);
+
+    // Refs for managing playback and fetching state
     const isSeekingRef = useRef(false);
     const chunkQueue = useRef<QueuedChunk[]>([]);
     const playWhenReadyRef = useRef(false);
     const isFetchingRef = useRef(false);
+    /**
+     * Tracks the fetch status of each sentence to avoid re-fetching.
+     * The key is the sentence ID and the value is 'fetched'.
+     */
     const sentenceStatusRef = useRef<Map<string, 'fetched'>>(new Map());
 
+    /**
+     * Fetches audio for a batch of sentences and handles the streaming response.
+     * @param sentences The full list of sentences for the audio content.
+     */
     const fetchAndPlayAudio = async (sentences: Sentence[]) => {
         if (isFetchingRef.current) {
             return;
         }
 
+        // Identify sentences that have not been fetched yet and take a batch.
         const sentenceIndicesToFetch = sentences
             .map((s, index) => ({ id: s.id, index }))
             .filter(s => !sentenceStatusRef.current.has(s.id))
@@ -97,6 +147,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
             return;
         }
 
+        // Mark the selected sentences as 'fetched' to prevent re-fetching.
         sentenceIndicesToFetch.forEach(index => {
             const sentence = sentences[index];
             if (sentence) {
@@ -113,6 +164,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
         const firstSentenceIndex = sentenceIndicesToFetch[0];
         const lastSentenceIndex = sentenceIndicesToFetch[sentenceIndicesToFetch.length - 1];
 
+        // Provide context of previous and next sentences to the TTS API for better prosody.
         const previous_text = (firstSentenceIndex !== undefined && firstSentenceIndex > 0) ? sentences[firstSentenceIndex - 1]?.text : undefined;
         const next_text = (lastSentenceIndex !== undefined && lastSentenceIndex < sentences.length - 1) ? sentences[lastSentenceIndex + 1]?.text : undefined;
 
@@ -133,6 +185,10 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
         const reader = response.body.getReader();
         let buffer = "";
 
+        /**
+         * Processes the streaming response from the server.
+         * The stream is delimited by '<-s->' to separate JSON objects.
+         */
         const processStream = async () => {
             const decoder = new TextDecoder();
             while (true) {
@@ -144,6 +200,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                             if (part) {
                                 try {
                                     const parsed = JSON.parse(part) as StreamingAudioChunkWithTimestampsResponse;
+                                    // Add the parsed chunk to the queue for processing.
                                     chunkQueue.current.push({ chunk: parsed, sentenceIndices: sentenceIndicesToFetch });
                                     processQueue();
                                 } catch (e) {
@@ -164,6 +221,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                     if (part) {
                         try {
                             const parsed = JSON.parse(part) as StreamingAudioChunkWithTimestampsResponse;
+                            // Add the parsed chunk to the queue for processing.
                             chunkQueue.current.push({ chunk: parsed, sentenceIndices: sentenceIndicesToFetch });
                             processQueue();
                         } catch (e) {
@@ -177,23 +235,31 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
         processStream();
     };
 
+    /**
+     * Initializes the audio player and Media Source Extension.
+     * This effect runs once on component mount.
+     */
     useEffect(() => {
         const audioPlayer = new Audio();
         audioPlayerRef.current = audioPlayer;
         mediaSourceRef.current = new MediaSource();
+        // The audio player's source is a URL created from the MediaSource instance.
         audioPlayer.src = URL.createObjectURL(mediaSourceRef.current);
-        document.body.appendChild(audioPlayer);
+        document.body.appendChild(audioPlayer); // Appending to body is required for some browsers to allow playback.
 
         const onSourceOpen = () => {
             if (!mediaSourceRef.current) return;
             try {
+                // Create a SourceBuffer to handle the incoming audio data.
                 const sourceBuffer = mediaSourceRef.current.addSourceBuffer('audio/mpeg');
                 sourceBufferRef.current = sourceBuffer;
 
+                // When the source buffer is done updating, process the next chunk in the queue.
                 sourceBuffer.addEventListener('updateend', () => {
                     processQueue();
                 });
 
+                // Start processing the queue if there are any chunks.
                 processQueue();
             } catch (e) {
             }
@@ -201,6 +267,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
 
         mediaSourceRef.current.addEventListener('sourceopen', onSourceOpen);
 
+        // Cleanup function to release resources.
         return () => {
             const player = audioPlayerRef.current;
             if (player && mediaSourceRef.current) {
@@ -212,8 +279,13 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
         };
     }, []);
 
+    /**
+     * Processes the queue of audio chunks, appending them to the SourceBuffer
+     * and updating the state with timing information.
+     */
     const processQueue = useCallback(() => {
         const sourceBuffer = sourceBufferRef.current;
+        // Do not process if the buffer is updating, or the queue is empty.
         if (!sourceBuffer || sourceBuffer.updating || chunkQueue.current.length === 0) {
             return;
         }
@@ -224,7 +296,9 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
         const { chunk, sentenceIndices } = queuedItem;
         const { alignment } = chunk;
 
+        // The audio data is base64 encoded, so it needs to be decoded.
         const audioData = Buffer.from(chunk.audioBase64, 'base64');
+        // Calculate the time offset based on the current buffered content.
         const timeOffset = sourceBuffer.buffered.length > 0 ? sourceBuffer.buffered.end(0) : 0;
 
         if (alignment) {
@@ -232,6 +306,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
             let currentWord = '';
             let wordStartTime = -1;
 
+            // Parse the alignment data to construct words with their timings.
             alignment.characters.forEach((char, index) => {
                 const startTime = alignment.characterStartTimesSeconds[index];
                 const endTime = alignment.characterEndTimesSeconds[index];
@@ -248,6 +323,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                 if ((char === ' ' || index === alignment.characters.length - 1) && currentWord.trim() !== '' && wordStartTime !== -1 && endTime !== undefined) {
                     const newWord = {
                         text: currentWord.trim(),
+                        // Apply the time offset to the word's start and end times.
                         start: wordStartTime + timeOffset,
                         end: endTime + timeOffset,
                         duration: endTime - wordStartTime,
@@ -262,6 +338,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                 const newSentences = [...prevState.sentences];
                 let wordBufferIndex = 0;
 
+                // Distribute the words from the chunk into their corresponding sentences.
                 for (const sentenceIndex of sentenceIndices) {
                     const sentence = newSentences[sentenceIndex];
                     if (!sentence) continue;
@@ -269,6 +346,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                     const sentenceTextWords = sentence.text.split(' ').filter(Boolean);
                     const sentenceWords: Word[] = [];
 
+                    // Match words from the chunk to the words in the sentence text.
                     for (let i = 0; i < sentenceTextWords.length; i++) {
                         if (wordBufferIndex < chunkWords.length) {
                             const word = chunkWords[wordBufferIndex];
@@ -282,6 +360,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                     if (sentenceWords.length > 0) {
                         const sentenceStartTime = sentenceWords[0]?.start ?? 0;
                         const sentenceEndTime = sentenceWords[sentenceWords.length - 1]?.end ?? 0;
+                        // Update the sentence with the new words and timing information.
                         newSentences[sentenceIndex] = {
                             ...sentence,
                             words: sentenceWords,
@@ -292,22 +371,29 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                     }
                 }
 
+                // Recalculate the total duration of the audio.
                 const newTotalDuration = newSentences.reduce((acc, s) => acc + s.duration, 0);
                 return { ...prevState, sentences: newSentences, totalDuration: newTotalDuration };
             });
         }
 
         try {
+            // Append the audio data to the SourceBuffer.
             sourceBuffer.appendBuffer(audioData);
+            // If playback was requested before data was available, start playing now.
             if (playWhenReadyRef.current && audioPlayerRef.current) {
                 audioPlayerRef.current.play().catch(e => { });
                 playWhenReadyRef.current = false;
             }
         } catch (e) {
+            // If appending fails, re-queue the chunk to try again later.
             chunkQueue.current.unshift(queuedItem);
         }
     }, []);
 
+    /**
+     * Updates the current sentence and word index based on the audio player's current time.
+     */
     useEffect(() => {
         const player = audioPlayerRef.current;
         if (!player) return;
@@ -319,10 +405,12 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                 let wordIndex = -1;
 
                 if (prevState.sentences) {
+                    // Find the current sentence by checking if currentTime is within its start and end times.
                     for (let sIdx = 0; sIdx < prevState.sentences.length; sIdx++) {
                         const sentence = prevState.sentences[sIdx];
                         if (sentence && sentenceStatusRef.current.has(sentence.id) && currentTime >= sentence.start && currentTime <= sentence.end) {
                             sentenceIndex = sIdx;
+                            // Find the current word within the current sentence.
                             for (let wIdx = 0; wIdx < sentence.words.length; wIdx++) {
                                 const word = sentence.words[wIdx];
                                 if (word && currentTime >= word.start && currentTime <= word.end) {
@@ -336,6 +424,7 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
                 }
 
                 if (prevState.currentIndex.sentence !== sentenceIndex || prevState.currentIndex.word !== wordIndex) {
+                    // This block can be used for side-effects when the current word/sentence changes.
                 }
 
                 return {
@@ -352,11 +441,15 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
         return () => player.removeEventListener('timeupdate', onTimeUpdate);
     }, []);
 
+    /**
+     * Proactively fetches the next batch of audio when the buffered content is running low.
+     */
     useEffect(() => {
         const player = audioPlayerRef.current;
         if (!player || !state.buffered || isFetchingRef.current) return;
 
         const bufferedEnd = state.buffered.length > 0 ? state.buffered.end(state.buffered.length - 1) : 0;
+        // Fetch more audio if the remaining buffered time is less than 10 seconds.
         const shouldFetch = bufferedEnd - state.currentTime < 10;
 
         const allSentencesFetched = sentenceStatusRef.current.size === state.sentences.length;
@@ -367,6 +460,9 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
         }
     }, [state.currentTime, state.buffered, state.sentences, fetchAndPlayAudio]);
 
+    /**
+     * Toggles the audio playback between play and pause.
+     */
     const togglePlayPause = useCallback(() => {
         const player = audioPlayerRef.current;
         if (!player) return;
@@ -376,15 +472,21 @@ export const AudioStreamProvider = ({ children }: { children: React.ReactNode })
             setState(prevState => ({ ...prevState, isPlaying: false }));
         } else {
             setState(prevState => ({ ...prevState, isPlaying: true }));
+            // If there's buffered content, play immediately.
             if (player.buffered.length > 0) {
                 player.play().catch(() => { });
             } else {
+                // If there's no buffered content, set a flag to play when ready and start fetching.
                 playWhenReadyRef.current = true;
                 fetchAndPlayAudio(state.sentences);
             }
         }
     }, [state.isPlaying, state.sentences, fetchAndPlayAudio]);
 
+    /**
+     * Seeks to a specific time in the audio stream.
+     * @param time The time to seek to, in seconds.
+     */
     const seek = (time: number) => {
         const player = audioPlayerRef.current;
         if (!player) return;

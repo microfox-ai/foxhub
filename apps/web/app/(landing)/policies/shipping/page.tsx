@@ -6,7 +6,7 @@ import PromoImageSection from '@/components/screens/policies/PromoImageSection';
 const ShippingDelivery = () => {
   return (
     <>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mt-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <Zap className="h-12 w-12 mx-auto mb-4 text-yellow-400" />
           <h1 className="text-4xl font-bold mb-4">Digital Delivery and Service Availability</h1>

@@ -21,7 +21,7 @@ const BookCall = () => {
 
   return (
     <>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div>
             <h1 className="text-4xl font-bold mb-6">Book a Demo Call</h1>

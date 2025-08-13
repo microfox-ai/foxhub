@@ -6,7 +6,7 @@ import PromoImageSection from '@/components/screens/policies/PromoImageSection';
 const Subprocessors = () => {
   return (
     <>
-      <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="mt-20 min-h-screen bg-[#FAFAFA]">
         <PageHero 
           title="Subprocessors and Service Providers" 
           date="August 13, 2025"

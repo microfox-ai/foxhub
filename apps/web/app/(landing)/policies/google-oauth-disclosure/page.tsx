@@ -6,7 +6,7 @@ import PromoImageSection from '@/components/screens/policies/PromoImageSection';
 const GoogleOAuthDisclosure = () => {
   return (
     <>
-      <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="mt-20 min-h-screen bg-[#FAFAFA]">
         <PageHero 
           title="Google OAuth and API Limited Use Disclosure" 
           date="August 13, 2025"

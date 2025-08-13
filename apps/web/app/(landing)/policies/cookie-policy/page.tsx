@@ -6,7 +6,7 @@ import PromoImageSection from '@/components/screens/policies/PromoImageSection';
 const CookiePolicy = () => {
   return (
     <>
-      <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="mt-20 min-h-screen bg-[#FAFAFA]">
         <PageHero 
           title="Cookie and Tracking Technologies Policy" 
           date="August 13, 2025"

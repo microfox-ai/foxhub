@@ -26,7 +26,7 @@ const BookCallNew = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#fcf9f6]">
+    <div className="mt-20 min-h-screen flex bg-[#fcf9f6]">
       {/* Left Side */}
       <div className="w-1/2 hidden md:flex flex-col justify-start px-20 py-16 bg-[#fcf9f6] border-r border-gray-100">
         <span className="text-2xl font-semibold text-gray-900 mb-12">microfox</span>

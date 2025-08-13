@@ -6,7 +6,7 @@ import PromoImageSection from '@/components/screens/policies/PromoImageSection';
 const TermsConditions = () => {
   return (
     <>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mt-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-4xl font-bold mb-8">Terms and Conditions</h1>
         <div className="prose prose-lg">
           <p className="text-sm text-gray-500 mb-8">Last updated: August 13, 2025</p>

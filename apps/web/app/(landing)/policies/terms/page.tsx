@@ -109,7 +109,7 @@ const TermsConditions = () => {
           </section>
         </div>
       </div>
-      <PromoImageSection />
+      {/* <PromoImageSection /> */}
     </>
   );
 }

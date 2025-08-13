@@ -72,7 +72,7 @@ const ShippingDelivery = () => {
           </section>
         </div>
       </div>
-      <PromoImageSection />
+      {/* <PromoImageSection /> */}
     </>
   );
 }

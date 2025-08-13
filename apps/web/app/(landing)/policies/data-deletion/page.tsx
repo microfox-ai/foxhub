@@ -47,7 +47,7 @@ const DataDeletion = () => {
           </div>
         </div>
 
-        <PromoImageSection />
+        {/* <PromoImageSection /> */}
       </div>
     </>
   );

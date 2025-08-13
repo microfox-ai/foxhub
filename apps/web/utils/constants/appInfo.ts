@@ -1,10 +1,10 @@
 export enum APP_ROUTES {
   index = "/",
-  cancellationPolicy = "/policies/cancellation-refund",
+  cancellationPolicy = "/policies/refund",
   contactPolicy = "/policies/contact",
   dataDeletionPolicy = "/policies/data-deletion",
-  privacyPolicy = "/policies/privacy-policy",
-  serviceDeliveryPolicy = "/policies/service-delivery",
+  privacyPolicy = "/policies/privacy",
+  serviceDeliveryPolicy = "/policies/shipping",
   termsOfService = "/policies/terms",
 }
 

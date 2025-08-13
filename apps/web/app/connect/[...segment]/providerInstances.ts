@@ -5,6 +5,8 @@ import { RedditOAuthSdk } from "@microfox/reddit-oauth";
 import { NotionOAuthSdk } from "@microfox/notion-oauth";
 import { GitHubOAuthSdk } from "@microfox/github-oauth";
 import { WhatsappOAuthSdk } from "@microfox/whatsapp-oauth";
+import { InstagramOAuthSdk, InstagramScope } from "@microfox/instagram-oauth";
+import { InstagramfbOAuthSdk } from "@microfox/instagramfb-oauth";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
 
 // NOTE:edit this whenever new provider is added
@@ -85,6 +87,26 @@ export const mapProviderToAuthFunction = (
         apiBaseUrl: process.env.WHATSAPP_API_BASE_URL,
         upstashRedisRestUrl: process.env.WHATSAPP_REDIS_URL,
         upstashRedisRestToken: process.env.WHATSAPP_REDIS_TOKEN,
+      });
+    case "instagramfb-oauth":
+    case "oauth-instagramfb":
+      return new InstagramfbOAuthSdk({
+        clientId: process.env.INSTAGRAMFB_CLIENT_ID!,
+        clientSecret: process.env.INSTAGRAMFB_CLIENT_SECRET!,
+        redirectUri: process.env.INSTAGRAMFB_REDIRECT_URI
+          ? APP_BASE_URL + process.env.INSTAGRAMFB_REDIRECT_URI
+          : "https://staging.microfox.app" + `/connect/${packageName}/callback`,
+        ...(scopes && { scopes: scopes }),
+      });
+    case "instagram-oauth":
+    case "oauth-instagram":
+      return new InstagramOAuthSdk({
+        clientId: process.env.INSTAGRAM_CLIENT_ID!,
+        clientSecret: process.env.INSTAGRAM_CLIENT_SECRET!,
+        redirectUri: process.env.INSTAGRAM_REDIRECT_URI
+          ? APP_BASE_URL + process.env.INSTAGRAM_REDIRECT_URI
+          : APP_BASE_URL + `/connect/${packageName}/callback`,
+        ...(scopes && { scopes: scopes as InstagramScope[] }),
       });
     default:
       return null;

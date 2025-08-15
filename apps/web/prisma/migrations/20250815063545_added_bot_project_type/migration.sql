@@ -1,0 +1,6 @@
+-- CreateEnum
+CREATE TYPE "PROJECT_TYPE" AS ENUM ('CLIENT', 'CONSOLE');
+
+-- AlterTable
+ALTER TABLE "BotProject" ADD COLUMN     "type" "PROJECT_TYPE" DEFAULT 'CLIENT',
+ALTER COLUMN "slug" SET DEFAULT 'client';

@@ -10,6 +10,7 @@ import { TasksTab } from "./TasksTab";
 import { ShardPagesTab } from "./ShardPagesTab";
 import { NoProjects } from "./NoProjects";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
   const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, createNewEmptyRequest } = useClientProject();
@@ -18,7 +19,11 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
 
   useEffect(() => {
     if (selectedProject) {
-      setActiveTab(defaultTab);
+      if (selectedProject.type === "CONSOLE") {
+        redirect("/subdomain/console");
+      } else {
+        setActiveTab(defaultTab);
+      }
     }
   }, [selectedProject]);
 

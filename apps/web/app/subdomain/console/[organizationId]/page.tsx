@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { timeAgo } from "@/lib/utils"
 import { Globe, Code, Box, Server, Plus } from "lucide-react"
-import { ProjectTechnologyType, ProjectSourceType, ProjectRuntimeType } from "@/components/subapps/console/lib/console-api"
+import { ProjectTechnologyType } from "@/components/subapps/console/lib/console-api"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -50,7 +50,7 @@ function CreateProjectCard() {
     )
 }
 
-function getTechnologyIcon(tech: ProjectTechnologyType) {
+function getTechnologyIcon(tech: string) {
     switch (tech) {
         case ProjectTechnologyType.NODEJS:
             return <Code className="w-4 h-4" />

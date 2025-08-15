@@ -70,28 +70,14 @@ export interface DeploymentLogsDto {
   post_deployment?: DeploymentLogEntryDto[]
 }
 
-import { mockDeploymentsByProject, mockLogsByDeployment, mockOrganizations, mockProjects } from "./mock-data"
-
 export type BotProject = {
   id: string;
   name: string;
   githubRepoUrl: string;
 };
 
-function hasApiBase() {
-  return !!API_BASE
-}
-
-function delay(ms: number) {
-  return new Promise((r) => setTimeout(r, ms))
-}
-
 export const consoleApi = {
   async listOrganizations(ownerId: string) {
-    if (!hasApiBase()) {
-      await delay(200)
-      return mockOrganizations.filter((o) => o.ownerId === ownerId)
-    }
     const url = new URL(`/api/organizations`, API_BASE)
     url.searchParams.set("ownerId", ownerId)
     const res = await fetch(url.toString())
@@ -101,21 +87,6 @@ export const consoleApi = {
   },
 
   async createOrganization(input: { name: string; ownerId: string; description?: string; avatar?: string }) {
-    if (!hasApiBase()) {
-      await delay(200)
-      const org: OrganizationDto = {
-        _id: String(Date.now()),
-        name: input.name,
-        description: input.description,
-        avatar: input.avatar,
-        ownerId: input.ownerId,
-        members: [input.ownerId],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      mockOrganizations.push(org)
-      return org
-    }
     const res = await fetch(`${API_BASE}/api/organizations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -126,13 +97,6 @@ export const consoleApi = {
   },
 
   async listProjects(params: { organizationId?: string; userId?: string }) {
-    if (!hasApiBase()) {
-      await delay(200)
-      let items = [...mockProjects]
-      if (params.organizationId) items = items.filter((p) => p.organizationId === params.organizationId)
-      if (params.userId) items = items.filter((p) => p.userId === params.userId)
-      return items as ProjectDto[]
-    }
     const url = new URL(`/api/projects`, API_BASE)
     if (params.organizationId) url.searchParams.set("organizationId", params.organizationId)
     if (params.userId) url.searchParams.set("userId", params.userId)
@@ -152,28 +116,6 @@ export const consoleApi = {
     runtimes?: any[]
     services?: any[]
   }) {
-    if (!hasApiBase()) {
-      await delay(300)
-      const proj: ProjectDto = {
-        _id: String(Date.now()),
-        name: input.name,
-        avatar: input.avatar,
-        organizationId: input.organizationId,
-        userId: input.userId,
-        source: input.source,
-        technology: {
-          language: input.technology?.language as ProjectTechnologyType ?? ProjectTechnologyType.NODEJS,
-          version: input.technology?.version ?? "18.x",
-          isTypeSafe: !!input.technology?.isTypeSafe,
-        },
-        runtimes: input.runtimes ?? [],
-        services: input.services ?? [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      mockProjects.push(proj)
-      return proj
-    }
     const res = await fetch(`${API_BASE}/api/projects`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -184,23 +126,12 @@ export const consoleApi = {
   },
 
   async getDeployment(deploymentId: string) {
-    if (!hasApiBase()) {
-      await delay(200)
-      const all = Object.values(mockDeploymentsByProject).flat()
-      const dep = all.find((d) => d._id === deploymentId)
-      if (!dep) throw new Error("Deployment not found")
-      return dep
-    }
     const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}`)
     if (!res.ok) throw new Error(`Failed to fetch deployment: ${res.status}`)
     return (await res.json()) as DeploymentDto
   },
 
   async listProjectDeployments(projectId: string) {
-    if (!hasApiBase()) {
-      await delay(250)
-      return mockDeploymentsByProject[projectId] ?? ([] as DeploymentDto[])
-    }
     const url = new URL(`/api/deployments`, API_BASE)
     url.searchParams.set("projectId", projectId)
     const res = await fetch(url.toString())
@@ -213,10 +144,6 @@ export const consoleApi = {
   },
 
   async getDeploymentLogs(deploymentId: string) {
-    if (!hasApiBase()) {
-      await delay(200)
-      return mockLogsByDeployment[deploymentId] ?? { compiling: [], deploying: [], post_deployment: [] }
-    }
     const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}/logs`)
     if (!res.ok) throw new Error(`Failed to fetch deployment logs: ${res.status}`)
     const data = await res.json()
@@ -224,24 +151,6 @@ export const consoleApi = {
   },
 
   async startLocalDeployment(projectId: string, archiveFile: File) {
-    if (!hasApiBase()) {
-      await delay(800)
-      // Fake a new deployment and attach logs
-      const newId = `dpl_${Math.floor(Math.random() * 100000)}`
-      const now = new Date().toISOString()
-      const dep: DeploymentDto = {
-        _id: newId,
-        projectId,
-        organizationId: mockProjects.find((p) => p._id === projectId)?.organizationId || "",
-        userId: mockProjects.find((p) => p._id === projectId)?.userId || "",
-        status: "compiling",
-        createdAt: now,
-        updatedAt: now,
-      }
-      if (!mockDeploymentsByProject[projectId]) mockDeploymentsByProject[projectId] = []
-      mockDeploymentsByProject[projectId].unshift(dep)
-      return { deploymentId: newId }
-    }
     const form = new FormData()
     form.append("archive", archiveFile)
     const res = await fetch(`${API_BASE}/api/deployments/local`, {
@@ -254,27 +163,12 @@ export const consoleApi = {
   },
 
   async stopDeployment(deploymentId: string) {
-    if (!hasApiBase()) {
-      await delay(200)
-      // update mock
-      const all = Object.values(mockDeploymentsByProject).flat()
-      const dep = all.find((d) => d._id === deploymentId)
-      if (dep) dep.status = "stopped"
-      return { message: "Stopped" }
-    }
     const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}/stop`, { method: "POST" })
     if (!res.ok) throw new Error(`Failed to stop deployment: ${res.status}`)
     return await res.json()
   },
 
   async archiveDeployment(deploymentId: string) {
-    if (!hasApiBase()) {
-      await delay(200)
-      const all = Object.values(mockDeploymentsByProject).flat()
-      const dep = all.find((d) => d._id === deploymentId)
-      if (dep) dep.status = "archived"
-      return { message: "Archived" }
-    }
     const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}`, { method: "DELETE" })
     if (!res.ok) throw new Error(`Failed to archive deployment: ${res.status}`)
     return await res.json()

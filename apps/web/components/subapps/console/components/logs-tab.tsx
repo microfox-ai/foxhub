@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useConsole } from "@/components/subapps/console/context/console-context"
-import { useAws } from "@/components/subapps/console/context/aws-context"
+import { useAws, type IApiEndpoint } from "@/components/subapps/console/context/aws-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { LogsViewer } from "@/components/subapps/console/components/logs-viewer"
 
 export function LogsTab({ projectId }: { projectId: string }) {
   const { state } = useConsole()
@@ -17,8 +18,8 @@ export function LogsTab({ projectId }: { projectId: string }) {
 
   const awsFns = useMemo(() => {
     const rt = (project?.runtimes || []).find((r: any) => r.type === "serverless" && r.provider === "aws")
-    const arr = (rt?.functions || []) as { name: string; arn: string; region: string }[]
-    return arr.map((f) => ({ arn: f.arn, region: f.region || rt?.region || "us-east-1", name: f.name }))
+    const arr = (rt?.functions || []) as { name: string; arn: string; region: string; apiEndpoints?: IApiEndpoint[] }[]
+    return arr.map((f) => ({ arn: f.arn, region: f.region || rt?.region || "us-east-1", name: f.name, apiEndpoints: f.apiEndpoints }))
   }, [project])
 
   const [fnChoice, setFnChoice] = useState<string>("ALL")
@@ -90,21 +91,7 @@ export function LogsTab({ projectId }: { projectId: string }) {
         <TabsContent value="combined" className="mt-4">
           <Card>
             <CardContent className="p-0">
-              <div className="max-h-[500px] overflow-auto font-mono text-xs">
-                {combined.length === 0 ? (
-                  <div className="p-4 text-muted-foreground">{"No logs"}</div>
-                ) : (
-                  <ul className="divide-y">
-                    {combined.map((e, i) => (
-                      <li key={i} className="px-3 py-2">
-                        <span className="text-muted-foreground">{new Date(e.timestamp).toLocaleTimeString()}</span>
-                        <span> </span>
-                        <span>{e.message}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+             <LogsViewer events={combined} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -117,6 +104,9 @@ export function LogsTab({ projectId }: { projectId: string }) {
                 <Card key={name}>
                   <CardHeader>
                     <CardTitle className="text-sm">{name}</CardTitle>
+                    <div className="text-xs text-muted-foreground">
+                      {(awsFns.find(fn => fn.name === name)?.apiEndpoints || []).map(e => `${e.method} ${e.path}`).join(', ')}
+                    </div>
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="max-h-[360px] overflow-auto font-mono text-xs">

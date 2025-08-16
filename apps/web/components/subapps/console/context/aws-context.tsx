@@ -5,7 +5,11 @@ import type React from "react"
 import { createContext, useContext, useMemo, useReducer, useCallback } from "react"
 import { API_BASE } from "@/components/subapps/console/lib/console-api"
 
-export type AwsFunctionRef = { arn: string; region: string; name: string }
+export type IApiEndpoint = {
+  path: string
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS"
+}
+export type AwsFunctionRef = { arn: string; region: string; name: string; apiEndpoints?: IApiEndpoint[] }
 export type LambdaConfig = {
   FunctionName?: string
   FunctionArn?: string
@@ -23,10 +27,11 @@ export type LambdaConfig = {
   Version?: string
 }
 export type LambdaMetrics = {
-  invocations?: number
-  errors?: number
-  throttles?: number
-  durationAvgMs?: number
+  invocations?: { timestamp: number; value: number }[]
+  errors?: { timestamp: number; value: number }[]
+  throttles?: { timestamp: number; value: number }[]
+  duration?: { timestamp: number; value: number }[]
+  concurrentExecutions?: { timestamp: number; value: number }[]
 }
 export type LambdaAnalyticsItem = {
   ref: AwsFunctionRef
@@ -90,7 +95,7 @@ function reducer(state: State, action: Action): State {
 
 type Ctx = {
   state: State
-  loadAnalytics: (projectId: string, fns: AwsFunctionRef[]) => Promise<void>
+  loadAnalytics: (projectId: string, fns: AwsFunctionRef[], rangeHours: number) => Promise<void>
   loadLogs: (
     projectId: string,
     fns: AwsFunctionRef[],
@@ -107,7 +112,30 @@ function hasApiBase() {
 // Lightweight mock for previews without backend
 function mockAnalytics(fns: AwsFunctionRef[]): LambdaAnalyticsItem[] {
   const now = Date.now()
-  return fns.map((f, i) => ({
+  return fns.map((f, i) => {
+    const timestamps = Array.from({ length: 12 }).map((_, j) => now - (12 - j) * 3600_000);
+    const invocations = timestamps.map(ts => ({
+      timestamp: ts,
+      value: 120 + i * 7 + Math.round(Math.random() * 10),
+    }))
+    const errors = timestamps.map(ts => ({
+      timestamp: ts,
+      value: i % 3 === 0 && Math.random() > 0.7 ? 1 : 0,
+    }))
+    const throttles = timestamps.map(ts => ({
+        timestamp: ts,
+        value: Math.random() > 0.9 ? 1 : 0,
+    }))
+    const duration = timestamps.map(ts => ({
+        timestamp: ts,
+        value: 85 + i * 5 + Math.round(Math.random() * 20),
+    }))
+    const concurrentExecutions = timestamps.map(ts => ({
+        timestamp: ts,
+        value: 5 + i + Math.floor(Math.random() * 5),
+    }))
+
+    return {
     ref: f,
     config: {
       FunctionName: f.name,
@@ -124,13 +152,14 @@ function mockAnalytics(fns: AwsFunctionRef[]): LambdaAnalyticsItem[] {
       Version: "$LATEST",
     },
     metrics: {
-      invocations: 120 + i * 7,
-      errors: i % 3 === 0 ? 1 : 0,
-      throttles: 0,
-      durationAvgMs: 85 + i * 5,
+        invocations,
+        errors,
+        throttles,
+        duration,
+        concurrentExecutions,
     },
     tags: { service: "mock", env: "preview" },
-  }))
+  }})
 }
 
 function mockLogs(fns: AwsFunctionRef[]): LogsResponse {
@@ -153,7 +182,7 @@ function mockLogs(fns: AwsFunctionRef[]): LogsResponse {
 export function AwsProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
 
-  const loadAnalytics = useCallback(async (projectId: string, fns: AwsFunctionRef[]) => {
+  const loadAnalytics = useCallback(async (projectId: string, fns: AwsFunctionRef[], rangeHours: number) => {
     if (!fns.length) {
       dispatch({ type: "SET_ANALYTICS", projectId, items: [] })
       return
@@ -162,10 +191,10 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "SET_ANALYTICS_ERROR", error: null })
     try {
       if (API_BASE) {
-        const res = await fetch(`${API_BASE}/api/aws/lambda/analytics`, {
+        const res = await fetch(`/api/aws/lambda/analytics`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: fns }),
+          body: JSON.stringify({ items: fns, rangeHours }),
         })
         if (!res.ok) throw new Error(`External analytics request failed: ${res.status}`)
         const data = (await res.json()) as { items: LambdaAnalyticsItem[] }
@@ -199,7 +228,7 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
       })
       try {
         if (API_BASE) {
-          const res = await fetch(`${API_BASE}/api/aws/lambda/logs`, {
+          const res = await fetch(`/api/aws/lambda/logs`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: payload,

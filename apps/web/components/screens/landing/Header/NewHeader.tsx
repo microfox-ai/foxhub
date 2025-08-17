@@ -161,6 +161,7 @@ const HamBurger = () => {
               </AccordionItem> */}
 
             <div className="mt-8">
+              <MenuItem label="Docs" to="https://docs.microfox.app" />
               <AppButton />
             </div>
             <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">

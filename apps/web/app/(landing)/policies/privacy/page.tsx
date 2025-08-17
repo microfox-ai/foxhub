@@ -201,7 +201,7 @@ const PrivacyPolicy = () => {
           </div>
         </div>
 
-        <PromoImageSection />
+        {/* <PromoImageSection /> */}
       </div>
     </>
   );

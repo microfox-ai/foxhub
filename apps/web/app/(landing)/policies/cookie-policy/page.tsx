@@ -32,7 +32,7 @@ const CookiePolicy = () => {
           </div>
         </div>
 
-        <PromoImageSection />
+        {/* <PromoImageSection /> */}
       </div>
     </>
   );

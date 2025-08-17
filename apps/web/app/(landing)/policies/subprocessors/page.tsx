@@ -35,7 +35,7 @@ const Subprocessors = () => {
           </div>
         </div>
 
-        <PromoImageSection />
+        {/* <PromoImageSection /> */}
       </div>
     </>
   );

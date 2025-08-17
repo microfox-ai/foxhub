@@ -91,7 +91,7 @@ const GoogleOAuthDisclosure = () => {
           </div>
         </div>
 
-        <PromoImageSection />
+        {/* <PromoImageSection /> */}
       </div>
     </>
   );

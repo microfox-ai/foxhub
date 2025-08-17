@@ -97,12 +97,18 @@ model BotProject {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   archiveStatus    String?
-  slug             String?
+  type             PROJECT_TYPE?       @default(CLIENT)
+  slug             String?            @default("client")
   imageUrl         String?
   homepageUrl      String?
   clientRequests   ClientRequest[]
   clientSecrets    ClientSecret[]
   permissions      ProjectPermission[]
+}
+
+enum PROJECT_TYPE {
+  CLIENT
+  CONSOLE
 }
 
 model ProjectPermission {

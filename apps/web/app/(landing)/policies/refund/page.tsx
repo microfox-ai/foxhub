@@ -62,7 +62,7 @@ const CancellationRefund = () => {
           </section>
         </div>
       </div>
-      <PromoImageSection />
+      {/* <PromoImageSection /> */}
     </>
   );
 }

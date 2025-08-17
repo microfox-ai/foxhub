@@ -4,34 +4,22 @@ import { FilloutFormIds, useFilloutPopup } from '../FilloutPopupProvider';
 
 const ResourcesMenuItems = [
     {
-        id: 'why-themoondevs',
-        title: 'Why TheMoonDevs?',
-        description: 'Six reasons to choose TheMoonDevs',
-        link: '/why-choose-us',
+        id: 'blog',
+        title: 'The Blog',
+        description: 'Read our latest articles and insights',
+        link: '/blog',
     },
     {
-        id: 'customers-latest-innovations',
-        title: 'Customers & Latest Innovations',
-        description: 'Browse latest real-world case studies',
-        link: '/industries',
+        id: 'docs',
+        title: 'Docs',
+        description: 'Read our latest articles and insights',
+        link: 'https://docs.microfox.app',
     },
     {
-        id: 'themoondevs-cohort',
-        title: 'TheMoonDevs Cohort',
-        description: 'Apply to join the elites of the startup builders',
-        link: '/dev-cohort',
-    },
-    {
-        id: 'help-center',
-        title: 'Help Center',
-        description: 'FAQs, Quick Consultation, Raise Issues',
-        link: '/help-center',
-    },
-    {
-        id: 'builder-community',
-        title: 'Builder Community',
-        description: 'Find expert answers & inspiration for your projects',
-        link: '/community',
+        id: 'git-hub',
+        title: 'We are Open Source',
+        description: 'Browse our latest projects in our GitHub',
+        link: 'https://github.com/microfox-ai',
     },
     {
         id: 'partnerships-proposals',
@@ -47,13 +35,13 @@ const FeaturedMenuItems = [
         title: 'DevFolio-2025',
         description: 'TheMoonDevs Cohort 2025',
         link: '/folios',
-    },
-    {
-        image_url: '/images/complexity-calculator.png',
-        title: 'Complexity Calculator',
-        description: ' Estimate the complexity of your project',
-        link: '/complexity',
-    },
+    }
+    // {
+    //     image_url: '/images/complexity-calculator.png',
+    //     title: 'Complexity Calculator',
+    //     description: ' Estimate the complexity of your project',
+    //     link: '/complexity',
+    // },
 ];
 
 export const ResourcesContent = ({
@@ -100,7 +88,7 @@ export const ResourcesContent = ({
                 })}
             </ul>
             {/* </div> */}
-            <div className="bg-black p-0 md:pb-4">
+            {/* <div className="bg-black p-0 md:pb-4">
                 <div className="p-5 pb-2 text-xl font-bold text-white">Featured</div>
                 <ul
                     className={cn(
@@ -122,7 +110,7 @@ export const ResourcesContent = ({
                         </ListItem>
                     ))}
                 </ul>
-            </div>
+            </div> */}
         </div>
     );
 };

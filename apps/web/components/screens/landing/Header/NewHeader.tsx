@@ -102,6 +102,7 @@ const NewHeader = () => {
             <div className="flex items-center">
               {/* <MenuItem label="Status" to="/status" />
               <MenuItem label="Feedback" to="/feedback" /> */}
+              <MenuItem label="Docs" to="https://docs.microfox.app" />
             </div>
             <CustomButton label="Enter App" onClick={handleButtonClick} />
           </>
@@ -135,7 +136,7 @@ const HamBurger = () => {
       <div className="mx-2 my-[-10px] bg-black px-5 py-4 text-white lg:mx-6 lg:my-0">
         <>
           <Accordion className="w-full" type="single" defaultValue={'resources'}>
-            {/* <AccordionItem value="resources" className="w-full border-none">
+            <AccordionItem value="resources" className="w-full border-none">
               <AccordionTrigger
                 className="text-left text-2xl font-bold"
               >
@@ -144,46 +145,38 @@ const HamBurger = () => {
               <AccordionContent className="w-full bg-white text-base text-neutral-600">
                 <ResourcesContent orientation="mobile" className="bg-white" />
               </AccordionContent>
-            </AccordionItem> */}
+            </AccordionItem>
             {/* <AccordionItem value="products" className="w-full border-none">
-                <AccordionTrigger
-                  className="text-left text-2xl font-bold"
-                  arrowStyle="text-white h-6 w-6"
-                >
-                  Products
-                </AccordionTrigger>
-                <AccordionContent className="w-full bg-white text-base text-neutral-600">
-                  <ProductsContent
-                    className="w-full p-2"
-                    orientation="mobile"
-                  />
-                </AccordionContent>
-              </AccordionItem> */}
-
-            <div className="mt-8">
-              <AppButton />
-            </div>
+              <AccordionTrigger
+                className="text-left text-2xl font-bold"
+              // arrowStyle="text-white h-6 w-6"
+              >
+                Products
+              </AccordionTrigger>
+              <AccordionContent className="w-full bg-white text-base text-neutral-600">
+                <ProductsContent
+                  className="w-full p-2"
+                  orientation="mobile"
+                />
+              </AccordionContent>
+            </AccordionItem> */}
+            {/* <div className="mt-8 flex items-center gap-4">
+              <a href="https://docs.microfox.app" target="_blank" rel="noopener noreferrer">
+                Docs</a>
+            </div> */}
             <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
               <button
                 onClick={() => openForm(FilloutFormIds.BookCall)}
                 className="w-full rounded-md bg-white py-2 text-sm font-semibold text-black transition-all duration-300 hover:bg-black hover:text-white max-sm:w-full"
                 style={{ border: '2px solid white' }}
               >
-                Book a Call
+                Enter App
               </button>
             </div>
           </Accordion>
         </>
         <>
-          <div className="mt-6 flex items-center gap-4 border-t-[1px] border-gray-300 py-4 max-sm:flex-col max-sm:gap-2 max-sm:py-2">
-            <button
-              className="w-1/2 rounded-md bg-white py-2 text-sm font-semibold text-black max-sm:w-full"
-              style={{ border: '2px solid white' }}
-            >
-              View Demo
-            </button>
-            <CustomButton label="Enter App" onClick={handleButtonClick} />
-          </div>
+
         </>
       </div>
 

@@ -7,16 +7,15 @@ import type { DeploymentLogsDto } from "@/components/subapps/console/lib/console
 export function LogsViewer({ logs, events }: { logs?: DeploymentLogsDto | null; events?: CloudWatchLogEvent[] }) {
   if (events) {
     return (
-      <div className="max-h-[500px] overflow-auto font-mono text-xs">
+      <div className="max-h-[500px] overflow-auto font-mono text-xs bg-background text-foreground p-4 rounded-lg">
         {events.length === 0 ? (
           <div className="p-4 text-muted-foreground">{"No logs"}</div>
         ) : (
-          <ul className="divide-y">
+          <ul className="space-y-2">
             {events.map((e, i) => (
-              <li key={i} className="px-3 py-2">
-                <span className="text-muted-foreground">{new Date(e.timestamp).toLocaleTimeString()}</span>
-                <span> </span>
-                <span>{e.message}</span>
+              <li key={i} className="flex items-start">
+                <span className="text-muted-foreground w-24 flex-shrink-0">{new Date(e.timestamp).toLocaleTimeString()}</span>
+                <pre className="whitespace-pre-wrap flex-grow">{e.message}</pre>
               </li>
             ))}
           </ul>
@@ -36,21 +35,20 @@ export function LogsViewer({ logs, events }: { logs?: DeploymentLogsDto | null; 
       {segments.map((s) => {
         const items = (logs?.[s.key] as any[]) || []
         return (
-          <AccordionItem value={s.key} key={s.key} className="border-none">
-            <AccordionTrigger className="bg-muted/50 hover:bg-muted/20 px-4 rounded-md">
+          <AccordionItem value={s.key} key={s.key} className="border-none mb-2">
+            <AccordionTrigger className="bg-muted hover:bg-muted/80 px-4 rounded-md text-sm font-semibold">
               {s.label} ({items.length})
             </AccordionTrigger>
             <AccordionContent className="p-0">
-              <div className="max-h-[300px] overflow-auto font-mono text-xs bg-black text-white rounded-md mt-1">
+              <div className="max-h-[300px] overflow-auto font-mono text-xs bg-background text-foreground rounded-b-md">
                 {items.length === 0 ? (
                   <div className="p-4 text-muted-foreground">{"No logs yet"}</div>
                 ) : (
-                  <ul className="divide-y divide-gray-700">
+                  <ul className="divide-y divide-border">
                     {items.map((line, idx) => (
-                      <li key={idx} className="px-3 py-1">
-                        <span className="text-gray-400">{new Date(line.timestamp).toLocaleTimeString()}</span>
-                        <span> </span>
-                        <span>{line.message}</span>
+                      <li key={idx} className="p-2 flex items-start">
+                        <span className="text-muted-foreground w-24 flex-shrink-0">{new Date(line.timestamp).toLocaleTimeString()}</span>
+                        <pre className="whitespace-pre-wrap flex-grow">{line.message}</pre>
                       </li>
                     ))}
                   </ul>

@@ -1,0 +1,16 @@
+name = "microfox-reroute"
+main = "src/worker.js"
+workers_dev = true
+compatibility_date = "2025-09-01"
+
+[[routes]]
+pattern = "*.microfox.app/*"
+zone_name = "microfox.app"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# [vars]
+# You can add non-secret environment variables here.
+# For secrets, use the command: `npx wrangler secret put <KEY>`

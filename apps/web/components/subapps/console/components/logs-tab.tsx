@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useConsole } from "@/components/subapps/console/context/console-context"
-import { useAws, type IApiEndpoint } from "@/components/subapps/console/context/aws-context"
+import {
+  useAws,
+  type IApiEndpoint,
+  type UrlMap,
+} from "@/components/subapps/console/context/aws-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -14,12 +18,21 @@ import { LogsViewer } from "@/components/subapps/console/components/logs-viewer"
 export function LogsTab({ projectId }: { projectId: string }) {
   const { state } = useConsole()
   const { state: aws, loadLogs } = useAws()
-  const project = state.projects.find((p) => p._id === projectId)
+  const project = state.projects.find((p) => p.id === projectId)
 
   const awsFns = useMemo(() => {
-    const rt = (project?.runtimes || []).find((r: any) => r.type === "serverless" && r.provider === "aws")
-    const arr = (rt?.functions || []) as { name: string; arn: string; region: string; apiEndpoints?: IApiEndpoint[] }[]
-    return arr.map((f) => ({ arn: f.arn, region: f.region || rt?.region || "us-east-1", name: f.name, apiEndpoints: f.apiEndpoints }))
+    const urlsMap = (project?.urlsMap || []) as UrlMap[]
+    const agentUrlMap = urlsMap.find((u) => u.type === "agent")
+    if (!agentUrlMap?.service) return []
+    const { resources } = agentUrlMap.service.providerConfig
+    const { endpoints } = agentUrlMap.service
+    const arr = resources.filter((r) => r.type === "lambda")
+    return arr.map((f) => ({
+      arn: f.arn!,
+      region: f.region || "us-east-1",
+      name: f.name,
+      apiEndpoints: endpoints,
+    }))
   }, [project])
 
   const [fnChoice, setFnChoice] = useState<string>("ALL")

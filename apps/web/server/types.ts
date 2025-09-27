@@ -87,3 +87,89 @@ export interface ClientDeploymentMetadata {
     functionBase?: string;
   };
 }
+
+// CONSOLE CICD TYPES
+
+export interface IOrganization {
+  id: string;
+  name: string;
+  ownerId: string;
+  description?: string;
+  avatar?: string;
+  members: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export enum ProjectSourceType {
+  GITHUB = "github",
+  DOCKER_IMAGE = "docker_image",
+  LOCAL = "local",
+}
+
+export enum ProjectTechnologyType {
+  NODEJS = "nodejs",
+  PYTHON = "python",
+  GO = "go",
+  RUBY = "ruby",
+  OTHER = "other",
+}
+
+export interface IGitHubSource {
+  type: ProjectSourceType.GITHUB;
+  repository: string;
+  branch: string;
+}
+
+export interface IDockerImageSource {
+  type: ProjectSourceType.DOCKER_IMAGE;
+  image: string;
+}
+
+export interface ILocalSource {
+  type: ProjectSourceType.LOCAL;
+}
+
+export type ProjectSource = IGitHubSource | IDockerImageSource | ILocalSource;
+
+export interface ITechnology {
+  language: ProjectTechnologyType;
+  version: string;
+}
+
+export interface IApiEndpoint {
+  path: string;
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+}
+export enum UrlMapType {
+  AGENT = "agent",
+  PUBLIC = "public",
+  UI = "ui",
+  DOCS = "docs",
+  OPENAPI = "openapi",
+}
+
+export interface IUrlMap {
+  type: UrlMapType;
+  path: string;
+  url: string;
+}
+
+export interface IProject {
+  id: string;
+  displayName: string;
+  agentName: string;
+  organizationId: string;
+  ownerId: string;
+  subdomain?: string;
+  source: ProjectSource;
+  technology: ITechnology;
+  urlsMap?: IUrlMap[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CloudWatchLogEvent {
+  message: string;
+  timestamp: number;
+}

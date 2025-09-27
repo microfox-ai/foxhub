@@ -4,7 +4,7 @@ import { OverviewTab } from "./overview-tab"
 import { DeploymentsTab } from "./deployments-tab"
 import { AnalyticsTab } from "./analytics-tab"
 import { LogsTab } from "./logs-tab"
-import { AwsSectionWrapper } from "./analytics-or-logs-wrapper"
+import { AwsSectionWrapper } from "./aws-wrapper"
 
 export function ProjectTabs({ projectId, defaultTab }: { projectId: string; defaultTab?: string }) {
   const tab = defaultTab || "overview"

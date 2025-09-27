@@ -9,6 +9,27 @@ export type IApiEndpoint = {
   path: string
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS"
 }
+export type AwsResource = {
+  type: "lambda" | "s3"
+  logicalName?: string
+  name: string
+  region: string
+  arn?: string
+  bucket?: string
+}
+export type UrlMap = {
+  type: "agent" | "public" | "openapi"
+  path: string
+  url: string
+  service?: {
+    runtime: "serverless" | "static"
+    providerConfig: {
+      provider: "aws"
+      resources: AwsResource[]
+    }
+    endpoints?: IApiEndpoint[]
+  }
+}
 export type AwsFunctionRef = { arn: string; region: string; name: string; apiEndpoints?: IApiEndpoint[] }
 export type LambdaConfig = {
   FunctionName?: string

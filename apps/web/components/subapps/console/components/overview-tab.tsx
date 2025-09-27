@@ -1,23 +1,20 @@
 "use client"
-
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useConsole } from "@/components/subapps/console/context/console-context"
+import { UrlMapType } from "@/server/types"
 
 type AnyRecord = Record<string, any>
 
 export function OverviewTab({ projectId }: { projectId: string }) {
   const { state } = useConsole()
-  const project = state.projects.find((p) => p._id === projectId)
-  const apiService = (project?.services || []).find((s: any) => s.type === "api") as AnyRecord | undefined
-  const openapiUri = apiService?.openapiUri as string | undefined
-
+  const project = state.projects.find((p) => p.id === projectId)
+  const openapiUri = project?.urlsMap?.find((u) => u.type === UrlMapType.OPENAPI)?.url
   const [openapi, setOpenapi] = useState<AnyRecord | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     let mounted = true
     async function run() {
@@ -50,9 +47,9 @@ export function OverviewTab({ projectId }: { projectId: string }) {
   const tags: { name: string; description?: string }[] = (openapi?.tags as any[]) || []
 
   const endpoints: { method: string; path: string }[] = useMemo(() => {
-    const svcEndpoints = (apiService?.endpoints as any[]) || []
-    return svcEndpoints.map((e) => ({ method: e.method, path: e.path }))
-  }, [apiService])
+    if (!project?.urlsMap) return []
+    return project.urlsMap.map((e: { type: string; path: string }) => ({ method: e.type, path: e.path }))
+  }, [project])
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

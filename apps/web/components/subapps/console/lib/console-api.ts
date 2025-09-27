@@ -1,49 +1,34 @@
 "use client"
 
+import {
+  type IProject,
+  type IOrganization,
+} from "@/server/types"
+
 export const API_BASE = (process.env.NEXT_PUBLIC_CONSOLE_API_BASE || process.env.NEXT_PUBLIC_CICD_BASE_URL || "").trim()
 
 export enum ProjectSourceType {
-  GITHUB = 'github',
-  DOCKER_IMAGE = 'docker_image',
-  LOCAL = 'local',
+  GITHUB = "github",
+  DOCKER_IMAGE = "docker_image",
+  LOCAL = "local",
 }
 
 export enum ProjectTechnologyType {
-  NODEJS = 'nodejs',
-  PYTHON = 'python',
-  GO = 'go',
-  RUBY = 'ruby',
-  OTHER = 'other',
+  NODEJS = "nodejs",
+  PYTHON = "python",
+  GO = "go",
+  RUBY = "ruby",
+  OTHER = "other",
 }
 
 export enum ProjectRuntimeType {
-  SERVER = 'server',
-  SERVERLESS = 'serverless',
+  SERVER = "server",
+  SERVERLESS = "serverless",
 }
 
-export interface OrganizationDto {
-  _id: string
-  name: string
-  description?: string
-  avatar?: string
-  ownerId: string
-  members: string[]
-  createdAt: string
-  updatedAt: string
-}
-export interface ProjectDto {
-  _id: string
-  name: string
-  avatar?: string
-  organizationId: string
-  userId: string
-  source: { type: ProjectSourceType }
-  technology: { language: ProjectTechnologyType, version: string, isTypeSafe?: boolean }
-  runtimes: { type: ProjectRuntimeType, provider: string, region: string, memory: number, functions: { name: string, arn: string, region: string }[] }[]
-  services: any[]
-  createdAt: string
-  updatedAt: string
-}
+export type OrganizationDto = IOrganization
+export type ProjectDto = IProject
+
 export interface DeploymentDto {
   _id: string
   projectId: string
@@ -64,6 +49,7 @@ export interface DeploymentLogEntryDto {
   sourceColumn?: number
   sourceFunction?: string
 }
+
 export interface DeploymentLogsDto {
   compiling?: DeploymentLogEntryDto[]
   deploying?: DeploymentLogEntryDto[]
@@ -71,10 +57,10 @@ export interface DeploymentLogsDto {
 }
 
 export type BotProject = {
-  id: string;
-  name: string;
-  githubRepoUrl: string;
-};
+  id: string
+  name: string
+  githubRepoUrl: string
+}
 
 export const consoleApi = {
   async listOrganizations(ownerId: string) {
@@ -86,7 +72,9 @@ export const consoleApi = {
     return data.items as OrganizationDto[]
   },
 
-  async createOrganization(input: { name: string; ownerId: string; description?: string; avatar?: string }) {
+  async createOrganization(
+    input: Omit<IOrganization, "id" | "createdAt" | "updatedAt" | "members"> & { members?: string[] },
+  ) {
     const res = await fetch(`${API_BASE}/api/organizations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -96,26 +84,18 @@ export const consoleApi = {
     return (await res.json()) as OrganizationDto
   },
 
-  async listProjects(params: { organizationId?: string; userId?: string }) {
+  async listProjects(params: { organizationId?: string }) {
     const url = new URL(`/api/projects`, API_BASE)
     if (params.organizationId) url.searchParams.set("organizationId", params.organizationId)
-    if (params.userId) url.searchParams.set("userId", params.userId)
     const res = await fetch(url.toString())
     if (!res.ok) throw new Error(`Failed to list projects: ${res.status}`)
     const data = await res.json()
     return data.items as ProjectDto[]
   },
 
-  async createProject(input: {
-    name: string
-    avatar?: string
-    organizationId: string
-    userId: string
-    source: any
-    technology: { language?: string; version?: string; isTypeSafe?: boolean }
-    runtimes?: any[]
-    services?: any[]
-  }) {
+  async createProject(
+    input: Omit<IProject, "id" | "createdAt" | "updatedAt">,
+  ) {
     const res = await fetch(`${API_BASE}/api/projects`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

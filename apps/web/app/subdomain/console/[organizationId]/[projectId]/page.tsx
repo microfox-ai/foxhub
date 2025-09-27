@@ -16,7 +16,7 @@ function ProjectBody() {
   const query = useSearchParams()
   const tab = query.get("tab") ?? undefined
 
-  const exists = state.projects.some((p) => p._id === projectId)
+  const exists = state.projects.some((p) => p.id === projectId)
   if (!exists) {
     return <div className="text-sm text-muted-foreground">{"Project not found or loading..."}</div>
   }

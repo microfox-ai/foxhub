@@ -26,8 +26,8 @@ jobs:
         id: preview-configs
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          PORT_RANGE=500
-          PORT=$((9000 + (PR_NUMBER % PORT_RANGE)))
+          PORT_RANGE=499
+          PORT=$((8500 + (PR_NUMBER % PORT_RANGE)))
           PREVIEW_URL="https://preview-${PORT}.microfox.app"
           PM2_NAME="foxhub-${PR_NUMBER}"
 

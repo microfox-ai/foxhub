@@ -15,6 +15,7 @@ import { useState } from "react"
 
 function CreateOrganizationCard() {
     const { createOrganization } = useConsole()
+    const { user } = useAuth()
     const [open, setOpen] = useState(false)
     const [name, setName] = useState("")
     const [description, setDescription] = useState("")
@@ -38,7 +39,7 @@ function CreateOrganizationCard() {
                     <Input placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
                     <Button
                         onClick={async () => {
-                            await createOrganization({ name, description })
+                              await createOrganization({ name, description, ownerId: user?.id as string })
                             setOpen(false)
                         }}
                     >
@@ -60,18 +61,18 @@ function OrganizationsBody() {
         </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {state.organizations.map((o) => (
-          <Link href={`/subdomain/console/${o._id}`} key={o._id}>
+          <Link href={`/subdomain/console/${o.id}`} key={o.id}>
             <Card>
               <CardHeader className="flex flex-row items-center gap-4">
                 <Avatar>
-                  <AvatarImage src={o.avatar} />
+                  <AvatarImage src={o.avatar ?? ""} />
                   <AvatarFallback>{o.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <CardTitle className="text-base">{o.name}</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 <p className="line-clamp-2">{o.description || "No description"}</p>
-                <p className="mt-2 text-xs">Updated {timeAgo(o.updatedAt)}</p>
+                <p className="mt-2 text-xs">Updated {timeAgo(o.updatedAt.toString())}</p>
               </CardContent>
             </Card>
           </Link>

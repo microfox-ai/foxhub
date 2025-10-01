@@ -78,7 +78,7 @@ jobs:
           cp -r apps/cron/node_modules build/cron-prod/main-copy/
           cp cron.prod.json build/cron-prod/main-copy/cron.json
           cp apps/web/vercel.json build/cron-prod/main-copy/apps/web/vercel.json
-          
+
       - name: Upload cron service using rsync
         if: ${{steps.build.outputs.build-status == 1 }}
         uses: burnett01/rsync-deployments@7.0.1
@@ -124,7 +124,7 @@ jobs:
             cd "$MAIN_PATH"
             
             export NODE_ENV=production
-            export PORT=8003
+            export PORT=8002
 
             # Check if the cron process exists
             if pm2 list | grep -q "foxhub-cron-prod" ; then

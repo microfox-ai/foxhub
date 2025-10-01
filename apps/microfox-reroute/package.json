@@ -1,0 +1,16 @@
+{
+	"name": "microfox-reroute",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev"
+	},
+	"devDependencies": {
+		"wrangler": "^4.33.2"
+	},
+	"dependencies": {
+		"@upstash/redis": "^1.31.2"
+	}
+}

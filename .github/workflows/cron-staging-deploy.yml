@@ -124,7 +124,7 @@ jobs:
             cd "$MAIN_PATH"
             
             export NODE_ENV=production
-            export PORT=8004
+            export PORT=8003
 
             # Check if the cron process exists
             if pm2 list | grep -q "foxhub-cron-staging" ; then
@@ -150,4 +150,4 @@ jobs:
           if [ $? -ne 0 ]; then
             echo "Cron deployment step failed"
             exit 1
-          fi 
+          fi

@@ -4,21 +4,22 @@ import { NotionClient } from "@microfox/notion";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const databaseId = searchParams.get("databaseId");
+    const data_source_id = searchParams.get("data_source_id");
     const category = searchParams.get("category");
     const pageSize = parseInt(searchParams.get("pageSize") || "50");
     const startCursor = searchParams.get("startCursor") || undefined;
     const pageNo = parseInt(searchParams.get("pageNo") || "1");
 
-    if (!databaseId) {
+    if (!data_source_id) {
       return NextResponse.json(
-        { error: "Database ID is required" },
+        { error: "Data source ID is required" },
         { status: 400 }
       );
     }
 
     const client = new NotionClient({
       auth: process.env.NOTION_BOT_TOKEN || "",
+      notionVersion: "2025-09-03",
     });
 
     const mainFilter = {
@@ -43,8 +44,8 @@ export async function GET(request: Request) {
       filter = mainFilter;
     }
 
-    const pages = await client.databases.query({
-      database_id: databaseId,
+    const pages = await client.dataSources.query({
+      data_source_id: data_source_id,
       page_size: pageSize,
       start_cursor: startCursor,
       filter,

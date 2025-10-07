@@ -3,6 +3,7 @@ import { cache } from "react";
 
 const client = new NotionClient({
   auth: process.env.NOTION_BOT_TOKEN || "",
+  notionVersion: "2025-09-03",
 });
 
 // Cache the blocks fetching function
@@ -12,6 +13,7 @@ const getBlocksWithChildren = cache(
     if (token) {
       notionClient = new NotionClient({
         auth: token,
+        notionVersion: "2025-09-03",
       });
     }
     const blocksResponse = await notionClient.blocks.children.list({
@@ -40,6 +42,7 @@ const getNotionPage = cache(async (pageId: string, token?: string) => {
     console.log("markit-token", token);
     const notionClient = new NotionClient({
       auth: token,
+      notionVersion: "2025-09-03",
     });
     return await notionClient.pages.retrieve({
       page_id: pageId,

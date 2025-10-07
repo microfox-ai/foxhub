@@ -4,15 +4,15 @@ import { MAIN_BLOG_DATABASE } from '@/components/screens/landing/Blog/blogConsta
 import BlogHero from '@/components/screens/landing/Blog/BlogHero';
 import IndustryCarousel from '@/components/screens/landing/Blog/IndustryCarousel';
 import { APP_BASE_URL } from '@/utils/constants/appInfo';
-import { ListDatabasesResponse } from '@microfox/notion';
+import { QueryDataSourceResponse } from '@microfox/notion';
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function BlogPage() {
 
-    const { data, error, isLoading } = useSWR<ListDatabasesResponse>(
-        `/api/landing/blog/articles?databaseId=${MAIN_BLOG_DATABASE.databaseId}`,
+    const { data, error, isLoading } = useSWR<QueryDataSourceResponse>(
+        `/api/landing/blog/articles?data_source_id=${MAIN_BLOG_DATABASE.data_source_id}`,
         fetcher
     );
 

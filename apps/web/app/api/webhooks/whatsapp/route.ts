@@ -58,7 +58,7 @@ export async function POST(
             return new NextResponse("Invalid request body", { status: 200 });
         }
         const whatsappUserProfile = requestBody?.entry?.[0]?.changes?.[0]?.value;
-        const message = whatsappUserProfile?.messages?.[0] as any;
+        const message = whatsappUserProfile?.messages?.[0];
         if (!message) {
             console.log("No message found");
             return new NextResponse("No message found", { status: 200 });

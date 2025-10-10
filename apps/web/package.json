@@ -65,7 +65,7 @@
     "@microfox/webhook-kit": "^1.1.2",
     "@microfox/webhook-octokit": "^1.2.1",
     "@microfox/webhook-slack": "^1.2.0",
-    "@microfox/whatsapp-business": "^1.5.1",
+    "@microfox/whatsapp-business": "^1.5.2",
     "@microfox/whatsapp-oauth": "^1.0.2",
     "@monaco-editor/react": "^4.7.0",
     "@mui/material": "^6.4.7",

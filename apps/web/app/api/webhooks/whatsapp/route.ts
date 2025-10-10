@@ -48,7 +48,11 @@ export async function POST(
     try {
         const requestBody = (await req.json()) as WhatsAppWebhookPayload;
         console.log(
-            "Incoming webhook: ",
+            "Incoming webhook Messages: ",
+            requestBody.entry?.[0]?.changes?.[0]?.value?.messages
+        );
+        console.log(
+            "Incoming webhook Last Message: ",
             requestBody.entry?.[0]?.changes?.[0]?.value?.messages?.[0]
         );
 
@@ -92,6 +96,7 @@ export async function POST(
             version: "v22.0",
         });
         const messageText = message?.type === "text" ? message?.text?.body : "";
+        const messageType = message?.type;
         //1. if message is verification code, forward to verify route
         if (isVerificationMessage(messageText)) {
             const whatsappOAuthSdk = new WhatsappOAuthSdk({
@@ -125,12 +130,40 @@ export async function POST(
                     "OTP verified. You can now use the bot."
                 );
             }
+            return new NextResponse("Success", { status: 200 });
         } else {
             await whatsappSdk.markMessageAsRead(message.id);
-            // await whatsappSdk.sendTextMessage(
-            //     userPhoneNumber,
-            //     "No endpoint found for this bot"
-            // );
+            await whatsappSdk.sendTypingIndicator(
+                {
+                    messageId: message.id,
+                    type: "text"
+                }
+            );
+            if (
+                messageType === "image" ||
+                // messageType === "audio" ||
+                // messageType === "video" ||
+                // messageType === "document" ||
+                messageType === "sticker"
+            ) {
+                await whatsappSdk.markMessageAsRead(message.id);
+                await whatsappSdk.sendTextMessage(
+                    userPhoneNumber,
+                    `We have received your ${messageType}.`
+                );
+                return new NextResponse("Success", { status: 200 });
+            }
+            await whatsappSdk.sendAudioMessage(userPhoneNumber, {
+                link: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+            });
+            await whatsappSdk.sendDocumentMessage(userPhoneNumber, {
+                link: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                filename: "example.pdf",
+            });
+            await whatsappSdk.sendVideoMessage(userPhoneNumber, {
+                link: "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_30MB.mp4",
+                caption: "Big Buck Bunny",
+            });
             return new NextResponse("Success", { status: 200 });
         }
     } catch (error) {

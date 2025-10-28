@@ -35,10 +35,18 @@ export function LogsViewer({ logs, events }: { logs?: DeploymentLogsDto | null; 
     <Accordion type="multiple" className="w-full" defaultValue={["compiling"]}>
       {segments.map((s) => {
         const items = (logs?.[s.key] as any[]) || []
+        // Compute step duration from first to last timestamp if available
+        const firstTs = items.length > 0 ? new Date(items[0]?.timestamp).getTime() : undefined
+        const lastTs = items.length > 0 ? new Date(items[items.length - 1]?.timestamp).getTime() : undefined
+        const stepDuration = firstTs && lastTs ? Math.max(0, lastTs - firstTs) : undefined
+        const stepDurationText = stepDuration !== undefined ? `${Math.floor(stepDuration / 60000)}m ${Math.floor((stepDuration % 60000) / 1000)}s` : "—"
         return (
           <AccordionItem value={s.key} key={s.key} className="border-none mb-2">
             <AccordionTrigger className="bg-muted hover:bg-muted/80 px-4 rounded-md text-sm font-semibold">
-              {s.label} ({items.length})
+              <div className="w-full flex items-center justify-between gap-4">
+                <span>{s.label} ({items.length})</span>
+                <span className="text-xs text-muted-foreground">{stepDurationText}</span>
+              </div>
             </AccordionTrigger>
             <AccordionContent className="p-0">
               <div tabIndex={0} className="max-h-[300px] overflow-hidden focus:overflow-auto font-mono text-xs bg-background text-foreground rounded-b-md outline-none">

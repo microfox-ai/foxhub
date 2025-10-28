@@ -226,29 +226,33 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                 {deployments?.length === 0 ? (
                     <div className="p-4 text-muted-foreground">{"No deployments yet"}</div>
                 ) : (
-                    deployments?.map((d) => (
+                    deployments?.map((d) => {
+                        const isSelected = d?._id === selectedId;
+                        // Use the more up-to-date `current` deployment data if this is the selected item
+                        const displayDeployment = isSelected && current ? current : d;
+                        return (
                         <AccordionItem value={d?._id} key={d?._id} className="border-b">
-                            <AccordionTrigger onClick={() => setSelectedId(d?._id)} className={`w-full text-left hover:no-underline ${d?._id === selectedId ? "bg-muted hover:bg-muted" : "hover:bg-muted/50"} px-4 py-3 transition-colors`}>
+                            <AccordionTrigger onClick={() => setSelectedId(d?._id)} className={`w-full text-left hover:no-underline ${isSelected ? "bg-muted hover:bg-muted" : "hover:bg-muted/50"} px-4 py-3 transition-colors`}>
                                 <div className="grid grid-cols-4 w-full items-center text-sm gap-4">
-                                    <div className="font-mono text-xs truncate" title={d?._id}>{d?._id}</div>
+                                    <div className="font-mono text-xs truncate" title={displayDeployment?._id}>{displayDeployment?._id}</div>
                                     <div className="text-center">
                                         <Badge
                                             variant={
-                                            d?.status === "completed" ? "secondary" : d?.status === "failed" ? "destructive" : "outline"
+                                            displayDeployment?.status === "completed" ? "secondary" : displayDeployment?.status === "failed" ? "destructive" : "outline"
                                             }
                                         >
-                                            {String(d?.status)}
+                                            {String(displayDeployment?.status)}
                                         </Badge>
                                     </div>
-                                    <div className="text-left">{new Date(d?.createdAt).toLocaleString()}</div>
+                                    <div className="text-left">{new Date(displayDeployment?.createdAt).toLocaleString()}</div>
                                     <div className="text-right">
-                                    {d?.metrics?.timing?.startTime
+                                    {displayDeployment?.metrics?.timing?.startTime
                                         ? (() => {
-                                            const start = new Date(d?.metrics?.timing?.startTime).getTime()
-                                            const end = d?.metrics?.timing?.endTime
-                                                ? new Date(d?.metrics?.timing?.endTime).getTime()
-                                                : Date.now()
-                                            const ms = d?.metrics?.timing?.endTime ? end - start : d?.metrics?.timing?.totalDurationMs
+                                            const start = new Date(displayDeployment.metrics.timing.startTime).getTime()
+                                            const end = displayDeployment.metrics.timing.endTime
+                                                ? new Date(displayDeployment.metrics.timing.endTime).getTime()
+                                                : now
+                                            const ms = end - start
                                             const mins = Math.floor(ms / 60000)
                                             const secs = Math.floor((ms % 60000) / 1000)
                                             return `${mins}m ${secs}s`

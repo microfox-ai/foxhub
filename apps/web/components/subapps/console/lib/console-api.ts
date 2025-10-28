@@ -105,6 +105,31 @@ export const consoleApi = {
     return (await res.json()) as ProjectDto
   },
 
+  async getProject(projectId: string) {
+    const res = await fetch(`${API_BASE}/api/projects/${projectId}`)
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Failed to fetch project`)
+    return (await res.json()) as ProjectDto
+  },
+
+  async updateProject(
+    projectId: string,
+    updates: Partial<Pick<ProjectDto, "agentName" | "subdomain">>,
+  ) {
+    const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    })
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Failed to update project`)
+    return (await res.json()) as ProjectDto
+  },
+
+  async deleteProject(projectId: string) {
+    const res = await fetch(`${API_BASE}/api/projects/${projectId}`, { method: "DELETE" })
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Failed to delete project`)
+    return await res.json()
+  },
+
   async getDeployment(deploymentId: string) {
     const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}`)
     if (!res.ok) throw new Error(`Failed to fetch deployment: ${res.status}`)

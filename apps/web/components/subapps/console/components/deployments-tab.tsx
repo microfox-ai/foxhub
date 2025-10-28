@@ -316,7 +316,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
 
                                      <div>
                                          <h3 className="text-base font-semibold mb-2">Logs</h3>
-                                         <div className="h-full max-h-[400px] overflow-auto">
+                                         <div className="h-full">
                                              <LogsViewer logs={state.currentLogs} />
                                          </div>
                                      </div>
@@ -324,7 +324,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                      {metricsData &&<div>
                                          <h3 className="text-base font-semibold mb-2">Metrics</h3>
                                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                             <TimingPieChart data={metricsData?.timing} chartConfig={chartConfig} title="Timing (s)" />
+                                             {/* <TimingPieChart data={metricsData?.timing} chartConfig={chartConfig} title="Timing (s)" /> */}
                                              <MetricsChart data={metricsData?.cpu} chartConfig={chartConfig} title="CPU (%)" />
                                              <MetricsChart data={metricsData?.memory} chartConfig={chartConfig} title="Memory (MB)" />
                                              <MetricsChart data={metricsData?.disk} chartConfig={chartConfig} title="Disk (MB)" />
@@ -334,7 +334,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                  </div>
                             </AccordionContent>
                         </AccordionItem>
-                    ))
+                    )})
                 )}
             </Accordion>
           </div>

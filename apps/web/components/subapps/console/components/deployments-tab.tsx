@@ -94,6 +94,14 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const deployments = state.deployments
 
+  // Tick every second to update relative times/durations live
+  const [now, setNow] = useState<number>(() => Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => {
     loadProjectDeployments()
   }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -121,13 +129,13 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
 
   const duration = useMemo(() => {
     const start = current?.metrics?.timing?.startTime ? new Date(current?.metrics?.timing?.startTime).getTime() : undefined
-    const end = current?.metrics?.timing?.endTime ? new Date(current?.metrics?.timing?.endTime).getTime() : Date.now()
+    const end = current?.metrics?.timing?.endTime ? new Date(current?.metrics?.timing?.endTime).getTime() : now
     if (!start) return undefined
-    const ms = current?.metrics?.timing?.endTime ? end - start : current?.metrics?.timing?.totalDurationMs ?? 0
+    const ms = end - start
     const mins = Math.floor(ms / 60000)
     const secs = Math.floor((ms % 60000) / 1000)
     return `${mins}m ${secs}s`
-  }, [current])
+  }, [current, now])
 
   const metricsData = useMemo(() => {
     if (!current?.metrics) return null;

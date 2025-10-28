@@ -4,6 +4,8 @@ import { OverviewTab } from "./overview-tab"
 import { DeploymentsTab } from "./deployments-tab"
 import { AnalyticsTab } from "./analytics-tab"
 import { LogsTab } from "./logs-tab"
+import { SettingsTab } from "./settings-tab"
+import { ConfigTab } from "./config-tab"
 import { AwsSectionWrapper } from "./aws-wrapper"
 
 export function ProjectTabs({ projectId, defaultTab }: { projectId: string; defaultTab?: string }) {
@@ -11,11 +13,12 @@ export function ProjectTabs({ projectId, defaultTab }: { projectId: string; defa
 
   return (
     <Tabs defaultValue={tab} className="w-full">
-      <TabsList className="w-full grid grid-cols-5">
+      <TabsList className="w-full grid grid-cols-6">
         <TabsTrigger value="overview">{"Overview"}</TabsTrigger>
         <TabsTrigger value="deployments">{"Deployments"}</TabsTrigger>
         <TabsTrigger value="analytics">{"Analytics"}</TabsTrigger>
         <TabsTrigger value="logs">{"Logs"}</TabsTrigger>
+        <TabsTrigger value="config">{"Config"}</TabsTrigger>
         <TabsTrigger value="settings">{"Settings"}</TabsTrigger>
       </TabsList>
 
@@ -39,8 +42,12 @@ export function ProjectTabs({ projectId, defaultTab }: { projectId: string; defa
         </AwsSectionWrapper>
       </TabsContent>
 
+      <TabsContent value="config" className="mt-4">
+        <ConfigTab projectId={projectId} />
+      </TabsContent>
+
       <TabsContent value="settings" className="mt-4">
-        <div className="text-sm text-muted-foreground">{"Settings coming soon"}</div>
+        <SettingsTab projectId={projectId} />
       </TabsContent>
     </Tabs>
   )

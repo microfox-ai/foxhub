@@ -37,10 +37,67 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { Bot, KeyRound, FileText } from "lucide-react"
 import { ProjectSourceType, ProjectTechnologyType, ProjectDto } from "@/components/subapps/console/lib/console-api"
+
+function ManageProjectDialog({ children }: { children: React.ReactNode }) {
+  const { state, updateProject, deleteProject } = useConsole()
+  const params = useParams()
+  const router = useRouter()
+  const organizationId = params.organizationId as string
+  const projectId = (params.projectId as string) || state.selectedProjectId
+  const project = state.projects.find(p => p.id === projectId)
+  const [open, setOpen] = useState(false)
+  const [agentName, setAgentName] = useState(project?.agentName || "")
+  const [subdomain, setSubdomain] = useState(project?.subdomain || "")
+
+  useEffect(() => {
+    setAgentName(project?.agentName || "")
+    setSubdomain(project?.subdomain || "")
+  }, [project?.agentName, project?.subdomain])
+
+  if (!project) return <>{children}</>
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Manage Project</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input placeholder="Agent Name" value={agentName} onChange={(e) => setAgentName(e.target.value)} />
+          <Input placeholder="Subdomain (optional)" value={subdomain || ""} onChange={(e) => setSubdomain(e.target.value)} />
+          <div className="flex gap-2">
+            <Button
+              onClick={async () => {
+                await updateProject({ agentName, subdomain: subdomain || undefined }, projectId)
+                setOpen(false)
+              }}
+            >
+              Save
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!projectId) return
+                const ok = window.confirm("Delete this project? This cannot be undone.")
+                if (!ok) return
+                await deleteProject(projectId)
+                setOpen(false)
+                router.push(`/subdomain/console/${organizationId}`)
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function CreateOrganizationDialog({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children?: React.ReactNode }) {
     const { createOrganization } = useConsole()
@@ -253,6 +310,14 @@ export function AppSidebar() {
                     Create Project
                 </Button>
            </CreateProjectDialog>
+           {(params as any).projectId && (
+             <ManageProjectDialog>
+               <Button variant="ghost" className="w-full justify-start mt-2">
+                 <FileText className="mr-2 size-4" />
+                 Manage Project
+               </Button>
+             </ManageProjectDialog>
+           )}
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>

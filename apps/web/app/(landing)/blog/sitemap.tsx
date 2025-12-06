@@ -5,17 +5,18 @@ import type { MetadataRoute } from 'next'
 
 export const revalidate = 86400 // revalidate every day
 
-const DATABASE_ID = MAIN_BLOG_DATABASE.databaseId
+const DATA_SOURCE_ID = MAIN_BLOG_DATABASE.data_source_id
 
 export async function generateSitemaps() {
 
 
     // const client = new NotionClient({
     //     auth: process.env.NOTION_BOT_TOKEN ?? "",
+    //     notionVersion: '2025-09-03',
     // });
 
-    // const pages = await client.databases.query({
-    //     database_id: DATABASE_ID,
+    // const pages = await client.dataSources.query({
+    //     data_source_id: DATA_SOURCE_ID,
     //     page_size: 50000,
     //     filter: {
     //         property: "Status",
@@ -41,10 +42,12 @@ export default async function sitemap({
     console.log("process.env.NOTION_BOT_TOKEN", process.env.NOTION_BOT_TOKEN);
     const client = new NotionClient({
         auth: process.env.NOTION_BOT_TOKEN ?? "",
+        notionVersion: '2025-09-03',
     });
 
-    const pages = await client.databases.query({
-        database_id: DATABASE_ID,
+
+    const pages = await client.dataSources.query({
+        data_source_id: DATA_SOURCE_ID,
         page_size: 50000,
         filter: {
             property: "Status",
@@ -53,7 +56,7 @@ export default async function sitemap({
             },
         },
     });
-    return pages.results.map((page) => ({
+    return pages?.results?.map((page) => ({
         url: `${APP_BASE_URL}/blog/${page.id}`,
         lastModified: (page as any)?.last_edited_time,
     }))

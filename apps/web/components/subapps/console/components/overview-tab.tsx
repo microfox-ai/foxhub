@@ -46,10 +46,36 @@ export function OverviewTab({ projectId }: { projectId: string }) {
   const agentCard = info?.agentCard as AnyRecord | undefined
   const tags: { name: string; description?: string }[] = (openapi?.tags as any[]) || []
 
-  const endpoints: { method: string; path: string }[] = useMemo(() => {
-    if (!project?.urlsMap) return []
-    return project.urlsMap.map((e: { type: string; path: string }) => ({ method: e.type, path: e.path }))
-  }, [project])
+  // Compute nicely formatted base URLs using the project's subdomain
+  const subdomainBase = useMemo(() => {
+    const sub = project?.subdomain?.trim()
+    return sub ? `https://${sub}.microfox.app` : undefined
+  }, [project?.subdomain])
+
+  const agentUrlMap = useMemo(() => project?.urlsMap?.find((u) => u.type === UrlMapType.AGENT), [project]);
+  const openapiUrlMap = useMemo(() => project?.urlsMap?.find((u) => u.type === UrlMapType.OPENAPI), [project]);
+  const publicUrlMap = useMemo(() => project?.urlsMap?.find((u) => u.type === UrlMapType.PUBLIC), [project]);
+
+  // Agent endpoints come from the urlsMap service definition when available
+  const agentEndpoints: { method: string; path: string }[] = useMemo(() => {
+    const endpoints = (agentUrlMap as any)?.service?.endpoints as { method: string; path: string }[] | undefined
+    return Array.isArray(endpoints) ? endpoints : []
+  }, [agentUrlMap])
+
+  const agentDisplayBase = useMemo(() => {
+    if (!subdomainBase || !agentUrlMap?.path) return undefined
+    return `${subdomainBase}${agentUrlMap.path}`
+  }, [subdomainBase, agentUrlMap])
+
+  const openapiDisplayBase = useMemo(() => {
+    if (!subdomainBase || !openapiUrlMap?.path) return undefined
+    return `${subdomainBase}${openapiUrlMap.path}`
+  }, [subdomainBase, openapiUrlMap])
+
+  const publicDisplayBase = useMemo(() => {
+    if (!subdomainBase || !publicUrlMap?.path) return undefined
+    return `${subdomainBase}${publicUrlMap.path}`
+  }, [subdomainBase, publicUrlMap])
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -114,33 +140,59 @@ export function OverviewTab({ projectId }: { projectId: string }) {
           <CardTitle className="text-base">{"API Endpoints"}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[110px]">{"Method"}</TableHead>
-                  <TableHead>{"Path"}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {endpoints.length === 0 ? (
+          {/* Display base URLs mapped to subdomain */}
+          <div className="space-y-2 mb-4">
+            {agentDisplayBase && (
+                <div className="text-sm">
+                    <span className="font-medium">{"Agent Base: "}</span>
+                    <span className="text-muted-foreground">{agentDisplayBase}</span>
+                </div>
+            )}
+            {openapiDisplayBase && (
+                <div className="text-sm">
+                    <span className="font-medium">{"OpenAPI: "}</span>
+                    <span className="text-muted-foreground">{openapiDisplayBase}</span>
+                </div>
+            )}
+            {publicDisplayBase && (
+                <div className="text-sm">
+                    <span className="font-medium">{"Public URL: "}</span>
+                    <span className="text-muted-foreground">{publicDisplayBase}</span>
+                </div>
+            )}
+          </div>
+
+          {/* Agent Endpoints */}
+          <div className="mb-6">
+            <h4 className="text-sm font-medium mb-2">{"Agent Endpoints"}</h4>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={2} className="text-muted-foreground">
-                      {"No endpoints found"}
-                    </TableCell>
+                    <TableHead className="w-[110px]">{"Method"}</TableHead>
+                    <TableHead>{"Path"}</TableHead>
                   </TableRow>
-                ) : (
-                  endpoints.map((e, idx) => (
-                    <TableRow key={`${e.method}-${e.path}-${idx}`}>
-                      <TableCell>
-                        <Badge variant="secondary">{e.method}</Badge>
+                </TableHeader>
+                <TableBody>
+                  {agentEndpoints.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-muted-foreground text-center h-24">
+                        {"No agent endpoints found"}
                       </TableCell>
-                      <TableCell>{e.path}</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    agentEndpoints.map((e, idx) => (
+                      <TableRow key={`${e.method}-${e.path}-${idx}`}>
+                        <TableCell>
+                          <Badge variant="secondary">{e.method}</Badge>
+                        </TableCell>
+                        <TableCell>{e.path}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>

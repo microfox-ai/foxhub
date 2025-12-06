@@ -140,6 +140,11 @@ type ConsoleContextType = {
   refreshLogs: (deploymentId?: string) => Promise<void>;
   stopDeployment: (deploymentId?: string) => Promise<void>;
   archiveDeployment: (deploymentId?: string) => Promise<void>;
+  updateProject: (
+    updates: Partial<Pick<ProjectDto, "agentName" | "subdomain">>,
+    projectId?: string
+  ) => Promise<void>;
+  deleteProject: (projectId?: string) => Promise<void>;
   setAutoRefresh: (value: boolean) => void;
 };
 
@@ -404,6 +409,34 @@ export function ConsoleProvider({
     [state.userId, state.selectedOrganizationId, loadProjects]
   );
 
+  const updateProject = useCallback(
+    async (
+      updates: Partial<Pick<ProjectDto, "agentName" | "subdomain">>,
+      projectId?: string
+    ) => {
+      const id = projectId || state.selectedProjectId;
+      if (!id) return;
+      await consoleApi.updateProject(id, updates);
+      // Refresh list and current project state
+      await loadProjects();
+    },
+    [state.selectedProjectId, loadProjects]
+  );
+
+  const deleteProject = useCallback(
+    async (projectId?: string) => {
+      const id = projectId || state.selectedProjectId;
+      if (!id) return;
+      await consoleApi.deleteProject(id);
+      // Clear selection if we deleted current
+      if (state.selectedProjectId === id) {
+        dispatch({ type: "SET_SELECTED_PROJECT", id: undefined });
+      }
+      await loadProjects();
+    },
+    [state.selectedProjectId, loadProjects]
+  );
+
   useEffect(() => {
     if (state.userId) {
       loadOrganizations();
@@ -456,6 +489,8 @@ export function ConsoleProvider({
       refreshLogs,
       stopDeployment,
       archiveDeployment,
+      updateProject,
+      deleteProject,
       setAutoRefresh,
     }),
     [
@@ -473,6 +508,8 @@ export function ConsoleProvider({
       refreshLogs,
       stopDeployment,
       archiveDeployment,
+      updateProject,
+      deleteProject,
       setAutoRefresh,
     ]
   );

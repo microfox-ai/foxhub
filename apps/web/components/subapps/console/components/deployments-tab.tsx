@@ -94,6 +94,14 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const deployments = state.deployments
 
+  // Tick every second to update relative times/durations live
+  const [now, setNow] = useState<number>(() => Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => {
     loadProjectDeployments()
   }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -121,13 +129,13 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
 
   const duration = useMemo(() => {
     const start = current?.metrics?.timing?.startTime ? new Date(current?.metrics?.timing?.startTime).getTime() : undefined
-    const end = current?.metrics?.timing?.endTime ? new Date(current?.metrics?.timing?.endTime).getTime() : Date.now()
+    const end = current?.metrics?.timing?.endTime ? new Date(current?.metrics?.timing?.endTime).getTime() : now
     if (!start) return undefined
-    const ms = current?.metrics?.timing?.endTime ? end - start : current?.metrics?.timing?.totalDurationMs ?? 0
+    const ms = end - start
     const mins = Math.floor(ms / 60000)
     const secs = Math.floor((ms % 60000) / 1000)
     return `${mins}m ${secs}s`
-  }, [current])
+  }, [current, now])
 
   const metricsData = useMemo(() => {
     if (!current?.metrics) return null;
@@ -226,29 +234,33 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                 {deployments?.length === 0 ? (
                     <div className="p-4 text-muted-foreground">{"No deployments yet"}</div>
                 ) : (
-                    deployments?.map((d) => (
+                    deployments?.map((d) => {
+                        const isSelected = d?._id === selectedId;
+                        // Use the more up-to-date `current` deployment data if this is the selected item
+                        const displayDeployment = isSelected && current ? current : d;
+                        return (
                         <AccordionItem value={d?._id} key={d?._id} className="border-b">
-                            <AccordionTrigger onClick={() => setSelectedId(d?._id)} className={`w-full text-left hover:no-underline ${d?._id === selectedId ? "bg-muted hover:bg-muted" : "hover:bg-muted/50"} px-4 py-3 transition-colors`}>
+                            <AccordionTrigger onClick={() => setSelectedId(d?._id)} className={`w-full text-left hover:no-underline ${isSelected ? "bg-muted hover:bg-muted" : "hover:bg-muted/50"} px-4 py-3 transition-colors`}>
                                 <div className="grid grid-cols-4 w-full items-center text-sm gap-4">
-                                    <div className="font-mono text-xs truncate" title={d?._id}>{d?._id}</div>
+                                    <div className="font-mono text-xs truncate" title={displayDeployment?._id}>{displayDeployment?._id}</div>
                                     <div className="text-center">
                                         <Badge
                                             variant={
-                                            d?.status === "completed" ? "secondary" : d?.status === "failed" ? "destructive" : "outline"
+                                            displayDeployment?.status === "completed" ? "secondary" : displayDeployment?.status === "failed" ? "destructive" : "outline"
                                             }
                                         >
-                                            {String(d?.status)}
+                                            {String(displayDeployment?.status)}
                                         </Badge>
                                     </div>
-                                    <div className="text-left">{new Date(d?.createdAt).toLocaleString()}</div>
+                                    <div className="text-left">{new Date(displayDeployment?.createdAt).toLocaleString()}</div>
                                     <div className="text-right">
-                                    {d?.metrics?.timing?.startTime
+                                    {displayDeployment?.metrics?.timing?.startTime
                                         ? (() => {
-                                            const start = new Date(d?.metrics?.timing?.startTime).getTime()
-                                            const end = d?.metrics?.timing?.endTime
-                                                ? new Date(d?.metrics?.timing?.endTime).getTime()
-                                                : Date.now()
-                                            const ms = d?.metrics?.timing?.endTime ? end - start : d?.metrics?.timing?.totalDurationMs
+                                            const start = new Date(displayDeployment.metrics.timing.startTime).getTime()
+                                            const end = displayDeployment.metrics.timing.endTime
+                                                ? new Date(displayDeployment.metrics.timing.endTime).getTime()
+                                                : now
+                                            const ms = end - start
                                             const mins = Math.floor(ms / 60000)
                                             const secs = Math.floor((ms % 60000) / 1000)
                                             return `${mins}m ${secs}s`
@@ -316,7 +328,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
 
                                      <div>
                                          <h3 className="text-base font-semibold mb-2">Logs</h3>
-                                         <div className="h-full max-h-[400px] overflow-auto">
+                                         <div className="h-full">
                                              <LogsViewer logs={state.currentLogs} />
                                          </div>
                                      </div>
@@ -324,7 +336,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                      {metricsData &&<div>
                                          <h3 className="text-base font-semibold mb-2">Metrics</h3>
                                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                             <TimingPieChart data={metricsData?.timing} chartConfig={chartConfig} title="Timing (s)" />
+                                             {/* <TimingPieChart data={metricsData?.timing} chartConfig={chartConfig} title="Timing (s)" /> */}
                                              <MetricsChart data={metricsData?.cpu} chartConfig={chartConfig} title="CPU (%)" />
                                              <MetricsChart data={metricsData?.memory} chartConfig={chartConfig} title="Memory (MB)" />
                                              <MetricsChart data={metricsData?.disk} chartConfig={chartConfig} title="Disk (MB)" />
@@ -334,7 +346,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                  </div>
                             </AccordionContent>
                         </AccordionItem>
-                    ))
+                    )})
                 )}
             </Accordion>
           </div>

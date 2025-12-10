@@ -7,6 +7,8 @@ const fetchSubdomain = async (request: NextRequest) => {
   let hostname = request.headers
     .get("host")!
     .replace(".localhost:3000", `.${ROOT_DOMAIN}`);
+    .replace(".127.0.0.1:3000", `.${ROOT_DOMAIN}`);
+    .replace(".0.0.0.0:3000", `.${ROOT_DOMAIN}`);
   // special case for Vercel preview deployment URLs
   if (
     hostname.includes("---") &&

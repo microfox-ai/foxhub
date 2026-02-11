@@ -1,4 +1,7 @@
 "use client"
+
+import { useCallback } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { OverviewTab } from "./overview-tab"
 import { DeploymentsTab } from "./deployments-tab"
@@ -8,11 +11,26 @@ import { SettingsTab } from "./settings-tab"
 import { ConfigTab } from "./config-tab"
 import { AwsSectionWrapper } from "./aws-wrapper"
 
+const VALID_TABS = ["overview", "deployments", "analytics", "logs", "config", "settings"] as const
+
 export function ProjectTabs({ projectId, defaultTab }: { projectId: string; defaultTab?: string }) {
-  const tab = defaultTab || "overview"
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const tabFromUrl = searchParams.get("tab") ?? undefined
+  const tab = (VALID_TABS.includes(tabFromUrl as (typeof VALID_TABS)[number]) ? tabFromUrl : defaultTab) || "overview"
+
+  const onTabChange = useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set("tab", value)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    },
+    [router, pathname, searchParams],
+  )
 
   return (
-    <Tabs defaultValue={tab} className="w-full">
+    <Tabs value={tab} onValueChange={onTabChange} className="w-full">
       <TabsList className="w-full grid grid-cols-6">
         <TabsTrigger value="overview">{"Overview"}</TabsTrigger>
         <TabsTrigger value="deployments">{"Deployments"}</TabsTrigger>

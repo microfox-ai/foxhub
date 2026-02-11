@@ -16,6 +16,7 @@ export type AwsResource = {
   region: string
   arn?: string
   bucket?: string
+  apiEndpoints?: IApiEndpoint[]
 }
 export type UrlMap = {
   type: "agent" | "public" | "openapi"

@@ -121,7 +121,14 @@ type Ctx = {
   loadLogs: (
     projectId: string,
     fns: AwsFunctionRef[],
-    opts: { rangeHours?: number; filterPattern?: string; functionName?: string | "ALL" },
+    opts: {
+      rangeHours?: number
+      rangeMinutes?: number
+      startTime?: number
+      endTime?: number
+      filterPattern?: string
+      functionName?: string | "ALL"
+    },
   ) => Promise<void>
 }
 
@@ -238,13 +245,23 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
     async (
       projectId: string,
       fns: AwsFunctionRef[],
-      opts: { rangeHours?: number; filterPattern?: string; functionName?: string | "ALL" },
+      opts: {
+        rangeHours?: number
+        rangeMinutes?: number
+        startTime?: number
+        endTime?: number
+        filterPattern?: string
+        functionName?: string | "ALL"
+      },
     ) => {
       dispatch({ type: "SET_LOADING_LOGS", value: true })
       dispatch({ type: "SET_LOGS_ERROR", error: null })
       const payload = JSON.stringify({
         items: fns,
         rangeHours: opts.rangeHours ?? 6,
+        rangeMinutes: opts.rangeMinutes,
+        startTime: opts.startTime,
+        endTime: opts.endTime,
         filterPattern: opts.filterPattern,
         functionName: opts.functionName || "ALL",
       })

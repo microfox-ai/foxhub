@@ -13,6 +13,9 @@ type AwsFunctionRef = {
 type LogsRequest = {
   items: AwsFunctionRef[]
   rangeHours?: number
+  rangeMinutes?: number
+  startTime?: number
+  endTime?: number
   filterPattern?: string
   functionName?: string | "ALL"
 }
@@ -27,14 +30,15 @@ type CloudWatchLogEvent = {
 async function getLogsForFunction(
   client: CloudWatchLogsClient,
   ref: AwsFunctionRef,
-  rangeHours: number,
+  startTime: number,
+  endTime: number,
   filterPattern?: string
 ) {
   try {
     const command = new FilterLogEventsCommand({
       logGroupName: `/aws/lambda/${ref.name}`,
-      startTime: new Date(Date.now() - rangeHours * 3600 * 1000).getTime(),
-      endTime: new Date().getTime(),
+      startTime,
+      endTime,
       filterPattern,
       interleaved: true,
     })
@@ -61,9 +65,27 @@ export async function POST(req: NextRequest) {
     const {
       items,
       rangeHours = 6,
+      rangeMinutes,
+      startTime: reqStartTime,
+      endTime: reqEndTime,
       filterPattern,
       functionName = "ALL",
     } = (await req.json()) as LogsRequest
+
+    const now = Date.now()
+    let startTime: number
+    let endTime: number
+    if (reqStartTime != null && reqEndTime != null) {
+      startTime = reqStartTime
+      endTime = reqEndTime
+    } else {
+      const rangeMs =
+        rangeMinutes != null
+          ? Math.max(60000, rangeMinutes * 60 * 1000)
+          : (rangeHours ?? 6) * 3600 * 1000
+      startTime = now - rangeMs
+      endTime = now
+    }
 
     if (!items || !Array.isArray(items)) {
       return NextResponse.json(
@@ -89,7 +111,8 @@ export async function POST(req: NextRequest) {
       const logs = await getLogsForFunction(
         client,
         ref,
-        rangeHours,
+        startTime,
+        endTime,
         filterPattern
       )
       byFunction[ref.name] = logs

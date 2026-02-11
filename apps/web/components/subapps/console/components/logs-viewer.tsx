@@ -8,7 +8,7 @@ export function LogsViewer({ logs, events }: { logs?: DeploymentLogsDto | null; 
   // Require focus/click to enable scrolling: default no-scroll, scroll only when focused
   if (events) {
     return (
-      <div tabIndex={0} className="max-h-[500px] overflow-hidden focus:overflow-auto font-mono text-xs bg-background text-foreground p-4 rounded-lg outline-none">
+      <div className="max-h-[500px] overflow-auto font-mono text-xs bg-background text-foreground p-4 rounded-lg min-w-0">
         {events.length === 0 ? (
           <div className="p-4 text-muted-foreground">{"No logs"}</div>
         ) : (
@@ -49,7 +49,7 @@ export function LogsViewer({ logs, events }: { logs?: DeploymentLogsDto | null; 
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-0">
-              <div tabIndex={0} className="max-h-[300px] overflow-hidden focus:overflow-auto font-mono text-xs bg-background text-foreground rounded-b-md outline-none">
+              <div className="max-h-[300px] overflow-auto font-mono text-xs bg-background text-foreground rounded-b-md min-w-0">
                 {items.length === 0 ? (
                   <div className="p-4 text-muted-foreground">{"No logs yet"}</div>
                 ) : (

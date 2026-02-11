@@ -25,13 +25,12 @@ export function LogsTab({ projectId }: { projectId: string }) {
     const agentUrlMap = urlsMap.find((u) => u.type === "agent")
     if (!agentUrlMap?.service) return []
     const { resources } = agentUrlMap.service.providerConfig
-    const { endpoints } = agentUrlMap.service
     const arr = resources.filter((r) => r.type === "lambda")
     return arr.map((f) => ({
       arn: f.arn!,
       region: f.region || "us-east-1",
       name: f.name,
-      apiEndpoints: endpoints,
+      apiEndpoints: f.apiEndpoints || [],
     }))
   }, [project])
 

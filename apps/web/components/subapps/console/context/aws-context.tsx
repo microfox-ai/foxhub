@@ -117,7 +117,11 @@ function reducer(state: State, action: Action): State {
 
 type Ctx = {
   state: State
-  loadAnalytics: (projectId: string, fns: AwsFunctionRef[], rangeHours: number) => Promise<void>
+  loadAnalytics: (
+    projectId: string,
+    fns: AwsFunctionRef[],
+    opts: { rangeHours?: number; startTime?: number; endTime?: number }
+  ) => Promise<void>
   loadLogs: (
     projectId: string,
     fns: AwsFunctionRef[],
@@ -211,20 +215,32 @@ function mockLogs(fns: AwsFunctionRef[]): LogsResponse {
 export function AwsProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
 
-  const loadAnalytics = useCallback(async (projectId: string, fns: AwsFunctionRef[], rangeHours: number) => {
-    if (!fns.length) {
-      dispatch({ type: "SET_ANALYTICS", projectId, items: [] })
-      return
-    }
-    dispatch({ type: "SET_LOADING_ANALYTICS", value: true })
-    dispatch({ type: "SET_ANALYTICS_ERROR", error: null })
-    try {
-      if (API_BASE) {
-        const res = await fetch(`/api/aws/lambda/analytics`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: fns, rangeHours }),
-        })
+  const loadAnalytics = useCallback(
+    async (
+      projectId: string,
+      fns: AwsFunctionRef[],
+      opts: { rangeHours?: number; startTime?: number; endTime?: number }
+    ) => {
+      if (!fns.length) {
+        dispatch({ type: "SET_ANALYTICS", projectId, items: [] })
+        return
+      }
+      dispatch({ type: "SET_LOADING_ANALYTICS", value: true })
+      dispatch({ type: "SET_ANALYTICS_ERROR", error: null })
+      try {
+        if (API_BASE) {
+          const payload: Record<string, unknown> = { items: fns }
+          if (opts.startTime != null && opts.endTime != null) {
+            payload.startTime = opts.startTime
+            payload.endTime = opts.endTime
+          } else {
+            payload.rangeHours = opts.rangeHours ?? 24
+          }
+          const res = await fetch(`/api/aws/lambda/analytics`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
         if (!res.ok) throw new Error(`External analytics request failed: ${res.status}`)
         const data = (await res.json()) as { items: LambdaAnalyticsItem[] }
         dispatch({ type: "SET_ANALYTICS", projectId, items: data.items || [] })
@@ -232,14 +248,16 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
         const items = mockAnalytics(fns)
         dispatch({ type: "SET_ANALYTICS", projectId, items })
       }
-    } catch (e: any) {
-      const items = mockAnalytics(fns)
-      dispatch({ type: "SET_ANALYTICS", projectId, items })
-      dispatch({ type: "SET_ANALYTICS_ERROR", error: e?.message || "Failed to load analytics" })
-    } finally {
-      dispatch({ type: "SET_LOADING_ANALYTICS", value: false })
-    }
-  }, [])
+      } catch (e: any) {
+        const items = mockAnalytics(fns)
+        dispatch({ type: "SET_ANALYTICS", projectId, items })
+        dispatch({ type: "SET_ANALYTICS_ERROR", error: e?.message || "Failed to load analytics" })
+      } finally {
+        dispatch({ type: "SET_LOADING_ANALYTICS", value: false })
+      }
+    },
+    []
+  )
 
   const loadLogs = useCallback(
     async (

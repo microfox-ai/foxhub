@@ -102,6 +102,7 @@ function stripTimestampAndRequestId(message: string): string {
 }
 
 type ParsedRequest = {
+  id: string
   requestId: string
   startTs: number
   meta: {
@@ -117,6 +118,8 @@ type ParsedRequest = {
 
 function groupEventsIntoRequests(events: CloudWatchLogEvent[]): ParsedRequest[] {
   const requests: ParsedRequest[] = []
+  let reqCounter = 0
+  const nextId = () => `req-${reqCounter++}`
   let current: {
     requestId: string
     startTs: number
@@ -139,6 +142,7 @@ function groupEventsIntoRequests(events: CloudWatchLogEvent[]): ParsedRequest[] 
       if (rid) {
         if (current) {
           requests.push({
+            id: nextId(),
             requestId: current.requestId,
             startTs: current.startTs,
             meta: current.meta,
@@ -175,6 +179,7 @@ function groupEventsIntoRequests(events: CloudWatchLogEvent[]): ParsedRequest[] 
       }
       if (/REPORT RequestId:/.test(msg) && current) {
         requests.push({
+          id: nextId(),
           requestId: current.requestId,
           startTs: current.startTs,
           meta: current.meta,
@@ -193,6 +198,7 @@ function groupEventsIntoRequests(events: CloudWatchLogEvent[]): ParsedRequest[] 
 
   if (current) {
     requests.push({
+      id: nextId(),
       requestId: current.requestId,
       startTs: current.startTs,
       meta: current.meta,
@@ -279,12 +285,17 @@ export function CloudWatchLogsViewer({
   className,
   compact,
   isLoading,
+  highlightTimeRange,
+  scrollMinHeight,
 }: {
   events: CloudWatchLogEvent[]
   levelFilter?: LogLevel[]
   className?: string
   compact?: boolean
   isLoading?: boolean
+  highlightTimeRange?: { start: number; end: number } | null
+  /** When set, the scroll container uses this min-height (e.g. to match analytics section height). */
+  scrollMinHeight?: number
 }) {
   const [showRaw, setShowRaw] = useState(false)
   const [levels, setLevels] = useState<Set<LogLevel>>(new Set())
@@ -347,7 +358,7 @@ export function CloudWatchLogsViewer({
   const allExpanded = requests.length > 0 && expandedIds.length === requests.length
   const toggleExpandAll = () => {
     if (allExpanded) setExpandedIds([])
-    else setExpandedIds(requests.map((r) => r.requestId))
+    else setExpandedIds(requests.map((r) => r.id))
   }
 
   if (events.length === 0) {
@@ -610,15 +621,18 @@ export function CloudWatchLogsViewer({
       <div
         className={cn(
           "overflow-auto font-mono text-xs bg-background rounded-lg border min-w-0",
-          compact ? "max-h-[300px]" : "max-h-[500px]",
+          compact ? "max-h-[300px]" : scrollMinHeight ? "" : "max-h-[500px]",
         )}
+        style={scrollMinHeight ? { minHeight: scrollMinHeight } : undefined}
       >
         {requests.length === 0 ? (
           <div
             className={cn(
               "flex items-center justify-center text-muted-foreground text-sm",
-              compact ? "min-h-[260px]" : "min-h-[460px]",
+              compact && "min-h-[260px]",
+              !compact && !scrollMinHeight && "min-h-[460px]",
             )}
+            style={scrollMinHeight && !compact ? { minHeight: scrollMinHeight - 40 } : undefined}
           >
             <div className="flex flex-col items-center gap-1">
               <span>
@@ -648,9 +662,20 @@ export function CloudWatchLogsViewer({
                 : null
               const memory = r.meta.maxMemoryUsed != null ? `${r.meta.maxMemoryUsed} MB` : null
               const dateTimeStr = formatRequestDateTime(r.startTs)
+              const isHighlighted =
+                highlightTimeRange &&
+                r.startTs >= highlightTimeRange.start &&
+                r.startTs <= highlightTimeRange.end
 
               return (
-                <AccordionItem key={r.requestId} value={r.requestId} className="border-b last:border-b-0">
+                <AccordionItem
+                  key={r.id}
+                  value={r.id}
+                  className={cn(
+                    "border-b last:border-b-0",
+                    isHighlighted && "bg-yellow-500/10 dark:bg-yellow-600/10 border-l-2 border-l-yellow-500",
+                  )}
+                >
                   <AccordionTrigger className="px-4 py-2 hover:no-underline text-left">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <span

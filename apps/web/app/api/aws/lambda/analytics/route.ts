@@ -15,11 +15,12 @@ type AwsFunctionRef = {
   name: string
 }
 
-// Helper to determine the optimal period for CloudWatch metrics based on the time range
-function getPeriodForRange(rangeHours: number): number {
-  if (rangeHours <= 24) return 60 * 5 // 5 minutes
-  if (rangeHours <= 7 * 24) return 60 * 60 // 1 hour
-  if (rangeHours <= 30 * 24) return 60 * 60 * 6 // 6 hours
+// Helper to determine the optimal period for CloudWatch metrics based on the time span
+function getPeriodForSpan(spanMs: number): number {
+  const spanHours = spanMs / (3600 * 1000)
+  if (spanHours <= 24) return 60 * 5 // 5 minutes
+  if (spanHours <= 7 * 24) return 60 * 60 // 1 hour
+  if (spanHours <= 30 * 24) return 60 * 60 * 6 // 6 hours
   return 60 * 60 * 24 // 1 day
 }
 
@@ -27,12 +28,12 @@ async function getFunctionDetails(
   lambdaClient: LambdaClient,
   cloudWatchClient: CloudWatchClient,
   ref: AwsFunctionRef,
-  rangeHours: number
+  startTime: Date,
+  endTime: Date
 ) {
   try {
-    const period = getPeriodForRange(rangeHours)
-    const startTime = new Date(Date.now() - rangeHours * 3600 * 1000)
-    const endTime = new Date()
+    const spanMs = endTime.getTime() - startTime.getTime()
+    const period = getPeriodForSpan(spanMs)
 
     const [config, tags, metrics] = await Promise.all([
       lambdaClient.send(
@@ -102,9 +103,26 @@ async function getFunctionDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, rangeHours = 24 } = (await req.json()) as { items: AwsFunctionRef[]; rangeHours?: number }
+    const body = (await req.json()) as {
+      items: AwsFunctionRef[]
+      rangeHours?: number
+      startTime?: number
+      endTime?: number
+    }
+    const { items, rangeHours = 24, startTime: reqStartTime, endTime: reqEndTime } = body
     if (!items || !Array.isArray(items)) {
       return NextResponse.json({ error: "Missing or invalid items array" }, { status: 400 })
+    }
+
+    let startTime: Date
+    let endTime: Date
+    if (reqStartTime != null && reqEndTime != null) {
+      startTime = new Date(reqStartTime)
+      endTime = new Date(reqEndTime)
+    } else {
+      const rangeMs = rangeHours * 3600 * 1000
+      endTime = new Date()
+      startTime = new Date(Date.now() - rangeMs)
     }
 
     const results = await Promise.all(
@@ -123,7 +141,7 @@ export async function POST(req: NextRequest) {
             secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
           },
         })
-        return getFunctionDetails(lambdaClient, cloudWatchClient, ref, rangeHours)
+        return getFunctionDetails(lambdaClient, cloudWatchClient, ref, startTime, endTime)
       })
     )
 

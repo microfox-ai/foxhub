@@ -137,6 +137,19 @@ function groupEventsIntoRequests(events: CloudWatchLogEvent[]): ParsedRequest[] 
       continue
     }
 
+    // Handle init-phase logs (including errors) that occur after INIT_START but before any
+    // START RequestId by creating a synthetic "request" so they still appear in the UI.
+    if (!current && pendingInit.length > 0 && !isAwsBoilerplate(msg)) {
+      current = {
+        requestId: parseRequestId(msg) ?? "(init phase)",
+        startTs: pendingInit[0]?.timestamp ?? ev.timestamp,
+        meta: {},
+        appLogs: [],
+        allEvents: [...pendingInit],
+      }
+      pendingInit = []
+    }
+
     if (/START RequestId:/.test(msg) && !msg.includes("END") && !msg.includes("REPORT")) {
       const rid = parseRequestId(msg)
       if (rid) {

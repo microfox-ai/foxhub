@@ -131,6 +131,20 @@ export const consoleApi = {
     return await res.json()
   },
 
+  async deleteProjectGroup(projectId: string, group: string) {
+    const safeGroup = encodeURIComponent((group || "default").trim() || "default")
+    const res = await fetch(`${API_BASE}/api/projects/${projectId}/groups/${safeGroup}`, {
+      method: "DELETE",
+      headers: {
+        "x-project-id": projectId,
+      },
+    })
+    if (!res.ok) {
+      throw new Error((await res.json().catch(() => ({}))).error || `Failed to delete project group`)
+    }
+    return await res.json()
+  },
+
   async getDeployment(deploymentId: string) {
     const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}`)
     if (!res.ok) throw new Error(`Failed to fetch deployment: ${res.status}`)

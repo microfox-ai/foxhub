@@ -10,7 +10,7 @@ import {
 } from "@aws-sdk/client-cloudwatch"
 
 type AwsFunctionRef = {
-  arn: string
+  arn?: string
   region: string
   name: string
 }
@@ -34,12 +34,15 @@ async function getFunctionDetails(
   try {
     const spanMs = endTime.getTime() - startTime.getTime()
     const period = getPeriodForSpan(spanMs)
+    const hasValidArn = !!ref.arn && /^arn:aws[a-zA-Z-]*:lambda:/.test(ref.arn)
 
     const [config, tags, metrics] = await Promise.all([
       lambdaClient.send(
         new GetFunctionConfigurationCommand({ FunctionName: ref.name })
       ),
-      lambdaClient.send(new ListTagsCommand({ Resource: ref.arn })),
+      hasValidArn
+        ? lambdaClient.send(new ListTagsCommand({ Resource: ref.arn }))
+        : Promise.resolve({ Tags: {} }),
       cloudWatchClient.send(
         new GetMetricDataCommand({
           StartTime: startTime,

@@ -32,6 +32,7 @@ export type ProjectDto = IProject
 export interface DeploymentDto {
   _id: string
   projectId: string
+  group?: string
   organizationId: string
   userId: string
   status: string

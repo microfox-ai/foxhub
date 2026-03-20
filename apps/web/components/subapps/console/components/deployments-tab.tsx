@@ -14,6 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, PieChart, Pie } from "recharts"
+import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
 
 const TimingPieChart = ({ data, chartConfig, title }: { data: any[], chartConfig: ChartConfig, title: string }) => (
     <Card className="flex flex-col">
@@ -121,6 +122,8 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
 
   const current: DeploymentDto | null | undefined = state.currentDeployment
   const status = current?.status ?? "unknown"
+  const currentGroupLabel = getGroupLabel(current?.group)
+  const currentGroupColor = getGroupColorToken(currentGroupLabel)
 
   const onUpload = async (file?: File | null) => {
     if (!file) return
@@ -238,11 +241,29 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                         const isSelected = d?._id === selectedId;
                         // Use the more up-to-date `current` deployment data if this is the selected item
                         const displayDeployment = isSelected && current ? current : d;
+                        const displayGroupLabel = getGroupLabel(displayDeployment?.group)
+                        const displayGroupColor = getGroupColorToken(displayGroupLabel)
                         return (
                         <AccordionItem value={d?._id} key={d?._id} className="border-b">
-                            <AccordionTrigger onClick={() => setSelectedId(d?._id)} className={`w-full text-left hover:no-underline ${isSelected ? "bg-muted hover:bg-muted" : "hover:bg-muted/50"} px-4 py-3 transition-colors`}>
-                                <div className="grid grid-cols-4 w-full items-center text-sm gap-4">
+                            <AccordionTrigger
+                              onClick={() => setSelectedId(d?._id)}
+                              className={`w-full text-left hover:no-underline ${isSelected ? "hover:bg-muted" : "hover:bg-muted/50"} px-4 py-3 transition-colors`}
+                            >
+                                <div className="grid grid-cols-5 w-full items-center text-sm gap-4">
                                     <div className="font-mono text-xs truncate" title={displayDeployment?._id}>{displayDeployment?._id}</div>
+                                    <div className="text-center">
+                                      <Badge
+                                        variant="outline"
+                                        style={{
+                                          backgroundColor: displayGroupColor.bg,
+                                          borderColor: displayGroupColor.border,
+                                          color: displayGroupColor.text,
+                                        }}
+                                        title={`Group: ${displayGroupLabel}`}
+                                      >
+                                        {displayGroupLabel}
+                                      </Badge>
+                                    </div>
                                     <div className="text-center">
                                         <Badge
                                             variant={
@@ -270,9 +291,24 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent>
-                                 <div className="p-4 bg-background border-t flex flex-col gap-6">
+                                 <div
+                                   className="p-4 border-t flex flex-col gap-6 bg-background"
+                                 >
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                          <div className="flex flex-col gap-3">
+                                              <div className="flex items-center justify-between text-sm">
+                                                  <span>{"Group"}</span>
+                                                  <Badge
+                                                    variant="outline"
+                                                    style={{
+                                                      backgroundColor: currentGroupColor.bg,
+                                                      borderColor: currentGroupColor.border,
+                                                      color: currentGroupColor.text,
+                                                    }}
+                                                  >
+                                                    {currentGroupLabel}
+                                                  </Badge>
+                                              </div>
                                               <div className="flex items-center justify-between text-sm">
                                                   <span>{"Status"}</span>
                                                   <Badge variant={status === "completed" ? "secondary" : status === "failed" ? "destructive" : "outline"}>

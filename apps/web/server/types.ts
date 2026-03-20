@@ -146,6 +146,7 @@ export interface IAwsLambdaResource {
   type: "lambda";
   logicalName: string;
   name: string;
+  group?: string;
   region?: string;
   arn?: string;
   memorySize?: number;

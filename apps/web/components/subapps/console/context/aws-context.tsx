@@ -277,7 +277,9 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "SET_ANALYTICS_ERROR", error: null });
       try {
         if (API_BASE) {
-          const payload: Record<string, unknown> = { items: fns };
+          // SECURITY: the server resolves the allowed function list from the project's
+          // urlsMap; we send projectId (function names are no longer trusted).
+          const payload: Record<string, unknown> = { projectId, items: fns };
           if (opts.startTime != null && opts.endTime != null) {
             payload.startTime = opts.startTime;
             payload.endTime = opts.endTime;
@@ -331,6 +333,7 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: "SET_LOADING_LOGS", value: true });
       dispatch({ type: "SET_LOGS_ERROR", error: null });
       const payload = JSON.stringify({
+        projectId,
         items: fns,
         rangeHours: opts.rangeHours ?? 6,
         rangeMinutes: opts.rangeMinutes,

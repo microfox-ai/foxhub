@@ -3,15 +3,12 @@ import {
   CloudWatchLogsClient,
   FilterLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs"
+import { resolveProjectLambdaScope, type ScopedFunction } from "../scope"
 
-type AwsFunctionRef = {
-  arn: string
-  region: string
-  name: string
-}
+type AwsFunctionRef = ScopedFunction
 
 type LogsRequest = {
-  items: AwsFunctionRef[]
+  projectId: string
   rangeHours?: number
   rangeMinutes?: number
   startTime?: number
@@ -62,15 +59,21 @@ async function getLogsForFunction(
 
 export async function POST(req: NextRequest) {
   try {
+    const body = (await req.json()) as LogsRequest
     const {
-      items,
       rangeHours = 6,
       rangeMinutes,
       startTime: reqStartTime,
       endTime: reqEndTime,
       filterPattern,
       functionName = "ALL",
-    } = (await req.json()) as LogsRequest
+    } = body
+
+    // SECURITY: authenticate the caller and resolve the allowed function list server-side
+    // from the project's urlsMap. Client-sent function names are never trusted.
+    const scope = await resolveProjectLambdaScope(body)
+    if (!scope.ok) return scope.response
+    const items = scope.functions
 
     const now = Date.now()
     let startTime: number
@@ -85,13 +88,6 @@ export async function POST(req: NextRequest) {
           : (rangeHours ?? 6) * 3600 * 1000
       startTime = now - rangeMs
       endTime = now
-    }
-
-    if (!items || !Array.isArray(items)) {
-      return NextResponse.json(
-        { error: "Missing or invalid items array" },
-        { status: 400 }
-      )
     }
 
     const functionsToFetch =

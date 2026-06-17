@@ -4,8 +4,32 @@ import {
   type IProject,
   type IOrganization,
 } from "@/server/types"
+import { createClient } from "@/utils/supabase/browser-client"
 
 export const API_BASE = (process.env.NEXT_PUBLIC_CONSOLE_API_BASE || process.env.NEXT_PUBLIC_CICD_BASE_URL || "").trim()
+
+/**
+ * Fetch wrapper for cicd calls. Forwards the logged-in user's Supabase JWT as
+ * a Bearer token so cicd can authenticate the request once it runs with CICD_AUTH_ENFORCE=true
+ * (cicd verifies the JWT → user identity → ownership checks). We forward the JWT rather than the
+ * static service key because this runs in the browser, where the service key can't live safely.
+ * No-op when the user isn't signed in.
+ */
+async function cicdFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  let authHeader: Record<string, string> = {}
+  try {
+    const {
+      data: { session },
+    } = await createClient().auth.getSession()
+    if (session?.access_token) authHeader = { Authorization: `Bearer ${session.access_token}` }
+  } catch {
+    // Not signed in / no session — proceed without the header.
+  }
+  return fetch(input, {
+    ...init,
+    headers: { ...authHeader, ...(init.headers as Record<string, string> | undefined) },
+  })
+}
 
 export enum ProjectSourceType {
   GITHUB = "github",
@@ -35,6 +59,13 @@ export interface DeploymentDto {
   group?: string
   organizationId: string
   userId: string
+  /** SEC-2 / Plan A: who actually triggered the deployment (CLI/console). */
+  triggeredBy?: {
+    userId: string
+    email?: string
+    name?: string
+    via?: "cli" | "console"
+  }
   status: string
   baseUrl?: string
   metrics?: any
@@ -67,7 +98,7 @@ export const consoleApi = {
   async listOrganizations(ownerId: string) {
     const url = new URL(`/api/organizations`, API_BASE)
     url.searchParams.set("ownerId", ownerId)
-    const res = await fetch(url.toString())
+    const res = await cicdFetch(url.toString())
     if (!res.ok) throw new Error(`Failed to list organizations: ${res.status}`)
     const data = await res.json()
     return data.items as OrganizationDto[]
@@ -76,7 +107,7 @@ export const consoleApi = {
   async createOrganization(
     input: Omit<IOrganization, "id" | "createdAt" | "updatedAt" | "members"> & { members?: string[] },
   ) {
-    const res = await fetch(`${API_BASE}/api/organizations`, {
+    const res = await cicdFetch(`${API_BASE}/api/organizations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -88,7 +119,7 @@ export const consoleApi = {
   async listProjects(params: { organizationId?: string }) {
     const url = new URL(`/api/projects`, API_BASE)
     if (params.organizationId) url.searchParams.set("organizationId", params.organizationId)
-    const res = await fetch(url.toString())
+    const res = await cicdFetch(url.toString())
     if (!res.ok) throw new Error(`Failed to list projects: ${res.status}`)
     const data = await res.json()
     return data.items as ProjectDto[]
@@ -97,7 +128,7 @@ export const consoleApi = {
   async createProject(
     input: Omit<IProject, "id" | "createdAt" | "updatedAt">,
   ) {
-    const res = await fetch(`${API_BASE}/api/projects`, {
+    const res = await cicdFetch(`${API_BASE}/api/projects`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -107,7 +138,7 @@ export const consoleApi = {
   },
 
   async getProject(projectId: string) {
-    const res = await fetch(`${API_BASE}/api/projects/${projectId}`)
+    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}`)
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Failed to fetch project`)
     return (await res.json()) as ProjectDto
   },
@@ -116,7 +147,7 @@ export const consoleApi = {
     projectId: string,
     updates: Partial<Pick<ProjectDto, "agentName" | "subdomain">>,
   ) {
-    const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
@@ -126,14 +157,14 @@ export const consoleApi = {
   },
 
   async deleteProject(projectId: string) {
-    const res = await fetch(`${API_BASE}/api/projects/${projectId}`, { method: "DELETE" })
+    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}`, { method: "DELETE" })
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Failed to delete project`)
     return await res.json()
   },
 
   async deleteProjectGroup(projectId: string, group: string) {
     const safeGroup = encodeURIComponent((group || "default").trim() || "default")
-    const res = await fetch(`${API_BASE}/api/projects/${projectId}/groups/${safeGroup}`, {
+    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}/groups/${safeGroup}`, {
       method: "DELETE",
       headers: {
         "x-project-id": projectId,
@@ -146,7 +177,7 @@ export const consoleApi = {
   },
 
   async getDeployment(deploymentId: string) {
-    const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}`)
+    const res = await cicdFetch(`${API_BASE}/api/deployments/${deploymentId}`)
     if (!res.ok) throw new Error(`Failed to fetch deployment: ${res.status}`)
     return (await res.json()) as DeploymentDto
   },
@@ -154,7 +185,7 @@ export const consoleApi = {
   async listProjectDeployments(projectId: string) {
     const url = new URL(`/api/deployments`, API_BASE)
     url.searchParams.set("projectId", projectId)
-    const res = await fetch(url.toString())
+    const res = await cicdFetch(url.toString())
     if (!res.ok) {
       if (res.status === 404) return [] as DeploymentDto[]
       throw new Error(`Failed to list deployments: ${res.status}`)
@@ -164,7 +195,7 @@ export const consoleApi = {
   },
 
   async getDeploymentLogs(deploymentId: string) {
-    const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}/logs`)
+    const res = await cicdFetch(`${API_BASE}/api/deployments/${deploymentId}/logs`)
     if (!res.ok) throw new Error(`Failed to fetch deployment logs: ${res.status}`)
     const data = await res.json()
     return (data.logs || {}) as DeploymentLogsDto
@@ -173,7 +204,7 @@ export const consoleApi = {
   async startLocalDeployment(projectId: string, archiveFile: File) {
     const form = new FormData()
     form.append("archive", archiveFile)
-    const res = await fetch(`${API_BASE}/api/deployments/local`, {
+    const res = await cicdFetch(`${API_BASE}/api/deployments/local`, {
       method: "POST",
       headers: { "x-project-id": projectId },
       body: form,
@@ -183,13 +214,13 @@ export const consoleApi = {
   },
 
   async stopDeployment(deploymentId: string) {
-    const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}/stop`, { method: "POST" })
+    const res = await cicdFetch(`${API_BASE}/api/deployments/${deploymentId}/stop`, { method: "POST" })
     if (!res.ok) throw new Error(`Failed to stop deployment: ${res.status}`)
     return await res.json()
   },
 
   async archiveDeployment(deploymentId: string) {
-    const res = await fetch(`${API_BASE}/api/deployments/${deploymentId}`, { method: "DELETE" })
+    const res = await cicdFetch(`${API_BASE}/api/deployments/${deploymentId}`, { method: "DELETE" })
     if (!res.ok) throw new Error(`Failed to archive deployment: ${res.status}`)
     return await res.json()
   },

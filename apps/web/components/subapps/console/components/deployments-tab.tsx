@@ -320,6 +320,17 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                                   <span>{current?.createdAt ? new Date(current?.createdAt).toLocaleString() : "—"}</span>
                                               </div>
                                               <div className="flex items-center justify-between text-sm">
+                                                  <span>{"Triggered by"}</span>
+                                                  <span className="text-right">
+                                                    {current?.triggeredBy?.email ||
+                                                      current?.triggeredBy?.name ||
+                                                      current?.triggeredBy?.userId ||
+                                                      current?.userId ||
+                                                      "—"}
+                                                    {current?.triggeredBy?.via ? ` (${current.triggeredBy.via})` : ""}
+                                                  </span>
+                                              </div>
+                                              <div className="flex items-center justify-between text-sm">
                                                   <span>{"Duration"}</span>
                                                   <span>{duration ?? "—"}</span>
                                               </div>

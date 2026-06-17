@@ -8,12 +8,9 @@ import {
   CloudWatchClient,
   GetMetricDataCommand,
 } from "@aws-sdk/client-cloudwatch"
+import { resolveProjectLambdaScope, type ScopedFunction } from "../scope"
 
-type AwsFunctionRef = {
-  arn?: string
-  region: string
-  name: string
-}
+type AwsFunctionRef = ScopedFunction
 
 // Helper to determine the optimal period for CloudWatch metrics based on the time span
 function getPeriodForSpan(spanMs: number): number {
@@ -107,15 +104,18 @@ async function getFunctionDetails(
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as {
-      items: AwsFunctionRef[]
+      projectId: string
       rangeHours?: number
       startTime?: number
       endTime?: number
     }
-    const { items, rangeHours = 24, startTime: reqStartTime, endTime: reqEndTime } = body
-    if (!items || !Array.isArray(items)) {
-      return NextResponse.json({ error: "Missing or invalid items array" }, { status: 400 })
-    }
+    const { rangeHours = 24, startTime: reqStartTime, endTime: reqEndTime } = body
+
+    // SECURITY: authenticate the caller and resolve the allowed function list server-side
+    // from the project's urlsMap. Client-sent function names are never trusted.
+    const scope = await resolveProjectLambdaScope(body)
+    if (!scope.ok) return scope.response
+    const items = scope.functions
 
     let startTime: Date
     let endTime: Date

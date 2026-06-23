@@ -8,6 +8,7 @@ import {
   useMemo,
   useReducer,
   useCallback,
+  useRef,
 } from "react";
 import { API_BASE } from "@/components/subapps/console/lib/console-api";
 
@@ -260,8 +261,48 @@ function mockLogs(fns: AwsFunctionRef[]): LogsResponse {
   return { byFunction, combined };
 }
 
+/** Stable key for an event used to de-duplicate across incremental fetches. */
+function eventKey(e: CloudWatchLogEvent): string {
+  return e.id ?? `${e.timestamp}:${e.message}`;
+}
+
+/** Merge a freshly fetched delta into the existing logs, de-duping by event key. */
+function mergeLogs(prev: LogsResponse, next: LogsResponse): LogsResponse {
+  const byFunction: Record<string, CloudWatchLogEvent[]> = {};
+  const names = new Set([
+    ...Object.keys(prev.byFunction),
+    ...Object.keys(next.byFunction),
+  ]);
+  for (const name of names) {
+    const seen = new Set<string>();
+    const merged: CloudWatchLogEvent[] = [];
+    for (const e of [
+      ...(prev.byFunction[name] || []),
+      ...(next.byFunction[name] || []),
+    ]) {
+      const k = eventKey(e);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      merged.push(e);
+    }
+    merged.sort((a, b) => a.timestamp - b.timestamp);
+    byFunction[name] = merged;
+  }
+  const combined = Object.values(byFunction)
+    .flat()
+    .sort((a, b) => a.timestamp - b.timestamp);
+  return { byFunction, combined };
+}
+
 export function AwsProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Per-project cache metadata for incremental log fetching: the signature of the
+  // current query (range + filter + function set) and the end of the last window
+  // we fetched. A same-signature refresh fetches only [lastEnd, now] and appends.
+  const logCacheRef = useRef<
+    Record<string, { signature: string; endTime: number; logs: LogsResponse }>
+  >({});
 
   const loadAnalytics = useCallback(
     async (
@@ -332,13 +373,48 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
     ) => {
       dispatch({ type: "SET_LOADING_LOGS", value: true });
       dispatch({ type: "SET_LOGS_ERROR", error: null });
+
+      // A custom absolute range pins both ends; a preset range is "relative" and
+      // can be refreshed incrementally (fetch only what arrived since lastEnd).
+      const isRelative = opts.startTime == null || opts.endTime == null;
+      const signature = JSON.stringify({
+        r: opts.rangeMinutes ?? null,
+        rh: opts.rangeHours ?? null,
+        s: opts.startTime ?? null,
+        e: opts.endTime ?? null,
+        f: opts.filterPattern ?? "",
+        fn: opts.functionName ?? "ALL",
+        names: fns.map((f) => f.name).sort(),
+      });
+
+      const cached = logCacheRef.current[projectId];
+      const now = Date.now();
+      const canIncrement =
+        isRelative && !!cached && cached.signature === signature;
+
+      // Compute the explicit window so we can track the exact end we fetched.
+      let startTime: number;
+      let endTime: number;
+      if (!isRelative) {
+        startTime = opts.startTime!;
+        endTime = opts.endTime!;
+      } else if (canIncrement) {
+        startTime = cached!.endTime;
+        endTime = now;
+      } else {
+        const rangeMs =
+          opts.rangeMinutes != null
+            ? Math.max(60000, opts.rangeMinutes * 60 * 1000)
+            : (opts.rangeHours ?? 6) * 3600 * 1000;
+        startTime = now - rangeMs;
+        endTime = now;
+      }
+
       const payload = JSON.stringify({
         projectId,
         items: fns,
-        rangeHours: opts.rangeHours ?? 6,
-        rangeMinutes: opts.rangeMinutes,
-        startTime: opts.startTime,
-        endTime: opts.endTime,
+        startTime,
+        endTime,
         filterPattern: opts.filterPattern,
         functionName: opts.functionName || "ALL",
       });
@@ -351,10 +427,15 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
           });
           if (!res.ok)
             throw new Error(`External logs request failed: ${res.status}`);
-          const logs = (await res.json()) as LogsResponse;
+          const fetched = (await res.json()) as LogsResponse;
+          const logs =
+            canIncrement && cached ? mergeLogs(cached.logs, fetched) : fetched;
+          logCacheRef.current[projectId] = { signature, endTime, logs };
           dispatch({ type: "SET_LOGS", projectId, logs });
         } else {
-          dispatch({ type: "SET_LOGS", projectId, logs: mockLogs(fns) });
+          const logs = mockLogs(fns);
+          logCacheRef.current[projectId] = { signature, endTime, logs };
+          dispatch({ type: "SET_LOGS", projectId, logs });
         }
       } catch (e: any) {
         dispatch({ type: "SET_LOGS", projectId, logs: mockLogs(fns) });

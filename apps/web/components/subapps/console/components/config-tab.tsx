@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 
 export function ConfigTab({ projectId }: { projectId: string }) {
   const { state } = useConsole()
-  const project = state.projects.find((p) => p.id === projectId)
+  const project = state.currentProject && state.currentProject.id === projectId ? state.currentProject : undefined
 
   if (!project) {
     return <div className="text-sm text-muted-foreground">{"Project not found"}</div>

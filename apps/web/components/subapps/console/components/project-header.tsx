@@ -4,8 +4,8 @@ import { useConsole } from "@/components/subapps/console/context/console-context
 
 export function ProjectHeader({ projectId }: { projectId: string }) {
   const { state } = useConsole()
-  const project = state.projects.find((p) => p.id === projectId)
-  if (!project) return null
+  const project = state.currentProject
+  if (!project || project.id !== projectId) return null
 
   return (
     <div className="mb-4">

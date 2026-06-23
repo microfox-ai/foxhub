@@ -1,199 +1,226 @@
 "use client"
-import { useEffect, useMemo, useState } from "react"
+
+import { useMemo } from "react"
+import useSWR from "swr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useConsole } from "@/components/subapps/console/context/console-context"
-import { UrlMapType } from "@/server/types"
+import { CopyableUrl } from "./copyable-url"
+import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
+import { cn } from "@/lib/utils"
+import { UrlMapType, type IUrlMap } from "@/server/types"
+import { Globe } from "lucide-react"
 
-type AnyRecord = Record<string, any>
+const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
+
+const METHOD_COLORS: Record<string, string> = {
+  GET: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900",
+  POST: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-900",
+  PUT: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900",
+  PATCH: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900",
+  DELETE: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900",
+}
+
+function MethodBadge({ method }: { method: string }) {
+  const m = method.toUpperCase()
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 rounded border px-1.5 py-0.5 font-mono text-[11px] font-medium",
+        METHOD_COLORS[m] ?? "bg-muted text-muted-foreground border-border",
+      )}
+    >
+      {m}
+    </span>
+  )
+}
+
+type Endpoint = { method: string; path: string; group: string; summary?: string }
+
+const fetchJson = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
 
 export function OverviewTab({ projectId }: { projectId: string }) {
   const { state } = useConsole()
-  const project = state.projects.find((p) => p.id === projectId)
-  const openapiUri = project?.urlsMap?.find((u) => u.type === UrlMapType.OPENAPI)?.url
-  const [openapi, setOpenapi] = useState<AnyRecord | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  useEffect(() => {
-    let mounted = true
-    async function run() {
-      if (!openapiUri) {
-        setOpenapi(null)
-        setError(null)
-        return
+  const project =
+    state.currentProject && state.currentProject.id === projectId
+      ? state.currentProject
+      : undefined
+
+  const subdomain = project?.subdomain?.trim()
+  const subdomainBase = subdomain ? `https://${subdomain}.microfox.app` : undefined
+  const urls = useMemo<IUrlMap[]>(() => project?.urlsMap ?? [], [project])
+
+  const agentMap = useMemo(() => urls.find((u) => u.type === UrlMapType.AGENT), [urls]) ?? { path: '/agent' }
+  const openapiUrl = useMemo(() => `${subdomainBase}${urls.find((u) => u.type === UrlMapType.OPENAPI)?.path ?? '/docs.json'}`, [urls, subdomainBase])
+
+  // Pull the OpenAPI spec for the core group — gives us every route + summaries.
+  const { data: openapi } = useSWR(openapiUrl ? ["openapi", openapiUrl] : null, ([, u]) => fetchJson(u), {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  })
+
+  // Endpoints we already know from the project record (instant, no network).
+  const dbEndpoints = useMemo<Endpoint[]>(() => {
+    const out: Endpoint[] = []
+    for (const u of urls) {
+      const group = getGroupLabel(u.group)
+      for (const e of u.service?.endpoints ?? []) {
+        out.push({ method: e.method, path: e.path, group })
       }
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(openapiUri)
-        if (!res.ok) throw new Error(`Failed to fetch OpenAPI: ${res.status}`)
-        const data = await res.json()
-        if (mounted) setOpenapi(data as AnyRecord)
-      } catch (e: any) {
-        if (mounted) setError(e?.message || "Failed to fetch OpenAPI")
-      } finally {
-        if (mounted) setLoading(false)
+      const resources =
+        u.service && u.service.runtime !== "server"
+          ? u.service.providerConfig?.resources
+          : undefined
+      for (const r of resources ?? []) {
+        if (r.type === "lambda") {
+          for (const e of r.apiEndpoints ?? []) out.push({ method: e.method, path: e.path, group })
+        }
       }
     }
-    run()
-    return () => {
-      mounted = false
+    return out
+  }, [urls])
+
+  // Endpoints from the OpenAPI paths object (core group), with summaries.
+  const openapiEndpoints = useMemo<Endpoint[]>(() => {
+    const paths = (openapi as any)?.paths
+    if (!paths || typeof paths !== "object") return []
+    const out: Endpoint[] = []
+    for (const [path, methods] of Object.entries(paths as Record<string, any>)) {
+      if (!methods || typeof methods !== "object") continue
+      for (const [method, op] of Object.entries(methods as Record<string, any>)) {
+        if (!HTTP_METHODS.includes(method.toUpperCase())) continue
+        out.push({
+          method: method.toUpperCase(),
+          path,
+          group: "core",
+          summary: op?.summary || op?.description,
+        })
+      }
     }
-  }, [openapiUri])
+    return out
+  }, [openapi])
 
-  const info = openapi?.info as AnyRecord | undefined
-  const agentCard = info?.agentCard as AnyRecord | undefined
-  const tags: { name: string; description?: string }[] = (openapi?.tags as any[]) || []
+  // Merge both sources, de-duped by "METHOD path", preferring entries with a summary.
+  const endpointsByGroup = useMemo(() => {
+    const byKey = new Map<string, Endpoint>()
+    for (const e of [...dbEndpoints, ...openapiEndpoints]) {
+      const key = `${e.group}:${e.method} ${e.path}`
+      const existing = byKey.get(key)
+      if (!existing || (!existing.summary && e.summary)) byKey.set(key, e)
+    }
+    const groups = new Map<string, Endpoint[]>()
+    for (const e of byKey.values()) {
+      const arr = groups.get(e.group) ?? []
+      arr.push(e)
+      groups.set(e.group, arr)
+    }
+    for (const arr of groups.values()) {
+      arr.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
+    }
+    return Array.from(groups.entries()).sort(([a], [b]) =>
+      a === "core" ? -1 : b === "core" ? 1 : a.localeCompare(b),
+    )
+  }, [dbEndpoints, openapiEndpoints])
 
-  // Compute nicely formatted base URLs using the project's subdomain
-  const subdomainBase = useMemo(() => {
-    const sub = project?.subdomain?.trim()
-    return sub ? `https://${sub}.microfox.app` : undefined
-  }, [project?.subdomain])
+  const totalEndpoints = useMemo(
+    () => endpointsByGroup.reduce((acc, [, eps]) => acc + eps.length, 0),
+    [endpointsByGroup],
+  )
 
-  const agentUrlMap = useMemo(() => project?.urlsMap?.find((u) => u.type === UrlMapType.AGENT), [project]);
-  const openapiUrlMap = useMemo(() => project?.urlsMap?.find((u) => u.type === UrlMapType.OPENAPI), [project]);
-  const publicUrlMap = useMemo(() => project?.urlsMap?.find((u) => u.type === UrlMapType.PUBLIC), [project]);
+  const apiInfo = (openapi as any)?.info as { title?: string; description?: string; version?: string } | undefined
 
-  // Agent endpoints come from the urlsMap service definition when available
-  const agentEndpoints: { method: string; path: string }[] = useMemo(() => {
-    const endpoints = (agentUrlMap as any)?.service?.endpoints as { method: string; path: string }[] | undefined
-    return Array.isArray(endpoints) ? endpoints : []
-  }, [agentUrlMap])
-
-  const agentDisplayBase = useMemo(() => {
-    if (!subdomainBase || !agentUrlMap?.path) return undefined
-    return `${subdomainBase}${agentUrlMap.path}`
-  }, [subdomainBase, agentUrlMap])
-
-  const openapiDisplayBase = useMemo(() => {
-    if (!subdomainBase || !openapiUrlMap?.path) return undefined
-    return `${subdomainBase}${openapiUrlMap.path}`
-  }, [subdomainBase, openapiUrlMap])
-
-  const publicDisplayBase = useMemo(() => {
-    if (!subdomainBase || !publicUrlMap?.path) return undefined
-    return `${subdomainBase}${publicUrlMap.path}`
-  }, [subdomainBase, publicUrlMap])
+  if (!project) {
+    return <div className="text-sm text-muted-foreground">{"Project not found."}</div>
+  }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-      <Card className="xl:col-span-2">
+    <div className="space-y-4">
+      {/* Project summary */}
+      <Card>
         <CardHeader className="flex flex-row items-center gap-3">
-          {info?.iconUrl ? (
-            <img src={info.iconUrl || "/placeholder.svg"} alt="" className="size-10 rounded" />
-          ) : (
-            <img src={"/placeholder.svg?height=40&width=40&query=service%20icon"} alt="" className="size-10 rounded" />
-          )}
-          <div>
-            <CardTitle className="text-base">{info?.title || agentCard?.name || "Service Overview"}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {loading
-                ? "Loading OpenAPI..."
-                : error
-                  ? `Error: ${error}`
-                  : info?.description || agentCard?.description || "No description"}
+          <div className="grid size-10 shrink-0 place-items-center rounded-md bg-muted">
+            <Globe className="size-5 text-muted-foreground" />
+          </div>
+          <div className="min-w-0">
+            <CardTitle className="text-base truncate">
+              {apiInfo?.title || project.displayName}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {apiInfo?.description || project.agentName}
             </p>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {info?.status || info?.version ? (
-            <div className="flex flex-wrap gap-2">
-              {info?.status ? <Badge variant="outline">{String(info.status)}</Badge> : null}
-              {info?.version ? <Badge variant="secondary">v{String(info.version)}</Badge> : null}
-            </div>
-          ) : null}
-          {tags.length > 0 ? (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">{"Tags"}</h4>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((t) => (
-                  <Badge key={t.name} variant="outline" className="whitespace-nowrap">
-                    {t.name}
-                  </Badge>
-                ))}
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">{project.source.type}</Badge>
+            <Badge variant="outline">
+              {project.technology.language} v{project.technology.version}
+            </Badge>
+            {apiInfo?.version ? <Badge variant="outline">API v{apiInfo.version}</Badge> : null}
+          </div>
+          <div className="flex items-center gap-6 flex-wrap">
+            {subdomainBase && agentMap ? (
+              <div className="flex items-center gap-3 text-sm min-w-0">
+                <span className="shrink-0 text-muted-foreground">{"Agent base"}</span>
+                <CopyableUrl url={`${subdomainBase}${agentMap.path}`} className="text-xs" />
               </div>
-            </div>
-          ) : null}
-
-          {agentCard?.skills?.length ? (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">{"Skills"}</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {agentCard.skills.map((s: any) => (
-                  <Card key={s.id}>
-                    <CardHeader>
-                      <CardTitle className="text-sm">{s.name}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{s.description}</p>
-                    </CardHeader>
-                  </Card>
-                ))}
+            ) : null}
+            {openapiUrl ? (
+              <div className="flex items-center gap-3 text-sm min-w-0 truncate">
+                <span className="shrink-0 text-muted-foreground">{"OpenAPI"}</span>
+                <CopyableUrl url={openapiUrl} className="text-xs" />
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </CardContent>
       </Card>
 
+      {/* All API routes */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{"API Endpoints"}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle className="text-base">{"API Routes"}</CardTitle>
+          <Badge variant="secondary">{`${totalEndpoints} ${totalEndpoints === 1 ? "route" : "routes"}`}</Badge>
         </CardHeader>
         <CardContent>
-          {/* Display base URLs mapped to subdomain */}
-          <div className="space-y-2 mb-4">
-            {agentDisplayBase && (
-                <div className="text-sm">
-                    <span className="font-medium">{"Agent Base: "}</span>
-                    <span className="text-muted-foreground">{agentDisplayBase}</span>
-                </div>
-            )}
-            {openapiDisplayBase && (
-                <div className="text-sm">
-                    <span className="font-medium">{"OpenAPI: "}</span>
-                    <span className="text-muted-foreground">{openapiDisplayBase}</span>
-                </div>
-            )}
-            {publicDisplayBase && (
-                <div className="text-sm">
-                    <span className="font-medium">{"Public URL: "}</span>
-                    <span className="text-muted-foreground">{publicDisplayBase}</span>
-                </div>
-            )}
-          </div>
-
-          {/* Agent Endpoints */}
-          <div className="mb-6">
-            <h4 className="text-sm font-medium mb-2">{"Agent Endpoints"}</h4>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[110px]">{"Method"}</TableHead>
-                    <TableHead>{"Path"}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {agentEndpoints.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-muted-foreground text-center h-24">
-                        {"No agent endpoints found"}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    agentEndpoints.map((e, idx) => (
-                      <TableRow key={`${e.method}-${e.path}-${idx}`}>
-                        <TableCell>
-                          <Badge variant="secondary">{e.method}</Badge>
-                        </TableCell>
-                        <TableCell>{e.path}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+          {totalEndpoints === 0 ? (
+            <div className="rounded-md border border-dashed py-10 text-center text-sm text-muted-foreground">
+              {subdomainBase
+                ? "No routes found yet — deploy the project (or check that /docs.json is reachable)."
+                : "Set a subdomain in Settings, then deploy to populate routes."}
             </div>
-          </div>
+          ) : (
+            <div className="space-y-5">
+              {endpointsByGroup.map(([group, eps]) => {
+                const token = getGroupColorToken(group)
+                return (
+                  <div key={group} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        style={{ backgroundColor: token.bg, borderColor: token.border, color: token.text }}
+                      >
+                        {group}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{eps.length}</span>
+                    </div>
+                    <div className="rounded-md border divide-y">
+                      {eps.map((e, idx) => (
+                        <div key={`${e.method}-${e.path}-${idx}`} className="flex items-start gap-3 px-3 py-2">
+                          <MethodBadge method={e.method} />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-mono text-xs break-all">{e.path}</div>
+                            {e.summary ? (
+                              <div className="text-xs text-muted-foreground line-clamp-1">{e.summary}</div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

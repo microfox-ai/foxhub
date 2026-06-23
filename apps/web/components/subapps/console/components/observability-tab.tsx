@@ -52,21 +52,31 @@ function MetricCard({
   title,
   value,
   unit,
+  tone = "default",
 }: {
   title: string
   value: string | number
   unit?: string
+  tone?: "default" | "success" | "warning" | "danger"
 }) {
+  const toneClass =
+    tone === "success"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : tone === "warning"
+        ? "text-amber-600 dark:text-amber-400"
+        : tone === "danger"
+          ? "text-red-600 dark:text-red-400"
+          : ""
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-xs font-medium text-muted-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">
+        <div className={`text-2xl font-semibold tabular-nums ${toneClass}`}>
           {value}
           {unit ? (
-            <span className="text-xs text-muted-foreground">{unit}</span>
+            <span className="ml-0.5 text-xs font-normal text-muted-foreground">{unit}</span>
           ) : null}
         </div>
       </CardContent>
@@ -87,7 +97,7 @@ export function ObservabilityTab({ projectId }: { projectId: string }) {
   const fnTabsListRef = useRef<HTMLDivElement>(null)
   const { state } = useConsole()
   const { state: aws, loadLogs, loadAnalytics } = useAws()
-  const project = state.projects.find((p) => p.id === projectId)
+  const project = state.currentProject && state.currentProject.id === projectId ? state.currentProject : undefined
 
   const obsFn = searchParams.get("obs_fn") ?? "ALL"
   const obsGroup = searchParams.get("obs_group")
@@ -564,12 +574,23 @@ export function ObservabilityTab({ projectId }: { projectId: string }) {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
               <MetricCard
                 title="Total Invocations"
-                value={overall.totalInvocations}
+                value={overall.totalInvocations.toLocaleString()}
               />
-              <MetricCard title="Total Errors" value={overall.totalErrors} />
+              <MetricCard
+                title="Total Errors"
+                value={overall.totalErrors.toLocaleString()}
+                tone={overall.totalErrors > 0 ? "danger" : "default"}
+              />
               <MetricCard
                 title="Success Rate"
                 value={`${overall.successRate.toFixed(2)}%`}
+                tone={
+                  overall.successRate >= 99
+                    ? "success"
+                    : overall.successRate >= 90
+                      ? "warning"
+                      : "danger"
+                }
               />
               <MetricCard
                 title="Avg Duration"

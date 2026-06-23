@@ -6,7 +6,7 @@ import {
 } from "@/server/types"
 import { createClient } from "@/utils/supabase/browser-client"
 
-export const API_BASE = (process.env.NEXT_PUBLIC_CONSOLE_API_BASE || process.env.NEXT_PUBLIC_CICD_BASE_URL || "").trim()
+export const API_BASE = (process.env.NEXT_PUBLIC_CICD_BASE_URL || "").trim()
 
 /**
  * Fetch wrapper for cicd calls. Forwards the logged-in user's Supabase JWT as
@@ -88,6 +88,23 @@ export interface DeploymentLogsDto {
   post_deployment?: DeploymentLogEntryDto[]
 }
 
+/** Per-step counts of total log entries on the server (cursor for incremental fetch). */
+export type DeploymentLogCounts = {
+  compiling: number
+  deploying: number
+  post_deployment: number
+}
+
+/** Result of an (optionally incremental) deployment-logs fetch. */
+export interface DeploymentLogsResult {
+  /** When `partial`, only entries appended past the requested cursor; otherwise the full logs. */
+  logs: DeploymentLogsDto
+  /** Total entry counts on the server, per step. */
+  counts: DeploymentLogCounts
+  /** True when `logs` is a delta relative to the requested `after` cursor. */
+  partial: boolean
+}
+
 export type BotProject = {
   id: string
   name: string
@@ -102,6 +119,12 @@ export const consoleApi = {
     if (!res.ok) throw new Error(`Failed to list organizations: ${res.status}`)
     const data = await res.json()
     return data.items as OrganizationDto[]
+  },
+
+  async getOrganization(organizationId: string) {
+    const res = await cicdFetch(`${API_BASE}/api/organizations/${organizationId}`)
+    if (!res.ok) throw new Error(`Failed to fetch organization: ${res.status}`)
+    return (await res.json()) as OrganizationDto
   },
 
   async createOrganization(
@@ -194,11 +217,51 @@ export const consoleApi = {
     return (data.items ?? data.deployments ?? data) as DeploymentDto[]
   },
 
-  async getDeploymentLogs(deploymentId: string) {
-    const res = await cicdFetch(`${API_BASE}/api/deployments/${deploymentId}/logs`)
+  /** Paginated deployments for "load more". The cicd endpoint caps limit at 100. */
+  async listProjectDeploymentsPage(
+    projectId: string,
+    { page = 1, limit = 20 }: { page?: number; limit?: number } = {},
+  ): Promise<{ items: DeploymentDto[]; page: number; limit: number }> {
+    const url = new URL(`/api/deployments`, API_BASE)
+    url.searchParams.set("projectId", projectId)
+    url.searchParams.set("page", String(page))
+    url.searchParams.set("limit", String(limit))
+    const res = await cicdFetch(url.toString())
+    if (!res.ok) {
+      if (res.status === 404) return { items: [], page, limit }
+      throw new Error(`Failed to list deployments: ${res.status}`)
+    }
+    const data = await res.json()
+    return {
+      items: (data.deployments ?? data.items ?? []) as DeploymentDto[],
+      page: data.page ?? page,
+      limit: data.limit ?? limit,
+    }
+  },
+
+  async getDeploymentLogs(
+    deploymentId: string,
+    after?: Partial<DeploymentLogCounts>,
+  ): Promise<DeploymentLogsResult> {
+    const url = new URL(`/api/deployments/${deploymentId}/logs`, API_BASE)
+    if (after) {
+      const cursor = (["compiling", "deploying", "post_deployment"] as const)
+        .map((s) => `${s}:${after[s] ?? 0}`)
+        .join(",")
+      url.searchParams.set("after", cursor)
+    }
+    const res = await cicdFetch(url.toString())
     if (!res.ok) throw new Error(`Failed to fetch deployment logs: ${res.status}`)
     const data = await res.json()
-    return (data.logs || {}) as DeploymentLogsDto
+    return {
+      logs: (data.logs || {}) as DeploymentLogsDto,
+      counts: {
+        compiling: data.counts?.compiling ?? 0,
+        deploying: data.counts?.deploying ?? 0,
+        post_deployment: data.counts?.post_deployment ?? 0,
+      },
+      partial: !!data.partial,
+    }
   },
 
   async startLocalDeployment(projectId: string, archiveFile: File) {
@@ -223,6 +286,40 @@ export const consoleApi = {
     const res = await cicdFetch(`${API_BASE}/api/deployments/${deploymentId}`, { method: "DELETE" })
     if (!res.ok) throw new Error(`Failed to archive deployment: ${res.status}`)
     return await res.json()
+  },
+
+  /** Live env per function, grouped (owner-only; platform secrets filtered server-side). */
+  async getProjectEnv(projectId: string) {
+    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}/env`)
+    if (!res.ok) {
+      const msg = (await res.json().catch(() => ({}))).error
+      throw new Error(msg || `Failed to fetch env: ${res.status}`)
+    }
+    return (await res.json()) as {
+      configured: boolean
+      groups: Record<string, { name: string; env: Record<string, string> }[]>
+    }
+  },
+
+  /**
+   * Apply env live to functions. `updates` maps each function name to its FULL owner-env
+   * (platform vars are preserved server-side). A per-function map lets the console change a
+   * shared var across many functions without touching any function's unique vars.
+   */
+  async updateProjectEnv(
+    projectId: string,
+    updates: Record<string, Record<string, string>>,
+  ) {
+    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}/env`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ updates }),
+    })
+    if (!res.ok) {
+      const msg = (await res.json().catch(() => ({}))).error
+      throw new Error(msg || `Failed to update env: ${res.status}`)
+    }
+    return (await res.json()) as { ok: boolean; applied: string[]; appliedCount: number }
   },
 
   getOrCreateConsoleProject: async (userId: string): Promise<BotProject> => {

@@ -4,7 +4,6 @@ import { createClient } from "@/utils/supabase/server-client";
 
 const CICD_BASE = (
   process.env.CICD_BASE_URL ||
-  process.env.NEXT_PUBLIC_CONSOLE_API_BASE ||
   process.env.NEXT_PUBLIC_CICD_BASE_URL ||
   ""
 ).trim();

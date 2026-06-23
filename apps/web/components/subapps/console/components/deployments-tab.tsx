@@ -1,107 +1,98 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { useConsole } from "@/components/subapps/console/context/console-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Separator } from "@/components/ui/separator"
-import { Upload, RefreshCcw, Pause, Archive, LinkIcon } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Upload, RefreshCcw, RefreshCw, Pause, Rocket } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { LogsViewer } from "./logs-viewer"
+import { CopyableUrl } from "./copyable-url"
 import type { DeploymentDto } from "@/components/subapps/console/lib/console-api"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, PieChart, Pie } from "recharts"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
+import { getDeploymentStatusVisual } from "@/components/subapps/console/lib/deployment-status"
+import { timeAgo, cn } from "@/lib/utils"
 
-const TimingPieChart = ({ data, chartConfig, title }: { data: any[], chartConfig: ChartConfig, title: string }) => (
-    <Card className="flex flex-col">
-        <CardHeader className="items-center p-4 pb-0">
-            <CardTitle className="text-base font-medium">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 pb-4">
-            <ChartContainer
-                config={chartConfig}
-                className="mx-auto aspect-square h-full max-h-[150px]"
-            >
-                <ResponsiveContainer>
-                    <PieChart>
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent />}
-                        />
-                        <Pie
-                            data={data}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={30}
-                            outerRadius={50}
-                            strokeWidth={2}
-                        >
-                            {data.map((entry) => (
-                                <Cell key={`cell-${entry.name}`} fill={`var(--color-${entry.name.toLowerCase().replace(/ /g, '_').replace(/-/g, '_')})`} />
-                            ))}
-                        </Pie>
-                        <ChartLegend
-                            content={<ChartLegendContent nameKey="name" />}
-                            className="flex-wrap gap-x-4 gap-y-1 [&>*]:basis-auto [&>*]:justify-center"
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
-            </ChartContainer>
-        </CardContent>
-    </Card>
-);
+/** Consistent status pill (dot + label) used across the list and detail panel. */
+function StatusPill({ status, className }: { status?: string; className?: string }) {
+  const v = getDeploymentStatusVisual(status)
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+        v.badgeClass,
+        className,
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", v.dotClass)} />
+      {v.label}
+    </span>
+  )
+}
 
-const MetricsChart = ({ data, chartConfig, title }: { data: any[], chartConfig: ChartConfig, title:string }) => (
-    <Card>
-        <CardHeader className="p-4 pb-0">
-            <CardTitle className="text-base font-medium">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-            <ChartContainer config={chartConfig} className="min-h-[150px] w-full">
-                <ResponsiveContainer>
-                    <BarChart data={data}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
-                        <YAxis />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Bar dataKey="value" radius={4}>
-                            {data.map((entry) => (
-                                <Cell key={`cell-${entry.name}`} fill={`var(--color-${entry.name.toLowerCase().replace(/ /g, '_').replace(/-/g, '_')})`} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </ChartContainer>
-        </CardContent>
-    </Card>
-);
+/** Compact label-over-value cell for the deployment detail grid. */
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="truncate text-sm">{children}</div>
+    </div>
+  )
+}
+
+function formatDuration(startTime?: string | Date, endTime?: string | Date, fallbackNow?: number): string {
+  if (!startTime) return "—"
+  const start = new Date(startTime).getTime()
+  const end = endTime ? new Date(endTime).getTime() : (fallbackNow ?? Date.now())
+  const ms = Math.max(0, end - start)
+  const mins = Math.floor(ms / 60000)
+  const secs = Math.floor((ms % 60000) / 1000)
+  return `${mins}m ${secs}s`
+}
+
+/** Compact metric value cell (replaces the oversized bar charts). */
+function MetricCell({ label, value, unit }: { label: string; value: number; unit?: string }) {
+  return (
+    <div className="rounded-md bg-muted/40 px-3 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-sm font-medium tabular-nums">
+        {value}
+        {unit ? <span className="ml-0.5 text-xs text-muted-foreground">{unit}</span> : null}
+      </div>
+    </div>
+  )
+}
 
 export function DeploymentsTab({ projectId }: { projectId: string }) {
   const {
     state,
     loadProjectDeployments,
+    loadMoreDeployments,
     refreshDeployment,
     refreshLogs,
     startLocalDeployment,
     stopDeployment,
-    archiveDeployment,
     setAutoRefresh,
   } = useConsole()
 
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const deployments = state.deployments
+  const hasActive = useMemo(
+    () => deployments.some((d) => getDeploymentStatusVisual(d.status).active),
+    [deployments],
+  )
 
-  // Tick every second to update relative times/durations live
+  // Tick every second to update live durations — only while something is running.
   const [now, setNow] = useState<number>(() => Date.now())
 
   useEffect(() => {
+    if (!hasActive) return
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
-  }, [])
+  }, [hasActive])
 
   useEffect(() => {
     loadProjectDeployments()
@@ -140,70 +131,19 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
     return `${mins}m ${secs}s`
   }, [current, now])
 
-  const metricsData = useMemo(() => {
-    if (!current?.metrics) return null;
+  const isActive = getDeploymentStatusVisual(status).active
 
+  const metrics = useMemo(() => {
+    const r = current?.metrics?.resources
+    if (!r) return null
     return {
-        timing: [
-            { name: "Compiling", value: (current.metrics.timing?.stepDurationsMs?.compiling || 0) / 1000 },
-            { name: "Deploying", value: (current.metrics.timing?.stepDurationsMs?.deploying || 0) / 1000 },
-            { name: "Post-deployment", value: (current.metrics.timing?.stepDurationsMs?.post_deployment || 0) / 1000 },
-        ],
-        cpu: [
-            { name: "Peak", value: current.metrics.resources?.cpu?.peakPercent || 0 },
-            { name: "Average", value: current.metrics.resources?.cpu?.averagePercent || 0 },
-        ],
-        memory: [
-            { name: "Peak", value: current.metrics.resources?.memory?.peakMb || 0 },
-            { name: "Average", value: current.metrics.resources?.memory?.averageMb || 0 },
-        ],
-        disk: [
-            { name: "Image Size", value: current.metrics.resources?.disk?.imageSizeMb || 0 },
-        ],
-        network: [
-            { name: "Ingress", value: current.metrics.network?.deploymentDataTransfer?.ingressMb || 0 },
-            { name: "Egress", value: current.metrics.network?.deploymentDataTransfer?.egressMb || 0 },
-        ],
-    };
-  }, [current]);
-
-  const chartConfig = {
-    value: {
-        label: "Value",
-    },
-    compiling: {
-        label: "Compiling",
-        color: "var(--color-chart-1)",
-    },
-    deploying: {
-        label: "Deploying",
-        color: "var(--color-chart-2)",
-    },
-    post_deployment: {
-        label: "Post-deployment",
-        color: "var(--color-chart-3)",
-    },
-    peak: {
-        label: "Peak",
-        color: "var(--color-chart-4)",
-    },
-    average: {
-        label: "Average",
-        color: "var(--color-chart-5)",
-    },
-    image_size: {
-        label: "Image Size",
-        color: "var(--color-chart-1)",
-    },
-    ingress: {
-        label: "Ingress",
-        color: "var(--color-chart-2)",
-    },
-    egress: {
-        label: "Egress",
-        color: "var(--color-chart-3)",
-    },
-  } satisfies ChartConfig
+      cpuPeak: Math.round(r.cpu?.peakPercent || 0),
+      cpuAvg: Math.round(r.cpu?.averagePercent || 0),
+      memPeak: Math.round(r.memory?.peakMb || 0),
+      memAvg: Math.round(r.memory?.averageMb || 0),
+      disk: Math.round(r.disk?.imageSizeMb || 0),
+    }
+  }, [current])
 
   return (
     <div className="grid grid-cols-1">
@@ -232,61 +172,73 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
           </div>
         </CardHeader>
         <CardContent>
+          {state.loadingDeployments && deployments.length === 0 ? (
+            <div className="rounded-md border divide-y">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                  <Skeleton className="size-2 rounded-full" />
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="ml-auto h-5 w-24 rounded-full" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : deployments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed py-14 text-center">
+              <div className="grid size-10 place-items-center rounded-full bg-muted">
+                <Rocket className="size-5 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{"No deployments yet"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {"Use “Start local deployment” to upload a .zip and create your first one."}
+                </p>
+              </div>
+            </div>
+          ) : (
           <div className="rounded-md border overflow-hidden">
+            <div className="hidden md:flex items-center justify-between gap-4 border-b bg-muted/40 px-4 py-2 pr-10 text-xs font-medium text-muted-foreground">
+              <span>{"Deployment"}</span>
+              <span>{"Started · Duration"}</span>
+            </div>
             <Accordion type="single" collapsible className="w-full">
-                {deployments?.length === 0 ? (
-                    <div className="p-4 text-muted-foreground">{"No deployments yet"}</div>
-                ) : (
-                    deployments?.map((d) => {
+                {deployments.map((d) => {
                         const isSelected = d?._id === selectedId;
                         // Use the more up-to-date `current` deployment data if this is the selected item
                         const displayDeployment = isSelected && current ? current : d;
                         const displayGroupLabel = getGroupLabel(displayDeployment?.group)
                         const displayGroupColor = getGroupColorToken(displayGroupLabel)
+                        const dotClass = getDeploymentStatusVisual(displayDeployment?.status).dotClass
                         return (
-                        <AccordionItem value={d?._id} key={d?._id} className="border-b">
+                        <AccordionItem value={d?._id} key={d?._id} className="border-b last:border-b-0">
                             <AccordionTrigger
                               onClick={() => setSelectedId(d?._id)}
-                              className={`w-full text-left hover:no-underline ${isSelected ? "hover:bg-muted" : "hover:bg-muted/50"} px-4 py-3 transition-colors`}
+                              className={cn(
+                                "w-full text-left hover:no-underline px-4 py-3 transition-colors",
+                                isSelected ? "bg-muted/60" : "hover:bg-muted/40",
+                              )}
                             >
-                                <div className="grid grid-cols-5 w-full items-center text-sm gap-4">
-                                    <div className="font-mono text-xs truncate" title={displayDeployment?._id}>{displayDeployment?._id}</div>
-                                    <div className="text-center">
-                                      <Badge
-                                        variant="outline"
-                                        style={{
-                                          backgroundColor: displayGroupColor.bg,
-                                          borderColor: displayGroupColor.border,
-                                          color: displayGroupColor.text,
-                                        }}
-                                        title={`Group: ${displayGroupLabel}`}
-                                      >
-                                        {displayGroupLabel}
-                                      </Badge>
-                                    </div>
-                                    <div className="text-center">
-                                        <Badge
-                                            variant={
-                                            displayDeployment?.status === "completed" ? "secondary" : displayDeployment?.status === "failed" ? "destructive" : "outline"
-                                            }
-                                        >
-                                            {String(displayDeployment?.status)}
-                                        </Badge>
-                                    </div>
-                                    <div className="text-left">{new Date(displayDeployment?.createdAt).toLocaleString()}</div>
-                                    <div className="text-right">
-                                    {displayDeployment?.metrics?.timing?.startTime
-                                        ? (() => {
-                                            const start = new Date(displayDeployment.metrics.timing.startTime).getTime()
-                                            const end = displayDeployment.metrics.timing.endTime
-                                                ? new Date(displayDeployment.metrics.timing.endTime).getTime()
-                                                : now
-                                            const ms = end - start
-                                            const mins = Math.floor(ms / 60000)
-                                            const secs = Math.floor((ms % 60000) / 1000)
-                                            return `${mins}m ${secs}s`
-                                        })()
-                                        : "—"}
+                                <div className="flex w-full min-w-0 items-center gap-3 text-sm">
+                                    <span className={cn("size-2 rounded-full shrink-0", dotClass)} />
+                                    <span className="font-mono text-xs truncate text-muted-foreground max-w-[45%]" title={displayDeployment?._id}>{displayDeployment?._id}</span>
+                                    <Badge
+                                      variant="outline"
+                                      className="hidden md:inline-flex shrink-0"
+                                      style={{
+                                        backgroundColor: displayGroupColor.bg,
+                                        borderColor: displayGroupColor.border,
+                                        color: displayGroupColor.text,
+                                      }}
+                                      title={`Group: ${displayGroupLabel}`}
+                                    >
+                                      {displayGroupLabel}
+                                    </Badge>
+                                    <StatusPill status={displayDeployment?.status} className="shrink-0" />
+                                    <div className="ml-auto shrink-0 text-right leading-tight">
+                                      <span title={new Date(displayDeployment?.createdAt).toLocaleString()}>{timeAgo(displayDeployment?.createdAt)}</span>
+                                      <span className="block text-xs text-muted-foreground">
+                                        {formatDuration(displayDeployment?.metrics?.timing?.startTime, displayDeployment?.metrics?.timing?.endTime, now)}
+                                      </span>
                                     </div>
                                 </div>
                             </AccordionTrigger>
@@ -294,109 +246,131 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                  <div
                                    className="p-4 border-t flex flex-col gap-6 bg-background"
                                  >
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                         <div className="flex flex-col gap-3">
-                                              <div className="flex items-center justify-between text-sm">
-                                                  <span>{"Group"}</span>
-                                                  <Badge
-                                                    variant="outline"
-                                                    style={{
-                                                      backgroundColor: currentGroupColor.bg,
-                                                      borderColor: currentGroupColor.border,
-                                                      color: currentGroupColor.text,
-                                                    }}
-                                                  >
-                                                    {currentGroupLabel}
-                                                  </Badge>
-                                              </div>
-                                              <div className="flex items-center justify-between text-sm">
-                                                  <span>{"Status"}</span>
-                                                  <Badge variant={status === "completed" ? "secondary" : status === "failed" ? "destructive" : "outline"}>
-                                                      {String(status)}
-                                                  </Badge>
-                                              </div>
-                                              <div className="flex items-center justify-between text-sm">
-                                                  <span>{"Started"}</span>
-                                                  <span>{current?.createdAt ? new Date(current?.createdAt).toLocaleString() : "—"}</span>
-                                              </div>
-                                              <div className="flex items-center justify-between text-sm">
-                                                  <span>{"Triggered by"}</span>
-                                                  <span className="text-right">
-                                                    {current?.triggeredBy?.email ||
-                                                      current?.triggeredBy?.name ||
-                                                      current?.triggeredBy?.userId ||
-                                                      current?.userId ||
-                                                      "—"}
-                                                    {current?.triggeredBy?.via ? ` (${current.triggeredBy.via})` : ""}
-                                                  </span>
-                                              </div>
-                                              <div className="flex items-center justify-between text-sm">
-                                                  <span>{"Duration"}</span>
-                                                  <span>{duration ?? "—"}</span>
-                                              </div>
-                                              <div className="flex items-center justify-between text-sm">
-                                                  <span>{"URL"}</span>
-                                                  <span className="flex justify-end items-center gap-2 text-right">
-                                                  {current?.baseUrl ? (
-                                                      <a
-                                                      href={current?.baseUrl}
-                                                      target="_blank"
-                                                      rel="noreferrer"
-                                                      className="text-primary hover:underline inline-flex items-center gap-1 w-full"
-                                                      >
-                                                      {current?.baseUrl}
-                                                      </a>
-                                                  ) : (
-                                                      "—"
-                                                  )}
-                                                  </span>
-                                              </div>
-                                         </div>
-                                         <div className="flex flex-wrap gap-2 items-start">
-                                              <Button variant="outline" size="sm" onClick={() => refreshLogs(current?._id)}>
-                                                  <RefreshCcw className="mr-2 size-4" />
-                                                  {"Refresh logs"}
-                                              </Button>
-                                              {status === "compiling" || status === "deploying" || status === "post_deployment" ? (
-                                                  <Button variant="outline" size="sm" onClick={() => stopDeployment(current?._id)}>
-                                                      <Pause className="mr-2 size-4" />
-                                                      {"Stop"}
-                                                  </Button>
-                                              ) : null}
-                                              <Button
-                                                  variant={state.autoRefresh ? "secondary" : "outline"}
-                                                  size="sm"
-                                                  onClick={() => setAutoRefresh(!state.autoRefresh)}
-                                              >
-                                                  {state.autoRefresh ? "Auto-refresh: On" : "Auto-refresh: Off"}
-                                              </Button>
-                                         </div>
+                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 rounded-md border bg-muted/30 p-4">
+                                         <Field label="Group">
+                                           <Badge
+                                             variant="outline"
+                                             style={{
+                                               backgroundColor: currentGroupColor.bg,
+                                               borderColor: currentGroupColor.border,
+                                               color: currentGroupColor.text,
+                                             }}
+                                           >
+                                             {currentGroupLabel}
+                                           </Badge>
+                                         </Field>
+                                         <Field label="Status">
+                                           <StatusPill status={status} />
+                                         </Field>
+                                         <Field label="Duration">{duration ?? "—"}</Field>
+                                         <Field label="Started">
+                                           <span title={current?.createdAt ? new Date(current.createdAt).toLocaleString() : undefined}>
+                                             {current?.createdAt ? timeAgo(current.createdAt) : "—"}
+                                           </span>
+                                         </Field>
+                                         <Field label="Triggered by">
+                                           {current?.triggeredBy?.email ||
+                                             current?.triggeredBy?.name ||
+                                             current?.triggeredBy?.userId ||
+                                             current?.userId ||
+                                             "—"}
+                                           {current?.triggeredBy?.via ? ` (${current.triggeredBy.via})` : ""}
+                                         </Field>
+                                         <Field label="URL">
+                                           <CopyableUrl url={current?.baseUrl} />
+                                         </Field>
                                      </div>
 
                                      <div>
-                                         <h3 className="text-base font-semibold mb-2">Logs</h3>
-                                         <div className="h-full">
-                                             <LogsViewer logs={state.currentLogs} />
+                                         <div className="flex items-center justify-between gap-2 mb-2">
+                                             <h3 className="text-sm font-semibold">Logs</h3>
+                                             <TooltipProvider delayDuration={150}>
+                                               <div className="flex items-center gap-1">
+                                                 <Tooltip>
+                                                   <TooltipTrigger asChild>
+                                                     <Button variant="ghost" size="icon" className="size-8" aria-label="Refresh logs" onClick={() => refreshLogs(current?._id)}>
+                                                       <RefreshCcw className="size-4" />
+                                                     </Button>
+                                                   </TooltipTrigger>
+                                                   <TooltipContent>{"Refresh logs"}</TooltipContent>
+                                                 </Tooltip>
+                                                 {isActive && (
+                                                   <>
+                                                     <Tooltip>
+                                                       <TooltipTrigger asChild>
+                                                         <Button variant="ghost" size="icon" className="size-8" aria-label="Stop deployment" onClick={() => stopDeployment(current?._id)}>
+                                                           <Pause className="size-4" />
+                                                         </Button>
+                                                       </TooltipTrigger>
+                                                       <TooltipContent>{"Stop deployment"}</TooltipContent>
+                                                     </Tooltip>
+                                                     <Tooltip>
+                                                       <TooltipTrigger asChild>
+                                                         <Button
+                                                           variant="ghost"
+                                                           size="icon"
+                                                           aria-label={state.autoRefresh ? "Auto-refresh on" : "Auto-refresh off"}
+                                                           aria-pressed={state.autoRefresh}
+                                                           onClick={() => setAutoRefresh(!state.autoRefresh)}
+                                                           className={cn(
+                                                             "size-8",
+                                                             state.autoRefresh &&
+                                                               "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+                                                           )}
+                                                         >
+                                                           <RefreshCw className="size-4" />
+                                                         </Button>
+                                                       </TooltipTrigger>
+                                                       <TooltipContent>{state.autoRefresh ? "Auto-refresh: on" : "Auto-refresh: off"}</TooltipContent>
+                                                     </Tooltip>
+                                                   </>
+                                                 )}
+                                               </div>
+                                             </TooltipProvider>
                                          </div>
+                                         <LogsViewer logs={state.currentLogs} />
                                      </div>
 
-                                     {metricsData &&<div>
-                                         <h3 className="text-base font-semibold mb-2">Metrics</h3>
-                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                             {/* <TimingPieChart data={metricsData?.timing} chartConfig={chartConfig} title="Timing (s)" /> */}
-                                             <MetricsChart data={metricsData?.cpu} chartConfig={chartConfig} title="CPU (%)" />
-                                             <MetricsChart data={metricsData?.memory} chartConfig={chartConfig} title="Memory (MB)" />
-                                             <MetricsChart data={metricsData?.disk} chartConfig={chartConfig} title="Disk (MB)" />
-                                             {/* <MetricsChart data={metricsData.network} chartConfig={chartConfig} title="Network (MB)" /> */}
+                                     {metrics && (
+                                       <div>
+                                         <h3 className="text-sm font-semibold mb-2">Metrics</h3>
+                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                                           <MetricCell label="CPU peak" value={metrics.cpuPeak} unit="%" />
+                                           <MetricCell label="CPU avg" value={metrics.cpuAvg} unit="%" />
+                                           <MetricCell label="Mem peak" value={metrics.memPeak} unit="MB" />
+                                           <MetricCell label="Mem avg" value={metrics.memAvg} unit="MB" />
+                                           <MetricCell label="Image size" value={metrics.disk} unit="MB" />
                                          </div>
-                                     </div>}
+                                       </div>
+                                     )}
                                  </div>
                             </AccordionContent>
                         </AccordionItem>
-                    )})
-                )}
+                        )
+                    })}
             </Accordion>
+            {state.hasMoreDeployments && (
+              <div className="border-t p-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground"
+                  onClick={() => loadMoreDeployments()}
+                  disabled={state.loadingMoreDeployments}
+                >
+                  {state.loadingMoreDeployments ? (
+                    <>
+                      <RefreshCcw className="mr-2 size-4 animate-spin" />
+                      {"Loading…"}
+                    </>
+                  ) : (
+                    "Load more deployments"
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
+          )}
         </CardContent>
       </Card>
     </div>

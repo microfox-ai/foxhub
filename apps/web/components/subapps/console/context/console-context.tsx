@@ -72,6 +72,8 @@ type ConsoleState = {
   currentOrganization?: OrganizationDto | null;
   /** The single project in the URL; fetched standalone (no full list needed). */
   currentProject?: ProjectDto | null;
+  /** Error from fetching the URL project (e.g. 403 with a `reason` for access-denied UI). */
+  currentProjectError?: (Error & { status?: number; reason?: string }) | null;
   selectedOrganizationId?: string;
   selectedProjectId?: string;
   currentDeploymentId?: string;
@@ -177,7 +179,8 @@ export function ConsoleProvider({
   const currentProjectSwr = useSWR(
     projectKey(urlProject),
     ([, id]) => consoleApi.getProject(id),
-    { revalidateOnFocus: false }
+    // Don't retry-loop on access errors (403 suspended/expired/no-access) or 404.
+    { revalidateOnFocus: false, shouldRetryOnError: false }
   );
 
   // ---- Deployments list (paginated; poll while active) --------------------
@@ -451,6 +454,9 @@ export function ConsoleProvider({
       projects: projectList,
       currentOrganization: currentOrgSwr.data ?? null,
       currentProject: currentProjectSwr.data ?? null,
+      currentProjectError:
+        (currentProjectSwr.error as (Error & { status?: number; reason?: string }) | undefined) ??
+        null,
       selectedOrganizationId: urlOrg,
       selectedProjectId: urlProject,
       currentDeploymentId,
@@ -475,6 +481,7 @@ export function ConsoleProvider({
       projectList,
       currentOrgSwr.data,
       currentProjectSwr.data,
+      currentProjectSwr.error,
       urlOrg,
       urlProject,
       currentDeploymentId,

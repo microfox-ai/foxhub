@@ -21,6 +21,8 @@ export type ScopedFunction = {
   name: string
   region: string
   arn?: string
+  /** Deployment group (from the urlsMap entry/resource), for usage aggregation. */
+  group?: string
 }
 
 type ScopeSuccess = {
@@ -104,7 +106,7 @@ export async function resolveProjectLambdaScope(
     return fail(500, "Server is not configured for project-scoped log access")
   }
 
-  // 3. Load the project and verify access (owner or org member).
+  // 3. Load the project and verify access.
   const project = await fetchJson<IProject>(
     `${CICD_BASE}/api/projects/${encodeURIComponent(projectId)}`,
     accessToken
@@ -113,27 +115,53 @@ export async function resolveProjectLambdaScope(
     return fail(404, "Project not found")
   }
 
-  let allowed = project.ownerId === user.id
-  if (!allowed && project.organizationId) {
-    const org = await fetchJson<IOrganization>(
-      `${CICD_BASE}/api/organizations/${encodeURIComponent(project.organizationId)}`,
-      accessToken
-    )
-    allowed =
-      !!org &&
-      (org.ownerId === user.id ||
-        (Array.isArray(org.members) && org.members.includes(user.id)))
+  // Resolve the caller's effective permissions + group scope from cicd (single source of
+  // truth for the RBAC model). Requires the `observability.view` permission. Owners, org
+  // members and admins receive every permission; a scoped member only sees their groups.
+  const me = await fetchJson<{
+    role: string
+    permissions: string[]
+    scope: { groups?: { mode: "all" | "allow" | "deny"; values?: string[] } } | null
+  }>(`${CICD_BASE}/api/projects/${encodeURIComponent(projectId)}/permissions/me`, accessToken)
+
+  let allowed = !!me && Array.isArray(me.permissions) && me.permissions.includes("observability.view")
+  const groupScope = me?.scope?.groups
+
+  // Fallback for older cicd builds without /permissions/me: owner or org member.
+  if (!me) {
+    allowed = project.ownerId === user.id
+    if (!allowed && project.organizationId) {
+      const org = await fetchJson<IOrganization>(
+        `${CICD_BASE}/api/organizations/${encodeURIComponent(project.organizationId)}`,
+        accessToken
+      )
+      allowed =
+        !!org &&
+        (org.ownerId === user.id ||
+          (Array.isArray(org.members) && org.members.includes(user.id)))
+    }
   }
   if (!allowed) {
-    return fail(403, "You do not have access to this project")
+    return fail(403, "You do not have permission to view observability for this project")
   }
 
   // 4. Build the allowed function list from the project's urlsMap — never trust
-  //    client-sent function names. Restrict to this project's service prefix.
+  //    client-sent function names. Restrict to this project's service prefix, and to
+  //    the deployment groups within the caller's scope.
+  const inScope = (group?: string): boolean => {
+    if (!groupScope || groupScope.mode === "all") return true
+    const name = (group ?? "default").trim() || "default"
+    const values = (groupScope.values ?? []).map((v) => v.trim() || "default")
+    if (groupScope.mode === "allow") return values.includes(name)
+    if (groupScope.mode === "deny") return !values.includes(name)
+    return true
+  }
+
   const prefix = serviceNamePrefix(projectId)
   const defaultRegion = process.env.AWS_REGION || "us-east-1"
   const functions = new Map<string, ScopedFunction>()
   for (const entry of project.urlsMap ?? []) {
+    if (!inScope(entry.group)) continue
     const service = entry.service
     if (!service || !("providerConfig" in service) || !service.providerConfig) {
       continue
@@ -146,6 +174,7 @@ export async function resolveProjectLambdaScope(
         name: resource.name,
         region: resource.region || defaultRegion,
         arn: resource.arn,
+        group: (resource as { group?: string }).group || entry.group || "default",
       })
     }
   }

@@ -3,7 +3,12 @@ import {
   CloudWatchLogsClient,
   FilterLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs"
-import { resolveProjectLambdaScope, type ScopedFunction } from "../scope"
+import {
+  resolveProjectLambdaScope,
+  mapWithConcurrency,
+  withAwsRetry,
+  type ScopedFunction,
+} from "../scope"
 
 type AwsFunctionRef = ScopedFunction
 
@@ -39,7 +44,7 @@ async function getLogsForFunction(
       filterPattern,
       interleaved: true,
     })
-    const response = await client.send(command)
+    const response = await withAwsRetry(() => client.send(command))
     return (
       response.events?.map(
         (e) =>
@@ -95,17 +100,28 @@ export async function POST(req: NextRequest) {
         ? items
         : items.filter((i) => i.name === functionName)
 
+    // AWS's per-account rate limits are low; firing FilterLogEvents for every function at
+    // once trips CallerRateLimitExceeded/ThrottlingException. Cap fan-out and retry.
+    const clientsByRegion = new Map<string, CloudWatchLogsClient>()
+    const getClient = (region: string) => {
+      let client = clientsByRegion.get(region)
+      if (!client) {
+        client = new CloudWatchLogsClient({
+          region,
+          credentials: {
+            accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
+          },
+        })
+        clientsByRegion.set(region, client)
+      }
+      return client
+    }
+
     const byFunction: Record<string, CloudWatchLogEvent[]> = {}
-    const promises = functionsToFetch.map(async (ref) => {
-      const client = new CloudWatchLogsClient({
-        region: ref.region,
-        credentials: {
-          accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
-        },
-      })
+    await mapWithConcurrency(functionsToFetch, 5, async (ref) => {
       const logs = await getLogsForFunction(
-        client,
+        getClient(ref.region),
         ref,
         startTime,
         endTime,
@@ -113,7 +129,6 @@ export async function POST(req: NextRequest) {
       )
       byFunction[ref.name] = logs
     })
-    await Promise.all(promises)
 
     const combined = Object.values(byFunction)
       .flat()

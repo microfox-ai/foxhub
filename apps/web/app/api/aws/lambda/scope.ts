@@ -39,6 +39,46 @@ type ScopeFailure = {
 
 export type ScopeResult = ScopeSuccess | ScopeFailure
 
+/** Runs `fn` over `items` with at most `limit` in flight at once. */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++
+      results[i] = await fn(items[i]!)
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
+const THROTTLE_ERROR_NAMES = new Set([
+  "ThrottlingException",
+  "TooManyRequestsException",
+])
+
+/** Retries an AWS SDK call with exponential backoff when it's throttled. */
+export async function withAwsRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
+  let attempt = 0
+  for (;;) {
+    try {
+      return await fn()
+    } catch (error) {
+      attempt++
+      const name = (error as { name?: string })?.name
+      const isThrottle = !!name && THROTTLE_ERROR_NAMES.has(name)
+      if (!isThrottle || attempt >= maxAttempts) throw error
+      const backoffMs = 250 * 2 ** (attempt - 1) + Math.random() * 100
+      await new Promise((resolve) => setTimeout(resolve, backoffMs))
+    }
+  }
+}
+
 const CICD_BASE = (
   process.env.CICD_BASE_URL ||
   process.env.NEXT_PUBLIC_CICD_BASE_URL ||

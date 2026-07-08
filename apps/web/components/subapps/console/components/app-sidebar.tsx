@@ -70,8 +70,8 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
   {
     label: "Monitoring",
     items: [
-      { tab: "observability", label: "Infrastructure", icon: Activity, perm: "observability.view" },
-      { tab: "workers", label: "Run & test", icon: Zap, perm: "workers.view" },
+      { tab: "infrastructure", label: "Infrastructure", icon: Activity, perm: "observability.view" },
+      { tab: "run-test", label: "Run & test", icon: Zap, perm: "workers.view" },
       { tab: "history", label: "History", icon: History, perm: "workers.view" },
       { tab: "usage", label: "Usage & cost", icon: DollarSign, perm: "observability.view" },
     ],
@@ -89,8 +89,10 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
 
 const ALL_TABS = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.tab))
 
+/** Maps legacy `tab=` values (from before the Infrastructure/Run & test rename) to current ones. */
 function resolveTab(raw: string | null): string {
-  if (raw === "analytics" || raw === "logs") return "observability"
+  if (raw === "analytics" || raw === "logs" || raw === "observability") return "infrastructure"
+  if (raw === "workers") return "run-test"
   return ALL_TABS.includes(raw as string) ? (raw as string) : "overview"
 }
 

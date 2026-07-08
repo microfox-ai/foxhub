@@ -29,8 +29,6 @@ import {
   Search,
   CaseSensitive,
   WholeWord,
-  Server,
-  ServerOff,
   Clock,
   Timer,
   MemoryStick,
@@ -56,6 +54,34 @@ function isAwsBoilerplate(message: string): boolean {
     /REPORT RequestId:/.test(message)
   )
 }
+
+/**
+ * Lines emitted by the worker runtime / trigger harness — not AWS platform noise (already stripped
+ * for "Clean"), and not the user's own `console.*` either. "App" mode hides these too. Keep in sync
+ * with the markers in ai-worker `handler.ts` + ai-worker-cli `push.ts`.
+ */
+const RUNTIME_MARKER_PATTERNS: RegExp[] = [
+  /\[WorkerEntrypoint\]/,
+  /\[Worker\]/,
+  /\[AIWORKER_RUN\]/,
+  /\[AIWORKER_TRIGGER\]/,
+  /\[workers-trigger\]/,
+  /^\s*EXTENSION\b/,
+]
+
+function isRuntimeMarker(message: string): boolean {
+  return RUNTIME_MARKER_PATTERNS.some((re) => re.test(message))
+}
+
+/** Three-stage log view: Raw = everything AWS sent; Clean = hide AWS platform noise; App = also
+ *  hide our own runtime/trigger markers, leaving just the worker's own logs. */
+export type LogView = "raw" | "clean" | "app"
+
+const LOG_VIEW_OPTIONS: { value: LogView; label: string; title: string }[] = [
+  { value: "raw", label: "Raw", title: "Everything AWS sent for this invocation" },
+  { value: "clean", label: "Clean", title: "Hide AWS platform lines (START/END/REPORT/INIT)" },
+  { value: "app", label: "App", title: "Only the worker's own logs — also hides our runtime/trigger markers" },
+]
 
 function parseReportMetrics(message: string): {
   requestId?: string
@@ -292,6 +318,13 @@ function levelColor(level: LogLevel | null): string {
   }
 }
 
+/** Which of a request's logs to show for a given view mode. */
+function displayLogsFor(r: ParsedRequest, view: LogView): CloudWatchLogEvent[] {
+  if (view === "raw") return r.allEvents
+  if (view === "app") return r.appLogs.filter((e) => !isRuntimeMarker(e.message))
+  return r.appLogs
+}
+
 export function CloudWatchLogsViewer({
   events,
   levelFilter,
@@ -300,6 +333,7 @@ export function CloudWatchLogsViewer({
   isLoading,
   highlightTimeRange,
   scrollMinHeight,
+  defaultLogView = "clean",
 }: {
   events: CloudWatchLogEvent[]
   levelFilter?: LogLevel[]
@@ -309,8 +343,10 @@ export function CloudWatchLogsViewer({
   highlightTimeRange?: { start: number; end: number } | null
   /** When set, the scroll container uses this min-height (e.g. to match analytics section height). */
   scrollMinHeight?: number
+  /** Initial log view (Raw/Clean/App). Defaults to "clean". */
+  defaultLogView?: LogView
 }) {
-  const [showRaw, setShowRaw] = useState(false)
+  const [logView, setLogView] = useState<LogView>(defaultLogView)
   const [levels, setLevels] = useState<Set<LogLevel>>(new Set())
   const [sortKey, setSortKey] = useState<RequestSortKey>("timestamp")
   const [sortDesc, setSortDesc] = useState(true)
@@ -335,7 +371,7 @@ export function CloudWatchLogsViewer({
           cmp = (a.meta.maxMemoryUsed ?? 0) - (b.meta.maxMemoryUsed ?? 0)
           break
         case "lines":
-          cmp = (showRaw ? a.allEvents : a.appLogs).length - (showRaw ? b.allEvents : b.appLogs).length
+          cmp = displayLogsFor(a, logView).length - displayLogsFor(b, logView).length
           break
       }
       return sortDesc ? -cmp : cmp
@@ -343,13 +379,12 @@ export function CloudWatchLogsViewer({
 
     if (!searchQuery.trim()) return sorted
 
-    return sorted.filter((r) => {
-      const displayLogs = showRaw ? r.allEvents : r.appLogs
-      return displayLogs.some((ev) =>
+    return sorted.filter((r) =>
+      displayLogsFor(r, logView).some((ev) =>
         textMatchesSearch(stripTimestampAndRequestId(ev.message), searchQuery, caseSensitive, wholeWord),
-      )
-    })
-  }, [rawRequests, sortKey, sortDesc, showRaw, searchQuery, caseSensitive, wholeWord])
+      ),
+    )
+  }, [rawRequests, sortKey, sortDesc, logView, searchQuery, caseSensitive, wholeWord])
 
   const toggleLevel = (level: LogLevel) => {
     setLevels((prev) => {
@@ -399,6 +434,23 @@ export function CloudWatchLogsViewer({
       </div>
     )
   }
+
+  const logViewToggle = (
+    <div className="flex overflow-hidden rounded-md border shrink-0">
+      {LOG_VIEW_OPTIONS.map((opt) => (
+        <Button
+          key={opt.value}
+          variant={logView === opt.value ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 rounded-none px-2 text-xs"
+          onClick={() => setLogView(opt.value)}
+          title={opt.title}
+        >
+          {opt.label}
+        </Button>
+      ))}
+    </div>
+  )
 
   const toolbarRow2 = (
     <div className="flex flex-wrap items-center gap-2 px-3 py-1">
@@ -473,20 +525,7 @@ export function CloudWatchLogsViewer({
         />
         <WholeWord className="size-4 ml-0.5" />
       </Label>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 text-xs shrink-0"
-        onClick={() => setShowRaw(!showRaw)}
-        title={showRaw ? "Click to show app logs only" : "Click to show full AWS logs"}
-      >
-        {showRaw ? (
-          <Server className="size-4" />
-        ) : (
-          <ServerOff className="size-4" />
-        )}
-        <span className="ml-1">{showRaw ? "Raw" : "Cleaned"}</span>
-      </Button>
+      {logViewToggle}
       <Button
         variant="ghost"
         size="sm"
@@ -598,20 +637,7 @@ export function CloudWatchLogsViewer({
               />
               <WholeWord className="size-4 ml-0.5" />
             </Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs shrink-0"
-              onClick={() => setShowRaw(!showRaw)}
-              title={showRaw ? "Click to show app logs only" : "Click to show full AWS logs"}
-            >
-              {showRaw ? (
-                <Server className="size-4" />
-              ) : (
-                <ServerOff className="size-4" />
-              )}
-              <span className="ml-1">{showRaw ? "Raw" : "Cleaned"}</span>
-            </Button>
+            {logViewToggle}
             <Button
               variant="ghost"
               size="sm"
@@ -668,8 +694,7 @@ export function CloudWatchLogsViewer({
               onValueChange={setExpandedIds}
             >
             {requests.map((r) => {
-              const displayLogs = showRaw ? r.allEvents : r.appLogs
-              const filtered = displayLogs.filter(filterLog)
+              const filtered = displayLogsFor(r, logView).filter(filterLog)
               const duration = r.meta.duration
                 ? `${(r.meta.duration / 1000).toFixed(1)}s`
                 : null
@@ -725,7 +750,7 @@ export function CloudWatchLogsViewer({
                     <ul className="divide-y divide-border">
                       {filtered.length === 0 ? (
                         <li className="flex items-center justify-center min-h-[60px] py-8 text-muted-foreground text-sm">
-                          No logs match the selected level filter
+                          No logs match the current view/filters — try Raw or Clean, or adjust the level filter
                         </li>
                       ) : (
                         filtered.map((ev, i) => {

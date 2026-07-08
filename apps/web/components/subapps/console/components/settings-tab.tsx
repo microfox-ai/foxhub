@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useConsole } from "@/components/subapps/console/context/console-context"
 import { consoleApi } from "@/components/subapps/console/lib/console-api"
+import { usePermissions } from "@/components/subapps/console/lib/use-permissions"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useState, useEffect, useMemo } from "react"
@@ -100,6 +101,10 @@ function DeleteGroupDialog({ projectId, group }: { projectId: string; group: str
 
 export function SettingsTab({ projectId }: { projectId: string }) {
   const { state, updateProject, deleteProject } = useConsole()
+  const { can } = usePermissions(projectId)
+  const canEditDomain = can("project.edit_domain")
+  const canGroupDelete = can("group.delete")
+  const canDeleteProject = can("project.delete")
   const router = useRouter()
   const params = useParams()
   const organizationId = params.organizationId as string
@@ -160,6 +165,7 @@ export function SettingsTab({ projectId }: { projectId: string }) {
                 placeholder="Enter agent name"
               />
               <Button
+                disabled={!canEditDomain}
                 onClick={async () => {
                   await updateProject({ agentName }, projectId)
                 }}
@@ -178,6 +184,7 @@ export function SettingsTab({ projectId }: { projectId: string }) {
                 placeholder="Enter subdomain (optional)"
               />
               <Button
+                disabled={!canEditDomain}
                 onClick={async () => {
                   await updateProject({ subdomain: subdomain || undefined }, projectId)
                 }}
@@ -189,42 +196,48 @@ export function SettingsTab({ projectId }: { projectId: string }) {
         </CardContent>
       </Card>
 
-      <Card className="border-destructive">
-        <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
-          <CardDescription>Irreversible and destructive actions</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2 rounded-md border border-destructive/30 p-4">
-            <p className="text-sm font-medium text-destructive">Delete Group Resources</p>
-            <p className="text-xs text-muted-foreground">
-              Delete all AWS resources for a deployment group. Each deletion asks you to type the
-              group name to confirm.
-            </p>
-            {projectGroups.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No groups found.</p>
-            ) : (
-              <div className="divide-y rounded-md border">
-                {projectGroups.map((group) => (
-                  <DeleteGroupDialog key={group} projectId={projectId} group={group} />
-                ))}
+      {canGroupDelete || canDeleteProject ? (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardDescription>Irreversible and destructive actions</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {canGroupDelete ? (
+              <div className="space-y-2 rounded-md border border-destructive/30 p-4">
+                <p className="text-sm font-medium text-destructive">Delete Group Resources</p>
+                <p className="text-xs text-muted-foreground">
+                  Delete all AWS resources for a deployment group. Each deletion asks you to type the
+                  group name to confirm.
+                </p>
+                {projectGroups.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No groups found.</p>
+                ) : (
+                  <div className="divide-y rounded-md border">
+                    {projectGroups.map((group) => (
+                      <DeleteGroupDialog key={group} projectId={projectId} group={group} />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              const ok = window.confirm("Are you sure you want to delete this project? This action cannot be undone.")
-              if (!ok) return
-              await deleteProject(projectId)
-              router.push(`/subdomain/console/${organizationId}`)
-            }}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Project
-          </Button>
-        </CardContent>
-      </Card>
+            ) : null}
+            {canDeleteProject ? (
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  const ok = window.confirm("Are you sure you want to delete this project? This action cannot be undone.")
+                  if (!ok) return
+                  await deleteProject(projectId)
+                  router.push(`/subdomain/console/${organizationId}`)
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Project
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   )
 }

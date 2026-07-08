@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import type { CloudWatchLogEvent } from "@/components/subapps/console/context/aws-context"
@@ -51,7 +52,13 @@ type StreamLine = {
   message: string
 }
 
-function DeploymentLogStream({ logs }: { logs?: DeploymentLogsDto | null }) {
+function DeploymentLogStream({
+  logs,
+  isLoading,
+}: {
+  logs?: DeploymentLogsDto | null
+  isLoading?: boolean
+}) {
   // All phases visible by default.
   const [active, setActive] = useState<Set<PhaseKey>>(
     () => new Set(PHASES.map((p) => p.key)),
@@ -145,7 +152,11 @@ function DeploymentLogStream({ logs }: { logs?: DeploymentLogsDto | null }) {
       </div>
 
       <div className="max-h-[420px] overflow-auto bg-background font-mono text-xs">
-        {totalShown === 0 ? (
+        {isLoading && lines.length === 0 ? (
+          <div className="flex items-center justify-center gap-2 p-6 text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" /> Loading logs…
+          </div>
+        ) : totalShown === 0 ? (
           <div className="p-6 text-center text-muted-foreground">
             {lines.length === 0 ? "No logs yet" : "No matching log lines"}
           </div>
@@ -189,15 +200,21 @@ function DeploymentLogStream({ logs }: { logs?: DeploymentLogsDto | null }) {
 export function LogsViewer({
   logs,
   events,
+  isLoading,
 }: {
   logs?: DeploymentLogsDto | null
   events?: CloudWatchLogEvent[]
+  isLoading?: boolean
 }) {
   // CloudWatch (observability) branch — unchanged single stream.
   if (events) {
     return (
       <div className="max-h-[500px] overflow-auto font-mono text-xs bg-background text-foreground p-4 rounded-lg min-w-0">
-        {events.length === 0 ? (
+        {isLoading && events.length === 0 ? (
+          <div className="flex items-center justify-center gap-2 p-4 text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" /> Loading logs…
+          </div>
+        ) : events.length === 0 ? (
           <div className="p-4 text-muted-foreground">{"No logs"}</div>
         ) : (
           <ul className="space-y-2">
@@ -215,5 +232,5 @@ export function LogsViewer({
     )
   }
 
-  return <DeploymentLogStream logs={logs} />
+  return <DeploymentLogStream logs={logs} isLoading={isLoading} />
 }

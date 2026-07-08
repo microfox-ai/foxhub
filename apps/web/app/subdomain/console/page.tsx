@@ -3,6 +3,7 @@
 import { useConsole } from "@/components/subapps/console/context/console-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { SharedOrgsSection } from "@/components/subapps/console/components/shared-orgs"
 import { useAuth } from "@/components/auth/AuthProvider"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -93,6 +94,7 @@ function OrganizationsBody() {
         ))}
         <CreateOrganizationCard />
       </div>
+      <SharedOrgsSection />
     </div>
   )
 }

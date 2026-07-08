@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react"
+import { createContext, useContext, useMemo, useState, type Dispatch, type SetStateAction } from "react"
 import useSWR from "swr"
 import { consoleApi } from "@/components/subapps/console/lib/console-api"
+import { usePermissions } from "@/components/subapps/console/lib/use-permissions"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
 import { beautifyFunctionName } from "@/components/subapps/console/lib/console-utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,6 +33,10 @@ import {
 type FnEnv = { name: string; env: Record<string, string> }
 type Row = { key: string; value: string; reveal: boolean }
 type Updates = Record<string, Record<string, string>>
+
+/** When false, all env editors render read-only (caller lacks `env.edit`). */
+const EnvEditableContext = createContext(true)
+const useEnvEditable = () => useContext(EnvEditableContext)
 
 const toRows = (env: Record<string, string>): Row[] =>
   Object.entries(env)
@@ -120,6 +125,7 @@ function ValueInput({
   placeholder?: string
   className?: string
 }) {
+  const editable = useEnvEditable()
   return (
     <div className={cn("relative flex-1", className)}>
       <Input
@@ -127,6 +133,7 @@ function ValueInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "value"}
         type={reveal ? "text" : "password"}
+        readOnly={!editable}
         className="h-9 pr-9 font-mono text-xs"
       />
       <button
@@ -150,6 +157,7 @@ function RowsEditor({
   setRows: Dispatch<SetStateAction<Row[]>>
   filter?: string
 }) {
+  const editable = useEnvEditable()
   const update = (i: number, patch: Partial<Row>) =>
     setRows((p) => p.map((r, idx) => (idx === i ? { ...r, ...patch } : r)))
   const remove = (i: number) => setRows((p) => p.filter((_, idx) => idx !== i))
@@ -171,6 +179,7 @@ function RowsEditor({
               value={r.key}
               onChange={(e) => update(i, { key: e.target.value })}
               placeholder="KEY"
+              readOnly={!editable}
               className="h-9 w-1/3 font-mono text-xs"
             />
             <ValueInput
@@ -179,22 +188,26 @@ function RowsEditor({
               onChange={(v) => update(i, { value: v })}
               onToggle={() => update(i, { reveal: !r.reveal })}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => remove(i)}
-              aria-label="Remove variable"
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            {editable ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => remove(i)}
+                aria-label="Remove variable"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            ) : null}
           </div>
         ))
       )}
-      <Button variant="outline" size="sm" onClick={add}>
-        <Plus className="mr-2 size-4" />
-        Add variable
-      </Button>
+      {editable ? (
+        <Button variant="outline" size="sm" onClick={add}>
+          <Plus className="mr-2 size-4" />
+          Add variable
+        </Button>
+      ) : null}
     </div>
   )
 }
@@ -208,11 +221,12 @@ function SaveBar({
   error?: string | null
   children: React.ReactNode
 }) {
+  const editable = useEnvEditable()
   return (
     <div className="flex items-center justify-end gap-2">
       {message ? <span className="text-xs text-emerald-600">{message}</span> : null}
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
-      {children}
+      {editable ? children : <span className="text-xs text-muted-foreground">Read-only</span>}
     </div>
   )
 }
@@ -307,6 +321,7 @@ function VariableRow({
   const [busy, setBusy] = useState(false)
   const [edited, setEdited] = useState<Record<string, string>>({})
 
+  const editable = useEnvEditable()
   const { present, distinct } = keyStats(fns, varKey)
   const valueFor = (f: FnEnv): string => {
     const e = edited[f.name]
@@ -354,29 +369,31 @@ function VariableRow({
       </button>
       {open ? (
         <div className="space-y-3 border-t p-3">
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 text-xs text-muted-foreground">Set all to</span>
-            <ValueInput
-              value={setAll}
-              reveal={reveal}
-              onChange={setSetAll}
-              onToggle={() => setReveal((r) => !r)}
-              placeholder="value for every function"
-            />
-            <Button size="sm" variant="outline" onClick={applyToAll} disabled={busy}>
-              Apply to all
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={deleteAll}
-              disabled={busy}
-            >
-              <Trash2 className="mr-1.5 size-4" />
-              Delete from all
-            </Button>
-          </div>
+          {editable ? (
+            <div className="flex items-center gap-2">
+              <span className="shrink-0 text-xs text-muted-foreground">Set all to</span>
+              <ValueInput
+                value={setAll}
+                reveal={reveal}
+                onChange={setSetAll}
+                onToggle={() => setReveal((r) => !r)}
+                placeholder="value for every function"
+              />
+              <Button size="sm" variant="outline" onClick={applyToAll} disabled={busy}>
+                Apply to all
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={deleteAll}
+                disabled={busy}
+              >
+                <Trash2 className="mr-1.5 size-4" />
+                Delete from all
+              </Button>
+            </div>
+          ) : null}
           <div className="max-h-[260px] space-y-1.5 overflow-auto pr-1">
             {visibleFns.map((f) => {
               const has = varKey in f.env
@@ -390,21 +407,26 @@ function VariableRow({
                     onChange={(e) => setEdited((p) => ({ ...p, [f.name]: e.target.value }))}
                     type={reveal ? "text" : "password"}
                     placeholder={has ? undefined : "not set"}
+                    readOnly={!editable}
                     className="h-8 flex-1 font-mono text-xs"
                   />
-                  <Button size="sm" variant="ghost" className="h-8" onClick={() => saveOne(f)} disabled={busy}>
-                    Save
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:opacity-30"
-                    onClick={() => deleteOne(f)}
-                    disabled={busy || !has}
-                    aria-label="Delete from this function"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  {editable ? (
+                    <>
+                      <Button size="sm" variant="ghost" className="h-8" onClick={() => saveOne(f)} disabled={busy}>
+                        Save
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive disabled:opacity-30"
+                        onClick={() => deleteOne(f)}
+                        disabled={busy || !has}
+                        aria-label="Delete from this function"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               )
             })}
@@ -686,6 +708,8 @@ function EnvManager({
 
 export function EnvTab({ projectId }: { projectId: string }) {
   const [scope, setScope] = useState<"group" | "project">("group")
+  const { can } = usePermissions(projectId)
+  const canEdit = can("env.edit")
 
   const { data, error, isLoading, mutate } = useSWR(
     projectId ? ["project-env", projectId] : null,
@@ -716,13 +740,13 @@ export function EnvTab({ projectId }: { projectId: string }) {
 
   if (error) {
     const msg = (error as Error)?.message || ""
-    const forbidden = /owner/i.test(msg) || /403/.test(msg)
+    const forbidden = /permission/i.test(msg) || /owner/i.test(msg) || /403/.test(msg)
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
           <Lock className="size-6 text-muted-foreground" />
           <p className="text-sm font-medium">
-            {forbidden ? "Only the project owner can view environment variables" : "Couldn't load environment"}
+            {forbidden ? "You don't have permission to view environment variables" : "Couldn't load environment"}
           </p>
           {!forbidden ? <p className="text-xs text-muted-foreground">{msg}</p> : null}
         </CardContent>
@@ -748,13 +772,16 @@ export function EnvTab({ projectId }: { projectId: string }) {
   const multiGroup = groups.length > 1
 
   return (
+    <EnvEditableContext.Provider value={canEdit}>
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
           <span>
-            Read live from each function (encrypted at rest by AWS, owner-only). Platform secrets are
-            hidden. Editing a shared variable updates every function without touching its unique vars.
+            Read live from each function (encrypted at rest by AWS). Platform secrets are hidden.
+            {canEdit
+              ? " Editing a shared variable updates every function without touching its unique vars."
+              : " You have read-only access to environment variables."}
           </span>
         </div>
         {hasAnyFunction && multiGroup ? (
@@ -811,5 +838,6 @@ export function EnvTab({ projectId }: { projectId: string }) {
         })
       )}
     </div>
+    </EnvEditableContext.Provider>
   )
 }

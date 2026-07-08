@@ -209,12 +209,74 @@ export interface IUrlMap {
   service?: ProjectService;
 }
 
+// --- Project sharing: members, roles & permissions (mirror of cicd permissions.ts) ---
+
+/** Every capability that can be granted on a project. Keep in sync with cicd. */
+export type Permission =
+  | "project.view"
+  | "project.edit"
+  | "project.edit_domain"
+  | "project.delete"
+  | "project.transfer"
+  | "members.view"
+  | "members.manage"
+  | "deployment.view"
+  | "deployment.logs.view"
+  | "deployment.create"
+  | "deployment.stop"
+  | "deployment.delete"
+  | "group.delete"
+  | "env.view"
+  | "env.edit"
+  | "observability.view"
+  | "workers.view"
+  | "workers.trigger";
+
+export type ProjectRole =
+  | "owner"
+  | "admin"
+  | "developer"
+  | "operator"
+  | "viewer"
+  | "custom";
+
+export type ProjectMemberStatus = "active" | "invited" | "suspended";
+
+export type ScopeMode = "all" | "allow" | "deny";
+
+export interface PermissionScope {
+  groups?: { mode: ScopeMode; values?: string[] };
+}
+
+export interface IProjectMember {
+  userId?: string;
+  email?: string;
+  name?: string;
+  role: ProjectRole;
+  permissions?: Permission[];
+  deniedPermissions?: Permission[];
+  scope?: PermissionScope;
+  status: ProjectMemberStatus;
+  invitedBy?: string;
+  addedAt: string;
+  updatedAt: string;
+  expiresAt?: string;
+}
+
+/** The caller's effective permissions on a project (from `GET /projects/:id/permissions/me`). */
+export interface EffectivePermissions {
+  role: ProjectRole | "owner" | "org" | "none";
+  permissions: Permission[];
+  scope: PermissionScope | null;
+}
+
 export interface IProject {
   id: string;
   displayName: string;
   agentName: string;
   organizationId: string;
   ownerId: string;
+  members?: IProjectMember[];
   subdomain?: string;
   source: ProjectSource;
   technology: ITechnology;

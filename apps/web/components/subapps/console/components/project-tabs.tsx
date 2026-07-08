@@ -7,8 +7,12 @@ import { ObservabilityTab } from "./observability-tab"
 import { SettingsTab } from "./settings-tab"
 import { ConfigTab } from "./config-tab"
 import { EnvTab } from "./env-tab"
+import { MembersTab } from "./members-tab"
+import { WorkersTab } from "./workers-tab"
+import { HistoryTab } from "./history-tab"
+import { UsageTab } from "./usage-tab"
 
-const VALID_TABS = ["overview", "deployments", "observability", "environment", "config", "settings"] as const
+const VALID_TABS = ["overview", "deployments", "workers", "history", "usage", "observability", "environment", "members", "config", "settings"] as const
 
 function resolveTab(raw: string | null | undefined): (typeof VALID_TABS)[number] {
   if (raw === "analytics" || raw === "logs") return "observability"
@@ -30,8 +34,12 @@ export function ProjectTabs({ projectId, defaultTab }: { projectId: string; defa
     <div className="w-full">
       {tab === "overview" && <OverviewTab projectId={projectId} />}
       {tab === "deployments" && <DeploymentsTab projectId={projectId} />}
+      {tab === "workers" && <WorkersTab projectId={projectId} />}
+      {tab === "history" && <HistoryTab projectId={projectId} />}
+      {tab === "usage" && <UsageTab projectId={projectId} />}
       {tab === "observability" && <ObservabilityTab projectId={projectId} />}
       {tab === "environment" && <EnvTab projectId={projectId} />}
+      {tab === "members" && <MembersTab projectId={projectId} />}
       {tab === "config" && <ConfigTab projectId={projectId} />}
       {tab === "settings" && <SettingsTab projectId={projectId} />}
     </div>

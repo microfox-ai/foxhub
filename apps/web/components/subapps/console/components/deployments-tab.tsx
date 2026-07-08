@@ -14,6 +14,7 @@ import type { DeploymentDto } from "@/components/subapps/console/lib/console-api
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
 import { getDeploymentStatusVisual } from "@/components/subapps/console/lib/deployment-status"
+import { usePermissions } from "@/components/subapps/console/lib/use-permissions"
 import { timeAgo, cn } from "@/lib/utils"
 
 /** Consistent status pill (dot + label) used across the list and detail panel. */
@@ -78,6 +79,8 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
     setAutoRefresh,
   } = useConsole()
 
+  const { can } = usePermissions(projectId)
+  const canDeploy = can("deployment.create")
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
   const deployments = state.deployments
   const hasActive = useMemo(
@@ -151,20 +154,22 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="text-base">{"Deployments"}</CardTitle>
           <div className="flex items-center gap-2">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="file"
-                accept=".zip"
-                className="hidden"
-                onChange={(e) => onUpload(e.currentTarget.files?.[0])}
-              />
-              <Button variant="secondary" size="sm" asChild>
-                <span>
-                  <Upload className="mr-2 size-4" />
-                  {"Start local deployment"}
-                </span>
-              </Button>
-            </label>
+            {canDeploy ? (
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="file"
+                  accept=".zip"
+                  className="hidden"
+                  onChange={(e) => onUpload(e.currentTarget.files?.[0])}
+                />
+                <Button variant="secondary" size="sm" asChild>
+                  <span>
+                    <Upload className="mr-2 size-4" />
+                    {"Start local deployment"}
+                  </span>
+                </Button>
+              </label>
+            ) : null}
             <Button variant="outline" size="sm" onClick={() => loadProjectDeployments()}>
               <RefreshCcw className="mr-2 size-4" />
               {"Refresh"}
@@ -328,7 +333,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                                </div>
                                              </TooltipProvider>
                                          </div>
-                                         <LogsViewer logs={state.currentLogs} />
+                                         <LogsViewer logs={state.currentLogs} isLoading={state.loadingLogs} />
                                      </div>
 
                                      {metrics && (

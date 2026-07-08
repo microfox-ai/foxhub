@@ -3,6 +3,7 @@
 import { useConsole } from "@/components/subapps/console/context/console-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OrgMembers } from "@/components/subapps/console/components/org-members";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { timeAgo } from "@/lib/utils";
@@ -232,6 +233,7 @@ function ProjectsBody() {
         ))}
         <CreateProjectCard />
       </div>
+      <OrgMembers organizationId={organizationId} />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 "use client"
 
-import ConsoleLayout from "@/components/subapps/console/components/console-layout"
-import { ConsoleProvider, useConsole } from "@/components/subapps/console/context/console-context"
+import { useConsole } from "@/components/subapps/console/context/console-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { SharedOrgsSection } from "@/components/subapps/console/components/shared-orgs"
 import { useAuth } from "@/components/auth/AuthProvider"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -60,6 +61,20 @@ function OrganizationsBody() {
         <h1 className="text-xl font-semibold">{"Organizations"}</h1>
         </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {state.loadingOrganizations && state.organizations.length === 0
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <Card key={`sk-${i}`}>
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <Skeleton className="size-10 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-2/3" />
+                </CardContent>
+              </Card>
+            ))
+          : null}
         {state.organizations.map((o) => (
           <Link href={`/subdomain/console/${o.id}`} key={o.id}>
             <Card>
@@ -79,18 +94,11 @@ function OrganizationsBody() {
         ))}
         <CreateOrganizationCard />
       </div>
+      <SharedOrgsSection />
     </div>
   )
 }
 
 export default function Page() {
-  const { user } = useAuth()
-
-  return (
-    <ConsoleProvider userId={user?.id ?? ""}>
-      <ConsoleLayout>
-        <OrganizationsBody />
-      </ConsoleLayout>
-    </ConsoleProvider>
-  )
+  return <OrganizationsBody />
 }

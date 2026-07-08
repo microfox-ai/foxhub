@@ -7,30 +7,85 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useReducer,
+  useRef,
+  useState,
 } from "react";
+import { useParams } from "next/navigation";
+import useSWR, { preload } from "swr";
+import useSWRInfinite from "swr/infinite";
 import {
   consoleApi,
   type DeploymentDto,
   type DeploymentLogsDto,
-  type BotProject,
+  type DeploymentLogCounts,
   ProjectDto,
   OrganizationDto,
 } from "@/components/subapps/console/lib/console-api";
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Deployment statuses that may still change on their own — the only ones worth polling. */
+const ACTIVE_STATUSES = new Set([
+  "queued",
+  "compiling",
+  "deploying",
+  "deployed",
+  "post_deployment",
+]);
+const isActiveStatus = (status?: string | null) =>
+  !!status && ACTIVE_STATUSES.has(status);
+
+const POLL_MS = 4000;
+const LOG_STEPS = ["compiling", "deploying", "post_deployment"] as const;
+const DEPLOYMENTS_PAGE_SIZE = 20;
+
+type DeploymentsPage = { items: DeploymentDto[]; page: number; limit: number };
+type AccumulatedLogs = { logs: DeploymentLogsDto; counts: DeploymentLogCounts };
+
+// SWR cache keys (stable, serializable).
+const orgsKey = (userId?: string) =>
+  userId ? (["console:orgs", userId] as const) : null;
+const orgKey = (orgId?: string) =>
+  orgId ? (["console:org", orgId] as const) : null;
+const projectsKey = (orgId?: string) =>
+  orgId ? (["console:projects", orgId] as const) : null;
+const projectKey = (projectId?: string) =>
+  projectId ? (["console:project", projectId] as const) : null;
+const deploymentKey = (deploymentId?: string) =>
+  deploymentId ? (["console:deployment", deploymentId] as const) : null;
+const logsKey = (deploymentId?: string) =>
+  deploymentId ? (["console:logs", deploymentId] as const) : null;
+
+// ---------------------------------------------------------------------------
+// Public state shape
+// ---------------------------------------------------------------------------
+
 type ConsoleState = {
   userId: string;
+  /** Org list — only fetched on the console root page. */
   organizations: OrganizationDto[];
+  /** Project list — only fetched on an org page. */
   projects: ProjectDto[];
-  consoleProject?: BotProject | null;
+  /** The single org in the URL (breadcrumb / scoping); fetched standalone. */
+  currentOrganization?: OrganizationDto | null;
+  /** The single project in the URL; fetched standalone (no full list needed). */
+  currentProject?: ProjectDto | null;
+  /** Error from fetching the URL project (e.g. 403 with a `reason` for access-denied UI). */
+  currentProjectError?: (Error & { status?: number; reason?: string }) | null;
   selectedOrganizationId?: string;
   selectedProjectId?: string;
   currentDeploymentId?: string;
   currentDeployment?: DeploymentDto | null;
   currentLogs?: DeploymentLogsDto | null;
   deployments: DeploymentDto[];
+  hasMoreDeployments: boolean;
+  loadingMoreDeployments: boolean;
   loadingOrganizations: boolean;
   loadingProjects: boolean;
+  loadingCurrentProject: boolean;
+  loadingDeployments: boolean;
   startingDeployment: boolean;
   loadingDeployment: boolean;
   loadingLogs: boolean;
@@ -38,88 +93,10 @@ type ConsoleState = {
   autoRefresh: boolean;
 };
 
-type Action =
-  | { type: "SET_USER"; userId: string }
-  | { type: "SET_ORGANIZATIONS"; items: OrganizationDto[] }
-  | { type: "SET_PROJECTS"; items: ProjectDto[] }
-  | { type: "SET_SELECTED_ORG"; id?: string }
-  | { type: "SET_SELECTED_PROJECT"; id?: string }
-  | { type: "SET_CONSOLE_PROJECT"; project?: BotProject | null }
-  | { type: "SET_CURRENT_DEPLOYMENT_ID"; id?: string }
-  | { type: "SET_CURRENT_DEPLOYMENT"; deployment?: DeploymentDto | null }
-  | { type: "SET_LOGS"; logs?: DeploymentLogsDto | null }
-  | {
-      type: "SET_LOADING";
-      key: keyof Pick<
-        ConsoleState,
-        | "loadingOrganizations"
-        | "loadingProjects"
-        | "startingDeployment"
-        | "loadingDeployment"
-        | "loadingLogs"
-      >;
-      value: boolean;
-    }
-  | { type: "SET_ERROR"; error?: string | null }
-  | { type: "SET_AUTO_REFRESH"; value: boolean }
-  | { type: "SET_DEPLOYMENTS"; items: DeploymentDto[] };
-
-const initialState: ConsoleState = {
-  userId: "",
-  organizations: [],
-  projects: [],
-  loadingOrganizations: false,
-  loadingProjects: false,
-  startingDeployment: false,
-  loadingDeployment: false,
-  loadingLogs: false,
-  error: null,
-  autoRefresh: true,
-  deployments: [],
-};
-
-function reducer(state: ConsoleState, action: Action): ConsoleState {
-  switch (action.type) {
-    case "SET_USER":
-      return { ...state, userId: action.userId };
-    case "SET_ORGANIZATIONS":
-      return { ...state, organizations: action.items };
-    case "SET_PROJECTS":
-      return { ...state, projects: action.items };
-    case "SET_SELECTED_ORG":
-      return {
-        ...state,
-        selectedOrganizationId: action.id,
-        selectedProjectId: undefined,
-      };
-    case "SET_SELECTED_PROJECT":
-      return { ...state, selectedProjectId: action.id };
-    case "SET_CONSOLE_PROJECT":
-      return { ...state, consoleProject: action.project ?? null };
-    case "SET_CURRENT_DEPLOYMENT_ID":
-      return { ...state, currentDeploymentId: action.id };
-    case "SET_CURRENT_DEPLOYMENT":
-      return { ...state, currentDeployment: action.deployment ?? null };
-    case "SET_LOGS":
-      return { ...state, currentLogs: action.logs ?? null };
-    case "SET_LOADING":
-      return { ...state, [action.key]: action.value } as ConsoleState;
-    case "SET_ERROR":
-      return { ...state, error: action.error };
-    case "SET_AUTO_REFRESH":
-      return { ...state, autoRefresh: action.value };
-    case "SET_DEPLOYMENTS":
-      return { ...state, deployments: action.items };
-    default:
-      return state;
-  }
-}
-
 type ConsoleContextType = {
   state: ConsoleState;
   loadOrganizations: () => Promise<void>;
   loadProjects: () => Promise<void>;
-  loadConsoleProject: () => Promise<void>;
   createOrganization: (
     input: Omit<
       OrganizationDto,
@@ -133,8 +110,8 @@ type ConsoleContextType = {
     >
   ) => Promise<void>;
   loadProjectDeployments: () => Promise<void>;
-  selectOrganization: (id?: string) => void;
-  selectProject: (id?: string) => void;
+  loadMoreDeployments: () => void;
+  prefetchProjectDeployments: (projectId: string) => void;
   startLocalDeployment: (archiveFile: File) => Promise<string | undefined>;
   refreshDeployment: (deploymentId?: string) => Promise<void>;
   refreshLogs: (deploymentId?: string) => Promise<void>;
@@ -161,217 +138,250 @@ export function ConsoleProvider({
   projectId?: string;
   children: React.ReactNode;
 }) {
-  const [state, dispatch] = useReducer(reducer, {
-    ...initialState,
-    selectedOrganizationId: organizationId,
-    selectedProjectId: projectId,
-  });
+  // URL params are the single source of truth for scope; props seed the first render.
+  const params = useParams();
+  const urlOrg = (params?.organizationId as string | undefined) ?? organizationId;
+  const urlProject = (params?.projectId as string | undefined) ?? projectId;
 
+  // Page kind drives WHICH data we fetch — this is the perf fix: a project page
+  // never fetches the full org/project lists, only the one project it shows.
+  const onProjectPage = !!urlProject;
+  const onOrgPage = !!urlOrg && !urlProject;
+  const onRootPage = !urlOrg && !urlProject;
+
+  const [currentDeploymentId, setCurrentDeploymentId] = useState<
+    string | undefined
+  >();
+  const [startingDeployment, setStartingDeployment] = useState(false);
+  const [autoRefresh, setAutoRefreshState] = useState(true);
+
+  // ---- Lists (scoped to the page that needs them) -------------------------
+  const orgs = useSWR(
+    onRootPage ? orgsKey(userId) : null,
+    ([, uid]) => consoleApi.listOrganizations(uid),
+    { revalidateOnFocus: false }
+  );
+  const organizations = useMemo(() => orgs.data ?? [], [orgs.data]);
+
+  const projects = useSWR(
+    onOrgPage ? projectsKey(urlOrg) : null,
+    ([, orgId]) => consoleApi.listProjects({ organizationId: orgId }),
+    { revalidateOnFocus: false }
+  );
+  const projectList = useMemo(() => projects.data ?? [], [projects.data]);
+
+  // ---- Single org / project for the active scope (cheap, breadcrumb-friendly)
+  const currentOrgSwr = useSWR(
+    orgKey(urlOrg),
+    ([, id]) => consoleApi.getOrganization(id),
+    { revalidateOnFocus: false }
+  );
+  const currentProjectSwr = useSWR(
+    projectKey(urlProject),
+    ([, id]) => consoleApi.getProject(id),
+    // Don't retry-loop on access errors (403 suspended/expired/no-access) or 404.
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+
+  // ---- Deployments list (paginated; poll while active) --------------------
+  const getDeploymentsPageKey = useCallback(
+    (index: number, prev: DeploymentsPage | null) => {
+      if (!urlProject) return null;
+      if (prev && prev.items.length < DEPLOYMENTS_PAGE_SIZE) return null;
+      return ["console:deployments", urlProject, index, DEPLOYMENTS_PAGE_SIZE] as const;
+    },
+    [urlProject]
+  );
+  const deploymentsSwr = useSWRInfinite<DeploymentsPage>(
+    getDeploymentsPageKey,
+    ([, pid, index]) =>
+      consoleApi.listProjectDeploymentsPage(pid as string, {
+        page: (index as number) + 1,
+        limit: DEPLOYMENTS_PAGE_SIZE,
+      }),
+    { revalidateOnFocus: false, revalidateFirstPage: true }
+  );
+  const deployments = useMemo(
+    () => (deploymentsSwr.data ?? []).flatMap((p) => p.items),
+    [deploymentsSwr.data]
+  );
+  const hasMoreDeployments = useMemo(() => {
+    const pages = deploymentsSwr.data;
+    if (!pages || pages.length === 0) return false;
+    return (pages[pages.length - 1]?.items.length ?? 0) === DEPLOYMENTS_PAGE_SIZE;
+  }, [deploymentsSwr.data]);
+  const loadingMoreDeployments =
+    deploymentsSwr.isValidating && (deploymentsSwr.data?.length ?? 0) > 0;
+  const listHasActive = useMemo(
+    () => deployments.some((d) => isActiveStatus(d.status)),
+    [deployments]
+  );
   useEffect(() => {
-    if (userId) dispatch({ type: "SET_USER", userId });
-  }, [userId]);
+    deploymentsSwr.setSize(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlProject]);
+  useEffect(() => {
+    if (!autoRefresh || !listHasActive || !urlProject) return;
+    const t = setInterval(() => deploymentsSwr.mutate(), POLL_MS);
+    return () => clearInterval(t);
+  }, [autoRefresh, listHasActive, urlProject, deploymentsSwr]);
+  const loadMoreDeployments = useCallback(() => {
+    deploymentsSwr.setSize((s) => s + 1);
+  }, [deploymentsSwr]);
 
-  const loadConsoleProject = useCallback(async () => {
-    if (!state.userId) return;
-    try {
-      const project = await consoleApi.getOrCreateConsoleProject(state.userId);
-      dispatch({ type: "SET_CONSOLE_PROJECT", project });
-    } catch (e: any) {
-      dispatch({
-        type: "SET_ERROR",
-        error: e?.message || "Failed to load console project",
-      });
-    }
-  }, [state.userId]);
+  // ---- Current deployment detail -----------------------------------------
+  const deploymentSwr = useSWR(
+    deploymentKey(currentDeploymentId),
+    ([, id]) => consoleApi.getDeployment(id),
+    { revalidateOnFocus: false }
+  );
+  const currentDeployment = deploymentSwr.data ?? null;
+  const currentActive = isActiveStatus(currentDeployment?.status);
+  useEffect(() => {
+    if (!autoRefresh || !currentActive || !currentDeploymentId) return;
+    const t = setInterval(() => deploymentSwr.mutate(), POLL_MS);
+    return () => clearInterval(t);
+  }, [autoRefresh, currentActive, currentDeploymentId, deploymentSwr]);
 
-  const loadOrganizations = useCallback(async () => {
-    console.log("loadOrganizations", state?.userId);
-    if (!state.userId) return;
-    console.log("Attempting to load organizations for userId:", state.userId);
-    dispatch({ type: "SET_LOADING", key: "loadingOrganizations", value: true });
-    dispatch({ type: "SET_ERROR", error: null });
-    try {
-      const items = await consoleApi.listOrganizations(state.userId);
-      console.log("Successfully fetched organizations:", items);
-      dispatch({ type: "SET_ORGANIZATIONS", items });
-      if (!state.selectedOrganizationId && items.length > 0) {
-        dispatch({ type: "SET_SELECTED_ORG", id: items?.[0]?.id });
+  // ---- Incremental logs ---------------------------------------------------
+  const accumRef = useRef<Map<string, AccumulatedLogs>>(new Map());
+  const logsSwr = useSWR(
+    logsKey(currentDeploymentId),
+    async ([, id]) => {
+      const prev = accumRef.current.get(id);
+      const res = await consoleApi.getDeploymentLogs(id, prev?.counts);
+
+      const serverShrank =
+        prev && LOG_STEPS.some((s) => res.counts[s] < (prev.counts[s] ?? 0));
+      if (serverShrank) {
+        const full = await consoleApi.getDeploymentLogs(id);
+        const fresh: AccumulatedLogs = { logs: full.logs, counts: full.counts };
+        accumRef.current.set(id, fresh);
+        return fresh.logs;
       }
-    } catch (e: any) {
-      console.error("Failed to load organizations:", e);
-      dispatch({
-        type: "SET_ERROR",
-        error: e?.message || "Failed to load organizations",
-      });
-    } finally {
-      dispatch({
-        type: "SET_LOADING",
-        key: "loadingOrganizations",
-        value: false,
-      });
-    }
-  }, [state.userId]);
+      if (!prev) {
+        const fresh: AccumulatedLogs = { logs: res.logs, counts: res.counts };
+        accumRef.current.set(id, fresh);
+        return fresh.logs;
+      }
+      let changed = false;
+      const mergedLogs: DeploymentLogsDto = { ...prev.logs };
+      for (const step of LOG_STEPS) {
+        const delta = res.logs[step] ?? [];
+        if (delta.length > 0) {
+          mergedLogs[step] = [...(prev.logs[step] ?? []), ...delta];
+          changed = true;
+        }
+      }
+      const merged: AccumulatedLogs = {
+        logs: changed ? mergedLogs : prev.logs,
+        counts: res.counts,
+      };
+      accumRef.current.set(id, merged);
+      return merged.logs;
+    },
+    { revalidateOnFocus: false }
+  );
+  const currentLogs = logsSwr.data ?? null;
+  useEffect(() => {
+    if (!autoRefresh || !currentActive || !currentDeploymentId) return;
+    const t = setInterval(() => logsSwr.mutate(), POLL_MS);
+    return () => clearInterval(t);
+  }, [autoRefresh, currentActive, currentDeploymentId, logsSwr]);
+
+  // ---- Imperative actions -------------------------------------------------
+  const loadOrganizations = useCallback(async () => {
+    await orgs.mutate();
+  }, [orgs]);
 
   const loadProjects = useCallback(async () => {
-    if (!state.userId || !state.selectedOrganizationId) return;
-    console.log(
-      "Attempting to load projects for organizationId:",
-      state.selectedOrganizationId
-    );
-    dispatch({ type: "SET_LOADING", key: "loadingProjects", value: true });
-    dispatch({ type: "SET_ERROR", error: null });
-    try {
-      const items = await consoleApi.listProjects({
-        organizationId: state.selectedOrganizationId,
-      });
-      console.log("Successfully fetched projects:", items);
-      dispatch({ type: "SET_PROJECTS", items });
-      if (!state.selectedProjectId && items.length > 0) {
-        dispatch({ type: "SET_SELECTED_PROJECT", id: items?.[0]?.id });
-      }
-    } catch (e: any) {
-      console.error("Failed to load projects:", e);
-      dispatch({
-        type: "SET_ERROR",
-        error: e?.message || "Failed to load projects",
-      });
-    } finally {
-      dispatch({ type: "SET_LOADING", key: "loadingProjects", value: false });
-    }
-  }, [state.userId, state.selectedOrganizationId]);
-
-  const selectOrganization = useCallback((id?: string) => {
-    dispatch({ type: "SET_SELECTED_ORG", id });
-  }, []);
-
-  const selectProject = useCallback((id?: string) => {
-    dispatch({ type: "SET_SELECTED_PROJECT", id });
-  }, []);
+    await projects.mutate();
+  }, [projects]);
 
   const loadProjectDeployments = useCallback(async () => {
-    if (!state.selectedProjectId) return;
-    try {
-      const items = await consoleApi.listProjectDeployments(
-        state.selectedProjectId
-      );
-      dispatch({ type: "SET_DEPLOYMENTS", items });
-    } catch (e) {
-      dispatch({ type: "SET_DEPLOYMENTS", items: [] });
-    }
-  }, [state.selectedProjectId]);
+    await deploymentsSwr.mutate();
+  }, [deploymentsSwr]);
+
+  const prefetchProjectDeployments = useCallback((pid: string) => {
+    if (!pid) return;
+    preload(projectKey(pid)!, ([, id]) => consoleApi.getProject(id as string));
+    preload(
+      ["console:deployments", pid, 0, DEPLOYMENTS_PAGE_SIZE],
+      ([, id]) =>
+        consoleApi.listProjectDeploymentsPage(id as string, {
+          page: 1,
+          limit: DEPLOYMENTS_PAGE_SIZE,
+        })
+    );
+  }, []);
 
   const refreshDeployment = useCallback(
     async (deploymentId?: string) => {
-      const id = deploymentId || state.currentDeploymentId;
+      const id = deploymentId ?? currentDeploymentId;
       if (!id) return;
-      dispatch({ type: "SET_LOADING", key: "loadingDeployment", value: true });
-      dispatch({ type: "SET_ERROR", error: null });
-      try {
-        const dep = await consoleApi.getDeployment(id);
-        dispatch({ type: "SET_CURRENT_DEPLOYMENT", deployment: dep });
-      } catch (e: any) {
-        dispatch({
-          type: "SET_ERROR",
-          error: e?.message || "Failed to load deployment",
-        });
-      } finally {
-        dispatch({
-          type: "SET_LOADING",
-          key: "loadingDeployment",
-          value: false,
-        });
+      if (id !== currentDeploymentId) {
+        setCurrentDeploymentId(id);
+        return;
       }
+      await deploymentSwr.mutate();
     },
-    [state.currentDeploymentId]
+    [currentDeploymentId, deploymentSwr]
   );
 
   const refreshLogs = useCallback(
     async (deploymentId?: string) => {
-      const id = deploymentId || state.currentDeploymentId;
+      const id = deploymentId ?? currentDeploymentId;
       if (!id) return;
-      dispatch({ type: "SET_LOADING", key: "loadingLogs", value: true });
-      dispatch({ type: "SET_ERROR", error: null });
-      try {
-        if (deploymentId) {
-          dispatch({ type: "SET_CURRENT_DEPLOYMENT_ID", id });
-        }
-        const logs = await consoleApi.getDeploymentLogs(id);
-        dispatch({ type: "SET_LOGS", logs });
-      } catch (e: any) {
-        dispatch({
-          type: "SET_ERROR",
-          error: e?.message || "Failed to load logs",
-        });
-      } finally {
-        dispatch({ type: "SET_LOADING", key: "loadingLogs", value: false });
+      if (id !== currentDeploymentId) {
+        setCurrentDeploymentId(id);
+        return;
       }
+      await logsSwr.mutate();
     },
-    [state.currentDeploymentId]
+    [currentDeploymentId, logsSwr]
   );
 
   const startLocalDeployment = useCallback(
     async (archiveFile: File) => {
-      if (!state.selectedProjectId) {
-        dispatch({ type: "SET_ERROR", error: "Select a project first" });
-        return;
-      }
-      dispatch({ type: "SET_LOADING", key: "startingDeployment", value: true });
-      dispatch({ type: "SET_ERROR", error: null });
+      if (!urlProject) return;
+      setStartingDeployment(true);
       try {
         const { deploymentId } = await consoleApi.startLocalDeployment(
-          state.selectedProjectId,
+          urlProject,
           archiveFile
         );
-        dispatch({ type: "SET_CURRENT_DEPLOYMENT_ID", id: deploymentId });
-        await refreshDeployment(deploymentId);
-        await refreshLogs(deploymentId);
-        await loadProjectDeployments();
+        setCurrentDeploymentId(deploymentId);
+        await deploymentsSwr.mutate();
         return deploymentId;
-      } catch (e: any) {
-        dispatch({
-          type: "SET_ERROR",
-          error: e?.message || "Failed to start deployment",
-        });
       } finally {
-        dispatch({
-          type: "SET_LOADING",
-          key: "startingDeployment",
-          value: false,
-        });
+        setStartingDeployment(false);
       }
     },
-    [
-      state.selectedProjectId,
-      refreshDeployment,
-      refreshLogs,
-      loadProjectDeployments,
-    ]
+    [urlProject, deploymentsSwr]
   );
 
   const stopDeployment = useCallback(
     async (deploymentId?: string) => {
-      const id = deploymentId || state.currentDeploymentId;
+      const id = deploymentId ?? currentDeploymentId;
       if (!id) return;
       await consoleApi.stopDeployment(id);
-      await refreshDeployment(id);
-      await loadProjectDeployments();
+      await Promise.all([deploymentSwr.mutate(), deploymentsSwr.mutate()]);
     },
-    [state.currentDeploymentId, refreshDeployment, loadProjectDeployments]
+    [currentDeploymentId, deploymentSwr, deploymentsSwr]
   );
 
   const archiveDeployment = useCallback(
     async (deploymentId?: string) => {
-      const id = deploymentId || state.currentDeploymentId;
+      const id = deploymentId ?? currentDeploymentId;
       if (!id) return;
       await consoleApi.archiveDeployment(id);
-      await refreshDeployment(id);
-      await loadProjectDeployments();
+      await Promise.all([deploymentSwr.mutate(), deploymentsSwr.mutate()]);
     },
-    [state.currentDeploymentId, refreshDeployment, loadProjectDeployments]
+    [currentDeploymentId, deploymentSwr, deploymentsSwr]
   );
 
   const setAutoRefresh = useCallback((value: boolean) => {
-    dispatch({ type: "SET_AUTO_REFRESH", value });
+    setAutoRefreshState(value);
   }, []);
 
   const createOrganization = useCallback(
@@ -381,14 +391,11 @@ export function ConsoleProvider({
         "id" | "createdAt" | "updatedAt" | "members"
       > & { members?: string[] }
     ) => {
-      if (!state.userId) return;
-      await consoleApi.createOrganization({
-        ...input,
-        ownerId: state.userId,
-      });
-      await loadOrganizations();
+      if (!userId) return;
+      await consoleApi.createOrganization({ ...input, ownerId: userId });
+      await orgs.mutate();
     },
-    [state.userId, loadOrganizations]
+    [userId, orgs]
   );
 
   const createProject = useCallback(
@@ -398,92 +405,113 @@ export function ConsoleProvider({
         "id" | "createdAt" | "updatedAt" | "organizationId" | "ownerId"
       >
     ) => {
-      if (!state.userId || !state.selectedOrganizationId) return;
+      if (!userId || !urlOrg) return;
       await consoleApi.createProject({
         ...input,
-        organizationId: state.selectedOrganizationId,
-        ownerId: state.userId,
+        organizationId: urlOrg,
+        ownerId: userId,
       });
-      await loadProjects();
+      await projects.mutate();
     },
-    [state.userId, state.selectedOrganizationId, loadProjects]
+    [userId, urlOrg, projects]
   );
 
   const updateProject = useCallback(
     async (
       updates: Partial<Pick<ProjectDto, "agentName" | "subdomain">>,
-      projectId?: string
+      pid?: string
     ) => {
-      const id = projectId || state.selectedProjectId;
+      const id = pid ?? urlProject;
       if (!id) return;
       await consoleApi.updateProject(id, updates);
-      // Refresh list and current project state
-      await loadProjects();
+      await Promise.all([currentProjectSwr.mutate(), projects.mutate()]);
     },
-    [state.selectedProjectId, loadProjects]
+    [urlProject, currentProjectSwr, projects]
   );
 
   const deleteProject = useCallback(
-    async (projectId?: string) => {
-      const id = projectId || state.selectedProjectId;
+    async (pid?: string) => {
+      const id = pid ?? urlProject;
       if (!id) return;
       await consoleApi.deleteProject(id);
-      // Clear selection if we deleted current
-      if (state.selectedProjectId === id) {
-        dispatch({ type: "SET_SELECTED_PROJECT", id: undefined });
-      }
-      await loadProjects();
+      await projects.mutate();
     },
-    [state.selectedProjectId, loadProjects]
+    [urlProject, projects]
   );
 
-  useEffect(() => {
-    if (state.userId) {
-      loadOrganizations();
-    }
-  }, [state.userId, loadOrganizations]);
+  const error =
+    (orgs.error as Error | undefined)?.message ??
+    (projects.error as Error | undefined)?.message ??
+    (currentProjectSwr.error as Error | undefined)?.message ??
+    (deploymentSwr.error as Error | undefined)?.message ??
+    (logsSwr.error as Error | undefined)?.message ??
+    null;
 
-  useEffect(() => {
-    if (state.userId) {
-      loadConsoleProject();
-    }
-  }, [state.userId, loadConsoleProject]);
-
-  useEffect(() => {
-    if (state.selectedOrganizationId) {
-      loadProjects();
-    }
-  }, [state.selectedOrganizationId, loadProjects]);
-
-  useEffect(() => {
-    loadProjectDeployments();
-  }, [state.selectedProjectId, loadProjectDeployments]);
-
-  useEffect(() => {
-    if (!state.autoRefresh || !state.currentDeploymentId) return;
-    const interval = setInterval(() => {
-      refreshDeployment();
-      refreshLogs();
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [
-    state.autoRefresh,
-    state.currentDeploymentId,
-    refreshDeployment,
-    refreshLogs,
-  ]);
+  const state: ConsoleState = useMemo(
+    () => ({
+      userId,
+      organizations,
+      projects: projectList,
+      currentOrganization: currentOrgSwr.data ?? null,
+      currentProject: currentProjectSwr.data ?? null,
+      currentProjectError:
+        (currentProjectSwr.error as (Error & { status?: number; reason?: string }) | undefined) ??
+        null,
+      selectedOrganizationId: urlOrg,
+      selectedProjectId: urlProject,
+      currentDeploymentId,
+      currentDeployment,
+      currentLogs,
+      deployments,
+      hasMoreDeployments,
+      loadingMoreDeployments,
+      loadingOrganizations: orgs.isLoading,
+      loadingProjects: projects.isLoading,
+      loadingCurrentProject: currentProjectSwr.isLoading,
+      loadingDeployments: deploymentsSwr.isLoading,
+      startingDeployment,
+      loadingDeployment: deploymentSwr.isLoading,
+      loadingLogs: logsSwr.isLoading,
+      error,
+      autoRefresh,
+    }),
+    [
+      userId,
+      organizations,
+      projectList,
+      currentOrgSwr.data,
+      currentProjectSwr.data,
+      currentProjectSwr.error,
+      urlOrg,
+      urlProject,
+      currentDeploymentId,
+      currentDeployment,
+      currentLogs,
+      deployments,
+      hasMoreDeployments,
+      loadingMoreDeployments,
+      orgs.isLoading,
+      projects.isLoading,
+      currentProjectSwr.isLoading,
+      deploymentsSwr.isLoading,
+      startingDeployment,
+      deploymentSwr.isLoading,
+      logsSwr.isLoading,
+      error,
+      autoRefresh,
+    ]
+  );
 
   const value = useMemo<ConsoleContextType>(
     () => ({
       state,
       loadOrganizations,
       loadProjects,
-      loadConsoleProject,
       createOrganization,
       createProject,
       loadProjectDeployments,
-      selectOrganization,
-      selectProject,
+      loadMoreDeployments,
+      prefetchProjectDeployments,
       startLocalDeployment,
       refreshDeployment,
       refreshLogs,
@@ -497,12 +525,11 @@ export function ConsoleProvider({
       state,
       loadOrganizations,
       loadProjects,
-      loadConsoleProject,
       createOrganization,
       createProject,
       loadProjectDeployments,
-      selectOrganization,
-      selectProject,
+      loadMoreDeployments,
+      prefetchProjectDeployments,
       startLocalDeployment,
       refreshDeployment,
       refreshLogs,

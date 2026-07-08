@@ -1,12 +1,9 @@
 "use client";
 
-import ConsoleLayout from "@/components/subapps/console/components/console-layout";
-import {
-  ConsoleProvider,
-  useConsole,
-} from "@/components/subapps/console/context/console-context";
+import { useConsole } from "@/components/subapps/console/context/console-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { Skeleton } from "@/components/ui/skeleton";
+import { OrgMembers } from "@/components/subapps/console/components/org-members";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { timeAgo } from "@/lib/utils";
@@ -190,6 +187,20 @@ function ProjectsBody() {
         <h1 className="text-xl font-semibold">{"Projects"}</h1>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {state.loadingProjects && state.projects.length === 0
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <Card key={`sk-${i}`}>
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <Skeleton className="size-10 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-3 w-2/3" />
+                  <Skeleton className="h-3 w-1/2" />
+                </CardContent>
+              </Card>
+            ))
+          : null}
         {state.projects.map((p) => (
           <Link
             href={`/subdomain/console/${organizationId}/${p.id}`}
@@ -222,20 +233,11 @@ function ProjectsBody() {
         ))}
         <CreateProjectCard />
       </div>
+      <OrgMembers organizationId={organizationId} />
     </div>
   );
 }
 
 export default function OrganizationPage() {
-  const { user } = useAuth();
-  const params = useParams();
-  const organizationId = params.organizationId as string;
-
-  return (
-    <ConsoleProvider userId={user?.id ?? ""} organizationId={organizationId}>
-      <ConsoleLayout>
-        <ProjectsBody />
-      </ConsoleLayout>
-    </ConsoleProvider>
-  );
+  return <ProjectsBody />;
 }

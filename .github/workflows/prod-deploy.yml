@@ -114,7 +114,8 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} << 'ENDSSH'
             source ~/.nvm/nvm.sh
             nvm use 23
-            
+            npm install -g pm2
+
             BASE_PATH="/home/${{ secrets.DROPLET_USER }}/foxhub/builds/prod"
             MAIN_PATH="$BASE_PATH/main"
             COPY_PATH="$BASE_PATH/main-copy"

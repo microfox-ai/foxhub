@@ -3,16 +3,21 @@ import {
   CloudWatchLogsClient,
   FilterLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs"
+import {
+  resolveProjectLambdaScope,
+  mapWithConcurrency,
+  withAwsRetry,
+  type ScopedFunction,
+} from "../scope"
 
-type AwsFunctionRef = {
-  arn: string
-  region: string
-  name: string
-}
+type AwsFunctionRef = ScopedFunction
 
 type LogsRequest = {
-  items: AwsFunctionRef[]
+  projectId: string
   rangeHours?: number
+  rangeMinutes?: number
+  startTime?: number
+  endTime?: number
   filterPattern?: string
   functionName?: string | "ALL"
 }
@@ -27,18 +32,19 @@ type CloudWatchLogEvent = {
 async function getLogsForFunction(
   client: CloudWatchLogsClient,
   ref: AwsFunctionRef,
-  rangeHours: number,
+  startTime: number,
+  endTime: number,
   filterPattern?: string
 ) {
   try {
     const command = new FilterLogEventsCommand({
       logGroupName: `/aws/lambda/${ref.name}`,
-      startTime: new Date(Date.now() - rangeHours * 3600 * 1000).getTime(),
-      endTime: new Date().getTime(),
+      startTime,
+      endTime,
       filterPattern,
       interleaved: true,
     })
-    const response = await client.send(command)
+    const response = await withAwsRetry(() => client.send(command))
     return (
       response.events?.map(
         (e) =>
@@ -58,18 +64,35 @@ async function getLogsForFunction(
 
 export async function POST(req: NextRequest) {
   try {
+    const body = (await req.json()) as LogsRequest
     const {
-      items,
       rangeHours = 6,
+      rangeMinutes,
+      startTime: reqStartTime,
+      endTime: reqEndTime,
       filterPattern,
       functionName = "ALL",
-    } = (await req.json()) as LogsRequest
+    } = body
 
-    if (!items || !Array.isArray(items)) {
-      return NextResponse.json(
-        { error: "Missing or invalid items array" },
-        { status: 400 }
-      )
+    // SECURITY: authenticate the caller and resolve the allowed function list server-side
+    // from the project's urlsMap. Client-sent function names are never trusted.
+    const scope = await resolveProjectLambdaScope(body)
+    if (!scope.ok) return scope.response
+    const items = scope.functions
+
+    const now = Date.now()
+    let startTime: number
+    let endTime: number
+    if (reqStartTime != null && reqEndTime != null) {
+      startTime = reqStartTime
+      endTime = reqEndTime
+    } else {
+      const rangeMs =
+        rangeMinutes != null
+          ? Math.max(60000, rangeMinutes * 60 * 1000)
+          : (rangeHours ?? 6) * 3600 * 1000
+      startTime = now - rangeMs
+      endTime = now
     }
 
     const functionsToFetch =
@@ -77,24 +100,35 @@ export async function POST(req: NextRequest) {
         ? items
         : items.filter((i) => i.name === functionName)
 
+    // AWS's per-account rate limits are low; firing FilterLogEvents for every function at
+    // once trips CallerRateLimitExceeded/ThrottlingException. Cap fan-out and retry.
+    const clientsByRegion = new Map<string, CloudWatchLogsClient>()
+    const getClient = (region: string) => {
+      let client = clientsByRegion.get(region)
+      if (!client) {
+        client = new CloudWatchLogsClient({
+          region,
+          credentials: {
+            accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
+          },
+        })
+        clientsByRegion.set(region, client)
+      }
+      return client
+    }
+
     const byFunction: Record<string, CloudWatchLogEvent[]> = {}
-    const promises = functionsToFetch.map(async (ref) => {
-      const client = new CloudWatchLogsClient({
-        region: ref.region,
-        credentials: {
-          accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
-        },
-      })
+    await mapWithConcurrency(functionsToFetch, 5, async (ref) => {
       const logs = await getLogsForFunction(
-        client,
+        getClient(ref.region),
         ref,
-        rangeHours,
+        startTime,
+        endTime,
         filterPattern
       )
       byFunction[ref.name] = logs
     })
-    await Promise.all(promises)
 
     const combined = Object.values(byFunction)
       .flat()

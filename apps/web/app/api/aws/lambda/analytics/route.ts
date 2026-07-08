@@ -8,18 +8,21 @@ import {
   CloudWatchClient,
   GetMetricDataCommand,
 } from "@aws-sdk/client-cloudwatch"
+import {
+  resolveProjectLambdaScope,
+  mapWithConcurrency,
+  withAwsRetry,
+  type ScopedFunction,
+} from "../scope"
 
-type AwsFunctionRef = {
-  arn: string
-  region: string
-  name: string
-}
+type AwsFunctionRef = ScopedFunction
 
-// Helper to determine the optimal period for CloudWatch metrics based on the time range
-function getPeriodForRange(rangeHours: number): number {
-  if (rangeHours <= 24) return 60 * 5 // 5 minutes
-  if (rangeHours <= 7 * 24) return 60 * 60 // 1 hour
-  if (rangeHours <= 30 * 24) return 60 * 60 * 6 // 6 hours
+// Helper to determine the optimal period for CloudWatch metrics based on the time span
+function getPeriodForSpan(spanMs: number): number {
+  const spanHours = spanMs / (3600 * 1000)
+  if (spanHours <= 24) return 60 * 5 // 5 minutes
+  if (spanHours <= 7 * 24) return 60 * 60 // 1 hour
+  if (spanHours <= 30 * 24) return 60 * 60 * 6 // 6 hours
   return 60 * 60 * 24 // 1 day
 }
 
@@ -27,30 +30,37 @@ async function getFunctionDetails(
   lambdaClient: LambdaClient,
   cloudWatchClient: CloudWatchClient,
   ref: AwsFunctionRef,
-  rangeHours: number
+  startTime: Date,
+  endTime: Date
 ) {
   try {
-    const period = getPeriodForRange(rangeHours)
-    const startTime = new Date(Date.now() - rangeHours * 3600 * 1000)
-    const endTime = new Date()
+    const spanMs = endTime.getTime() - startTime.getTime()
+    const period = getPeriodForSpan(spanMs)
+    const hasValidArn = !!ref.arn && /^arn:aws[a-zA-Z-]*:lambda:/.test(ref.arn)
 
     const [config, tags, metrics] = await Promise.all([
-      lambdaClient.send(
-        new GetFunctionConfigurationCommand({ FunctionName: ref.name })
+      withAwsRetry(() =>
+        lambdaClient.send(
+          new GetFunctionConfigurationCommand({ FunctionName: ref.name })
+        )
       ),
-      lambdaClient.send(new ListTagsCommand({ Resource: ref.arn })),
-      cloudWatchClient.send(
-        new GetMetricDataCommand({
-          StartTime: startTime,
-          EndTime: endTime,
-          MetricDataQueries: [
-            { Id: "invocations", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Invocations", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Sum" }, ReturnData: true },
-            { Id: "errors", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Errors", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Sum" }, ReturnData: true },
-            { Id: "throttles", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Throttles", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Sum" }, ReturnData: true },
-            { Id: "duration", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Duration", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Average" }, ReturnData: true },
-            { Id: "concurrentExecutions", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "ConcurrentExecutions", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Maximum" }, ReturnData: true },
-          ],
-        })
+      hasValidArn
+        ? withAwsRetry(() => lambdaClient.send(new ListTagsCommand({ Resource: ref.arn })))
+        : Promise.resolve({ Tags: {} }),
+      withAwsRetry(() =>
+        cloudWatchClient.send(
+          new GetMetricDataCommand({
+            StartTime: startTime,
+            EndTime: endTime,
+            MetricDataQueries: [
+              { Id: "invocations", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Invocations", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Sum" }, ReturnData: true },
+              { Id: "errors", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Errors", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Sum" }, ReturnData: true },
+              { Id: "throttles", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Throttles", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Sum" }, ReturnData: true },
+              { Id: "duration", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "Duration", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Average" }, ReturnData: true },
+              { Id: "concurrentExecutions", MetricStat: { Metric: { Namespace: "AWS/Lambda", MetricName: "ConcurrentExecutions", Dimensions: [{ Name: "FunctionName", Value: ref.name }] }, Period: period, Stat: "Maximum" }, ReturnData: true },
+            ],
+          })
+        )
       ),
     ])
     
@@ -102,30 +112,55 @@ async function getFunctionDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, rangeHours = 24 } = (await req.json()) as { items: AwsFunctionRef[]; rangeHours?: number }
-    if (!items || !Array.isArray(items)) {
-      return NextResponse.json({ error: "Missing or invalid items array" }, { status: 400 })
+    const body = (await req.json()) as {
+      projectId: string
+      rangeHours?: number
+      startTime?: number
+      endTime?: number
+    }
+    const { rangeHours = 24, startTime: reqStartTime, endTime: reqEndTime } = body
+
+    // SECURITY: authenticate the caller and resolve the allowed function list server-side
+    // from the project's urlsMap. Client-sent function names are never trusted.
+    const scope = await resolveProjectLambdaScope(body)
+    if (!scope.ok) return scope.response
+    const items = scope.functions
+
+    let startTime: Date
+    let endTime: Date
+    if (reqStartTime != null && reqEndTime != null) {
+      startTime = new Date(reqStartTime)
+      endTime = new Date(reqEndTime)
+    } else {
+      const rangeMs = rangeHours * 3600 * 1000
+      endTime = new Date()
+      startTime = new Date(Date.now() - rangeMs)
     }
 
-    const results = await Promise.all(
-      items.map((ref) => {
-        const lambdaClient = new LambdaClient({
-          region: ref.region,
-          credentials: {
-            accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
-            secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
-          },
-        })
-        const cloudWatchClient = new CloudWatchClient({
-          region: ref.region,
-          credentials: {
-            accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
-            secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
-          },
-        })
-        return getFunctionDetails(lambdaClient, cloudWatchClient, ref, rangeHours)
-      })
-    )
+    // AWS's per-account Lambda API rate limits are low (often single-digit rps for
+    // GetFunctionConfiguration/ListTags); firing every function's calls at once trips
+    // CallerRateLimitExceeded/ThrottlingException. Cap fan-out and retry transient throttles.
+    const clientsByRegion = new Map<string, { lambdaClient: LambdaClient; cloudWatchClient: CloudWatchClient }>()
+    const getClients = (region: string) => {
+      let clients = clientsByRegion.get(region)
+      if (!clients) {
+        const credentials = {
+          accessKeyId: process.env.AGENT_AWS_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.AGENT_AWS_SECRET_ACCESS_KEY!,
+        }
+        clients = {
+          lambdaClient: new LambdaClient({ region, credentials }),
+          cloudWatchClient: new CloudWatchClient({ region, credentials }),
+        }
+        clientsByRegion.set(region, clients)
+      }
+      return clients
+    }
+
+    const results = await mapWithConcurrency(items, 5, (ref) => {
+      const { lambdaClient, cloudWatchClient } = getClients(ref.region)
+      return getFunctionDetails(lambdaClient, cloudWatchClient, ref, startTime, endTime)
+    })
 
     return NextResponse.json({ items: results })
   } catch (error) {

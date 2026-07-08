@@ -381,30 +381,6 @@ export function TriggerBadge({
   )
 }
 
-/**
- * Lines emitted by the worker runtime / our trigger harness / the AWS Lambda platform — NOT the
- * user's own `console.*` from inside their worker. The "App logs only" toggle hides these so the
- * user sees just their own logs. Keep in sync with the markers in ai-worker `handler.ts` +
- * ai-worker-cli `push.ts`.
- */
-const INTERNAL_LOG_PATTERNS: RegExp[] = [
-  /\[WorkerEntrypoint\]/,
-  /\[Worker\]/,
-  /\[AIWORKER_RUN\]/,
-  /\[AIWORKER_TRIGGER\]/,
-  /\[workers-trigger\]/,
-  // AWS Lambda platform lines.
-  /^\s*(?:START|END|REPORT) RequestId:/,
-  /^\s*INIT_START\b/,
-  /^\s*INIT_REPORT\b/,
-  /^\s*EXTENSION\b/,
-]
-
-function isInternalLog(message?: string): boolean {
-  if (!message) return false
-  return INTERNAL_LOG_PATTERNS.some((re) => re.test(message))
-}
-
 /** Padding around a run's own timestamps when building its CloudWatch search window. */
 const LOG_WINDOW_PAD_MS = 10 * 60 * 1000
 
@@ -434,14 +410,6 @@ export function LambdaLogs({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [filterByJob, setFilterByJob] = useState(true)
-  // Default to the user's own logs only — hide our runtime/trigger markers + AWS platform lines.
-  const [appOnly, setAppOnly] = useState(true)
-
-  const shown = useMemo(
-    () => (appOnly ? events.filter((e) => !isInternalLog(e.message)) : events),
-    [events, appOnly],
-  )
-  const hiddenCount = events.length - shown.length
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -494,31 +462,14 @@ export function LambdaLogs({
           />
           Only this run
         </label>
-        <label
-          className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground"
-          title="Hide the worker runtime / trigger markers and AWS platform lines — show only your worker's own console output."
-        >
-          <input
-            type="checkbox"
-            checked={appOnly}
-            onChange={(e) => setAppOnly(e.target.checked)}
-            className="size-3"
-          />
-          App logs only
-          {appOnly && hiddenCount > 0 && (
-            <span className="text-muted-foreground/70">({hiddenCount} hidden)</span>
-          )}
-        </label>
       </div>
       {error && <div className="text-[11px] text-destructive">{error}</div>}
-      {!shown.length && !loading ? (
+      {!events.length && !loading ? (
         <p className="py-3 text-center text-[11px] text-muted-foreground">
-          {events.length && appOnly
-            ? "Only runtime/platform logs for this run — your worker logged nothing. Untick “App logs only” to see them."
-            : `No log events yet${filterByJob ? " for this run" : ""}.`}
+          {`No log events yet${filterByJob ? " for this run" : ""}.`}
         </p>
       ) : (
-        <CloudWatchLogsViewer events={shown} isLoading={loading} compact />
+        <CloudWatchLogsViewer events={events} isLoading={loading} compact defaultLogView="app" />
       )}
     </div>
   )

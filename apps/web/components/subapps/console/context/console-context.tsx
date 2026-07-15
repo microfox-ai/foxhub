@@ -10,11 +10,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR, { preload } from "swr";
 import useSWRInfinite from "swr/infinite";
 import {
   consoleApi,
+  deriveProjectStages,
   type DeploymentDto,
   type DeploymentLogsDto,
   type DeploymentLogCounts,
@@ -76,6 +77,10 @@ type ConsoleState = {
   currentProjectError?: (Error & { status?: number; reason?: string }) | null;
   selectedOrganizationId?: string;
   selectedProjectId?: string;
+  /** Stages the current project has deployed (from its urlsMap; always includes 'prod'). */
+  availableStages: string[];
+  /** The stage the console is currently scoped to (deploys, env, monitoring). */
+  selectedStage: string;
   currentDeploymentId?: string;
   currentDeployment?: DeploymentDto | null;
   currentLogs?: DeploymentLogsDto | null;
@@ -113,6 +118,7 @@ type ConsoleContextType = {
   loadMoreDeployments: () => void;
   prefetchProjectDeployments: (projectId: string) => void;
   startLocalDeployment: (archiveFile: File) => Promise<string | undefined>;
+  setSelectedStage: (stage: string) => void;
   refreshDeployment: (deploymentId?: string) => Promise<void>;
   refreshLogs: (deploymentId?: string) => Promise<void>;
   stopDeployment: (deploymentId?: string) => Promise<void>;
@@ -142,6 +148,13 @@ export function ConsoleProvider({
   const params = useParams();
   const urlOrg = (params?.organizationId as string | undefined) ?? organizationId;
   const urlProject = (params?.projectId as string | undefined) ?? projectId;
+
+  // Stage is persisted in the URL (`?stage=`) so a refresh reopens the same stage
+  // and the view is shareable. prod is the default and stays out of the URL.
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const stageParam = searchParams.get("stage");
 
   // Page kind drives WHICH data we fetch — this is the perf fix: a project page
   // never fetches the full org/project lists, only the one project it shows.
@@ -181,6 +194,32 @@ export function ConsoleProvider({
     ([, id]) => consoleApi.getProject(id),
     // Don't retry-loop on access errors (403 suspended/expired/no-access) or 404.
     { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+
+  // ---- Stage dimension (derived from the current project's urlsMap) -------
+  const availableStages = useMemo(
+    () => deriveProjectStages(currentProjectSwr.data?.urlsMap),
+    [currentProjectSwr.data?.urlsMap]
+  );
+  // Effective stage: honor a valid `?stage=` param, else default to prod (always present).
+  // While the project (urlsMap) is still loading availableStages is just ["prod"], so a
+  // valid non-prod param reads as prod for a beat and then resolves — we deliberately do
+  // NOT strip the param during that window (it would drop a legitimate deep-link).
+  const selectedStage = useMemo(() => {
+    if (stageParam && availableStages.includes(stageParam)) return stageParam;
+    return "prod";
+  }, [stageParam, availableStages]);
+  // Writing the stage updates the URL in place (replace, no scroll) so refresh/share keep it.
+  // prod is the default → drop it from the URL to keep links clean.
+  const setSelectedStage = useCallback(
+    (stage: string) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (stage && stage !== "prod") next.set("stage", stage);
+      else next.delete("stage");
+      const qs = next.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, pathname, router]
   );
 
   // ---- Deployments list (paginated; poll while active) --------------------
@@ -346,9 +385,13 @@ export function ConsoleProvider({
       if (!urlProject) return;
       setStartingDeployment(true);
       try {
+        // Single-stage projects send no stage → request stays byte-identical to before.
+        // Multi-stage projects always specify the target explicitly (including prod).
+        const stageArg = availableStages.length > 1 ? selectedStage : undefined;
         const { deploymentId } = await consoleApi.startLocalDeployment(
           urlProject,
-          archiveFile
+          archiveFile,
+          stageArg
         );
         setCurrentDeploymentId(deploymentId);
         await deploymentsSwr.mutate();
@@ -357,7 +400,7 @@ export function ConsoleProvider({
         setStartingDeployment(false);
       }
     },
-    [urlProject, deploymentsSwr]
+    [urlProject, deploymentsSwr, selectedStage, availableStages]
   );
 
   const stopDeployment = useCallback(
@@ -459,6 +502,8 @@ export function ConsoleProvider({
         null,
       selectedOrganizationId: urlOrg,
       selectedProjectId: urlProject,
+      availableStages,
+      selectedStage,
       currentDeploymentId,
       currentDeployment,
       currentLogs,
@@ -484,6 +529,8 @@ export function ConsoleProvider({
       currentProjectSwr.error,
       urlOrg,
       urlProject,
+      availableStages,
+      selectedStage,
       currentDeploymentId,
       currentDeployment,
       currentLogs,
@@ -513,6 +560,7 @@ export function ConsoleProvider({
       loadMoreDeployments,
       prefetchProjectDeployments,
       startLocalDeployment,
+      setSelectedStage,
       refreshDeployment,
       refreshLogs,
       stopDeployment,
@@ -531,6 +579,7 @@ export function ConsoleProvider({
       loadMoreDeployments,
       prefetchProjectDeployments,
       startLocalDeployment,
+      setSelectedStage,
       refreshDeployment,
       refreshLogs,
       stopDeployment,

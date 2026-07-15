@@ -58,10 +58,33 @@ export enum ProjectRuntimeType {
 export type OrganizationDto = IOrganization
 export type ProjectDto = IProject
 
+/** Deployment stages (fixed AWS-standard set — Plan E decision D3). */
+export const DEPLOY_STAGES = ["prod", "staging", "dev"] as const
+export type DeployStage = (typeof DEPLOY_STAGES)[number]
+
+/** Normalize a possibly-absent stage to its slot ('prod' for missing/blank). */
+export function normalizeStage(stage?: string | null): string {
+  const s = (stage || "").trim().toLowerCase()
+  return s || "prod"
+}
+
+/**
+ * Distinct stages a project has deployed, derived from its urlsMap (rows without a stage → prod).
+ * Always includes 'prod' so the selector has a sensible default, ordered prod → staging → dev → rest.
+ */
+export function deriveProjectStages(urlsMap?: { stage?: string }[] | null): string[] {
+  const set = new Set<string>(["prod"])
+  for (const u of urlsMap || []) set.add(normalizeStage(u.stage))
+  const order = (s: string) => (s === "prod" ? 0 : s === "staging" ? 1 : s === "dev" ? 2 : 3)
+  return [...set].sort((a, b) => order(a) - order(b) || a.localeCompare(b))
+}
+
 export interface DeploymentDto {
   _id: string
   projectId: string
   group?: string
+  /** Deployment stage (prod | staging | dev). Absent on pre-stage records → treat as prod. */
+  stage?: string
   organizationId: string
   userId: string
   /** SEC-2 / Plan A: who actually triggered the deployment (CLI/console). */
@@ -75,8 +98,23 @@ export interface DeploymentDto {
   baseUrl?: string
   metrics?: any
   error?: any
+  /** Snapshot of the config this deployment was pushed with (publish block + microfox.config
+   * `deployment` block). Persisted server-side so the console shows the real deployed config. */
+  deploymentConfig?: DeploymentConfigDto
   createdAt: string
   updatedAt: string
+}
+
+/** The resolved config a deployment was pushed with. All fields optional (older CLIs sent less). */
+export interface DeploymentConfigDto {
+  subdomain?: string
+  agentName?: string
+  handles?: Record<string, string>
+  apiMode?: string
+  apiVersion?: string
+  port?: number | string
+  ignorePatterns?: string[]
+  [k: string]: unknown
 }
 export interface DeploymentLogEntryDto {
   timestamp: string
@@ -488,12 +526,14 @@ export const consoleApi = {
     }
   },
 
-  async startLocalDeployment(projectId: string, archiveFile: File) {
+  async startLocalDeployment(projectId: string, archiveFile: File, stage?: string) {
     const form = new FormData()
     form.append("archive", archiveFile)
+    // Mirror the CLI: stage travels as both a header and publish.stage so old cicd ignores it.
+    if (stage) form.append("publish", JSON.stringify({ stage }))
     const res = await cicdFetch(`${API_BASE}/api/deployments/local`, {
       method: "POST",
-      headers: { "x-project-id": projectId },
+      headers: { "x-project-id": projectId, ...(stage ? { "x-deployment-stage": stage } : {}) },
       body: form,
     } as RequestInit)
     if (!res.ok) throw new Error(`Failed to start deployment: ${res.status}`)
@@ -512,9 +552,12 @@ export const consoleApi = {
     return await res.json()
   },
 
-  /** Live env per function, grouped (owner-only; platform secrets filtered server-side). */
-  async getProjectEnv(projectId: string) {
-    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}/env`)
+  /** Live env per function, grouped (owner-only; platform secrets filtered server-side).
+   * Pass `stage` to scope to one stage's deployed functions (default: all stages). */
+  async getProjectEnv(projectId: string, stage?: string) {
+    const url = new URL(`/api/projects/${projectId}/env`, API_BASE)
+    if (stage) url.searchParams.set("stage", stage)
+    const res = await cicdFetch(url.toString())
     if (!res.ok) {
       const msg = (await res.json().catch(() => ({}))).error
       throw new Error(msg || `Failed to fetch env: ${res.status}`)
@@ -529,12 +572,16 @@ export const consoleApi = {
    * Apply env live to functions. `updates` maps each function name to its FULL owner-env
    * (platform vars are preserved server-side). A per-function map lets the console change a
    * shared var across many functions without touching any function's unique vars.
+   * `stage` scopes which functions are editable (default: all stages).
    */
   async updateProjectEnv(
     projectId: string,
     updates: Record<string, Record<string, string>>,
+    stage?: string,
   ) {
-    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}/env`, {
+    const url = new URL(`/api/projects/${projectId}/env`, API_BASE)
+    if (stage) url.searchParams.set("stage", stage)
+    const res = await cicdFetch(url.toString(), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ updates }),
@@ -544,6 +591,55 @@ export const consoleApi = {
       throw new Error(msg || `Failed to update env: ${res.status}`)
     }
     return (await res.json()) as { ok: boolean; applied: string[]; appliedCount: number }
+  },
+
+  /**
+   * Durable env store (Plan E Phase 3): console-managed layers that survive redeploys.
+   * Returns decrypted project / per-group / per-function layers for one stage.
+   */
+  async getProjectEnvStore(projectId: string, stage: string) {
+    const url = new URL(`/api/projects/${projectId}/env-store`, API_BASE)
+    url.searchParams.set("stage", stage)
+    const res = await cicdFetch(url.toString())
+    if (!res.ok) {
+      const msg = (await res.json().catch(() => ({}))).error
+      throw new Error(msg || `Failed to fetch env store: ${res.status}`)
+    }
+    return (await res.json()) as {
+      stage: string
+      project: Record<string, string>
+      groups: Record<string, Record<string, string>>
+      functions: Record<string, Record<string, string>>
+      updatedAt?: string
+      updatedBy?: string
+    }
+  },
+
+  /**
+   * Write env-store layers for a stage. Each provided slot REPLACES that slot; omitted slots
+   * are untouched. `pushLive` (default true) also applies the merged store to the affected live
+   * functions immediately, so edits take effect without a redeploy AND survive the next one.
+   */
+  async updateProjectEnvStore(
+    projectId: string,
+    input: {
+      stage: string
+      project?: Record<string, string>
+      groups?: Record<string, Record<string, string>>
+      functions?: Record<string, Record<string, string>>
+      pushLive?: boolean
+    },
+  ) {
+    const res = await cicdFetch(`${API_BASE}/api/projects/${projectId}/env-store`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    })
+    if (!res.ok) {
+      const msg = (await res.json().catch(() => ({}))).error
+      throw new Error(msg || `Failed to update env store: ${res.status}`)
+    }
+    return (await res.json()) as { ok: boolean; stage: string; applied: string[]; appliedCount: number }
   },
 
   getOrCreateConsoleProject: async (userId: string): Promise<BotProject> => {
@@ -696,6 +792,8 @@ export const consoleApi = {
     rangeHours?: number
     startTime?: number
     endTime?: number
+    /** Scope usage to one deployment stage's functions (default: all stages). */
+    stage?: string
   }): Promise<UsageResult> {
     const res = await fetch(`/api/console/usage`, {
       method: "POST",

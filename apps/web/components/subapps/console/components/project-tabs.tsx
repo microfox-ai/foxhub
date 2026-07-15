@@ -3,21 +3,21 @@
 import { useSearchParams } from "next/navigation"
 import { OverviewTab } from "./overview-tab"
 import { DeploymentsTab } from "./deployments-tab"
-import { ObservabilityTab } from "./observability-tab"
+import { InfrastructureTab } from "./infrastructure-tab"
 import { SettingsTab } from "./settings-tab"
-import { ConfigTab } from "./config-tab"
 import { EnvTab } from "./env-tab"
 import { MembersTab } from "./members-tab"
-import { WorkersTab } from "./workers-tab"
+import { RunTestTab } from "./run-test-tab"
 import { HistoryTab } from "./history-tab"
 import { UsageTab } from "./usage-tab"
 
-const VALID_TABS = ["overview", "deployments", "run-test", "history", "usage", "infrastructure", "environment", "members", "config", "settings"] as const
+const VALID_TABS = ["overview", "deployments", "run-test", "history", "usage", "infrastructure", "environment", "members", "settings"] as const
 
-/** Maps legacy `tab=` values (from before the Infrastructure/Run & test rename) to current ones. */
+/** Maps legacy `tab=` values to current ones (Infrastructure/Run & test rename; Config folded into Overview). */
 function resolveTab(raw: string | null | undefined): (typeof VALID_TABS)[number] {
   if (raw === "analytics" || raw === "logs" || raw === "observability") return "infrastructure"
   if (raw === "workers") return "run-test"
+  if (raw === "config") return "overview"
   return (VALID_TABS as readonly string[]).includes(raw as string)
     ? (raw as (typeof VALID_TABS)[number])
     : "overview"
@@ -36,13 +36,12 @@ export function ProjectTabs({ projectId, defaultTab }: { projectId: string; defa
     <div className="w-full">
       {tab === "overview" && <OverviewTab projectId={projectId} />}
       {tab === "deployments" && <DeploymentsTab projectId={projectId} />}
-      {tab === "run-test" && <WorkersTab projectId={projectId} />}
+      {tab === "run-test" && <RunTestTab projectId={projectId} />}
       {tab === "history" && <HistoryTab projectId={projectId} />}
       {tab === "usage" && <UsageTab projectId={projectId} />}
-      {tab === "infrastructure" && <ObservabilityTab projectId={projectId} />}
+      {tab === "infrastructure" && <InfrastructureTab projectId={projectId} />}
       {tab === "environment" && <EnvTab projectId={projectId} />}
       {tab === "members" && <MembersTab projectId={projectId} />}
-      {tab === "config" && <ConfigTab projectId={projectId} />}
       {tab === "settings" && <SettingsTab projectId={projectId} />}
     </div>
   )

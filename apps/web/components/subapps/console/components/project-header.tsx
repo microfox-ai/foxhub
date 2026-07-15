@@ -1,6 +1,7 @@
 "use client"
 import { Badge } from "@/components/ui/badge"
 import { useConsole } from "@/components/subapps/console/context/console-context"
+import { StageSelector } from "./stage-selector"
 
 export function ProjectHeader({ projectId }: { projectId: string }) {
   const { state } = useConsole()
@@ -20,7 +21,8 @@ export function ProjectHeader({ projectId }: { projectId: string }) {
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <StageSelector />
           <Badge variant="secondary">{project.source.type}</Badge>
         </div>
       </div>

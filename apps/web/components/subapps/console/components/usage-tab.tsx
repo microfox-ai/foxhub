@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import useSWR from "swr"
 import { consoleApi, type UsageResult } from "@/components/subapps/console/lib/console-api"
+import { useConsole } from "@/components/subapps/console/context/console-context"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -38,9 +39,14 @@ export function UsageTab({ projectId }: { projectId: string }) {
   const [rangeHours, setRangeHours] = useState(24)
   const [groupBy, setGroupBy] = useState<"function" | "group">("function")
 
+  // Scope usage to the selected stage (multi-stage projects only), so prod and staging
+  // costs are never summed together. Stage is part of the SWR key → switching refetches.
+  const { state } = useConsole()
+  const stageParam = state.availableStages.length > 1 ? state.selectedStage : undefined
+
   const { data, error, isLoading, isValidating, mutate } = useSWR(
-    projectId ? (["console:usage", projectId, rangeHours] as const) : null,
-    ([, id, hours]) => consoleApi.getUsage({ projectId: id, rangeHours: hours }),
+    projectId ? (["console:usage", projectId, rangeHours, stageParam ?? "all"] as const) : null,
+    ([, id, hours]) => consoleApi.getUsage({ projectId: id, rangeHours: hours, stage: stageParam }),
     { revalidateOnFocus: false, shouldRetryOnError: false },
   )
 

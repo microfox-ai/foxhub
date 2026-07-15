@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useConsole } from "@/components/subapps/console/context/console-context"
+import { normalizeStage } from "@/components/subapps/console/lib/console-api"
 import { useAws, type UrlMap } from "@/components/subapps/console/context/aws-context"
 import { beautifyFunctionName } from "@/components/subapps/console/lib/console-utils"
 import { Button } from "@/components/ui/button"
@@ -90,13 +91,17 @@ function getPeriodMsForRangeMinutes(rangeMinutes: number): number {
   return 6 * 60 * 60 * 1000
 }
 
-export function ObservabilityTab({ projectId }: { projectId: string }) {
+export function InfrastructureTab({ projectId }: { projectId: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const fnTabsListRef = useRef<HTMLDivElement>(null)
   const { state } = useConsole()
-  const { state: aws, loadLogs, loadAnalytics } = useAws()
+  const { state: aws, loadLogs, loadAnalytics, cacheKey } = useAws()
+  // Scope observability to the selected stage. Mirrors env-tab: only multi-stage projects
+  // send a stage (single-stage/legacy projects stay on the all-stages request shape).
+  const stageParam =
+    state.availableStages.length > 1 ? state.selectedStage : undefined
   const project = state.currentProject && state.currentProject.id === projectId ? state.currentProject : undefined
 
   const obsFn = searchParams.get("obs_fn") ?? "ALL"
@@ -140,7 +145,12 @@ export function ObservabilityTab({ projectId }: { projectId: string }) {
 
   const awsFns = useMemo(() => {
     const allFunctions = urlsMap
-      .filter((u) => u.type === "agent" && !!u.service?.providerConfig?.resources?.length)
+      .filter(
+        (u) =>
+          (!stageParam || normalizeStage(u.stage) === stageParam) &&
+          u.type === "agent" &&
+          !!u.service?.providerConfig?.resources?.length
+      )
       .flatMap((u) => {
         const urlMapGroup = getGroupLabel(u.group)
         const resources = u.service?.providerConfig?.resources || []
@@ -163,7 +173,7 @@ export function ObservabilityTab({ projectId }: { projectId: string }) {
       if (!deduped.has(key)) deduped.set(key, fn)
     }
     return Array.from(deduped.values())
-  }, [urlsMap])
+  }, [urlsMap, stageParam])
 
   const sortedFns = useMemo(() => {
     return [...awsFns].sort((a, b) =>
@@ -206,29 +216,29 @@ export function ObservabilityTab({ projectId }: { projectId: string }) {
         ...loadOpts,
         filterPattern: obsPattern || undefined,
         functionName: "ALL",
-      })
+      }, stageParam)
       const analyticsOpts =
         "startTime" in loadOpts && "endTime" in loadOpts
           ? { startTime: loadOpts.startTime, endTime: loadOpts.endTime }
           : { rangeHours: loadOpts.rangeMinutes / 60 }
       queueMicrotask(() => {
-        loadAnalytics(projectId, awsFns, analyticsOpts)
+        loadAnalytics(projectId, awsFns, analyticsOpts, stageParam)
       })
     }
-  }, [projectId, awsFns.length, loadOpts]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [projectId, awsFns.length, loadOpts, stageParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onRefresh = () => {
     loadLogs(projectId, awsFns, {
       ...loadOpts,
       filterPattern: obsPattern || undefined,
       functionName: "ALL",
-    })
+    }, stageParam)
     const analyticsOpts =
       "startTime" in loadOpts && "endTime" in loadOpts
         ? { startTime: loadOpts.startTime, endTime: loadOpts.endTime }
         : { rangeHours: loadOpts.rangeMinutes / 60 }
     queueMicrotask(() => {
-      loadAnalytics(projectId, awsFns, analyticsOpts)
+      loadAnalytics(projectId, awsFns, analyticsOpts, stageParam)
     })
   }
 
@@ -238,9 +248,10 @@ export function ObservabilityTab({ projectId }: { projectId: string }) {
     el.scrollBy({ left: dir === "left" ? -120 : 120, behavior: "smooth" })
   }, [])
 
-  const resp = aws.logsByProject[projectId]
+  const awsKey = cacheKey(projectId, stageParam)
+  const resp = aws.logsByProject[awsKey]
   const byFn = resp?.byFunction || {}
-  const items = aws.analyticsByProject[projectId] || []
+  const items = aws.analyticsByProject[awsKey] || []
 
   const overall = useMemo(() => {
     const totalInvocations = items.reduce(

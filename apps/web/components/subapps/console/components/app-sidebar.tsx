@@ -5,10 +5,9 @@ import { useRouter, usePathname, useParams, useSearchParams } from "next/navigat
 import {
   Home,
   Rocket,
-  PanelLeft,
+  SquareTerminal,
   LayoutDashboard,
   Activity,
-  FileCode,
   KeyRound,
   Users,
   Settings,
@@ -81,7 +80,6 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
     items: [
       { tab: "environment", label: "Environment", icon: KeyRound, perm: "env.view" },
       { tab: "members", label: "Members", icon: Users, perm: "members.view" },
-      { tab: "config", label: "Config", icon: FileCode },
       { tab: "settings", label: "Settings", icon: Settings },
     ],
   },
@@ -118,13 +116,15 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="size-6 rounded bg-foreground/10 grid place-items-center">
-            <PanelLeft className="size-4" />
+        <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+          <div className="size-6 shrink-0 rounded bg-foreground/10 grid place-items-center">
+            <SquareTerminal className="size-4" />
           </div>
-          <span className="text-sm font-semibold">Console</span>
+          <span className="text-sm font-semibold truncate group-data-[collapsible=icon]:hidden">
+            Console
+          </span>
         </div>
-        <SidebarSeparator />
+        <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
       </SidebarHeader>
 
       <SidebarContent>
@@ -222,25 +222,29 @@ export function Shell({ children }: { children?: React.ReactNode }) {
       <main className={cn("flex-1 min-w-0")}>
         <div className="sticky top-0 z-10 border-b bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/40">
           <div className="flex items-center gap-2 p-2">
-            <SidebarTrigger />
-            <Breadcrumb>
-              <BreadcrumbList>
+            <SidebarTrigger className="shrink-0" />
+            <Breadcrumb className="min-w-0">
+              <BreadcrumbList className="flex-nowrap">
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/subdomain/console">Console</BreadcrumbLink>
                 </BreadcrumbItem>
                 {organizationId && <BreadcrumbSeparator />}
                 {organizationId && (
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href={`/subdomain/console/${organizationId}`}>
+                  <BreadcrumbItem className="min-w-0">
+                    <BreadcrumbLink
+                      href={`/subdomain/console/${organizationId}`}
+                      className="truncate max-w-[10rem]"
+                    >
                       {orgName ?? "Organization"}
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                 )}
                 {projectId && <BreadcrumbSeparator />}
                 {projectId && (
-                  <BreadcrumbItem>
+                  <BreadcrumbItem className="min-w-0">
                     <BreadcrumbLink
                       href={`/subdomain/console/${organizationId}/${projectId}`}
+                      className="truncate max-w-[12rem]"
                     >
                       {projectName ?? "Project"}
                     </BreadcrumbLink>

@@ -90,6 +90,12 @@ function serviceNamePrefix(projectId: string): string {
   return `p-${projectId.replace(/-/g, "").slice(0, 15)}`
 }
 
+/** Normalize a possibly-absent stage to its slot ('prod' for missing/blank) — mirrors
+ * the console's `normalizeStage` and cicd's urlsMap stage slotting. */
+function normalizeStage(stage?: string | null): string {
+  return (stage || "").trim().toLowerCase() || "prod"
+}
+
 function fail(status: number, error: string): ScopeFailure {
   return { ok: false, response: NextResponse.json({ error }, { status }) }
 }
@@ -140,6 +146,13 @@ export async function resolveProjectLambdaScope(
   if (!projectId) {
     return fail(400, "projectId is required")
   }
+
+  // Optional stage scope: when provided, only functions deployed to that stage are
+  // resolved (urlsMap rows without a stage read as 'prod'). Absent = all stages (legacy).
+  const stageFilter =
+    body && typeof body === "object" && typeof (body as { stage?: unknown }).stage === "string"
+      ? normalizeStage((body as { stage: string }).stage)
+      : null
 
   if (!CICD_BASE) {
     console.error("[aws/lambda/scope] No CICD base URL configured")
@@ -202,6 +215,8 @@ export async function resolveProjectLambdaScope(
   const functions = new Map<string, ScopedFunction>()
   for (const entry of project.urlsMap ?? []) {
     if (!inScope(entry.group)) continue
+    // Stage scope: skip rows that don't belong to the requested stage.
+    if (stageFilter && normalizeStage(entry.stage) !== stageFilter) continue
     const service = entry.service
     if (!service || !("providerConfig" in service) || !service.providerConfig) {
       continue

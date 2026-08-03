@@ -21,7 +21,6 @@ import { usePermissions } from "@/components/subapps/console/lib/use-permissions
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -41,7 +40,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { useConsole } from "@/components/subapps/console/context/console-context"
-import { ConsoleBotSwitcher } from "./console-bot-switcher"
 import { cn } from "@/lib/utils"
 
 type NavItem = {
@@ -199,9 +197,6 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter>
-        <ConsoleBotSwitcher />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

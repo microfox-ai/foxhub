@@ -186,15 +186,23 @@ async function getPackageInfo(
     return null;
   }
 
+  // maybeSingle, not single: a package that simply isn't in the table is a normal
+  // miss (stale packageName on a secret, package not embedded yet), not a failure.
+  // Real problems — bad credentials, duplicate rows — still surface as errors.
   const { data, error } = await supabase
     .from(PACKAGE_INFO_TABLE)
     .select("*")
     .eq("package_name", package_name)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    console.error("❌ Error getting package info:", error);
+    console.error("❌ Error getting package info:", package_name, error);
     throw error;
+  }
+
+  if (!data) {
+    console.warn("ℹ️  No package info found for:", package_name);
+    return null;
   }
 
   return data.raw_content;

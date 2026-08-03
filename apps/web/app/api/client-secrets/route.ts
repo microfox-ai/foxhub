@@ -139,9 +139,20 @@ export async function GET(req: NextRequest) {
           (templateSecret.packageType === ClientSecretPackageType.APIKEY ||
             templateSecret.packageType === ClientSecretPackageType.OAUTH2)
         ) {
-          packageInfo = await PackageInfoHelper.getPackageInfo(
-            templateSecret.packageName
-          );
+          try {
+            packageInfo = await PackageInfoHelper.getPackageInfo(
+              templateSecret.packageName
+            );
+          } catch (error) {
+            // A package lookup failing shouldn't drop the whole list — return the
+            // secret without its package metadata instead.
+            console.error(
+              "Error fetching package info for template secret",
+              templateSecret.id,
+              templateSecret.packageName,
+              error
+            );
+          }
         }
         finalTemplateSecrets.push({
           ...templateSecret,
@@ -158,9 +169,18 @@ export async function GET(req: NextRequest) {
         (clientSecret.packageType === ClientSecretPackageType.APIKEY ||
           clientSecret.packageType === ClientSecretPackageType.OAUTH2)
       ) {
-        packageInfo = await PackageInfoHelper.getPackageInfo(
-          clientSecret.packageName
-        );
+        try {
+          packageInfo = await PackageInfoHelper.getPackageInfo(
+            clientSecret.packageName
+          );
+        } catch (error) {
+          console.error(
+            "Error fetching package info for client secret",
+            clientSecret.id,
+            clientSecret.packageName,
+            error
+          );
+        }
       }
       finalClientSecrets.push({
         ...clientSecret,
@@ -176,6 +196,7 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
+    console.error("Error fetching ClientSecret:", error);
     return NextResponse.json(
       { error: "Error fetching ClientSecret" },
       { status: 500 }

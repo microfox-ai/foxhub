@@ -3,29 +3,48 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
 import { HomeTab } from "./HomeTab";
 import { TasksTab } from "./TasksTab";
 import { ShardPagesTab } from "./ShardPagesTab";
 import { NoProjects } from "./NoProjects";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { redirect, usePathname } from "next/navigation";
 
 const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
   const { projects, selectedProject, isLoading, setSelectedProject, selectedProjectClientRequests, selectedProjectClientRequestsLoading, createNewEmptyRequest } = useClientProject();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const pathname = usePathname();
+
+  // The console lives at /dashboard now, so this screen is the "old" dashboard. It has no
+  // console view — selecting a CONSOLE project here would bounce straight back to /dashboard,
+  // so on this route we swap the selection to a normal project instead of redirecting.
+  const isOldDashboard = pathname === "/old-dashboard";
+  const visibleProjects = useMemo(
+    () =>
+      isOldDashboard
+        ? projects.filter((project) => project.type !== "CONSOLE")
+        : projects,
+    [projects, isOldDashboard]
+  );
 
   useEffect(() => {
-    if (selectedProject) {
-      if (selectedProject.type === "CONSOLE") {
-        redirect("/dashboard");
-      } else {
-        setActiveTab(defaultTab);
-      }
+    if (!selectedProject) return;
+
+    if (selectedProject.type !== "CONSOLE") {
+      setActiveTab(defaultTab);
+      return;
     }
-  }, [selectedProject]);
+
+    if (isOldDashboard) {
+      setSelectedProject(visibleProjects[0] ?? null);
+      return;
+    }
+
+    redirect("/dashboard");
+  }, [selectedProject, isOldDashboard, visibleProjects]);
 
   if (isLoading || !user) {
     return (
@@ -53,7 +72,7 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
     );
   }
 
-  if (projects.length === 0) {
+  if (visibleProjects.length === 0) {
     return <NoProjects user={user} />;
   }
 
@@ -66,11 +85,11 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
               Hello, {user?.name || <span className="inline-block h-8 w-32 bg-gray-200 rounded animate-pulse"></span>}
             </h2>
             <p className="text-lg text-gray-500">
-              You have {projects.length} Workspaces. What are you looking for ?
+              You have {visibleProjects.length} Workspaces. What are you looking for ?
             </p>
           </div>
           <div className="col-span-12 grid grid-cols-12 gap-4 p-4">
-            {projects.map((project) => (
+            {visibleProjects.map((project) => (
               <div key={project.id} className="col-span-4">
                 <div
                   onClick={() => {

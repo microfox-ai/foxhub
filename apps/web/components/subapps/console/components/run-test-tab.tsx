@@ -186,7 +186,7 @@ export function RunTestTab({ projectId }: { projectId: string }) {
     (id: string) => {
       if (organizationId)
         router.push(
-          `/subdomain/console/${organizationId}/${projectId}?tab=history&runq=${encodeURIComponent(id)}`,
+          `/dashboard/${organizationId}/${projectId}?tab=history&runq=${encodeURIComponent(id)}`,
           { scroll: false },
         )
     },

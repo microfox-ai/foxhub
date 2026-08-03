@@ -145,7 +145,7 @@ export function AppSidebar() {
                         isActive={activeTab === s.tab}
                         onClick={() =>
                           router.push(
-                            `/subdomain/console/${organizationId}/${projectId}?tab=${s.tab}`,
+                            `/dashboard/${organizationId}/${projectId}?tab=${s.tab}`,
                             { scroll: false },
                           )
                         }
@@ -166,8 +166,8 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    isActive={pathname === "/subdomain/console"}
-                    onClick={() => router.push("/subdomain/console")}
+                    isActive={pathname === "/dashboard"}
+                    onClick={() => router.push("/dashboard")}
                   >
                     <Home />
                     <span>Organizations</span>
@@ -186,7 +186,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     tooltip="Back to projects"
                     onClick={() =>
-                      router.push(`/subdomain/console/${organizationId}`)
+                      router.push(`/dashboard/${organizationId}`)
                     }
                   >
                     <ChevronLeft />
@@ -226,13 +226,13 @@ export function Shell({ children }: { children?: React.ReactNode }) {
             <Breadcrumb className="min-w-0">
               <BreadcrumbList className="flex-nowrap">
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/subdomain/console">Console</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">Console</BreadcrumbLink>
                 </BreadcrumbItem>
                 {organizationId && <BreadcrumbSeparator />}
                 {organizationId && (
                   <BreadcrumbItem className="min-w-0">
                     <BreadcrumbLink
-                      href={`/subdomain/console/${organizationId}`}
+                      href={`/dashboard/${organizationId}`}
                       className="truncate max-w-[10rem]"
                     >
                       {orgName ?? "Organization"}
@@ -243,7 +243,7 @@ export function Shell({ children }: { children?: React.ReactNode }) {
                 {projectId && (
                   <BreadcrumbItem className="min-w-0">
                     <BreadcrumbLink
-                      href={`/subdomain/console/${organizationId}/${projectId}`}
+                      href={`/dashboard/${organizationId}/${projectId}`}
                       className="truncate max-w-[12rem]"
                     >
                       {projectName ?? "Project"}

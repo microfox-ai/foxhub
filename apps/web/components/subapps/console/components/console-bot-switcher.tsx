@@ -59,7 +59,7 @@ export function ConsoleBotSwitcher() {
       /* ignore */
     }
     const isConsole = bot.type === "CONSOLE" || bot.id === consoleProject?.id
-    router.push(isConsole ? "/subdomain/console" : `/project/${bot.id}`)
+    router.push(isConsole ? "/dashboard" : `/project/${bot.id}`)
   }
 
   if (isLoading || !user) return <Skeleton className="h-9 w-full rounded-md" />

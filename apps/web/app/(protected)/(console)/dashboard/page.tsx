@@ -76,7 +76,7 @@ function OrganizationsBody() {
             ))
           : null}
         {state.organizations.map((o) => (
-          <Link href={`/subdomain/console/${o.id}`} key={o.id}>
+          <Link href={`/dashboard/${o.id}`} key={o.id}>
             <Card>
               <CardHeader className="flex flex-row items-center gap-4">
                 <Avatar>

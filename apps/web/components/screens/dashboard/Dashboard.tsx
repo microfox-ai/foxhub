@@ -20,7 +20,7 @@ const Dashboard = ({ defaultTab = "home" }: { defaultTab?: string }) => {
   useEffect(() => {
     if (selectedProject) {
       if (selectedProject.type === "CONSOLE") {
-        redirect("/subdomain/console");
+        redirect("/dashboard");
       } else {
         setActiveTab(defaultTab);
       }

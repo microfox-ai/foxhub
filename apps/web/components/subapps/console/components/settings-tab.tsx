@@ -228,7 +228,7 @@ export function SettingsTab({ projectId }: { projectId: string }) {
                   const ok = window.confirm("Are you sure you want to delete this project? This action cannot be undone.")
                   if (!ok) return
                   await deleteProject(projectId)
-                  router.push(`/subdomain/console/${organizationId}`)
+                  router.push(`/dashboard/${organizationId}`)
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />

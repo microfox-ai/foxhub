@@ -5,7 +5,6 @@ import { useRouter, usePathname, useParams, useSearchParams } from "next/navigat
 import {
   Home,
   Rocket,
-  SquareTerminal,
   LayoutDashboard,
   Activity,
   KeyRound,
@@ -21,6 +20,7 @@ import { usePermissions } from "@/components/subapps/console/lib/use-permissions
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -32,6 +32,7 @@ import {
   SidebarTrigger,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { NavUser } from "./nav-user"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -114,14 +115,30 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
-          <div className="size-6 shrink-0 rounded bg-foreground/10 grid place-items-center">
-            <SquareTerminal className="size-4" />
-          </div>
-          <span className="text-sm font-semibold truncate group-data-[collapsible=icon]:hidden">
-            Console
-          </span>
-        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              tooltip="Microfox Console"
+              onClick={() => router.push("/dashboard")}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-mini-color.png"
+                alt=""
+                width={32}
+                height={32}
+                className="size-8 shrink-0 rounded-md"
+              />
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="truncate text-sm font-semibold">Microfox</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  Console
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
         <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
       </SidebarHeader>
 
@@ -196,6 +213,17 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
+        <NavUser
+          projectHref={
+            projectId
+              ? `/dashboard/${organizationId}/${projectId}?tab=settings`
+              : undefined
+          }
+        />
+      </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>

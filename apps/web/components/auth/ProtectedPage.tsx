@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server-client";
 import { redirect } from "next/navigation";
 import { prisma } from "@/prisma/prisma";
-import { APP_BASE_URL, IN_DEV } from "@/utils/constants/appInfo";
+import { IN_DEV, IN_PRODUCTION } from "@/utils/constants/appInfo";
 import { WaitlistedInfo } from "./Waitlisted";
 import { AccessCodeVerification } from "./AccessCodeVerification";
 
@@ -27,9 +27,7 @@ export default async function ProtectedPage({
     redirect("/login");
   }
 
-  const isProduction = APP_BASE_URL === "https://microfox.app";
-
-  if (isProduction) {
+  if (IN_PRODUCTION) {
     return (
       <div className="flex items-center justify-center h-screen p-4">
         <WaitlistedInfo />

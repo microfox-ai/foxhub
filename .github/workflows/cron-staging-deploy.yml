@@ -125,6 +125,7 @@ jobs:
             
             export NODE_ENV=production
             export PORT=8003
+            export CRON_SECRET=${{ secrets.STAGING_CRON_SECRET }}
 
             # Check if the cron process exists
             if pm2 list | grep -q "foxhub-cron-staging" ; then

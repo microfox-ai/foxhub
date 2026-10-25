@@ -6,8 +6,8 @@ import { rejectUnauthorizedCron } from "../auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Seconds, not ms. 800 is the most Vercel Pro allows.
-export const maxDuration = 800;
+// Seconds, not ms. Vercel caps this at 300s on Hobby and 800s on Pro.
+export const maxDuration = 300;
 
 const BATCH_SIZE = 100;
 

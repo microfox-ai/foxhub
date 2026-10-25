@@ -23,7 +23,7 @@
     "prisma:migrate-deploy-reset": "dotenv -- prisma migrate reset --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-resolve-deploy": "dotenv -- prisma migrate resolve --applied $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
     "prisma:migrate-rollback-deploy": "dotenv -- prisma migrate resolve --rolled-back $npm_config_dir --schema=./apps/web/prisma/schema.prisma",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "postinstall": "npm run prisma:generate",
     "delete-all-lambdas": "node scripts/delete-all-lambda-functions.js",
     "delete-all-github-repos": "node scripts/delete-all-github-repos.js",

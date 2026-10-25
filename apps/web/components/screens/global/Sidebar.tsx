@@ -36,7 +36,7 @@ import {
 import { useLayout } from "../providers/LayoutProvider";
 import { useClientProject } from "../providers/ClientProjectProvider";
 import { FeatureBaseLinkAttributes } from "@/components/auth/FeatureBase";
-import { APP_BASE_URL, IN_DEV, IN_STAGING } from "@/utils/constants/appInfo";
+import { IN_DEV, IN_PRODUCTION, IN_STAGING } from "@/utils/constants/appInfo";
 import { MinionFlow } from "../hooks/convertors";
 import dayjs from "dayjs";
 import React from "react";
@@ -183,8 +183,7 @@ export default function Sidebar({
     createNewEmptyRequest } = useClientProject();
   const { user } = useAuth()
 
-  const isProduction = APP_BASE_URL === "https://microfox.app";
-  const isFeaturesEnables = isProduction ? false : (user?.isBetaAccess || IN_DEV);
+  const isFeaturesEnables = IN_PRODUCTION ? false : (user?.isBetaAccess || IN_DEV);
 
   return (
     <div

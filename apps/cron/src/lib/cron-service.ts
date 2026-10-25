@@ -82,7 +82,9 @@ class CronService {
           'Content-Type': 'application/json',
           'X-Cron-Execution-Id': execution.id,
           'X-Cron-Job-Id': job.id,
-          'User-Agent': 'FoxHub-CronService/1.0'
+          'User-Agent': 'FoxHub-CronService/1.0',
+          // Same header Vercel Cron sends, checked by apps/web/app/api/cron/auth.ts
+          ...(process.env.CRON_SECRET && { Authorization: `Bearer ${process.env.CRON_SECRET}` })
         },
         signal: controller.signal
       });

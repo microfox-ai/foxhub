@@ -2,7 +2,8 @@ import { MinionFlow, MinionType } from "@/components/screens/hooks/convertors";
 import { microfoxRouter } from "@/server/microfoxRouter";
 import { UIMessage } from "ai";
 
-export const maxDuration = 6000;
+// Vercel caps this at 300s on Hobby and 800s on Pro; not enforced on the droplet.
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const body = await req.json();

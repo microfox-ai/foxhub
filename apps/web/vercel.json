@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/webhook-events",
       "schedule": "*/1 * * * *"
+    },
+    {
+      "path": "/api/cron/supabase-keepalive",
+      "schedule": "0 */12 * * *"
     }
   ]
 }

@@ -1,12 +1,5 @@
 {
-  "crons": [
-    {
-      "endpointUrl": "http://localhost:8003/api/cron/logs/cleanup",
-      "schedule": "0 */6 * * *",
-      "description": "Auto cleanup old logs every 6 hours",
-      "timeout": 30000
-    }
-  ],
+  "crons": [],
   "imports": [
     {
       "vercelJsonPath": "apps/web/vercel.json",

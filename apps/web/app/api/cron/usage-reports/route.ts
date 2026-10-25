@@ -1,11 +1,13 @@
 import { prisma } from "@/prisma/prisma";
 import { ClientRequest } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { generateUsageReport } from "@/utils/services/billing/generate-usage-report";
+import { rejectUnauthorizedCron } from "../auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 600_000;
+// Seconds, not ms. 800 is the most Vercel Pro allows.
+export const maxDuration = 800;
 
 const BATCH_SIZE = 100;
 
@@ -41,7 +43,10 @@ async function processBatch(requests: ClientRequest[], dateKey: string) {
   return results;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const unauthorized = rejectUnauthorizedCron(req);
+  if (unauthorized) return unauthorized;
+
   try {
     // Get all client deployments
     const clientRequests = await prisma.clientRequest.findMany();

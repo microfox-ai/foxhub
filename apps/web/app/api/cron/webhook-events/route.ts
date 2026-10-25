@@ -1,7 +1,8 @@
 import { prisma } from "@/prisma/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { WebhookEvent } from "@prisma/client";
 import { APP_BASE_URL } from "@/utils/constants/appInfo";
+import { rejectUnauthorizedCron } from "../auth";
 
 interface TriggerRoute {
   path: string;
@@ -11,16 +12,23 @@ interface TriggerRoute {
   timeout?: number;
 }
 
-export const maxDuration = 600;
+export const maxDuration = 300;
 const BATCH_SIZE = 10;
+// A new run starts every minute: stop claiming batches before then so overlapping
+// runs never pick up the same pending events. Leftovers go to the next run.
+const CLAIM_WINDOW_MS = 50_000;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const unauthorized = rejectUnauthorizedCron(req);
+  if (unauthorized) return unauthorized;
+
   try {
+    const startedAt = Date.now();
     const results = [];
     let hasMoreEvents = true;
     let lastProcessedId: string | undefined;
 
-    while (hasMoreEvents) {
+    while (hasMoreEvents && Date.now() - startedAt < CLAIM_WINDOW_MS) {
       // Get a batch of pending webhook events
       const pendingEvents = await prisma.webhookEvent.findMany({
         where: {

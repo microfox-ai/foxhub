@@ -1,9 +1,9 @@
 name: Staging Deployment
 
+# Droplet (VPS) deployment, disabled after the move to Vercel.
+# Kept as a manual fallback: run it from the Actions tab if needed.
 on:
-  push:
-    branches:
-      - staging/shards
+  workflow_dispatch:
 
 permissions:
   contents: write

@@ -1,11 +1,9 @@
 name: Gitbot Deployment
 
+# Droplet (VPS) deployment, disabled after the move to Vercel.
+# Kept as a manual fallback: run it from the Actions tab if needed.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/gitbot/**"
-      - ".github/workflows/gitbot-deploy.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write

@@ -1,12 +1,9 @@
 name: Cron Service Production Deployment
 
+# Droplet (VPS) deployment, disabled after the move to Vercel.
+# Kept as a manual fallback: run it from the Actions tab if needed.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/cron/**"
-      - "cron.prod.json"
-      - ".github/workflows/cron-prod-deploy.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write

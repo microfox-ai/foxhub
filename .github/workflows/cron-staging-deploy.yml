@@ -1,12 +1,9 @@
 name: Cron Service Staging Deployment
 
+# Droplet (VPS) deployment, disabled after the move to Vercel.
+# Kept as a manual fallback: run it from the Actions tab if needed.
 on:
-  push:
-    branches: [staging/shards]
-    paths:
-      - "apps/cron/**"
-      - "cron.staging.json"
-      - ".github/workflows/cron-staging-deploy.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write

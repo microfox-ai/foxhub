@@ -64,7 +64,7 @@ const rise = (delay: number) => ({
 export const HomePage = () => (
   <div className={`${lexendDeca.className} min-h-dvh`} style={{ background: C.paper, color: C.ink }}>
     <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-      <Image src="/brand/microfox-lockup.svg" alt="Microfox" width={180} height={50} priority />
+      <Image src="/brand/microfox-lockup.svg" alt="Microfox" width={120} height={50} priority />
       <ConsoleButton />
     </header>
 

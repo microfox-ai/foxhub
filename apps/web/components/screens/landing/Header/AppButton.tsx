@@ -50,7 +50,7 @@ export const AppButton = () => {
           onClick={handleButtonClick}
           className="px-8 py-6 text-lg"
         >
-          {user ? "Enter App" : "Login"}
+          {user ? "Console" : "Login"}
         </Button>
       )}
     </>

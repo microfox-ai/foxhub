@@ -48,11 +48,16 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
     creator: "@microfoxai",
   },
+  // Microfox brand kit favicons (public/brand/favicon)
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/brand/favicon/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/brand/favicon/favicon-16x16.png",
+    apple: "/brand/favicon/apple-touch-icon.png",
   },
+  manifest: "/brand/favicon/site.webmanifest",
 };
 
 // Initialize analytics once on the server side

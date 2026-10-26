@@ -104,7 +104,7 @@ const NewHeader = () => {
               <MenuItem label="Feedback" to="/feedback" /> */}
               <MenuItem label="Docs" to="https://docs.microfox.app" />
             </div>
-            <CustomButton label="Enter App" onClick={handleButtonClick} />
+            <CustomButton label="Console" onClick={handleButtonClick} />
           </>
           {/* Hamburger */}
           <button
@@ -170,7 +170,7 @@ const HamBurger = () => {
                 className="w-full rounded-md bg-white py-2 text-sm font-semibold text-black transition-all duration-300 hover:bg-black hover:text-white max-sm:w-full"
                 style={{ border: '2px solid white' }}
               >
-                Enter App
+                Console
               </button>
             </div>
           </Accordion>

@@ -1,10 +1,11 @@
-import { LandingLayout } from "@/components/screens/landing/LandingLayout";
-import { LandingPage } from "@/components/screens/landing/LandingPage";
+import { Metadata } from "next";
+import { HomePage } from "@/components/screens/home/HomePage";
 
+export const metadata: Metadata = {
+  title: "Microfox",
+  description: "Small tools, clever results. MediaMake turns JSON into videos; Workers run AI jobs in the background.",
+};
 
-export default async function Landing() {
-
-  return <LandingLayout>
-    <LandingPage />
-  </LandingLayout>;
+export default function Home() {
+  return <HomePage />;
 }

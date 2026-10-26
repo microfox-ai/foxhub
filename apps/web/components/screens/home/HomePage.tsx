@@ -2,14 +2,13 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Lexend_Deca, Permanent_Marker } from 'next/font/google';
+import { Lexend_Deca } from 'next/font/google';
 import { ArrowUpRight, Clapperboard, Cpu } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useAppButton } from '@/components/screens/landing/Header/AppButton';
 
-// Microfox brand kit (pack-brand-kit, brands/microfox): palette, type and logo files in /public/brand
+// Microfox brand kit (pack-brand-kit, brands/microfox): the faceted fox, palette and type; logo files in /public/brand
 const lexendDeca = Lexend_Deca({ subsets: ['latin'], weight: ['400', '600', '700'] });
-const permanentMarker = Permanent_Marker({ subsets: ['latin'], weight: ['400'] });
 
 const C = {
   fox: '#f28b2a',
@@ -38,6 +37,15 @@ const PROJECTS = [
   },
 ];
 
+// Loose facets in the fox's own colours, floating around the hero fox
+const FACETS = [
+  { points: '0,100 50,0 100,100', fill: C.fox, x: 4, y: 14, size: 34, drift: 10, delay: 0 },
+  { points: '0,0 100,30 30,100', fill: C.honey, x: 86, y: 8, size: 28, drift: 14, delay: 0.4 },
+  { points: '0,60 100,0 70,100', fill: C.ember, x: 90, y: 64, size: 22, drift: 8, delay: 0.8 },
+  { points: '20,0 100,80 0,100', fill: C.cream, x: 0, y: 72, size: 40, drift: 12, delay: 0.2 },
+  { points: '0,0 100,0 50,100', fill: C.fox, x: 70, y: 92, size: 18, drift: 9, delay: 0.6 },
+];
+
 const ConsoleButton = ({ size = 'md' }: { size?: 'md' | 'lg' }) => {
   const { handleButtonClick } = useAppButton();
   const { initializingUser } = useAuth();
@@ -64,7 +72,7 @@ const rise = (delay: number) => ({
 export const HomePage = () => (
   <div className={`${lexendDeca.className} min-h-dvh`} style={{ background: C.paper, color: C.ink }}>
     <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-      <Image src="/brand/microfox-lockup.svg" alt="Microfox" width={120} height={50} priority />
+      <Image src="/brand/microfox-lockup.svg" alt="Microfox" width={156} height={65} priority />
       <ConsoleButton />
     </header>
 
@@ -76,9 +84,7 @@ export const HomePage = () => (
           </motion.p>
           <motion.h1 {...rise(0.1)} className="text-5xl font-bold leading-[1.08] md:text-7xl">
             Small tools,{' '}
-            <span className={permanentMarker.className} style={{ color: C.ember }}>
-              clever
-            </span>{' '}
+            <span style={{ color: C.ember }}>clever</span>{' '}
             results.
           </motion.h1>
           <motion.p {...rise(0.2)} className="mt-6 max-w-xl text-lg leading-relaxed opacity-80 md:text-xl">
@@ -89,26 +95,38 @@ export const HomePage = () => (
           </motion.div>
         </div>
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, rotate: -2 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mx-auto w-full max-w-md"
+          className="relative mx-auto aspect-square w-full max-w-md"
         >
-          <div className="absolute -inset-6 rounded-[48px] blur-2xl" style={{ background: C.honey, opacity: 0.55 }} />
-          <Image
-            src="/logo-filled.png"
-            alt="The Microfox fox"
-            width={512}
-            height={512}
-            priority
-            className="relative rounded-[40px] shadow-[0_24px_60px_-20px_rgba(138,69,32,0.45)]"
-          />
           <div
-            className="absolute -bottom-5 -left-2 flex h-16 w-16 md:-bottom-6 md:-left-6 md:h-20 md:w-20 items-center justify-center rounded-3xl shadow-lg"
-            style={{ background: C.fox }}
+            className="absolute inset-[8%] rounded-full blur-3xl"
+            style={{ background: `radial-gradient(circle, ${C.honey} 0%, ${C.cream} 55%, transparent 75%)` }}
+          />
+          {FACETS.map(({ points, fill, x, y, size, drift, delay }, i) => (
+            <motion.svg
+              key={i}
+              viewBox="0 0 100 100"
+              className="absolute"
+              style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+              initial={{ opacity: 0, y: 0 }}
+              animate={{ opacity: 1, y: [0, -drift, 0] }}
+              transition={{
+                opacity: { duration: 0.6, delay: 0.5 + delay },
+                y: { duration: 6 + i, repeat: Infinity, ease: 'easeInOut', delay },
+              }}
+            >
+              <polygon points={points} fill={fill} />
+            </motion.svg>
+          ))}
+          <motion.div
+            className="absolute inset-[10%]"
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <Image src="/brand/microfox-mark.svg" alt="" width={56} height={56} />
-          </div>
+            <Image src="/brand/microfox-mark.svg" alt="The Microfox fox" fill priority className="object-contain" />
+          </motion.div>
         </motion.div>
       </section>
 
@@ -151,7 +169,7 @@ export const HomePage = () => (
 
     <footer className="border-t" style={{ borderColor: C.cream }}>
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 text-sm opacity-70">
-        <Image src="/brand/microfox-mark.svg" alt="" width={32} height={32} />
+        <Image src="/brand/microfox-mark.svg" alt="" width={29} height={32} />
         <span>© {new Date().getFullYear()} Microfox</span>
       </div>
     </footer>

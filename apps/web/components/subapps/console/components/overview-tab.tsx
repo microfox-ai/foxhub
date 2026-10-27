@@ -5,7 +5,9 @@ import useSWR from "swr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useConsole } from "@/components/subapps/console/context/console-context"
+import { normalizeStage } from "@/components/subapps/console/lib/console-api"
 import { CopyableUrl } from "./copyable-url"
+import { DeploymentConfigCard } from "./deployment-config-card"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
 import { cn } from "@/lib/utils"
 import { UrlMapType, type IUrlMap } from "@/server/types"
@@ -48,10 +50,33 @@ export function OverviewTab({ projectId }: { projectId: string }) {
 
   const subdomain = project?.subdomain?.trim()
   const subdomainBase = subdomain ? `https://${subdomain}.microfox.app` : undefined
-  const urls = useMemo<IUrlMap[]>(() => project?.urlsMap ?? [], [project])
+  const allUrls = useMemo<IUrlMap[]>(() => project?.urlsMap ?? [], [project])
+
+  // urlsMap now holds rows for every deployed stage (non-prod rows carry a stage-prefixed path,
+  // e.g. /staging/agent). Scope the whole Overview to the selected stage so a prod selection never
+  // surfaces the /staging path (and vice-versa). Rows without a stage normalize to prod.
+  const stage = state.selectedStage
+  const urls = useMemo(
+    () => allUrls.filter((u) => normalizeStage(u.stage) === stage),
+    [allUrls, stage],
+  )
 
   const agentMap = useMemo(() => urls.find((u) => u.type === UrlMapType.AGENT), [urls]) ?? { path: '/agent' }
   const openapiUrl = useMemo(() => `${subdomainBase}${urls.find((u) => u.type === UrlMapType.OPENAPI)?.path ?? '/docs.json'}`, [urls, subdomainBase])
+
+  // Distinct groups deployed to this stage (from the stage-scoped urlsMap rows).
+  const stageGroups = useMemo(() => {
+    const set = new Set<string>()
+    for (const u of urls) if (u.group) set.add(u.group)
+    return [...set]
+  }, [urls])
+
+  // The latest deployment for the selected stage — prefer the most recent COMPLETED one (what's
+  // actually live), else the newest of any status. Deployments come newest-first from the API.
+  const stageDeployment = useMemo(() => {
+    const forStage = state.deployments.filter((d) => normalizeStage(d.stage) === stage)
+    return forStage.find((d) => d.status === "completed") ?? forStage[0]
+  }, [state.deployments, stage])
 
   // Pull the OpenAPI spec for the core group — gives us every route + summaries.
   const { data: openapi } = useSWR(openapiUrl ? ["openapi", openapiUrl] : null, ([, u]) => fetchJson(u), {
@@ -174,6 +199,15 @@ export function OverviewTab({ projectId }: { projectId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Deployment configuration — the latest deploy's persisted config for the selected stage */}
+      <DeploymentConfigCard
+        config={stageDeployment?.deploymentConfig}
+        stage={stage}
+        groups={stageGroups}
+        deployedAt={stageDeployment?.updatedAt}
+        description={`Config from the latest ${stage} deployment.`}
+      />
 
       {/* All API routes */}
       <Card>

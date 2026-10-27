@@ -177,7 +177,7 @@ const KEY_SOURCE_LABEL: Record<string, string> = {
 
 // --- Component -------------------------------------------------------------
 
-export function WorkersTab({ projectId }: { projectId: string }) {
+export function RunTestTab({ projectId }: { projectId: string }) {
   const router = useRouter()
   const params = useParams()
   const organizationId = params?.organizationId as string | undefined
@@ -186,7 +186,7 @@ export function WorkersTab({ projectId }: { projectId: string }) {
     (id: string) => {
       if (organizationId)
         router.push(
-          `/subdomain/console/${organizationId}/${projectId}?tab=history&runq=${encodeURIComponent(id)}`,
+          `/dashboard/${organizationId}/${projectId}?tab=history&runq=${encodeURIComponent(id)}`,
           { scroll: false },
         )
     },

@@ -31,7 +31,7 @@ export function SharedOrgsSection() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {orgs.map((o) => (
-          <Link href={`/subdomain/console/${o.id}`} key={o.id}>
+          <Link href={`/dashboard/${o.id}`} key={o.id}>
             <Card className="hover:bg-muted/50">
               <CardHeader className="flex flex-row items-center gap-4">
                 <Avatar>

@@ -203,7 +203,7 @@ function ProjectsBody() {
           : null}
         {state.projects.map((p) => (
           <Link
-            href={`/subdomain/console/${organizationId}/${p.id}`}
+            href={`/dashboard/${organizationId}/${p.id}`}
             key={p.id}
           >
             <Card>

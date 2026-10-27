@@ -10,12 +10,25 @@ import { Upload, RefreshCcw, RefreshCw, Pause, Rocket } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { LogsViewer } from "./logs-viewer"
 import { CopyableUrl } from "./copyable-url"
-import type { DeploymentDto } from "@/components/subapps/console/lib/console-api"
+import { DeploymentConfigCard } from "./deployment-config-card"
+import { normalizeStage, type DeploymentDto } from "@/components/subapps/console/lib/console-api"
+import { stageLabel } from "./stage-selector"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
 import { getDeploymentStatusVisual } from "@/components/subapps/console/lib/deployment-status"
 import { usePermissions } from "@/components/subapps/console/lib/use-permissions"
 import { timeAgo, cn } from "@/lib/utils"
+
+/** Small stage badge — rendered only for non-prod so prod-only projects stay visually unchanged. */
+function StageBadge({ stage, className }: { stage?: string; className?: string }) {
+  const s = normalizeStage(stage)
+  if (s === "prod") return null
+  return (
+    <Badge variant="outline" className={cn("shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400", className)}>
+      {stageLabel(s)}
+    </Badge>
+  )
+}
 
 /** Consistent status pill (dot + label) used across the list and detail panel. */
 function StatusPill({ status, className }: { status?: string; className?: string }) {
@@ -165,7 +178,9 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                 <Button variant="secondary" size="sm" asChild>
                   <span>
                     <Upload className="mr-2 size-4" />
-                    {"Start local deployment"}
+                    {normalizeStage(state.selectedStage) === "prod"
+                      ? "Start local deployment"
+                      : `Deploy to ${stageLabel(normalizeStage(state.selectedStage))}`}
                   </span>
                 </Button>
               </label>
@@ -238,6 +253,7 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                     >
                                       {displayGroupLabel}
                                     </Badge>
+                                    <StageBadge stage={displayDeployment?.stage} className="hidden md:inline-flex" />
                                     <StatusPill status={displayDeployment?.status} className="shrink-0" />
                                     <div className="ml-auto shrink-0 text-right leading-tight">
                                       <span title={new Date(displayDeployment?.createdAt).toLocaleString()}>{timeAgo(displayDeployment?.createdAt)}</span>
@@ -263,6 +279,9 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                            >
                                              {currentGroupLabel}
                                            </Badge>
+                                         </Field>
+                                         <Field label="Stage">
+                                           {stageLabel(normalizeStage(current?.stage))}
                                          </Field>
                                          <Field label="Status">
                                            <StatusPill status={status} />
@@ -348,6 +367,16 @@ export function DeploymentsTab({ projectId }: { projectId: string }) {
                                          </div>
                                        </div>
                                      )}
+
+                                     {current?.deploymentConfig ? (
+                                       <DeploymentConfigCard
+                                         config={current.deploymentConfig}
+                                         stage={normalizeStage(current.stage)}
+                                         groups={current.group ? [current.group] : undefined}
+                                         deployedAt={current.updatedAt}
+                                         description="The exact config this deployment was pushed with."
+                                       />
+                                     ) : null}
                                  </div>
                             </AccordionContent>
                         </AccordionItem>

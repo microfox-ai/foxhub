@@ -58,7 +58,7 @@ function AccessDenied({
         </div>
         {organizationId ? (
           <Button asChild variant="outline" size="sm">
-            <Link href={`/subdomain/console/${organizationId}`}>Back to organization</Link>
+            <Link href={`/dashboard/${organizationId}`}>Back to organization</Link>
           </Button>
         ) : null}
       </CardContent>

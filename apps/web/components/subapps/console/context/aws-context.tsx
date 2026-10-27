@@ -45,6 +45,8 @@ export type UrlMap = {
   path: string;
   url: string;
   group?: string;
+  /** Deployment stage (prod | staging | dev); absent reads as prod. */
+  stage?: string;
   service?: {
     runtime: "serverless" | "static" | "edge" | "server";
     framework?: string;
@@ -163,10 +165,14 @@ function reducer(state: State, action: Action): State {
 
 type Ctx = {
   state: State;
+  /** Stage-aware cache key: analytics/logs are stored per (project, stage) so switching
+   * the console's stage never shows the other stage's cached data. */
+  cacheKey: (projectId: string, stage?: string) => string;
   loadAnalytics: (
     projectId: string,
     fns: AwsFunctionRef[],
     opts: { rangeHours?: number; startTime?: number; endTime?: number },
+    stage?: string,
   ) => Promise<void>;
   loadLogs: (
     projectId: string,
@@ -179,8 +185,14 @@ type Ctx = {
       filterPattern?: string;
       functionName?: string | "ALL";
     },
+    stage?: string,
   ) => Promise<void>;
 };
+
+/** Compose the per-(project, stage) cache key. Absent stage → project-only (legacy). */
+function makeCacheKey(projectId: string, stage?: string): string {
+  return stage ? `${projectId}::${stage}` : projectId;
+}
 
 const AwsContext = createContext<Ctx | undefined>(undefined);
 
@@ -309,9 +321,11 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
       projectId: string,
       fns: AwsFunctionRef[],
       opts: { rangeHours?: number; startTime?: number; endTime?: number },
+      stage?: string,
     ) => {
+      const key = makeCacheKey(projectId, stage);
       if (!fns.length) {
-        dispatch({ type: "SET_ANALYTICS", projectId, items: [] });
+        dispatch({ type: "SET_ANALYTICS", projectId: key, items: [] });
         return;
       }
       dispatch({ type: "SET_LOADING_ANALYTICS", value: true });
@@ -319,8 +333,9 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
       try {
         if (API_BASE) {
           // SECURITY: the server resolves the allowed function list from the project's
-          // urlsMap; we send projectId (function names are no longer trusted).
+          // urlsMap (scoped to `stage`); we send projectId (function names are not trusted).
           const payload: Record<string, unknown> = { projectId, items: fns };
+          if (stage) payload.stage = stage;
           if (opts.startTime != null && opts.endTime != null) {
             payload.startTime = opts.startTime;
             payload.endTime = opts.endTime;
@@ -337,16 +352,16 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
           const data = (await res.json()) as { items: LambdaAnalyticsItem[] };
           dispatch({
             type: "SET_ANALYTICS",
-            projectId,
+            projectId: key,
             items: data.items || [],
           });
         } else {
           const items = mockAnalytics(fns);
-          dispatch({ type: "SET_ANALYTICS", projectId, items });
+          dispatch({ type: "SET_ANALYTICS", projectId: key, items });
         }
       } catch (e: any) {
         const items = mockAnalytics(fns);
-        dispatch({ type: "SET_ANALYTICS", projectId, items });
+        dispatch({ type: "SET_ANALYTICS", projectId: key, items });
         dispatch({
           type: "SET_ANALYTICS_ERROR",
           error: e?.message || "Failed to load analytics",
@@ -370,7 +385,9 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
         filterPattern?: string;
         functionName?: string | "ALL";
       },
+      stage?: string,
     ) => {
+      const key = makeCacheKey(projectId, stage);
       dispatch({ type: "SET_LOADING_LOGS", value: true });
       dispatch({ type: "SET_LOGS_ERROR", error: null });
 
@@ -387,7 +404,7 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
         names: fns.map((f) => f.name).sort(),
       });
 
-      const cached = logCacheRef.current[projectId];
+      const cached = logCacheRef.current[key];
       const now = Date.now();
       const canIncrement =
         isRelative && !!cached && cached.signature === signature;
@@ -412,6 +429,7 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
 
       const payload = JSON.stringify({
         projectId,
+        stage,
         items: fns,
         startTime,
         endTime,
@@ -430,15 +448,15 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
           const fetched = (await res.json()) as LogsResponse;
           const logs =
             canIncrement && cached ? mergeLogs(cached.logs, fetched) : fetched;
-          logCacheRef.current[projectId] = { signature, endTime, logs };
-          dispatch({ type: "SET_LOGS", projectId, logs });
+          logCacheRef.current[key] = { signature, endTime, logs };
+          dispatch({ type: "SET_LOGS", projectId: key, logs });
         } else {
           const logs = mockLogs(fns);
-          logCacheRef.current[projectId] = { signature, endTime, logs };
-          dispatch({ type: "SET_LOGS", projectId, logs });
+          logCacheRef.current[key] = { signature, endTime, logs };
+          dispatch({ type: "SET_LOGS", projectId: key, logs });
         }
       } catch (e: any) {
-        dispatch({ type: "SET_LOGS", projectId, logs: mockLogs(fns) });
+        dispatch({ type: "SET_LOGS", projectId: key, logs: mockLogs(fns) });
         dispatch({
           type: "SET_LOGS_ERROR",
           error: e?.message || "Failed to load logs",
@@ -451,7 +469,7 @@ export function AwsProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<Ctx>(
-    () => ({ state, loadAnalytics, loadLogs }),
+    () => ({ state, cacheKey: makeCacheKey, loadAnalytics, loadLogs }),
     [state, loadAnalytics, loadLogs],
   );
 

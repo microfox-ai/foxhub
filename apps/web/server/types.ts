@@ -206,6 +206,9 @@ export interface IUrlMap {
   path: string;
   url: string;
   group?: string;
+  /** Deployment stage (prod | staging | dev); absent means prod. Non-prod rows carry a
+   * stage-prefixed `path` (e.g. /staging/agent) — see cicd Plan E. */
+  stage?: string;
   service?: ProjectService;
 }
 

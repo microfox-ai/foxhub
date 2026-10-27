@@ -401,7 +401,7 @@ function InviteDialog({
                 {organizationId ? (
                   <>
                     {" "}
-                    <Link href={`/subdomain/console/${organizationId}?tab=members`} className="text-primary underline">
+                    <Link href={`/dashboard/${organizationId}?tab=members`} className="text-primary underline">
                       add them to the organization
                     </Link>{" "}
                     first.
@@ -427,7 +427,7 @@ function InviteDialog({
                 <p className="text-xs text-muted-foreground">
                   Only organization members can be added.{" "}
                   {organizationId ? (
-                    <Link href={`/subdomain/console/${organizationId}?tab=members`} className="text-primary underline">
+                    <Link href={`/dashboard/${organizationId}?tab=members`} className="text-primary underline">
                       Manage the organization roster
                     </Link>
                   ) : null}

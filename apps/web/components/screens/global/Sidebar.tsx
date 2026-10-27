@@ -86,6 +86,14 @@ const navigationConfig: NavigationConfig[] = [
     label: "Dashboard",
     href: "/dashboard",
   },
+  {
+    icon: <MessagesSquare strokeWidth={2.5} className={cn("h-4 w-4")} />,
+    collapsedIcon: (
+      <MessagesSquare strokeWidth={2.5} className={cn("h-[18px] w-[18px]")} />
+    ),
+    label: "Old Dashboard",
+    href: "/old-dashboard",
+  },
   // {
   //   requiresProject: true,
   //   icon: <ListIcon strokeWidth={2.5} className={cn("h-4 w-4")} />,

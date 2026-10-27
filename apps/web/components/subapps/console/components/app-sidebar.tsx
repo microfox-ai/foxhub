@@ -5,10 +5,8 @@ import { useRouter, usePathname, useParams, useSearchParams } from "next/navigat
 import {
   Home,
   Rocket,
-  PanelLeft,
   LayoutDashboard,
   Activity,
-  FileCode,
   KeyRound,
   Users,
   Settings,
@@ -34,6 +32,7 @@ import {
   SidebarTrigger,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { NavUser } from "./nav-user"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -42,7 +41,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { useConsole } from "@/components/subapps/console/context/console-context"
-import { ConsoleBotSwitcher } from "./console-bot-switcher"
 import { cn } from "@/lib/utils"
 
 type NavItem = {
@@ -81,7 +79,6 @@ const NAV_GROUPS: { label?: string; items: NavItem[] }[] = [
     items: [
       { tab: "environment", label: "Environment", icon: KeyRound, perm: "env.view" },
       { tab: "members", label: "Members", icon: Users, perm: "members.view" },
-      { tab: "config", label: "Config", icon: FileCode },
       { tab: "settings", label: "Settings", icon: Settings },
     ],
   },
@@ -118,13 +115,31 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="size-6 rounded bg-foreground/10 grid place-items-center">
-            <PanelLeft className="size-4" />
-          </div>
-          <span className="text-sm font-semibold">Console</span>
-        </div>
-        <SidebarSeparator />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              tooltip="Microfox Console"
+              onClick={() => router.push("/dashboard")}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-mini-color.png"
+                alt=""
+                width={32}
+                height={32}
+                className="size-8 shrink-0 rounded-md"
+              />
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="truncate text-sm font-semibold">Microfox</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  Console
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
       </SidebarHeader>
 
       <SidebarContent>
@@ -145,7 +160,7 @@ export function AppSidebar() {
                         isActive={activeTab === s.tab}
                         onClick={() =>
                           router.push(
-                            `/subdomain/console/${organizationId}/${projectId}?tab=${s.tab}`,
+                            `/dashboard/${organizationId}/${projectId}?tab=${s.tab}`,
                             { scroll: false },
                           )
                         }
@@ -166,8 +181,8 @@ export function AppSidebar() {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    isActive={pathname === "/subdomain/console"}
-                    onClick={() => router.push("/subdomain/console")}
+                    isActive={pathname === "/dashboard"}
+                    onClick={() => router.push("/dashboard")}
                   >
                     <Home />
                     <span>Organizations</span>
@@ -186,7 +201,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     tooltip="Back to projects"
                     onClick={() =>
-                      router.push(`/subdomain/console/${organizationId}`)
+                      router.push(`/dashboard/${organizationId}`)
                     }
                   >
                     <ChevronLeft />
@@ -200,8 +215,16 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <ConsoleBotSwitcher />
+        <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
+        <NavUser
+          projectHref={
+            projectId
+              ? `/dashboard/${organizationId}/${projectId}?tab=settings`
+              : undefined
+          }
+        />
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   )
@@ -222,25 +245,29 @@ export function Shell({ children }: { children?: React.ReactNode }) {
       <main className={cn("flex-1 min-w-0")}>
         <div className="sticky top-0 z-10 border-b bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/40">
           <div className="flex items-center gap-2 p-2">
-            <SidebarTrigger />
-            <Breadcrumb>
-              <BreadcrumbList>
+            <SidebarTrigger className="shrink-0" />
+            <Breadcrumb className="min-w-0">
+              <BreadcrumbList className="flex-nowrap">
                 <BreadcrumbItem>
-                  <BreadcrumbLink href="/subdomain/console">Console</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">Console</BreadcrumbLink>
                 </BreadcrumbItem>
                 {organizationId && <BreadcrumbSeparator />}
                 {organizationId && (
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href={`/subdomain/console/${organizationId}`}>
+                  <BreadcrumbItem className="min-w-0">
+                    <BreadcrumbLink
+                      href={`/dashboard/${organizationId}`}
+                      className="truncate max-w-[10rem]"
+                    >
                       {orgName ?? "Organization"}
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                 )}
                 {projectId && <BreadcrumbSeparator />}
                 {projectId && (
-                  <BreadcrumbItem>
+                  <BreadcrumbItem className="min-w-0">
                     <BreadcrumbLink
-                      href={`/subdomain/console/${organizationId}/${projectId}`}
+                      href={`/dashboard/${organizationId}/${projectId}`}
+                      className="truncate max-w-[12rem]"
                     >
                       {projectName ?? "Project"}
                     </BreadcrumbLink>

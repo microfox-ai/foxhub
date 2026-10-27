@@ -3,8 +3,11 @@
 import { createContext, useContext, useMemo, useState, type Dispatch, type SetStateAction } from "react"
 import useSWR from "swr"
 import { consoleApi } from "@/components/subapps/console/lib/console-api"
+import { useConsole } from "@/components/subapps/console/context/console-context"
 import { usePermissions } from "@/components/subapps/console/lib/use-permissions"
 import { getGroupColorToken, getGroupLabel } from "@/components/subapps/console/lib/group-colors"
+import { EnvStorePanel } from "./env-store-panel"
+import { stageLabel } from "./stage-selector"
 import { beautifyFunctionName } from "@/components/subapps/console/lib/console-utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -37,6 +40,11 @@ type Updates = Record<string, Record<string, string>>
 /** When false, all env editors render read-only (caller lacks `env.edit`). */
 const EnvEditableContext = createContext(true)
 const useEnvEditable = () => useContext(EnvEditableContext)
+
+/** The stage the live env editor is scoped to; forwarded to writes so only that stage's
+ * functions are touched. undefined = all stages (single-stage projects / legacy). */
+const EnvStageContext = createContext<string | undefined>(undefined)
+const useEnvStage = () => useContext(EnvStageContext)
 
 const toRows = (env: Record<string, string>): Row[] =>
   Object.entries(env)
@@ -248,6 +256,7 @@ function SharedEditor({
   filter: string
   onSaved: () => void
 }) {
+  const stage = useEnvStage()
   const originalKeys = useMemo(() => shared.map((s) => s.key), [shared])
   const [rows, setRows] = useState<Row[]>(() =>
     shared.map((s) => ({ key: s.key, value: s.value, reveal: false })),
@@ -270,7 +279,7 @@ function SharedEditor({
     }
     try {
       setSaving(true)
-      const res = await consoleApi.updateProjectEnv(projectId, updates)
+      const res = await consoleApi.updateProjectEnv(projectId, updates, stage)
       setMsg(`Applied to ${res.appliedCount} function${res.appliedCount === 1 ? "" : "s"}`)
       onSaved()
     } catch (e: any) {
@@ -322,6 +331,7 @@ function VariableRow({
   const [edited, setEdited] = useState<Record<string, string>>({})
 
   const editable = useEnvEditable()
+  const stage = useEnvStage()
   const { present, distinct } = keyStats(fns, varKey)
   const valueFor = (f: FnEnv): string => {
     const e = edited[f.name]
@@ -334,7 +344,7 @@ function VariableRow({
   const run = async (build: () => Updates) => {
     setBusy(true)
     try {
-      await consoleApi.updateProjectEnv(projectId, build())
+      await consoleApi.updateProjectEnv(projectId, build(), stage)
       onSaved()
     } finally {
       setBusy(false)
@@ -452,6 +462,7 @@ function SingleFunctionEditor({
   groupFns: FnEnv[]
   onSaved: () => void
 }) {
+  const stage = useEnvStage()
   const [rows, setRows] = useState<Row[]>(() => toRows(fn.env))
   const [saving, setSaving] = useState<"one" | "all" | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -475,7 +486,7 @@ function SingleFunctionEditor({
     else for (const g of groupFns) updates[g.name] = env
     try {
       setSaving(mode)
-      const res = await consoleApi.updateProjectEnv(projectId, updates)
+      const res = await consoleApi.updateProjectEnv(projectId, updates, stage)
       setMsg(mode === "all" ? `Copied to ${res.appliedCount} functions` : "Saved")
       onSaved()
     } catch (e: any) {
@@ -710,10 +721,15 @@ export function EnvTab({ projectId }: { projectId: string }) {
   const [scope, setScope] = useState<"group" | "project">("group")
   const { can } = usePermissions(projectId)
   const canEdit = can("env.edit")
+  const { state } = useConsole()
+  const stage = state.selectedStage
+  // Multi-stage projects scope the env editor to the selected stage; single-stage projects
+  // pass undefined so behavior (and the request) is byte-identical to before.
+  const stageParam = state.availableStages.length > 1 ? stage : undefined
 
   const { data, error, isLoading, mutate } = useSWR(
-    projectId ? ["project-env", projectId] : null,
-    () => consoleApi.getProjectEnv(projectId),
+    projectId ? ["project-env", projectId, stageParam ?? "all"] : null,
+    () => consoleApi.getProjectEnv(projectId, stageParam),
     { revalidateOnFocus: false, shouldRetryOnError: false },
   )
 
@@ -773,7 +789,27 @@ export function EnvTab({ projectId }: { projectId: string }) {
 
   return (
     <EnvEditableContext.Provider value={canEdit}>
+    <EnvStageContext.Provider value={stageParam}>
     <div className="space-y-4">
+      {hasAnyFunction ? (
+        <EnvStorePanel
+          projectId={projectId}
+          stage={stage}
+          groups={groups}
+          liveByGroup={data?.groups ?? {}}
+          canEdit={canEdit}
+        />
+      ) : null}
+
+      {hasAnyFunction ? (
+        <div className="flex items-center gap-2 pt-1 text-sm font-medium text-muted-foreground">
+          Live environment
+          {stageParam ? (
+            <span className="text-xs font-normal">({stageLabel(stage)} functions)</span>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
@@ -838,6 +874,7 @@ export function EnvTab({ projectId }: { projectId: string }) {
         })
       )}
     </div>
+    </EnvStageContext.Provider>
     </EnvEditableContext.Provider>
   )
 }
